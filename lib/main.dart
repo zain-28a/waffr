@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app%20theme.dart';
 
 void main() {
-  runApp(const WafarApp());
+  runApp(const WafarApp()) ;
 }
 
 class WafarApp extends StatefulWidget {
