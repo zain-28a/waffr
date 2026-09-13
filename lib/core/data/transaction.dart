@@ -1,8 +1,14 @@
 import 'dart:convert';
 
-enum TransactionType { income, expense }
+enum TransactionType { income, expense, savingsIn, savingsOut }
 
-/// عملية واحدة (دخل أو مصروف) كما تُخزَّن في SharedPreferences بصيغة JSON.
+/// مدة الدخل المضافة: بدون مدة لا تُرحَّل تلقائياً إلى الادخار.
+enum RecurringFrequency { none, weekly, monthly }
+
+/// سبب حركة الادخار، لتمييز التحويلات التلقائية عن اليدوية.
+enum SavingsTransferKind { periodLeftover, goalPeriodic, manual, withdraw }
+
+/// عملية واحدة كما تُخزَّن في SharedPreferences بصيغة JSON.
 class WafferTransaction {
   final String id;
   final TransactionType type;
@@ -14,10 +20,25 @@ class WafferTransaction {
   /// للمصروف فقط.
   final String? paymentMethod;
 
-  /// ملاحظة المصروف أو مصدر الدخل.
+  /// ملاحظة المصروف أو مصدر الدخل أو وصف حركة الادخار.
   final String? note;
 
   final DateTime dateTime;
+
+  /// للدخل: أسبوعي / شهري / بدون مدة.
+  final RecurringFrequency frequency;
+
+  /// مفتاح الفترة التقويمية التي ينتمي إليها الدخل الدوري.
+  final String? periodKey;
+
+  /// لحركات الادخار فقط.
+  final SavingsTransferKind? transferKind;
+
+  /// الهدف المرتبط بحركة ادخار دورية، إن وُجد.
+  final String? goalId;
+
+  /// الفترة التي سُوِّيت عند إنهاء المدة (لمنع التكرار).
+  final String? processedPeriodKey;
 
   const WafferTransaction({
     required this.id,
@@ -27,9 +48,20 @@ class WafferTransaction {
     this.category,
     this.paymentMethod,
     this.note,
+    this.frequency = RecurringFrequency.none,
+    this.periodKey,
+    this.transferKind,
+    this.goalId,
+    this.processedPeriodKey,
   });
 
   bool get isIncome => type == TransactionType.income;
+
+  bool get isExpense => type == TransactionType.expense;
+
+  bool get isSavingsIn => type == TransactionType.savingsIn;
+
+  bool get isSavingsOut => type == TransactionType.savingsOut;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -39,6 +71,11 @@ class WafferTransaction {
         'paymentMethod': paymentMethod,
         'note': note,
         'dateTime': dateTime.toIso8601String(),
+        'frequency': frequency.name,
+        'periodKey': periodKey,
+        'transferKind': transferKind?.name,
+        'goalId': goalId,
+        'processedPeriodKey': processedPeriodKey,
       };
 
   String encode() => jsonEncode(toJson());
@@ -53,23 +90,55 @@ class WafferTransaction {
 
       return WafferTransaction(
         id: _text(decoded['id']) ?? newId(),
-        type: _text(decoded['type']) == TransactionType.income.name
-            ? TransactionType.income
-            : TransactionType.expense,
+        type: _parseType(_text(decoded['type'])),
         amount: amount,
         category: _text(decoded['category']),
         paymentMethod: _text(decoded['paymentMethod']),
         note: _text(decoded['note']),
         dateTime:
             DateTime.tryParse(_text(decoded['dateTime']) ?? '') ?? DateTime.now(),
+        frequency: _parseFrequency(_text(decoded['frequency'])),
+        periodKey: _text(decoded['periodKey']),
+        transferKind: _parseTransferKind(_text(decoded['transferKind'])),
+        goalId: _text(decoded['goalId']),
+        processedPeriodKey: _text(decoded['processedPeriodKey']),
       );
     } catch (_) {
       return null;
     }
   }
 
+  static int _seq = 0;
+
   static String newId() =>
-      DateTime.now().microsecondsSinceEpoch.toString();
+      '${DateTime.now().microsecondsSinceEpoch}_${_seq++}';
+
+  static TransactionType _parseType(String? raw) {
+    return switch (raw) {
+      'income' => TransactionType.income,
+      'savingsIn' => TransactionType.savingsIn,
+      'savingsOut' => TransactionType.savingsOut,
+      _ => TransactionType.expense,
+    };
+  }
+
+  static RecurringFrequency _parseFrequency(String? raw) {
+    return switch (raw) {
+      'weekly' => RecurringFrequency.weekly,
+      'monthly' => RecurringFrequency.monthly,
+      _ => RecurringFrequency.none,
+    };
+  }
+
+  static SavingsTransferKind? _parseTransferKind(String? raw) {
+    return switch (raw) {
+      'periodLeftover' => SavingsTransferKind.periodLeftover,
+      'goalPeriodic' => SavingsTransferKind.goalPeriodic,
+      'manual' => SavingsTransferKind.manual,
+      'withdraw' => SavingsTransferKind.withdraw,
+      _ => null,
+    };
+  }
 
   static String? _text(Object? value) {
     if (value == null) return null;

@@ -5,8 +5,8 @@ import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/screens/offline/dashboard/sheets/add_expense_sheet.dart';
-import 'package:waffer/screens/offline/dashboard/sheets/add_income_sheet.dart';
+import 'package:waffer/screens/offline/home/sheets/add_expense_sheet.dart';
+import 'package:waffer/screens/offline/home/sheets/add_income_sheet.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
@@ -80,9 +80,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(width: 14),
-                    const Expanded(
+                    Expanded(
                       flex: 4,
-                      child: _SavingGoalCard(compact: true),
+                      child: _SavingGoalCard(
+                        compact: true,
+                        saved: _store.activeGoal == null
+                            ? 0
+                            : _store.goalProgress(_store.activeGoal!),
+                        target: _store.activeGoal?.targetAmount ?? 0,
+                      ),
                     ),
                   ],
                 ),
@@ -112,14 +118,16 @@ class _BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const onAccent = Colors.white;
-    final onAccentSoft = Colors.white.withValues(alpha: 0.75);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     return GlassContainer(
-      colorType: GlassColorType.accent,
-      tintOpacity: 0.94,
+      colorType: GlassColorType.surface,
       borderRadius: 28,
-      padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
+      padding: const EdgeInsets.fromLTRB(22, 20, 22, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -128,7 +136,7 @@ class _BalanceCard extends StatelessWidget {
             style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 13.5,
-              color: onAccentSoft,
+              color: textSecondary,
             ),
           ),
           const SizedBox(height: 6),
@@ -142,11 +150,11 @@ class _BalanceCard extends StatelessWidget {
                   alignment: AlignmentDirectional.centerStart,
                   child: Text(
                     formatMoney(balance),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Cairo',
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
-                      color: onAccent,
+                      color: accent,
                     ),
                   ),
                 ),
@@ -157,12 +165,12 @@ class _BalanceCard extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: 'Cairo',
                   fontSize: 15,
-                  color: onAccentSoft,
+                  color: textSecondary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 0),
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
@@ -171,24 +179,24 @@ class _BalanceCard extends StatelessWidget {
                 fontFamily: 'Cairo',
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
-                color: onAccentSoft,
+                color: textSecondary,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 3),
           _HorizontalProgress(
             ratio: ratio,
-            trackColor: Colors.white.withValues(alpha: 0.18),
-            fillColor: onAccent,
+            trackColor: accent.withValues(alpha: 0.12),
+            fillColor: accent,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             'مصروف ${formatMoney(spent)} $currencyLabel '
             'من ${formatMoney(maxBalance)} $currencyLabel',
             style: TextStyle(
               fontFamily: 'Cairo',
               fontSize: 12.5,
-              color: onAccentSoft,
+              color: textSecondary,
             ),
           ),
         ],
@@ -214,7 +222,7 @@ class _HorizontalProgress extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
       child: Stack(
         children: [
-          Container(height: 10, color: trackColor),
+          Container(height: 30, color: trackColor),
           Positioned.fill(
             child: FractionallySizedBox(
               alignment: AlignmentDirectional.centerStart,
@@ -342,7 +350,7 @@ class _DistributionChart extends StatelessWidget {
 
     return SizedBox(
       width: 118,
-      height: 118,
+      height: 100,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -464,12 +472,14 @@ class _DistributionLegend extends StatelessWidget {
 
 class _SavingGoalCard extends StatelessWidget {
   final bool compact;
+  final double saved;
+  final double target;
 
-  const _SavingGoalCard({this.compact = false});
-
-  // قيم مبدئية حتى تُربط شاشة أهداف التوفير.
-  static const double _saved = 0;
-  static const double _target = 1000000;
+  const _SavingGoalCard({
+    this.compact = false,
+    this.saved = 0,
+    this.target = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -481,53 +491,71 @@ class _SavingGoalCard extends StatelessWidget {
     final textSecondary =
         isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
-    final ratio = _target <= 0 ? 0.0 : (_saved / _target).clamp(0.0, 1.0);
+    final ratio = target <= 0 ? 0.0 : (saved / target).clamp(0.0, 1.0);
+
+    if (target <= 0) {
+      return _SectionCard(
+        title: 'هدف التوفير',
+        compact: compact,
+        centerChild: compact,
+        child: Text(
+          'لا يوجد هدف حالياً',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Cairo',
+            fontSize: compact ? 13 : 15,
+            fontWeight: FontWeight.w700,
+            color: textSecondary,
+          ),
+        ),
+      );
+    }
 
     return _SectionCard(
       title: 'هدف التوفير',
       compact: compact,
       centerChild: compact,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // العمود العمودي والمبلغ تحته مباشرة.
-          Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _VerticalProgress(
-                  ratio: ratio,
-                  width: compact ? 26 : 30,
-                  height: compact ? 92 : 96,
-                  trackColor: textPrimary.withValues(alpha: 0.08),
-                  fillColor: accent,
-                ),
-                const SizedBox(height: 10),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    '${formatMoney(_saved)} / ${formatMoney(_target)}',
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: compact ? 14 : 17,
-                      fontWeight: FontWeight.bold,
-                      color: textPrimary,
-                    ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _VerticalProgress(
+                ratio: ratio,
+                width: compact ? 26 : 30,
+                height: compact ? 92 : 96,
+                trackColor: textPrimary.withValues(alpha: 0.08),
+                fillColor: accent,
+              ),
+              SizedBox(width: compact ? 6 : 10),
+              Flexible(
+                child: Text(
+                  '${(ratio * 100).round()}%',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: compact ? 11 : 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: textSecondary,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          // النسبة بجانب العمود من الأعلى.
-          Text(
-            '${(ratio * 100).round()}%',
-            style: TextStyle(
-              fontFamily: 'Cairo',
-              fontSize: compact ? 11 : 12.5,
-              fontWeight: FontWeight.w700,
-              color: textSecondary,
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '${formatMoney(saved)} / ${formatMoney(target)}',
+              style: TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: compact ? 14 : 17,
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
+              ),
             ),
           ),
         ],
@@ -598,7 +626,7 @@ class _RecentExpensesCard extends StatelessWidget {
     final textPrimary =
         isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
 
-    final latest = expenses.take(compact ? 3 : 5).toList();
+    final latest = expenses.take(3).toList();
 
     return _SectionCard(
       title: 'آخر المصروفات',
@@ -614,7 +642,8 @@ class _RecentExpensesCard extends StatelessWidget {
                 for (int index = 0; index < latest.length; index++) ...[
                   if (index > 0)
                     Divider(
-                      height: compact ? 18 : 22,
+                      height: compact ? 11 : 16,
+                      thickness: 1,
                       color: textPrimary.withValues(alpha: 0.08),
                     ),
                   _ExpenseRow(expense: latest[index], compact: compact),
@@ -646,15 +675,18 @@ class _ExpenseRow extends StatelessWidget {
 
     final amount = Text(
       '${formatMoney(expense.amount)} $currencyLabel',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.end,
       style: TextStyle(
         fontFamily: 'Cairo',
-        fontSize: compact ? 12.5 : 14,
+        fontSize: compact ? 11.5 : 14,
         fontWeight: FontWeight.bold,
         color: accent,
       ),
     );
 
-    final iconSize = compact ? 34.0 : 44.0;
+    final iconSize = compact ? 26.0 : 44.0;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -668,12 +700,13 @@ class _ExpenseRow extends StatelessWidget {
           ),
           child: Icon(
             category.icon,
-            size: compact ? 17 : 21,
+            size: compact ? 14 : 21,
             color: accent,
           ),
         ),
-        SizedBox(width: compact ? 8 : 12),
+        SizedBox(width: compact ? 6 : 12),
         Expanded(
+          flex: compact ? 6 : 1,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -683,25 +716,25 @@ class _ExpenseRow extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontFamily: 'Cairo',
-                  fontSize: compact ? 13.5 : 15.5,
+                  fontSize: compact ? 12.5 : 15.5,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
                 ),
               ),
               if (note != null && note.isNotEmpty) ...[
-                const SizedBox(height: 2),
+                SizedBox(height: compact ? 1 : 2),
                 Text(
                   note,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontFamily: 'Cairo',
-                    fontSize: compact ? 11.5 : 12.5,
+                    fontSize: compact ? 10.5 : 12.5,
                     color: textSecondary,
                   ),
                 ),
               ],
-              const SizedBox(height: 3),
+              SizedBox(height: compact ? 1 : 3),
               Text(
                 '${formatDate(expense.dateTime)} • ${formatTime(expense.dateTime)}',
                 textDirection: TextDirection.ltr,
@@ -709,25 +742,28 @@ class _ExpenseRow extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontFamily: 'Cairo',
-                  fontSize: compact ? 10 : 11,
+                  fontSize: compact ? 9 : 11,
                   color: textSecondary.withValues(alpha: 0.8),
                 ),
               ),
-              // في العرض الضيّق ينتقل المبلغ إلى سطر خاص به.
-              if (compact) ...[
-                const SizedBox(height: 3),
-                amount,
-              ],
             ],
           ),
         ),
-        if (!compact) ...[
-          const SizedBox(width: 8),
+        SizedBox(width: compact ? 4 : 8),
+        if (compact)
+          Expanded(
+            flex: 5,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerEnd,
+              child: amount,
+            ),
+          )
+        else
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: amount,
           ),
-        ],
       ],
     );
   }

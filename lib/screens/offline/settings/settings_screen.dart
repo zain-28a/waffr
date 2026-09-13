@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 
@@ -387,6 +388,7 @@ class _SettingsScreenState
     await prefs.clear();
 
     TransactionStore.instance.resetCache();
+    NotificationService.instance.resetCache();
 
     if (!mounted) return;
 

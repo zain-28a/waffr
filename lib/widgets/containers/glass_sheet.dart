@@ -377,11 +377,19 @@ class SheetAmountField extends StatelessWidget {
 class SheetTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
+  final bool enabled;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final ValueChanged<String>? onChanged;
 
   const SheetTextField({
     super.key,
     required this.controller,
     required this.hint,
+    this.enabled = true,
+    this.keyboardType,
+    this.inputFormatters,
+    this.onChanged,
   });
 
   @override
@@ -395,12 +403,16 @@ class SheetTextField extends StatelessWidget {
 
     return TextField(
       controller: controller,
+      enabled: enabled,
+      onChanged: onChanged,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       textAlign: TextAlign.right,
       cursorColor: textPrimary,
       style: TextStyle(
         fontFamily: 'Cairo',
         fontSize: 15,
-        color: textPrimary,
+        color: enabled ? textPrimary : textSecondary.withValues(alpha: 0.55),
       ),
       decoration: InputDecoration(
         filled: true,
@@ -425,6 +437,76 @@ class SheetTextField extends StatelessWidget {
           borderSide: BorderSide.none,
         ),
       ),
+    );
+  }
+}
+
+/// صف خيارات بنفس أسلوب طرق الدفع في نافذة المصروف.
+class SheetChoiceChips extends StatelessWidget {
+  final List<String> options;
+  final String selected;
+  final ValueChanged<String> onSelected;
+  final bool enabled;
+
+  const SheetChoiceChips({
+    super.key,
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+
+    return Row(
+      children: options.map((option) {
+        final isSelected = option == selected;
+
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            child: GestureDetector(
+              onTap: enabled ? () => onSelected(option) : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 6),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? accent.withValues(alpha: 0.14)
+                      : sheetFieldColor(context),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected ? accent : Colors.transparent,
+                    width: 1.4,
+                  ),
+                ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    option,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontSize: 13.5,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected ? accent : textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/widgets/common/ani_pri_button.dart';
+import 'package:waffer/widgets/button/ani_pri_button.dart';
 
 class ThemeSelectScreen extends StatefulWidget {
   final void Function(ThemeMode mode) onThemeChanged;
@@ -20,9 +20,10 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
   bool _isDark = false; //light by default
 
   void _toggle(bool value) {
-    setState(() => _isDark = value);
-    widget.onThemeChanged(_isDark ? ThemeMode.dark : ThemeMode.light);
-  }
+  setState(() => _isDark = value);
+  print('THEME SELECT: sending ${_isDark ? "dark" : "light"}');
+  widget.onThemeChanged(_isDark ? ThemeMode.dark : ThemeMode.light);
+}
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +56,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                 child:Text.rich(
                   TextSpan(children:[
                   const TextSpan( text:'اختر مظهر ',
-                  style: const TextStyle(fontWeight: const FontWeight(266)),
+                  style: TextStyle(fontWeight: FontWeight(266)),
                   
                 ),
                 TextSpan(text: "وفّر",style: TextStyle(fontWeight: const FontWeight(850),color: accent),),
