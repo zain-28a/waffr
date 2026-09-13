@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/sheets/glass_sheet.dart';
+import 'package:waffer/widgets/containers/glass_sheet.dart';
 
 /// نافذة "إضافة دخل" الزجاجية.
 Future<void> showAddIncomeSheet(BuildContext context) {
@@ -19,9 +20,19 @@ class _AddIncomeSheet extends StatefulWidget {
 }
 
 class _AddIncomeSheetState extends State<_AddIncomeSheet> {
+  static const String _freqNone = 'بدون مدة';
+  static const String _freqWeekly = 'أسبوعي';
+  static const String _freqMonthly = 'شهري';
+  static const String _keepBalance = 'إبقاء الرصيد';
+  static const String _moveBalance = 'نقل الرصيد للتوفير';
+
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _sourceController = TextEditingController();
 
+  final TransactionStore _store = TransactionStore.instance;
+
+  String _frequencyLabel = _freqNone;
+  String _balanceAction = _keepBalance;
   bool _saving = false;
 
   static const double _maxAmount = 999999999;
@@ -29,6 +40,20 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
   double get _amount => parseAmount(_amountController.text);
 
   bool get _isValid => _amount > 0 && _amount <= _maxAmount;
+
+  RecurringFrequency get _frequency => switch (_frequencyLabel) {
+        _freqWeekly => RecurringFrequency.weekly,
+        _freqMonthly => RecurringFrequency.monthly,
+        _ => RecurringFrequency.none,
+      };
+
+  @override
+  void initState() {
+    super.initState();
+    _store.ensureLoaded().then((_) {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
@@ -44,9 +69,11 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
 
     final source = _sourceController.text.trim();
 
-    await TransactionStore.instance.addIncome(
+    await _store.addIncome(
       amount: _amount,
       source: source.isEmpty ? null : source,
+      frequency: _frequency,
+      moveBalanceToSavings: _balanceAction == _moveBalance,
     );
 
     if (!mounted) return;
@@ -55,6 +82,8 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final hasBalance = _store.balance > 0;
+
     return GlassSheetBody(
       children: [
         GlassSheetHeader(
@@ -69,6 +98,22 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
           helper: 'الحد الأقصى ${formatMoney(_maxAmount)} $currencyLabel',
           onChanged: (_) => setState(() {}),
         ),
+        const SizedBox(height: 18),
+        const SheetFieldLabel(text: 'مدة المبلغ'),
+        SheetChoiceChips(
+          options: const [_freqWeekly, _freqMonthly, _freqNone],
+          selected: _frequencyLabel,
+          onSelected: (value) => setState(() => _frequencyLabel = value),
+        ),
+        if (hasBalance) ...[
+          const SizedBox(height: 18),
+          const SheetFieldLabel(text: 'الرصيد الحالي'),
+          SheetChoiceChips(
+            options: const [_keepBalance, _moveBalance],
+            selected: _balanceAction,
+            onSelected: (value) => setState(() => _balanceAction = value),
+          ),
+        ],
         const SizedBox(height: 18),
         const SheetFieldLabel(text: 'مصدر الدخل', optional: true),
         SheetTextField(

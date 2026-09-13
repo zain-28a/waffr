@@ -1,13 +1,17 @@
 
 import 'package:flutter/material.dart';
+import 'package:waffer/core/data/notification_service.dart';
+import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/screens/offline/dashboard/dashboard.dart';
-import 'package:waffer/screens/offline/dashboard/home.dart';
-import 'package:waffer/screens/offline/dashboard/monthly_spend_screen.dart';
+import 'package:waffer/screens/offline/home/dashboard.dart';
+import 'package:waffer/screens/offline/notifications/notifications_screen.dart';
 import 'package:waffer/screens/offline/placeholder/placeholder.dart';
-import 'package:waffer/screens/offline/reports_screen.dart';
+import 'package:waffer/screens/offline/report/reportscreen.dart';
+import 'package:waffer/screens/offline/savings/savings_screen.dart';
 import 'package:waffer/screens/offline/settings/settings_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:waffer/widgets/brand/waffer_w_mark.dart';
+
 
 class AppShell extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeNotifier;
@@ -23,13 +27,35 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   final PageController _pageController =
       PageController(initialPage: 0);
 
   int _currentIndex = 0;
 
   static const int _tabCount = 5;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _syncFinancialEvents();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncFinancialEvents();
+    }
+  }
+
+  Future<void> _syncFinancialEvents() async {
+    final notifications = NotificationService.instance;
+    await notifications.ensureLoaded();
+    notifications.listen();
+    await TransactionStore.instance.processDuePeriods();
+    await notifications.evaluate();
+  }
 
   void _onTabTapped(int index) {
     if (index == _currentIndex) return;
@@ -47,6 +73,7 @@ class _AppShellState extends State<AppShell> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
   }
@@ -140,11 +167,14 @@ class _AppShellState extends State<AppShell> {
               ),
             ),
 
-            // ================= PAGES =================
+            // PAGES 
 
             Expanded(
               child: PageView(
                 controller: _pageController,
+                physics: (_currentIndex == 1 || _currentIndex == 2)
+                    ? const NeverScrollableScrollPhysics()
+                    : const PageScrollPhysics(),
 
                 onPageChanged: (index) {
                   setState(() {
@@ -154,15 +184,15 @@ class _AppShellState extends State<AppShell> {
 
                 children: [
                   const HomeScreen(),
-                  MonthlySpendScreen(isActive: _currentIndex == 1),
-                  const ReportsScreen(),
+                  const ReportScreen(),
+                  const SavingsScreen(),
                   const PlaceholderScreen(label: 'شاشة 4'),
-                  const PlaceholderScreen(label: 'شاشة 5'),
+                  const NotificationsScreen(),
                 ],
-              ),
             ),
+          ),
 
-            // ================= NAV BAR =================
+          // NAV BAR
 
             Container(
               decoration: BoxDecoration(
@@ -208,20 +238,30 @@ class _AppShellState extends State<AppShell> {
 
                         curve: Curves.easeOut,
 
-                        child: Icon(
-                          index == 0
-                              ? Icons.home_rounded
-                              : index == 1
-                                  ? Icons.bar_chart_rounded
-                                  : Icons.circle_outlined,
-
-                          size: 26,
-
-                          color: isSelected
-                              ? accent
-                              : textPrimary
-                                  .withValues(alpha: 0.35),
-                        ),
+                        child: index == 2
+                            ? WafferWMark(
+                                size: 26,
+                                color: isSelected
+                                    ? accent
+                                    : textPrimary.withValues(alpha: 0.35),
+                              )
+                            : index == 4
+                                ? _NotificationsTabIcon(
+                                    selected: isSelected,
+                                    accent: accent,
+                                    idle: textPrimary.withValues(alpha: 0.35),
+                                  )
+                                : Icon(
+                                    index == 0
+                                        ? Icons.home_rounded
+                                        : index == 1
+                                            ? Icons.bar_chart_rounded
+                                            : Icons.circle_outlined,
+                                    size: 26,
+                                    color: isSelected
+                                        ? accent
+                                        : textPrimary.withValues(alpha: 0.35),
+                                  ),
                       ),
                     );
                   },
@@ -231,6 +271,58 @@ class _AppShellState extends State<AppShell> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _NotificationsTabIcon extends StatelessWidget {
+  final bool selected;
+  final Color accent;
+  final Color idle;
+
+  const _NotificationsTabIcon({
+    required this.selected,
+    required this.accent,
+    required this.idle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: NotificationService.instance,
+      builder: (context, _) {
+        final unread = NotificationService.instance.unreadCount;
+
+        return SizedBox(
+          width: 30,
+          height: 30,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(
+                selected
+                    ? Icons.notifications_rounded
+                    : Icons.notifications_outlined,
+                size: 26,
+                color: selected ? accent : idle,
+              ),
+              if (unread > 0)
+                PositionedDirectional(
+                  top: 1,
+                  start: 1,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

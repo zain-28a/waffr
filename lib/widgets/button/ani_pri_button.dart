@@ -5,7 +5,7 @@ class AnimatedPrimaryButton extends StatefulWidget {
   final VoidCallback onPressed;
   final Color backgroundColor;
   final Color textColor;
-
+  
   const AnimatedPrimaryButton({
     super.key,
     required this.text,

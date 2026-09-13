@@ -10,17 +10,16 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.lightBackground,
       primaryColor: AppColors.lightAccent,
       cardColor: AppColors.lightSurface,
-      dividerColor: AppColors.lightBorder,
       colorScheme: const ColorScheme.light(
         primary: AppColors.lightAccent,
         surface: AppColors.lightSurface,
-        error: AppColors.expense,
+        
       ),
       textTheme: _textTheme(
         primary: AppColors.lightTextPrimary,
         secondary: AppColors.lightTextSecondary,
       ),
-      fontFamily: 'Cairo',
+      fontFamily: 'scheherazade new',
     );
   }
 
@@ -30,17 +29,15 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.darkBackground,
       primaryColor: AppColors.darkAccent,
       cardColor: AppColors.darkSurface,
-      dividerColor: AppColors.darkBorder,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.darkAccent,
         surface: AppColors.darkSurface,
-        error: AppColors.expense,
       ),
       textTheme: _textTheme(
         primary: AppColors.darkTextPrimary,
         secondary: AppColors.darkTextSecondary,
       ),
-      fontFamily: 'Cairo',
+      fontFamily: 'scheherazade new',
     );
   }
 

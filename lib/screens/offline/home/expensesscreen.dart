@@ -216,18 +216,26 @@ class _TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIncome = transaction.isIncome;
+    final title = switch (transaction.type) {
+      TransactionType.income => 'دخل',
+      TransactionType.savingsIn => 'ادخار',
+      TransactionType.savingsOut => 'سحب من الادخار',
+      TransactionType.expense => categoryFor(transaction.category).label,
+    };
 
-    final title =
-        isIncome ? 'دخل' : categoryFor(transaction.category).label;
+    final icon = switch (transaction.type) {
+      TransactionType.income => Icons.south_west_rounded,
+      TransactionType.savingsIn => Icons.savings_outlined,
+      TransactionType.savingsOut => Icons.north_east_rounded,
+      TransactionType.expense => categoryFor(transaction.category).icon,
+    };
 
-    final icon = isIncome
-        ? Icons.savings_outlined
-        : categoryFor(transaction.category).icon;
+    final isCredit =
+        transaction.isIncome || transaction.isSavingsOut;
 
     final details = <String>[
       if (transaction.note != null) transaction.note!,
-      if (!isIncome && transaction.paymentMethod != null)
+      if (transaction.isExpense && transaction.paymentMethod != null)
         transaction.paymentMethod!,
     ].join(' • ');
 
@@ -296,7 +304,7 @@ class _TransactionRow extends StatelessWidget {
         const SizedBox(width: 8),
 
         Text(
-          '${isIncome ? '+' : '-'} ${formatMoney(transaction.amount)}',
+          '${isCredit ? '+' : '-'} ${formatMoney(transaction.amount)}',
           style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 16,
