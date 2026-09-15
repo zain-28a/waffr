@@ -7,8 +7,14 @@ import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffer/screens/offline/home/sheets/add_income_sheet.dart';
+import 'package:waffer/screens/offline/savings/sheets/recurring_expenses_sheet.dart';
+import 'package:waffer/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
+
+const double kDashboardListFabEnd = 31;
+const double kDashboardListFabBottom = 614;
+const double kDashboardListFabSize = 48;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -31,7 +37,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return AnimatedBuilder(
       animation: _store,
       builder: (context, _) {
-        return SingleChildScrollView(
+        return Stack(
+          children: [
+            SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 26),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -95,8 +103,45 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        ),
+            PositionedDirectional(
+              end: kDashboardListFabEnd,
+              bottom: kDashboardListFabBottom,
+              child: _DashboardListFab(
+                onTap: () => showShoppingListSheet(context)
+              ),
+            ),
+          ],
         );
       },
+    );
+  }
+}
+
+class _DashboardListFab extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _DashboardListFab({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+
+    return GlassButton(
+      onTap: onTap,
+      width: kDashboardListFabSize,
+      height: kDashboardListFabSize,
+      borderRadius: 999,
+      padding: EdgeInsets.zero,
+      colorType: GlassColorType.surface,
+      child: Center(
+        child: Icon(
+          Icons.format_list_bulleted_rounded,
+          color: accent,
+          size: 22,
+        ),
+      ),
     );
   }
 }
@@ -320,9 +365,11 @@ class _DistributionCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                _DistributionChart(
-                  totals: totals,
-                  totalExpense: totalExpense,
+                RepaintBoundary(
+                  child: _DistributionChart(
+                    totals: totals,
+                    totalExpense: totalExpense,
+                  ),
                 ),
               ],
             ),

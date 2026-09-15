@@ -20,10 +20,9 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
   bool _isDark = false; //light by default
 
   void _toggle(bool value) {
-  setState(() => _isDark = value);
-  print('THEME SELECT: sending ${_isDark ? "dark" : "light"}');
-  widget.onThemeChanged(_isDark ? ThemeMode.dark : ThemeMode.light);
-}
+    setState(() => _isDark = value);
+    widget.onThemeChanged(_isDark ? ThemeMode.dark : ThemeMode.light);
+  }
 
   @override
   Widget build(BuildContext context) {

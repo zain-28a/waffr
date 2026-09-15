@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffer/core/data/backup_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/widgets/button/ani_pri_button.dart';
 
@@ -22,10 +23,42 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   DateTime? _birthDate;
 
   @override
+  void initState() {
+    super.initState();
+    _loadExistingData();
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _nameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadExistingData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final email = prefs.getString('user_email') ?? '';
+    final name = prefs.getString('user_name') ?? '';
+    final gender = prefs.getString('user_gender');
+    final birthdate = prefs.getString('user_birthdate');
+
+    if (!mounted) return;
+
+    setState(() {
+      _emailController.text = email;
+      _nameController.text = name;
+
+      if (gender == 'male') {
+        _selectedGender = Gender.male;
+      } else if (gender == 'female') {
+        _selectedGender = Gender.female;
+      }
+
+      if (birthdate != null) {
+        _birthDate = DateTime.tryParse(birthdate);
+      }
+    });
   }
 
   bool get _isFormValid {
@@ -71,6 +104,8 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     if (_birthDate != null) {
       await prefs.setString('user_birthdate', _birthDate!.toIso8601String());
     }
+    BackupService.instance.scheduleBackup();
+
     widget.onContinue();
   }
 

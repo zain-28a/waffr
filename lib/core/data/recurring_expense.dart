@@ -1,0 +1,167 @@
+import 'dart:convert';
+
+enum RecurringUnit { day, week, month }
+
+extension RecurringUnitLabel on RecurringUnit {
+  String get label => switch (this) {
+    RecurringUnit.day => 'يوم',
+    RecurringUnit.week => 'أسبوع',
+    RecurringUnit.month => 'شهر',
+  };
+
+  String get plural => switch (this) {
+    RecurringUnit.day => 'أيام',
+    RecurringUnit.week => 'أسابيع',
+    RecurringUnit.month => 'أشهر',
+  };
+}
+
+/// مصروف متكرر يُخصم تلقائياً من الرصيد حسب الفترة المحددة.
+class RecurringExpense {
+  final String id;
+  final double amount;
+  final String category;
+  final String paymentMethod;
+  final String? note;
+  final RecurringUnit unit;
+  final int intervalCount;
+  final DateTime createdAt;
+  final DateTime nextDueAt;
+  final bool enabled;
+
+  const RecurringExpense({
+    required this.id,
+    required this.amount,
+    required this.category,
+    required this.paymentMethod,
+    required this.unit,
+    required this.intervalCount,
+    required this.createdAt,
+    required this.nextDueAt,
+    this.note,
+    this.enabled = true,
+  });
+
+  String get intervalDescription {
+    if (intervalCount <= 1) {
+      return 'كل ${unit.label}';
+    }
+
+    return 'كل $intervalCount ${unit.plural}';
+  }
+
+  RecurringExpense copyWith({
+    DateTime? nextDueAt,
+    bool? enabled,
+  }) {
+    return RecurringExpense(
+      id: id,
+      amount: amount,
+      category: category,
+      paymentMethod: paymentMethod,
+      note: note,
+      unit: unit,
+      intervalCount: intervalCount,
+      createdAt: createdAt,
+      nextDueAt: nextDueAt ?? this.nextDueAt,
+      enabled: enabled ?? this.enabled,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'amount': amount,
+    'category': category,
+    'paymentMethod': paymentMethod,
+    'note': note,
+    'unit': unit.name,
+    'intervalCount': intervalCount,
+    'createdAt': createdAt.toIso8601String(),
+    'nextDueAt': nextDueAt.toIso8601String(),
+    'enabled': enabled,
+  };
+
+  String encode() => jsonEncode(toJson());
+
+  static RecurringExpense? decode(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+
+      final amount = (decoded['amount'] as num?)?.toDouble() ?? 0;
+      final intervalCount = (decoded['intervalCount'] as num?)?.toInt() ?? 0;
+      if (amount <= 0 || intervalCount <= 0) return null;
+
+      final id = decoded['id']?.toString().trim() ?? '';
+      final category = decoded['category']?.toString().trim() ?? '';
+      if (id.isEmpty || category.isEmpty) return null;
+
+      final createdAt =
+          DateTime.tryParse(decoded['createdAt']?.toString() ?? '') ??
+          DateTime.now();
+      final nextDueAt =
+          DateTime.tryParse(decoded['nextDueAt']?.toString() ?? '') ??
+          createdAt;
+
+      return RecurringExpense(
+        id: id,
+        amount: amount,
+        category: category,
+        paymentMethod: decoded['paymentMethod']?.toString() ?? '',
+        note: _text(decoded['note']),
+        unit: _parseUnit(decoded['unit']?.toString()),
+        intervalCount: intervalCount,
+        createdAt: createdAt,
+        nextDueAt: nextDueAt,
+        enabled: decoded['enabled'] != false,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static DateTime nextDueFrom(DateTime from, RecurringUnit unit, int count) {
+    final safeCount = count < 1 ? 1 : count;
+
+    switch (unit) {
+      case RecurringUnit.day:
+        return from.add(Duration(days: safeCount));
+      case RecurringUnit.week:
+        return from.add(Duration(days: 7 * safeCount));
+      case RecurringUnit.month:
+        final targetMonth = from.month + safeCount;
+        final year = from.year + ((targetMonth - 1) ~/ 12);
+        final month = ((targetMonth - 1) % 12) + 1;
+        final lastDay = DateTime(year, month + 1, 0).day;
+        final day = from.day > lastDay ? lastDay : from.day;
+        return DateTime(
+          year,
+          month,
+          day,
+          from.hour,
+          from.minute,
+          from.second,
+          from.millisecond,
+        );
+    }
+  }
+
+  static int _seq = 0;
+
+  static String newId() =>
+      'r${DateTime.now().microsecondsSinceEpoch}_${_seq++}';
+
+  static RecurringUnit _parseUnit(String? raw) {
+    return switch (raw) {
+      'week' => RecurringUnit.week,
+      'month' => RecurringUnit.month,
+      _ => RecurringUnit.day,
+    };
+  }
+
+  static String? _text(Object? value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+}
