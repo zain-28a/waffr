@@ -23,6 +23,9 @@ class WafferTransaction {
   /// ملاحظة المصروف أو مصدر الدخل أو وصف حركة الادخار.
   final String? note;
 
+  /// معرّف اختياري للعملية في الميزة التي أنشأتها، لمنع الإنشاء المكرر.
+  final String? sourceId;
+
   final DateTime dateTime;
 
   /// للدخل: أسبوعي / شهري / بدون مدة.
@@ -48,6 +51,7 @@ class WafferTransaction {
     this.category,
     this.paymentMethod,
     this.note,
+    this.sourceId,
     this.frequency = RecurringFrequency.none,
     this.periodKey,
     this.transferKind,
@@ -64,19 +68,20 @@ class WafferTransaction {
   bool get isSavingsOut => type == TransactionType.savingsOut;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type.name,
-        'amount': amount,
-        'category': category,
-        'paymentMethod': paymentMethod,
-        'note': note,
-        'dateTime': dateTime.toIso8601String(),
-        'frequency': frequency.name,
-        'periodKey': periodKey,
-        'transferKind': transferKind?.name,
-        'goalId': goalId,
-        'processedPeriodKey': processedPeriodKey,
-      };
+    'id': id,
+    'type': type.name,
+    'amount': amount,
+    'category': category,
+    'paymentMethod': paymentMethod,
+    'note': note,
+    'sourceId': sourceId,
+    'dateTime': dateTime.toIso8601String(),
+    'frequency': frequency.name,
+    'periodKey': periodKey,
+    'transferKind': transferKind?.name,
+    'goalId': goalId,
+    'processedPeriodKey': processedPeriodKey,
+  };
 
   String encode() => jsonEncode(toJson());
 
@@ -95,8 +100,10 @@ class WafferTransaction {
         category: _text(decoded['category']),
         paymentMethod: _text(decoded['paymentMethod']),
         note: _text(decoded['note']),
+        sourceId: _text(decoded['sourceId']),
         dateTime:
-            DateTime.tryParse(_text(decoded['dateTime']) ?? '') ?? DateTime.now(),
+            DateTime.tryParse(_text(decoded['dateTime']) ?? '') ??
+            DateTime.now(),
         frequency: _parseFrequency(_text(decoded['frequency'])),
         periodKey: _text(decoded['periodKey']),
         transferKind: _parseTransferKind(_text(decoded['transferKind'])),
@@ -110,8 +117,7 @@ class WafferTransaction {
 
   static int _seq = 0;
 
-  static String newId() =>
-      '${DateTime.now().microsecondsSinceEpoch}_${_seq++}';
+  static String newId() => '${DateTime.now().microsecondsSinceEpoch}_${_seq++}';
 
   static TransactionType _parseType(String? raw) {
     return switch (raw) {

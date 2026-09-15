@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:waffer/core/data/notification_service.dart';
+import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/screens/offline/home/dashboard.dart';
@@ -16,11 +17,13 @@ import 'package:waffer/widgets/brand/waffer_w_mark.dart';
 class AppShell extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeNotifier;
   final VoidCallback onThemeChanged;
+  final dynamic appFlowController;
 
   const AppShell({
     super.key,
     required this.themeNotifier,
     required this.onThemeChanged,
+    required this.appFlowController,
   });
 
   @override
@@ -54,6 +57,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     await notifications.ensureLoaded();
     notifications.listen();
     await TransactionStore.instance.processDuePeriods();
+    await RecurringExpenseStore.instance.ensureLoaded();
+    await RecurringExpenseStore.instance.processDue();
     await notifications.evaluate();
   }
 
@@ -147,6 +152,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                                   widget.themeNotifier,
                               onThemeChanged:
                                   widget.onThemeChanged,
+                              appFlowController:
+                                  widget.appFlowController,
                             ),
                           ),
                         );

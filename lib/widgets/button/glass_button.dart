@@ -86,7 +86,7 @@ class _GlassButtonState extends State<GlassButton> {
             borderRadius: BorderRadius.circular(widget.borderRadius),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.12),
+                color: Colors.black.withValues(alpha: 0.12),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -99,10 +99,10 @@ class _GlassButtonState extends State<GlassButton> {
               child: Container(
                 padding: widget.padding,
                 decoration: BoxDecoration(
-                  color: baseColor.withOpacity(widget.tintOpacity),
+                  color: baseColor.withValues(alpha: widget.tintOpacity),
                   borderRadius: BorderRadius.circular(widget.borderRadius),
                   border: Border.all(
-                    color: borderColor.withOpacity(0.1),
+                    color: borderColor.withValues(alpha: 0.1),
                     width: 1,
                   ),
                 ),

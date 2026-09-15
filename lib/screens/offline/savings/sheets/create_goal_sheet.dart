@@ -21,6 +21,8 @@ class _CreateGoalSheet extends StatefulWidget {
   State<_CreateGoalSheet> createState() => _CreateGoalSheetState();
 }
 
+enum _ContributionType { percent, fixed, custom }
+
 class _CreateGoalSheetState extends State<_CreateGoalSheet> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _targetController = TextEditingController();
@@ -31,7 +33,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
   final TransactionStore _store = TransactionStore.instance;
 
   bool _saving = false;
-  bool _useFixedAmount = false;
+  late _ContributionType _type;
 
   static const double _maxAmount = 999999999;
 
@@ -45,6 +47,8 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
   double get _income =>
       _store.referenceIncome(_frequency);
 
+  bool get _isCustom => _type == _ContributionType.custom;
+
   int get _percent {
     final value =
         int.tryParse(_percentController.text.trim()) ?? 0;
@@ -53,7 +57,11 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
   }
 
   double get _periodAmount {
-    if (_useFixedAmount) {
+    if (_isCustom) {
+      return 0;
+    }
+
+    if (_type == _ContributionType.fixed) {
       return _fixedAmount;
     }
 
@@ -65,7 +73,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
   }
 
   int get _requiredPeriods {
-    if (_target <= 0 || _periodAmount <= 0) {
+    if (_isCustom || _target <= 0 || _periodAmount <= 0) {
       return 0;
     }
 
@@ -89,11 +97,15 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
       return false;
     }
 
+    if (_isCustom) {
+      return true;
+    }
+
     if (_income <= 0) {
       return false;
     }
 
-    if (_useFixedAmount) {
+    if (_type == _ContributionType.fixed) {
       return _fixedAmount > 0;
     }
 
@@ -112,20 +124,22 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
         : 'شهر';
   }
 
-  String get _periodPlural {
-    return _frequency == RecurringFrequency.weekly
-        ? 'أسابيع'
-        : 'أشهر';
-  }
-
   @override
   void initState() {
     super.initState();
 
+    _type = _store.hasRecurringIncome
+        ? _ContributionType.percent
+        : _ContributionType.custom;
+
     _store.ensureLoaded().then((_) {
-      if (mounted) {
-        setState(() {});
-      }
+      if (!mounted) return;
+
+      setState(() {
+        if (!_store.hasRecurringIncome) {
+          _type = _ContributionType.custom;
+        }
+      });
     });
 
     _nameController.addListener(_refresh);
@@ -140,17 +154,17 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
     setState(() {});
   }
 
-  void _switchMethod(bool useFixedAmount) {
-    if (_useFixedAmount == useFixedAmount) {
+  void _switchMethod(_ContributionType type) {
+    if (_type == type) {
       return;
     }
 
     setState(() {
-      _useFixedAmount = useFixedAmount;
+      _type = type;
 
-      if (_useFixedAmount) {
+      if (type == _ContributionType.fixed) {
         _percentController.clear();
-      } else {
+      } else if (type == _ContributionType.percent) {
         _fixedAmountController.clear();
       }
     });
@@ -165,22 +179,27 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
       _saving = true;
     });
 
-    final periods = _requiredPeriods;
+    final periods = _isCustom ? null : _requiredPeriods;
 
-    final duration = GoalDurationPresetLabel.fromCount(
-      periods,
-      frequency: _frequency,
-    );
+    final duration = _isCustom
+        ? GoalDurationPreset.year
+        : GoalDurationPresetLabel.fromCount(
+            periods ?? 1,
+            frequency: _frequency,
+          );
 
     final success = await _store.createGoal(
       name: _nameController.text.trim(),
       targetAmount: _target,
       duration: duration,
-      allocatePercent:
-          _useFixedAmount ? null : _percent.toDouble(),
-      allocateAmount: _periodAmount,
-      deductFrequency: _frequency,
-      isPeriodic: true,
+      allocatePercent: _type == _ContributionType.percent
+          ? _percent.toDouble()
+          : null,
+      allocateAmount: _isCustom ? null : _periodAmount,
+      deductFrequency: _isCustom
+          ? RecurringFrequency.none
+          : _frequency,
+      isPeriodic: !_isCustom,
       durationCount: periods,
     );
 
@@ -270,8 +289,8 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
               child: _MethodButton(
                 title: 'نسبة من الدخل',
                 subtitle: _frequencyTitle,
-                selected: !_useFixedAmount,
-                onTap: () => _switchMethod(false),
+                selected: _type == _ContributionType.percent,
+                onTap: () => _switchMethod(_ContributionType.percent),
                 colors: colors,
               ),
             ),
@@ -280,8 +299,18 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
               child: _MethodButton(
                 title: 'مبلغ ثابت',
                 subtitle: 'كل $_periodSingular',
-                selected: _useFixedAmount,
-                onTap: () => _switchMethod(true),
+                selected: _type == _ContributionType.fixed,
+                onTap: () => _switchMethod(_ContributionType.fixed),
+                colors: colors,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _MethodButton(
+                title: 'مبلغ مخصص',
+                subtitle: 'يدوي',
+                selected: _isCustom,
+                onTap: () => _switchMethod(_ContributionType.custom),
                 colors: colors,
               ),
             ),
@@ -290,7 +319,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
         const SizedBox(height: 18),
 
-        if (!_useFixedAmount)
+        if (_type == _ContributionType.percent)
           ...[
             const SheetFieldLabel(
               text: 'نسبة الادخار',
@@ -320,7 +349,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
               ),
             ),
           ]
-        else
+        else if (_type == _ContributionType.fixed)
           ...[
             const SheetFieldLabel(
               text: 'مبلغ الادخار لكل دورة',
@@ -347,9 +376,22 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                 color: colors.textSecondary,
               ),
             ),
+          ]
+        else
+          ...[
+            Text(
+              'المساهمات هنا ليست تلقائية. انقل بنفسك من رصيدك إلى الهدف متى شئت عبر «ادخار مبلغ».',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: 12,
+                height: 1.5,
+                color: colors.textSecondary,
+              ),
+            ),
           ],
 
-        if (_periodAmount > 0 && _target > 0)
+        if (!_isCustom && _periodAmount > 0 && _target > 0)
           ...[
             const SizedBox(height: 18),
 
@@ -414,16 +456,20 @@ class _MethodButton extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: selected
-                    ? colors.accent
-                    : colors.textPrimary,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: selected
+                      ? colors.accent
+                      : colors.textPrimary,
+                ),
               ),
             ),
             const SizedBox(height: 2),

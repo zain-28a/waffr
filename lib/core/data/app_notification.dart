@@ -9,6 +9,7 @@ enum NotificationType {
   savingsTransferred,
   recurringPeriodCompleted,
   largeExpense,
+  recurringExpenseBlocked,
 }
 
 /// وزن بصري خفيف، بدون ألوان جديدة.
@@ -55,6 +56,7 @@ class AppNotification {
         NotificationType.goalProgress => NotificationPriority.success,
         NotificationType.savingsTransferred => NotificationPriority.savings,
         NotificationType.recurringPeriodCompleted => NotificationPriority.info,
+        NotificationType.recurringExpenseBlocked => NotificationPriority.warning,
       };
 
   AppNotification copyWith({bool? isRead}) {
@@ -136,6 +138,7 @@ class AppNotification {
       'savingsTransferred' => NotificationType.savingsTransferred,
       'recurringPeriodCompleted' => NotificationType.recurringPeriodCompleted,
       'largeExpense' => NotificationType.largeExpense,
+      'recurringExpenseBlocked' => NotificationType.recurringExpenseBlocked,
       _ => NotificationType.recurringPeriodCompleted,
     };
   }

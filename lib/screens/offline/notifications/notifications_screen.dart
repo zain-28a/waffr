@@ -485,6 +485,7 @@ class _NotificationTile extends StatelessWidget {
       NotificationType.goalProgress => Icons.flag_outlined,
       NotificationType.savingsTransferred => Icons.savings_outlined,
       NotificationType.recurringPeriodCompleted => Icons.event_available_outlined,
+      NotificationType.recurringExpenseBlocked => Icons.block_rounded,
     };
   }
 }

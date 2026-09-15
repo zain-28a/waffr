@@ -1,16 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffer/core/data/backup_service.dart';
 import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app theme.dart';
 import 'package:waffer/screens/offline/applock/applockscreen.dart';
+import 'package:waffer/screens/offline/login/login_screen.dart';
 import 'package:waffer/screens/offline/user_info/user_info_screen.dart';
 import 'package:waffer/screens/offline/theme_select_screen.dart';
 import 'package:waffer/screens/shell/app_shell.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
   TransactionStore.instance.onHydrated =
       NotificationService.instance.seedIfNeeded;
+
+  // مزامنة انتهازية مع Drive. لا تحجب الإقلاع ولا تُظهر أخطاء.
+  unawaited(BackupService.instance.initialize());
+
   runApp(const WafarApp());
 }
 
@@ -55,6 +65,8 @@ class _WafarAppState extends State<WafarApp> {
       'dark_mode',
       mode == ThemeMode.dark,
     );
+
+    BackupService.instance.scheduleBackup();
   }
 
   Future<void> _toggleTheme() async {
@@ -87,7 +99,7 @@ class _WafarAppState extends State<WafarApp> {
       valueListenable: _themeMode,
       builder: (context, themeMode, child) {
         return MaterialApp(
-          title: 'Waffer',
+          title: 'Waffer 1.2.0',
           debugShowCheckedModeBanner: false,
 
           locale: const Locale('ar'),
@@ -135,15 +147,38 @@ class AppFlowController extends StatefulWidget {
 }
 
 class _AppFlowControllerState
-    extends State<AppFlowController> {
+    extends State<AppFlowController> with WidgetsBindingObserver {
+  bool? _authChoiceMade;
   bool? _isFirstLaunch;
   bool? _userInfoCompleted;
-  bool? _appLock;
+  bool? _appLockEnabled;
+  bool _isAuthenticated = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    BackupService.instance.addRestoreListener(_onRemoteRestored);
     _checkAppState();
+  }
+
+  @override
+  void dispose() {
+    BackupService.instance.removeRestoreListener(_onRemoteRestored);
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // App went to background
+      if (_appLockEnabled == true && _isAuthenticated) {
+        setState(() {
+          _isAuthenticated = false;
+        });
+      }
+    }
   }
 
   Future<void> _checkAppState() async {
@@ -155,16 +190,47 @@ class _AppFlowControllerState
     final userInfoCompleted =
         prefs.getBool('user_info_completed') ?? false;
 
-    final appLock =
+    final appLockEnabled =
         prefs.getBool('app_lock') ?? false;
+
+    // التثبيتات القديمة تجاوزت الإعداد أصلاً، فلا تُعرض عليها شاشة الدخول.
+    final authChoiceMade =
+        prefs.getBool(BackupService.authChoiceKey) ?? !firstLaunch;
 
     if (!mounted) return;
 
     setState(() {
+      _authChoiceMade = authChoiceMade;
       _isFirstLaunch = firstLaunch;
       _userInfoCompleted = userInfoCompleted;
-      _appLock = appLock;
+      _appLockEnabled = appLockEnabled;
+      _isAuthenticated = false;
     });
+  }
+
+  /// بعد اختيار المستخدم في شاشة الدخول.
+  ///
+  /// إذا استُعيدت نسخة احتياطية فقد تغيّرت المفاتيح المحفوظة،
+  /// لذا يُعاد قراءة المظهر وحالة التطبيق من جديد.
+  Future<void> _onAuthChoiceCompleted() async {
+    await _syncThemeFromPrefs();
+    await _checkAppState();
+  }
+
+  void _onRemoteRestored() {
+    unawaited(_onAuthChoiceCompleted());
+  }
+
+  Future<void> _syncThemeFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final mode = (prefs.getBool('dark_mode') ?? false)
+        ? ThemeMode.dark
+        : ThemeMode.light;
+
+    if (mode != widget.themeMode) {
+      widget.onThemeChanged(mode);
+    }
   }
 
   Future<void> _markUserInfoCompleted() async {
@@ -174,6 +240,8 @@ class _AppFlowControllerState
       'user_info_completed',
       true,
     );
+
+    BackupService.instance.scheduleBackup();
 
     if (!mounted) return;
 
@@ -190,6 +258,8 @@ class _AppFlowControllerState
       false,
     );
 
+    BackupService.instance.scheduleBackup();
+
     if (!mounted) return;
 
     setState(() {
@@ -201,17 +271,39 @@ class _AppFlowControllerState
     if (!mounted) return;
 
     setState(() {
-      _appLock = false;
+      _isAuthenticated = true;
+    });
+  }
+
+  Future<void> refreshAppLockState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final appLockEnabled = prefs.getBool('app_lock') ?? false;
+
+    if (!mounted) return;
+
+    setState(() {
+      _appLockEnabled = appLockEnabled;
+      if (!appLockEnabled) {
+        _isAuthenticated = false;
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isFirstLaunch == null ||
+    if (_authChoiceMade == null ||
+        _isFirstLaunch == null ||
         _userInfoCompleted == null ||
-        _appLock == null) {
+        _appLockEnabled == null) {
       return const Scaffold(
         body: SizedBox.shrink(),
+      );
+    }
+
+    // المستخدم لم يختر بعد بين حساب Google ووضع الضيف
+    if (_authChoiceMade == false) {
+      return LoginScreen(
+        onCompleted: _onAuthChoiceCompleted,
       );
     }
 
@@ -239,6 +331,7 @@ class _AppFlowControllerState
               builder: (_) => AppShell(
                 themeNotifier: widget.themeNotifier,
                 onThemeChanged: widget.onToggleTheme,
+                appFlowController: this,
               ),
             ),
           );
@@ -246,7 +339,7 @@ class _AppFlowControllerState
       );
     }
 
-    if (_appLock == true) {
+    if (_appLockEnabled == true && !_isAuthenticated) {
       return LockScreen(
         onAuthenticated: _unlockApp,
       );
@@ -255,6 +348,7 @@ class _AppFlowControllerState
     return AppShell(
       themeNotifier: widget.themeNotifier,
       onThemeChanged: widget.onToggleTheme,
+      appFlowController: this,
     );
   }
 }

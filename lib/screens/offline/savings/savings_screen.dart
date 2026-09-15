@@ -8,6 +8,8 @@ import 'package:waffer/screens/offline/savings/sheets/completed_goals_sheet.dart
 import 'package:waffer/screens/offline/savings/sheets/create_goal_sheet.dart';
 import 'package:waffer/screens/offline/savings/sheets/manual_save_sheet.dart';
 import 'package:waffer/screens/offline/savings/sheets/periodic_goals_sheet.dart';
+import 'package:waffer/screens/offline/savings/sheets/shopping_list_sheet.dart';
+import 'package:waffer/screens/offline/savings/sheets/recurring_expenses_sheet.dart';
 import 'package:waffer/screens/offline/savings/sheets/withdraw_savings_sheet.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
@@ -82,10 +84,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 26),
           child: Column(
             children: [
-              _TimeRangeSelector(
-                selected: _range,
-                onSelected: _selectRange,
-              ),
+              _TimeRangeSelector(selected: _range, onSelected: _selectRange),
 
               const SizedBox(height: 10),
 
@@ -99,11 +98,12 @@ class _SavingsScreenState extends State<SavingsScreen> {
                     setState(() => _periodOffset = index);
                   },
                   itemBuilder: (context, offset) {
-                    final pagePeriod =
-                        CalendarPeriod.forRange(_range, offset);
+                    final pagePeriod = CalendarPeriod.forRange(_range, offset);
 
-                    final previousPeriod =
-                        CalendarPeriod.forRange(_range, offset + 1);
+                    final previousPeriod = CalendarPeriod.forRange(
+                      _range,
+                      offset + 1,
+                    );
 
                     return _PeriodSavingsCard(
                       range: _range,
@@ -129,9 +129,7 @@ class _SavingsScreenState extends State<SavingsScreen> {
 
               // إجمالي الادخار + أزرار التحكم
               _SplitActionRow(
-                leading: _TotalSavingsCard(
-                  total: _store.savingsBalance,
-                ),
+                leading: _TotalSavingsCard(total: _store.savingsBalance),
                 first: _ActionButton(
                   label: 'ادخار مبلغ',
                   onTap: () => showManualSaveSheet(context),
@@ -164,6 +162,13 @@ class _SavingsScreenState extends State<SavingsScreen> {
                   onTap: () => showCompletedGoalsSheet(context),
                 ),
               ),
+
+              const SizedBox(height: 12),
+
+              const ShoppingListPreviewCard(),
+
+              const SizedBox(height: 12),
+
             ],
           ),
         );
@@ -176,10 +181,7 @@ class _TimeRangeSelector extends StatelessWidget {
   final SavingsRange selected;
   final ValueChanged<SavingsRange> onSelected;
 
-  const _TimeRangeSelector({
-    required this.selected,
-    required this.onSelected,
-  });
+  const _TimeRangeSelector({required this.selected, required this.onSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -240,10 +242,7 @@ class _TimeRangeSelector extends StatelessWidget {
                                       ? colors.surface
                                       : colors.textPrimary,
                                 ),
-                                child: Text(
-                                  range.label,
-                                  maxLines: 1,
-                                ),
+                                child: Text(range.label, maxLines: 1),
                               ),
                             ),
                           ),
@@ -391,11 +390,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                 ),
                 if (comparison != null) ...[
                   const SizedBox(width: 8),
-                  Icon(
-                    comparison.icon,
-                    size: 15,
-                    color: comparison.color,
-                  ),
+                  Icon(comparison.icon, size: 15, color: comparison.color),
                   const SizedBox(width: 2),
                   Text(
                     comparison.text,
@@ -473,10 +468,7 @@ class _PeriodArrow extends StatelessWidget {
       tooltip: tooltip,
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(
-        minWidth: 32,
-        minHeight: 32,
-      ),
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
       icon: Icon(
         icon,
         color: enabled
@@ -506,10 +498,7 @@ class _SplitActionRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // الكرت الرئيسي — على اليمين بسبب RTL
-          Expanded(
-            flex: 72,
-            child: leading,
-          ),
+          Expanded(flex: 72, child: leading),
 
           const SizedBox(width: 10),
 
@@ -533,9 +522,7 @@ class _SplitActionRow extends StatelessWidget {
 class _TotalSavingsCard extends StatelessWidget {
   final double total;
 
-  const _TotalSavingsCard({
-    required this.total,
-  });
+  const _TotalSavingsCard({required this.total});
 
   @override
   Widget build(BuildContext context) {
@@ -544,12 +531,7 @@ class _TotalSavingsCard extends StatelessWidget {
     return GlassContainer(
       colorType: GlassColorType.surface,
       borderRadius: 28,
-      padding: const EdgeInsets.fromLTRB(
-        18,
-        16,
-        18,
-        16,
-      ),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -672,18 +654,13 @@ class _ActionButton extends StatelessWidget {
       onTap: onTap,
       colorType: GlassColorType.surface,
       borderRadius: 22,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (mark) ...[
-              const SizedBox(height: 2),
-            ],
+            if (mark) ...[const SizedBox(height: 2)],
             Flexible(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -710,9 +687,7 @@ class _ActionButton extends StatelessWidget {
 class _CreateGoalCard extends StatelessWidget {
   final VoidCallback onCreate;
 
-  const _CreateGoalCard({
-    required this.onCreate,
-  });
+  const _CreateGoalCard({required this.onCreate});
 
   @override
   Widget build(BuildContext context) {
@@ -722,10 +697,7 @@ class _CreateGoalCard extends StatelessWidget {
       onTap: onCreate,
       colorType: GlassColorType.surface,
       borderRadius: 28,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -751,10 +723,7 @@ class _GoalProgressCard extends StatelessWidget {
   final SavingsGoal goal;
   final double saved;
 
-  const _GoalProgressCard({
-    required this.goal,
-    required this.saved,
-  });
+  const _GoalProgressCard({required this.goal, required this.saved});
 
   @override
   Widget build(BuildContext context) {
@@ -767,12 +736,7 @@ class _GoalProgressCard extends StatelessWidget {
     return GlassContainer(
       colorType: GlassColorType.surface,
       borderRadius: 28,
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        15,
-        16,
-        16,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -875,11 +839,7 @@ class _HorizontalProgress extends StatelessWidget {
         child: Stack(
           children: [
             // خلفية البار
-            Positioned.fill(
-              child: ColoredBox(
-                color: trackColor,
-              ),
-            ),
+            Positioned.fill(child: ColoredBox(color: trackColor)),
 
             // نسبة التقدم
             Align(
@@ -921,12 +881,8 @@ class _SavingsColors {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return _SavingsColors(
-      surface: isDark
-          ? AppColors.darkSurface
-          : AppColors.lightSurface,
-      accent: isDark
-          ? AppColors.darkAccent
-          : AppColors.lightAccent,
+      surface: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+      accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
       textPrimary: isDark
           ? AppColors.darkTextPrimary
           : AppColors.lightTextPrimary,

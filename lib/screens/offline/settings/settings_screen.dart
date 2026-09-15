@@ -1,49 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffer/core/data/backup_service.dart';
 import 'package:waffer/core/data/notification_service.dart';
+import 'package:waffer/core/data/recurring_expense_store.dart';
+import 'package:waffer/core/data/shopping_list_store.dart';
+import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
+import 'package:waffer/core/utils/money.dart';
+import 'package:waffer/screens/offline/login/login_screen.dart';
+import 'package:waffer/screens/offline/settings/account_screen.dart';
+import 'package:waffer/screens/offline/settings/ai_permissions_screen.dart';
+import 'package:waffer/screens/offline/settings/help_screen.dart';
+import 'package:waffer/screens/offline/settings/privacy_info_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeNotifier;
   final VoidCallback onThemeChanged;
+  final dynamic appFlowController;
 
   const SettingsScreen({
     super.key,
     required this.themeNotifier,
     required this.onThemeChanged,
+    required this.appFlowController,
   });
 
   @override
-  State<SettingsScreen> createState() =>
-      _SettingsScreenState();
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState
-    extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> {
   bool _appLock = false;
-
-  String _language = 'العربية';
+  bool _isAuthenticating = false;
 
   String _userName = '';
   String _userEmail = '';
+  String? _googlePhotoUrl;
+
+  bool _googleLinked = false;
+  String _googleEmail = '';
+  bool _hasMonthlyIncome = false;
+  bool _hasWeeklyIncome = false;
+  double _monthlyIncome = 0;
+  double _weeklyIncome = 0;
+
+  final LocalAuthentication _auth = LocalAuthentication();
 
   @override
   void initState() {
     super.initState();
 
-    widget.themeNotifier.addListener(
-      _onThemeChanged,
-    );
+    widget.themeNotifier.addListener(_onThemeChanged);
 
     _loadSettings();
   }
 
   @override
   void dispose() {
-    widget.themeNotifier.removeListener(
-      _onThemeChanged,
-    );
+    widget.themeNotifier.removeListener(_onThemeChanged);
 
     super.dispose();
   }
@@ -55,172 +72,153 @@ class _SettingsScreenState
   }
 
   Future<void> _loadSettings() async {
-    final prefs =
-        await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
+    await TransactionStore.instance.ensureLoaded();
+
+    final store = TransactionStore.instance;
+    final linkedEmail = prefs.getString(BackupService.linkedEmailKey) ?? '';
+    final accounts = await BackupService.instance.linkedAccounts();
+
+    LinkedGoogleAccount? current;
+    for (final account in accounts) {
+      if (account.email == linkedEmail) {
+        current = account;
+        break;
+      }
+    }
 
     if (!mounted) return;
 
     setState(() {
-      _appLock =
-          prefs.getBool('app_lock') ?? false;
+      _appLock = prefs.getBool('app_lock') ?? false;
 
-      _language =
-          prefs.getString('language') ??
-              'العربية';
+      _googleLinked = prefs.getBool(BackupService.linkedKey) ?? false;
 
-      _userName =
-          prefs.getString('user_name') ?? '';
+      _googleEmail = linkedEmail;
 
-      _userEmail =
-          prefs.getString('user_email') ?? '';
+      _googlePhotoUrl = prefs.getString(BackupService.linkedPhotoKey) ??
+          current?.photoUrl;
+
+      _userName = current?.displayName ?? prefs.getString('user_name') ?? '';
+
+      _userEmail = _googleLinked
+          ? _googleEmail
+          : (prefs.getString('user_email') ?? '');
+
+      _hasMonthlyIncome = store.hasMonthlyIncome;
+      _hasWeeklyIncome = store.hasWeeklyIncome;
+      _monthlyIncome = store.referenceIncome(RecurringFrequency.monthly);
+      _weeklyIncome = store.referenceIncome(RecurringFrequency.weekly);
     });
   }
 
-  Future<void> _toggleAppLock(
-      bool value) async {
-    final prefs =
-        await SharedPreferences.getInstance();
+  Future<void> _toggleAppLock(bool value) async {
+    if (_isAuthenticating) return;
 
-    await prefs.setBool(
-      'app_lock',
-      value,
-    );
+    if (value) {
+      // Enabling app lock - authenticate immediately
+      setState(() {
+        _isAuthenticating = true;
+      });
 
-    if (!mounted) return;
+      try {
+        final supported = await _auth.isDeviceSupported();
 
-    setState(() {
-      _appLock = value;
-    });
-  }
+        if (!supported) {
+          if (!mounted) return;
 
-  Future<void> _selectLanguage() async {
-    final selected =
-        await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.transparent,
-
-      builder: (context) {
-        final isDark =
-            Theme.of(context).brightness ==
-                Brightness.dark;
-
-        final surface = isDark
-            ? AppColors.darkSurface
-            : AppColors.lightSurface;
-
-        final textPrimary = isDark
-            ? AppColors.darkTextPrimary
-            : AppColors.lightTextPrimary;
-
-        final accent = isDark
-            ? AppColors.darkAccent
-            : AppColors.lightAccent;
-
-        return Container(
-          decoration: BoxDecoration(
-            color: surface,
-
-            borderRadius:
-                const BorderRadius.vertical(
-              top: Radius.circular(30),
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'جهازك لا يدعم المصادقة البيومترية',
+                textAlign: TextAlign.center,
+              ),
             ),
-          ),
+          );
 
-          padding:
-              const EdgeInsets.all(24),
+          setState(() {
+            _isAuthenticating = false;
+          });
 
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          return;
+        }
 
-            children: [
+        final authenticated = await _auth.authenticate(
+          localizedReason: 'تفعيل قفل التطبيق',
+          biometricOnly: false,
+        );
 
-              Container(
-                width: 45,
-                height: 5,
+        if (!mounted) return;
 
-                decoration: BoxDecoration(
-                  color:
-                      textPrimary.withValues(alpha: 0.2),
-                  borderRadius:
-                      BorderRadius.circular(10),
+        if (authenticated) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('app_lock', true);
+
+          BackupService.instance.scheduleBackup();
+
+          setState(() {
+            _appLock = true;
+          });
+
+          // Mark as authenticated in the flow controller
+          if (widget.appFlowController != null) {
+            widget.appFlowController._isAuthenticated = true;
+            widget.appFlowController.refreshAppLockState();
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'تم تفعيل قفل التطبيق',
+                  textAlign: TextAlign.center,
                 ),
               ),
+            );
+          }
+        }
+      } on LocalAuthException catch (_) {
+        // User cancelled
+      } catch (_) {
+        // Other error
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isAuthenticating = false;
+          });
+        }
+      }
+    } else {
+      // Disabling app lock
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('app_lock', false);
 
-              const SizedBox(height: 25),
+      BackupService.instance.scheduleBackup();
 
-              Text(
-                'اللغة',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight:
-                      FontWeight.bold,
-                  color: textPrimary,
-                  fontFamily: 'Cairo',
-                ),
-              ),
+      if (!mounted) return;
 
-              const SizedBox(height: 20),
+      setState(() {
+        _appLock = false;
+      });
 
-              _LanguageOption(
-                title: 'العربية',
-                selected:
-                    _language == 'العربية',
-                accent: accent,
-                textColor: textPrimary,
-                onTap: () =>
-                    Navigator.pop(
-                  context,
-                  'العربية',
-                ),
-              ),
+      if (widget.appFlowController != null) {
+        widget.appFlowController.refreshAppLockState();
+      }
 
-              const SizedBox(height: 12),
-
-              _LanguageOption(
-                title: 'English',
-                selected:
-                    _language == 'English',
-                accent: accent,
-                textColor: textPrimary,
-                onTap: () =>
-                    Navigator.pop(
-                  context,
-                  'English',
-                ),
-              ),
-
-              const SizedBox(height: 15),
-            ],
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم تعطيل قفل التطبيق', textAlign: TextAlign.center),
           ),
         );
-      },
-    );
-
-    if (selected == null) return;
-
-    final prefs =
-        await SharedPreferences.getInstance();
-
-    await prefs.setString(
-      'language',
-      selected,
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      _language = selected;
-    });
+      }
+    }
   }
 
-  void _showAbout() {
-    final isDark =
-        Theme.of(context).brightness ==
-            Brightness.dark;
+  void _showLanguageInfo() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final surface = isDark
-        ? AppColors.darkSurface
-        : AppColors.lightSurface;
+    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
 
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
@@ -230,148 +228,231 @@ class _SettingsScreenState
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
 
-    final accent = isDark
-        ? AppColors.darkAccent
-        : AppColors.lightAccent;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
 
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: surface,
+        return Container(
+          decoration: BoxDecoration(
+            color: surface,
 
-          shape:
-              RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(25),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           ),
 
-          title: Text(
-            'عن وفر',
-            textAlign: TextAlign.center,
+          padding: const EdgeInsets.all(24),
 
-            style: TextStyle(
-              color: textPrimary,
-              fontWeight:
-                  FontWeight.bold,
-              fontFamily: 'Cairo',
-            ),
-          ),
-
-          content: Column(
-            mainAxisSize:
-                MainAxisSize.min,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
 
             children: [
+              Container(
+                width: 45,
+                height: 5,
 
-              Text(
-                'وفر',
-
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight:
-                      FontWeight.bold,
-                  color: accent,
+                decoration: BoxDecoration(
+                  color: textPrimary.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 25),
+
+              Icon(Icons.language_rounded, color: accent, size: 50),
+
+              const SizedBox(height: 18),
 
               Text(
-                'تطبيق بسيط لمساعدتك على إدارة مصاريفك ومتابعة رصيدك.',
+                'اللغة',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: textPrimary,
+                  fontFamily: 'Cairo',
+                ),
+              ),
 
-                textAlign:
-                    TextAlign.center,
+              const SizedBox(height: 12),
+
+              Text(
+                'العربية هي اللغة الوحيدة المتاحة حالياً',
+
+                textAlign: TextAlign.center,
 
                 style: TextStyle(
-                  color:
-                      textSecondary,
+                  fontSize: 15,
+                  color: textSecondary,
+                  fontFamily: 'Cairo',
+                  height: 1.5,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                'نعمل على إضافة المزيد من اللغات في التحديثات القادمة.',
+
+                textAlign: TextAlign.center,
+
+                style: TextStyle(
                   fontSize: 14,
+                  color: textSecondary,
+                  fontFamily: 'Cairo',
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor: surface,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+
+                  child: Text(
+                    'حسناً',
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
 
               const SizedBox(height: 15),
-
-              Text(
-                'الإصدار 1.0.0',
-
-                style: TextStyle(
-                  color:
-                      textSecondary,
-                  fontSize: 13,
-                ),
-              ),
             ],
           ),
-
-          actions: [
-
-            TextButton(
-              onPressed: () =>
-                  Navigator.pop(context),
-
-              child: Text(
-                'إغلاق',
-                style: TextStyle(
-                  color: accent,
-                ),
-              ),
-            ),
-          ],
         );
       },
     );
   }
 
+  Future<void> _openAccount() async {
+    if (_googleLinked) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const AccountScreen()),
+      );
+      await _loadSettings();
+      return;
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LoginScreen(
+          onCompleted: () async {
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
+
+    await _loadSettings();
+  }
+
+  Future<void> _editIncome(RecurringFrequency frequency) async {
+    final isMonthly = frequency == RecurringFrequency.monthly;
+    final current = isMonthly ? _monthlyIncome : _weeklyIncome;
+    final controller = TextEditingController(
+      text: current > 0 ? formatMoney(current) : '',
+    );
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(isMonthly ? 'الدخل الشهري' : 'الدخل الأسبوعي'),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            decoration: const InputDecoration(
+              hintText: 'المبلغ',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('إلغاء'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('حفظ', style: TextStyle(color: accent)),
+            ),
+          ],
+        );
+      },
+    );
+
+    final amount = double.tryParse(
+          controller.text.replaceAll(',', '').trim(),
+        ) ??
+        0;
+    controller.dispose();
+
+    if (confirmed != true) return;
+    if (amount <= 0) {
+      if (!mounted) return;
+      showAppSnackBar(context, 'أدخل مبلغاً أكبر من صفر');
+      return;
+    }
+
+    await TransactionStore.instance.setPreferredIncomeAmount(
+      frequency: frequency,
+      amount: amount,
+    );
+
+    await _loadSettings();
+    if (!mounted) return;
+    showAppSnackBar(
+      context,
+      isMonthly ? 'تم تحديث الدخل الشهري' : 'تم تحديث الدخل الأسبوعي',
+    );
+  }
+
+  void _showAbout() {}
+
   Future<void> _resetApp() async {
-    final confirm =
-        await showDialog<bool>(
+    final confirm = await showDialog<bool>(
       context: context,
 
       builder: (context) {
-        final isDark =
-            Theme.of(context).brightness ==
-                Brightness.dark;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return AlertDialog(
-          title:
-              const Text(
-            'إعادة ضبط التطبيق',
-          ),
+          title: const Text('إعادة ضبط التطبيق'),
 
-          content:
-              const Text(
+          content: const Text(
             'سيتم حذف بيانات المستخدم والرصيد وسجل المصاريف. هل أنت متأكد؟',
           ),
 
           actions: [
-
             TextButton(
-              onPressed: () =>
-                  Navigator.pop(
-                context,
-                false,
-              ),
+              onPressed: () => Navigator.pop(context, false),
 
-              child:
-                  const Text('إلغاء'),
+              child: const Text('إلغاء'),
             ),
 
             TextButton(
-              onPressed: () =>
-                  Navigator.pop(
-                context,
-                true,
-              ),
+              onPressed: () => Navigator.pop(context, true),
 
               child: Text(
                 'حذف البيانات',
 
                 style: TextStyle(
-                  color: isDark
-                      ? AppColors.darkAccent
-                      : AppColors.lightAccent,
+                  color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
                 ),
               ),
             ),
@@ -382,35 +463,27 @@ class _SettingsScreenState
 
     if (confirm != true) return;
 
-    final prefs =
-        await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
     await prefs.clear();
 
     TransactionStore.instance.resetCache();
     NotificationService.instance.resetCache();
+    ShoppingListStore.instance.resetCache();
+    RecurringExpenseStore.instance.resetCache();
 
     if (!mounted) return;
 
-    Navigator.of(context)
-        .popUntil(
-      (route) => route.isFirst,
-    );
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark =
-        widget.themeNotifier.value ==
-            ThemeMode.dark;
+    final isDark = widget.themeNotifier.value == ThemeMode.dark;
 
-    final bg = isDark
-        ? AppColors.darkBackground
-        : AppColors.lightBackground;
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
 
-    final surface = isDark
-        ? AppColors.darkSurface
-        : AppColors.lightSurface;
+    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
 
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
@@ -420,9 +493,7 @@ class _SettingsScreenState
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
 
-    final accent = isDark
-        ? AppColors.darkAccent
-        : AppColors.lightAccent;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
     return Scaffold(
       backgroundColor: bg,
@@ -437,95 +508,87 @@ class _SettingsScreenState
 
           style: TextStyle(
             color: textPrimary,
-            fontWeight:
-                FontWeight.bold,
+            fontWeight: FontWeight.bold,
             fontFamily: 'Cairo',
           ),
         ),
 
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_forward_ios_rounded,
-            color: textPrimary,
-          ),
+          icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
 
-          onPressed: () =>
-              Navigator.pop(context),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
 
       body: ListView(
-        padding:
-            const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
 
         children: [
+          _SectionTitle(title: 'الحساب', color: textSecondary),
 
-          if (_userName.isNotEmpty ||
-              _userEmail.isNotEmpty)
-            _ProfileCard(
-              name: _userName,
-              email: _userEmail,
+          GestureDetector(
+            onTap: _openAccount,
+            child: _ProfileCard(
+              name: _googleLinked
+                  ? (_userName.isEmpty ? 'حساب Google' : _userName)
+                  : 'لا يوجد حساب',
+              email: _googleLinked
+                  ? _userEmail
+                  : 'اضغط لتسجيل الدخول أو إنشاء حساب',
+              photoUrl: _googleLinked ? _googlePhotoUrl : null,
               accent: accent,
               surface: surface,
-              textPrimary:
-                  textPrimary,
-              textSecondary:
-                  textSecondary,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+              placeholder: !_googleLinked,
             ),
+          ),
+
+          if (_hasMonthlyIncome) ...[
+            const SizedBox(height: 12),
+            _SettingsTile(
+              icon: Icons.payments_outlined,
+              title: 'الدخل الشهري',
+              subtitle: '${formatMoney(_monthlyIncome)} $currencyLabel',
+              accent: accent,
+              surface: surface,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+              onTap: () => _editIncome(RecurringFrequency.monthly),
+            ),
+          ],
+
+          if (_hasWeeklyIncome) ...[
+            const SizedBox(height: 12),
+            _SettingsTile(
+              icon: Icons.date_range_outlined,
+              title: 'الدخل الأسبوعي',
+              subtitle: '${formatMoney(_weeklyIncome)} $currencyLabel',
+              accent: accent,
+              surface: surface,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+              onTap: () => _editIncome(RecurringFrequency.weekly),
+            ),
+          ],
 
           const SizedBox(height: 25),
 
-          _SectionTitle(
-            title: 'الحساب',
-            color: textSecondary,
-          ),
+          _SectionTitle(title: 'المظهر', color: textSecondary),
 
           _SettingsTile(
-            icon:
-                Icons.person_outline_rounded,
-
-            title: 'المعلومات الشخصية',
-
-            subtitle:
-                'الاسم والبريد الإلكتروني',
-
-            accent: accent,
-            surface: surface,
-
-            textPrimary:
-                textPrimary,
-
-            textSecondary:
-                textSecondary,
-
-            onTap: () {},
-          ),
-
-          const SizedBox(height: 12),
-
-          _SectionTitle(
-            title: 'المظهر',
-            color: textSecondary,
-          ),
-
-          _SettingsTile(
-            icon:
-                Icons.dark_mode_outlined,
+            icon: Icons.dark_mode_outlined,
 
             title: 'الوضع الداكن',
 
-            subtitle: isDark
-                ? 'مفعل'
-                : 'غير مفعل',
+            subtitle: isDark ? 'مفعل' : 'غير مفعل',
 
             accent: accent,
             surface: surface,
 
-            textPrimary:
-                textPrimary,
+            textPrimary: textPrimary,
 
-            textSecondary:
-                textSecondary,
+            textSecondary: textSecondary,
 
             trailing: Switch(
               value: isDark,
@@ -542,155 +605,171 @@ class _SettingsScreenState
           const SizedBox(height: 12),
 
           _SettingsTile(
-            icon:
-                Icons.language_rounded,
+            icon: Icons.language_rounded,
 
             title: 'اللغة',
 
-            subtitle: _language,
+            subtitle: 'العربية (اللغة الوحيدة المتاحة)',
 
             accent: accent,
             surface: surface,
 
-            textPrimary:
-                textPrimary,
+            textPrimary: textPrimary,
 
-            textSecondary:
-                textSecondary,
+            textSecondary: textSecondary,
 
-            onTap: _selectLanguage,
+            onTap: _showLanguageInfo,
           ),
 
           const SizedBox(height: 25),
 
-          _SectionTitle(
-            title: 'الحماية والخصوصية',
-            color: textSecondary,
-          ),
+          _SectionTitle(title: 'الحماية والخصوصية', color: textSecondary),
 
           _SettingsTile(
-            icon:
-                Icons.lock_outline_rounded,
+            icon: Icons.lock_outline_rounded,
 
             title: 'قفل التطبيق',
 
-            subtitle:
-                'استخدام حماية الجهاز عند فتح وفر',
+            subtitle: 'استخدام حماية الجهاز عند فتح وفر',
 
             accent: accent,
             surface: surface,
 
-            textPrimary:
-                textPrimary,
+            textPrimary: textPrimary,
 
-            textSecondary:
-                textSecondary,
+            textSecondary: textSecondary,
 
             trailing: Switch(
               value: _appLock,
               activeThumbColor: accent,
 
-              onChanged:
-                  _toggleAppLock,
+              onChanged: _toggleAppLock,
             ),
 
-            onTap: () =>
-                _toggleAppLock(
-              !_appLock,
-            ),
+            onTap: () => _toggleAppLock(!_appLock),
           ),
 
           const SizedBox(height: 12),
 
           _SettingsTile(
-            icon:
-                Icons.privacy_tip_outlined,
+            icon: Icons.auto_graph_rounded,
 
-            title:
-                'الخصوصية والبيانات',
+            title: 'أذونات الذكاء الاصطناعي',
 
-            subtitle:
-                'إدارة بياناتك داخل التطبيق',
+            subtitle: 'لا توجد أذونات متاحة حالياً',
 
             accent: accent,
             surface: surface,
 
-            textPrimary:
-                textPrimary,
+            textPrimary: textPrimary,
 
-            textSecondary:
-                textSecondary,
+            textSecondary: textSecondary,
 
-            onTap: () {},
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AIPermissionsScreen()),
+              );
+            },
+          ),
+
+          const SizedBox(height: 12),
+
+          _SettingsTile(
+            icon: Icons.privacy_tip_outlined,
+
+            title: 'الخصوصية والبيانات',
+
+            subtitle: 'كيف يتم حماية بياناتك',
+
+            accent: accent,
+            surface: surface,
+
+            textPrimary: textPrimary,
+
+            textSecondary: textSecondary,
+
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PrivacyInfoScreen()),
+              );
+            },
           ),
 
           const SizedBox(height: 25),
 
-          _SectionTitle(
-            title: 'حول التطبيق',
-            color: textSecondary,
-          ),
+          _SectionTitle(title: 'الدعم', color: textSecondary),
 
           _SettingsTile(
-            icon:
-                Icons.info_outline_rounded,
+            icon: Icons.help_outline_rounded,
 
-            title: 'عن وفر',
+            title: 'المساعدة',
 
-            subtitle:
-                'معلومات عن التطبيق',
+            subtitle: 'الأسئلة الشائعة والدعم',
 
             accent: accent,
             surface: surface,
 
-            textPrimary:
-                textPrimary,
+            textPrimary: textPrimary,
 
-            textSecondary:
-                textSecondary,
+            textSecondary: textSecondary,
+
+            onTap: () {
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const HelpScreen()));
+            },
+          ),
+
+          const SizedBox(height: 12),
+
+          _SettingsTile(
+            icon: Icons.info_outline_rounded,
+
+            title: 'عن وفر',
+
+            subtitle: 'معلومات عن التطبيق',
+
+            accent: accent,
+            surface: surface,
+
+            textPrimary: textPrimary,
+
+            textSecondary: textSecondary,
 
             onTap: _showAbout,
           ),
 
           const SizedBox(height: 25),
 
-          _SectionTitle(
-            title: 'البيانات',
-            color: textSecondary,
-          ),
+          if (!_googleLinked) ...[
+            _SectionTitle(title: 'البيانات', color: textSecondary),
 
-          _SettingsTile(
-            icon:
-                Icons.delete_outline_rounded,
+            _SettingsTile(
+              icon: Icons.delete_outline_rounded,
 
-            title:
-                'إعادة ضبط التطبيق',
+              title: 'إعادة ضبط التطبيق',
 
-            subtitle:
-                'حذف جميع البيانات والبدء من جديد',
+              subtitle: 'حذف جميع البيانات والبدء من جديد',
 
-            accent: accent,
-            surface: surface,
+              accent: accent,
+              surface: surface,
 
-            textPrimary:
-                textPrimary,
+              textPrimary: textPrimary,
 
-            textSecondary:
-                textSecondary,
+              textSecondary: textSecondary,
 
-            onTap: _resetApp,
-          ),
+              onTap: _resetApp,
+            ),
 
-          const SizedBox(height: 30),
+            const SizedBox(height: 30),
+          ] else
+            const SizedBox(height: 5),
 
           Center(
             child: Text(
-              'Waffer • 1.0.0',
+              'Waffer 1.2.0',
 
               style: TextStyle(
-                color:
-                    textSecondary
-                        .withValues(alpha: 0.6),
+                color: textSecondary.withValues(alpha: 0.6),
 
                 fontSize: 12,
               ),
@@ -704,10 +783,11 @@ class _SettingsScreenState
   }
 }
 
-class _ProfileCard
-    extends StatelessWidget {
+class _ProfileCard extends StatelessWidget {
   final String name;
   final String email;
+  final String? photoUrl;
+  final bool placeholder;
 
   final Color accent;
   final Color surface;
@@ -722,61 +802,59 @@ class _ProfileCard
     required this.surface,
     required this.textPrimary,
     required this.textSecondary,
+    this.photoUrl,
+    this.placeholder = false,
   });
 
   @override
-  Widget build(
-      BuildContext context) {
+  Widget build(BuildContext context) {
     return Container(
-      padding:
-          const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(18),
 
       decoration: BoxDecoration(
         color: surface,
 
-        borderRadius:
-            BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(25),
       ),
 
       child: Row(
         children: [
-
           CircleAvatar(
             radius: 27,
 
-            backgroundColor:
-                accent.withValues(alpha: 0.15),
+            backgroundColor: accent.withValues(alpha: 0.15),
 
-            child: Icon(
-              Icons.person_outline_rounded,
+            backgroundImage: photoUrl != null && photoUrl!.isNotEmpty
+                ? NetworkImage(photoUrl!)
+                : null,
 
-              color: accent,
-              size: 30,
-            ),
+            child: photoUrl == null || photoUrl!.isEmpty
+                ? Icon(
+                    placeholder
+                        ? Icons.person_off_outlined
+                        : Icons.person_outline_rounded,
+                    color: accent,
+                    size: 30,
+                  )
+                : null,
           ),
 
           const SizedBox(width: 15),
 
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
-
                 Text(
-                  name.isEmpty
-                      ? 'المستخدم'
-                      : name,
+                  name.isEmpty ? 'المستخدم' : name,
 
                   style: TextStyle(
-                    color:
-                        textPrimary,
+                    color: textPrimary,
 
                     fontSize: 17,
 
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
 
@@ -784,15 +862,9 @@ class _ProfileCard
                   Text(
                     email,
 
-                    textDirection:
-                        TextDirection.ltr,
+                    textDirection: TextDirection.ltr,
 
-                    style: TextStyle(
-                      color:
-                          textSecondary,
-
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: textSecondary, fontSize: 13),
                   ),
               ],
             ),
@@ -803,25 +875,16 @@ class _ProfileCard
   }
 }
 
-class _SectionTitle
-    extends StatelessWidget {
+class _SectionTitle extends StatelessWidget {
   final String title;
   final Color color;
 
-  const _SectionTitle({
-    required this.title,
-    required this.color,
-  });
+  const _SectionTitle({required this.title, required this.color});
 
   @override
-  Widget build(
-      BuildContext context) {
+  Widget build(BuildContext context) {
     return Padding(
-      padding:
-          const EdgeInsets.only(
-        right: 5,
-        bottom: 10,
-      ),
+      padding: const EdgeInsets.only(right: 5, bottom: 10),
 
       child: Text(
         title,
@@ -829,16 +892,14 @@ class _SectionTitle
         style: TextStyle(
           color: color,
           fontSize: 14,
-          fontWeight:
-              FontWeight.bold,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
   }
 }
 
-class _SettingsTile
-    extends StatelessWidget {
+class _SettingsTile extends StatelessWidget {
   final IconData icon;
 
   final String title;
@@ -867,75 +928,51 @@ class _SettingsTile
   });
 
   @override
-  Widget build(
-      BuildContext context) {
+  Widget build(BuildContext context) {
     return Material(
       color: surface,
 
-      borderRadius:
-          BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(20),
 
       child: InkWell(
-        borderRadius:
-            BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20),
 
         onTap: onTap,
 
         child: Padding(
-          padding:
-              const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 15,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
 
           child: Row(
             children: [
-
               Container(
                 width: 43,
                 height: 43,
 
-                decoration:
-                    BoxDecoration(
-                  color:
-                      accent.withValues(
-                    alpha: 0.12,
-                  ),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
 
-                  borderRadius:
-                      BorderRadius.circular(
-                    14,
-                  ),
+                  borderRadius: BorderRadius.circular(14),
                 ),
 
-                child: Icon(
-                  icon,
-
-                  color: accent,
-                  size: 22,
-                ),
+                child: Icon(icon, color: accent, size: 22),
               ),
 
               const SizedBox(width: 14),
 
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
-
                     Text(
                       title,
 
                       style: TextStyle(
-                        color:
-                            textPrimary,
+                        color: textPrimary,
 
                         fontSize: 15,
 
-                        fontWeight:
-                            FontWeight.w600,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
 
@@ -944,12 +981,7 @@ class _SettingsTile
                     Text(
                       subtitle,
 
-                      style: TextStyle(
-                        color:
-                            textSecondary,
-
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: textSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -957,101 +989,14 @@ class _SettingsTile
 
               trailing ??
                   Icon(
-                    Icons
-                        .arrow_back_ios_new_rounded,
+                    Icons.arrow_back_ios_new_rounded,
 
-                    color:
-                        textSecondary
-                            .withValues(alpha: 0.5),
+                    color: textSecondary.withValues(alpha: 0.5),
 
                     size: 16,
                   ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LanguageOption
-    extends StatelessWidget {
-  final String title;
-  final bool selected;
-
-  final Color accent;
-  final Color textColor;
-
-  final VoidCallback onTap;
-
-  const _LanguageOption({
-    required this.title,
-    required this.selected,
-    required this.accent,
-    required this.textColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(
-      BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-
-      child: AnimatedContainer(
-        duration:
-            const Duration(
-          milliseconds: 200,
-        ),
-
-        width: double.infinity,
-
-        padding:
-            const EdgeInsets.all(16),
-
-        decoration:
-            BoxDecoration(
-          color: selected
-              ? accent.withValues(alpha: 0.12)
-              : Colors.transparent,
-
-          borderRadius:
-              BorderRadius.circular(16),
-
-          border: Border.all(
-            color: selected
-                ? accent
-                : textColor.withValues(
-                    alpha: 0.1,
-                  ),
-          ),
-        ),
-
-        child: Row(
-          mainAxisAlignment:
-              MainAxisAlignment
-                  .spaceBetween,
-
-          children: [
-
-            Text(
-              title,
-
-              style: TextStyle(
-                color: textColor,
-                fontWeight:
-                    FontWeight.w600,
-              ),
-            ),
-
-            if (selected)
-              Icon(
-                Icons
-                    .check_circle_rounded,
-
-                color: accent,
-              ),
-          ],
         ),
       ),
     );
