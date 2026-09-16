@@ -23,6 +23,13 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
   static const String _freqNone = 'بدون مدة';
   static const String _freqWeekly = 'أسبوعي';
   static const String _freqMonthly = 'شهري';
+  /// الدخل الأسبوعي يبقى مدعوماً في المنطق، لكنه مخفي مؤقتاً من خيارات المستخدم.
+  static const bool _weeklyIncomeChoiceEnabled = false;
+  static const List<String> _frequencyOptions = [
+    if (_weeklyIncomeChoiceEnabled) _freqWeekly,
+    _freqMonthly,
+    _freqNone,
+  ];
   static const String _keepBalance = 'إبقاء الرصيد';
   static const String _moveBalance = 'نقل الرصيد للتوفير';
 
@@ -101,19 +108,25 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
         const SizedBox(height: 18),
         const SheetFieldLabel(text: 'مدة المبلغ'),
         SheetChoiceChips(
-          options: const [_freqWeekly, _freqMonthly, _freqNone],
+          options: _frequencyOptions,
           selected: _frequencyLabel,
           onSelected: (value) => setState(() => _frequencyLabel = value),
         ),
-        if (hasBalance) ...[
-          const SizedBox(height: 18),
-          const SheetFieldLabel(text: 'الرصيد الحالي'),
-          SheetChoiceChips(
-            options: const [_keepBalance, _moveBalance],
-            selected: _balanceAction,
-            onSelected: (value) => setState(() => _balanceAction = value),
+        SheetExpand(
+          visible: hasBalance,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 18),
+              const SheetFieldLabel(text: 'الرصيد الحالي'),
+              SheetChoiceChips(
+                options: const [_keepBalance, _moveBalance],
+                selected: _balanceAction,
+                onSelected: (value) => setState(() => _balanceAction = value),
+              ),
+            ],
           ),
-        ],
+        ),
         const SizedBox(height: 18),
         const SheetFieldLabel(text: 'مصدر الدخل', optional: true),
         SheetTextField(

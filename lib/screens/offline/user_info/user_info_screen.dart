@@ -135,7 +135,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                 ),
               ),
               const SizedBox(height: 8),
@@ -245,7 +245,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
               AnimatedPrimaryButton(
                 text: 'متابعة',
                 style: const TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   fontWeight: FontWeight.bold,
                 ),
                 backgroundColor: _isFormValid ? accent : textSecondary,

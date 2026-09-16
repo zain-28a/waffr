@@ -13,54 +13,124 @@ class ExpenseCategory {
 }
 
 /// ترتيب التصنيفات كما يظهر في شبكة "إضافة مصروف".
+/// لوحة زيتون وكريم مترابطة مع ثيم وفر.
 const List<ExpenseCategory> expenseCategories = [
   ExpenseCategory(
     label: 'طعام',
     icon: Icons.lunch_dining_outlined,
-    color: Color(0xFF2A8B60),
+    color: Color(0xFFB8924A),
   ),
   ExpenseCategory(
     label: 'مواصلات',
     icon: Icons.directions_bus_outlined,
-    color: Color(0xFF58A97F),
+    color: Color(0xFF5F8F82),
   ),
   ExpenseCategory(
     label: 'تسوق',
     icon: Icons.shopping_bag_outlined,
-    color: Color(0xFF8BC7A8),
+    color: Color(0xFFC4956A),
   ),
   ExpenseCategory(
     label: 'فواتير',
     icon: Icons.receipt_long_outlined,
-    color: Color(0xFFB6DDC8),
+    color: Color(0xFFA89B55),
   ),
   ExpenseCategory(
     label: 'صحة',
     icon: Icons.favorite_border_rounded,
-    color: Color(0xFF1F6B4A),
+    color: Color(0xFFB07A6E),
   ),
   ExpenseCategory(
     label: 'ترفيه',
     icon: Icons.sports_esports_outlined,
-    color: Color(0xFF74B98F),
+    color: Color(0xFF7D9160),
   ),
   ExpenseCategory(
     label: 'تعليم',
     icon: Icons.school_outlined,
-    color: Color(0xFF9FD1B4),
-  ),
-  ExpenseCategory(
-    label: 'أخرى',
-    icon: Icons.more_horiz_rounded,
-    color: Color(0xFFCBE4D6),
+    color: Color(0xFF4F7D52),
   ),
 ];
 
-const List<String> paymentMethods = ['نقداً', 'بطاقة', 'عائلي'];
+const String customCategoryActionLabel = 'مخصص';
+
+const ExpenseCategory customCategoryAction = ExpenseCategory(
+  label: customCategoryActionLabel,
+  icon: Icons.add_rounded,
+  color: Color(0xFF9A9388),
+);
+
+const ExpenseCategory fallbackCategory = ExpenseCategory(
+  label: 'أخرى',
+  icon: Icons.more_horiz_rounded,
+  color: Color(0xFF9A9388),
+);
+
+const List<String> paymentMethods = ['نقداً', 'بطاقة'];
+
+/// مجموعة الشعارات المتاحة للتصنيفات المخصصة.
+const List<IconData> customCategoryIconChoices = [
+  Icons.home_outlined,
+  Icons.work_outline_rounded,
+  Icons.coffee_outlined,
+  Icons.pets_outlined,
+  Icons.card_giftcard_outlined,
+  Icons.phone_android_outlined,
+  Icons.fitness_center_outlined,
+  Icons.child_care_outlined,
+  Icons.account_balance_wallet_outlined,
+  Icons.star_outline_rounded,
+];
+
+const List<Color> _customCategoryColors = [
+  Color(0xFF8A6B4A),
+  Color(0xFF6B8F71),
+  Color(0xFFA67C5B),
+  Color(0xFF5B7D8A),
+  Color(0xFF8B6B7A),
+  Color(0xFF7A8B5B),
+];
+
+/// يربطه CategoryStore حتى تظهر الشعارات المحفوظة في الرسوم والتقارير.
+ExpenseCategory? Function(String label)? customCategoryLookup;
+
+int clampCustomIconIndex(int index) {
+  if (customCategoryIconChoices.isEmpty) return 0;
+  return index.clamp(0, customCategoryIconChoices.length - 1).toInt();
+}
+
+ExpenseCategory customCategoryNamed(String label, {int? iconIndex}) {
+  final colorIndex = label.hashCode.abs();
+  final resolvedIcon = iconIndex == null
+      ? colorIndex % customCategoryIconChoices.length
+      : clampCustomIconIndex(iconIndex);
+
+  return ExpenseCategory(
+    label: label,
+    icon: customCategoryIconChoices[resolvedIcon],
+    color: _customCategoryColors[colorIndex % _customCategoryColors.length],
+  );
+}
 
 ExpenseCategory categoryFor(String? label) {
-  return expenseCategories.firstWhere(
-    (category) => category.label == label,
-    orElse: () => expenseCategories.last,
-  );
+  if (label == null || label.isEmpty) return fallbackCategory;
+
+  for (final item in expenseCategories) {
+    if (item.label == label) return item;
+  }
+
+  if (label == fallbackCategory.label) return fallbackCategory;
+
+  final custom = customCategoryLookup?.call(label);
+  if (custom != null) return custom;
+
+  return customCategoryNamed(label);
+}
+
+Color categoryChartColor(BuildContext context, String? label) {
+  final base = categoryFor(label).color;
+  if (Theme.of(context).brightness != Brightness.dark) {
+    return base;
+  }
+  return Color.lerp(base, const Color(0xFFE8F0E4), 0.18)!;
 }

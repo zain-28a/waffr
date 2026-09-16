@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'package:waffer/core/data/category_store.dart';
 import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/data/transaction_store.dart';
@@ -10,9 +10,7 @@ import 'package:waffer/screens/offline/placeholder/placeholder.dart';
 import 'package:waffer/screens/offline/report/reportscreen.dart';
 import 'package:waffer/screens/offline/savings/savings_screen.dart';
 import 'package:waffer/screens/offline/settings/settings_screen.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:waffer/widgets/brand/waffer_w_mark.dart';
-
+import 'package:waffer/widgets/brand/waffer_page_header.dart';
 
 class AppShell extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeNotifier;
@@ -31,12 +29,21 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
-  final PageController _pageController =
-      PageController(initialPage: 0);
+  final ValueNotifier<int> _tabIndex = ValueNotifier<int>(0);
+  final PageController _pageController = PageController();
 
-  int _currentIndex = 0;
+  /// Tap target while the page animation is in flight; selection waits for it.
+  int? _animatingToPage;
 
   static const int _tabCount = 5;
+
+  static const List<Widget> _tabPages = [
+    HomeScreen(),
+    ReportScreen(),
+    SavingsScreen(),
+    PlaceholderScreen(label: 'شاشة 4'),
+    NotificationsScreen(),
+  ];
 
   @override
   void initState() {
@@ -59,225 +66,187 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     await TransactionStore.instance.processDuePeriods();
     await RecurringExpenseStore.instance.ensureLoaded();
     await RecurringExpenseStore.instance.processDue();
+    await CategoryStore.instance.ensureLoaded();
     await notifications.evaluate();
   }
 
   void _onTabTapped(int index) {
-    if (index == _currentIndex) return;
+    if (index == _tabIndex.value && _animatingToPage == null) return;
+    if (_animatingToPage == index) return;
 
-    setState(() {
-      _currentIndex = index;
-    });
+    _animatingToPage = index;
+    _pageController
+        .animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        )
+        .whenComplete(() {
+          if (!mounted) return;
+          if (_animatingToPage != index) return;
+          _animatingToPage = null;
+          final settled = _pageController.hasClients
+              ? _pageController.page?.round()
+              : null;
+          if (settled != null && settled != _tabIndex.value) {
+            _tabIndex.value = settled;
+          }
+        });
+  }
 
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+  void _onPageChanged(int index) {
+    if (_animatingToPage != null && index != _animatingToPage) {
+      return;
+    }
+    _animatingToPage = null;
+    if (index == _tabIndex.value) return;
+    _tabIndex.value = index;
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
+    _tabIndex.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bg = isDark
-        ? AppColors.darkSurface
-        : AppColors.lightBackground;
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
 
-    final surface = isDark
-        ? AppColors.darkSurface
-        : AppColors.lightBackground;
-
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-
-    final accent = isDark
-        ? AppColors.darkAccent
-        : AppColors.lightAccent;
-
-    final cardDecoration = BoxDecoration(
-      color: isDark
-          ? AppColors.darkSurface
-          : const Color.fromARGB(153, 255, 253, 249),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.07),
-          blurRadius: 40,
-          offset: const Offset(0, -3),
-        ),
-      ],
-    );
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
 
     return Scaffold(
       backgroundColor: bg,
-
       body: SafeArea(
         child: Column(
           children: [
-
-            // ================= HEADER =================
-
-            Container(
-              decoration: cardDecoration,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
-                child: Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
-                  children: [
-
-                    IconButton(
-                      icon: Icon(
-                        Icons.settings_outlined,
-                        color: textPrimary,
-                      ),
-
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => SettingsScreen(
-                              themeNotifier:
-                                  widget.themeNotifier,
-                              onThemeChanged:
-                                  widget.onThemeChanged,
-                              appFlowController:
-                                  widget.appFlowController,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-
-                    Text(
-                      'Waffer',
-                      style:
-                          GoogleFonts.playfairDisplay(
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: accent,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // PAGES 
-
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: (_currentIndex == 1 || _currentIndex == 2)
-                    ? const NeverScrollableScrollPhysics()
-                    : const PageScrollPhysics(),
-
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                },
-
-                children: [
-                  const HomeScreen(),
-                  const ReportScreen(),
-                  const SavingsScreen(),
-                  const PlaceholderScreen(label: 'شاشة 4'),
-                  const NotificationsScreen(),
-                ],
-            ),
-          ),
-
-          // NAV BAR
-
-            Container(
-              decoration: BoxDecoration(
-                color: surface,
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, -2),
+            WafferPageHeader(
+              leading: Padding(
+                padding: const EdgeInsets.only(top: 15),
+                child: IconButton(
+                  iconSize: 30,
+                  icon: Icon(
+                    Icons.settings_rounded,
+                    color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
                   ),
-                ],
-              ),
-
-              padding:
-                  const EdgeInsets.symmetric(
-                vertical: 10,
-              ),
-
-              child: Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceEvenly,
-
-                children:
-                    List.generate(
-                  _tabCount,
-                  (index) {
-                    final isSelected =
-                        index == _currentIndex;
-
-                    return GestureDetector(
-                      onTap: () =>
-                          _onTabTapped(index),
-
-                      child: AnimatedScale(
-                        scale:
-                            isSelected ? 1.25 : 1.0,
-
-                        duration:
-                            const Duration(
-                          milliseconds: 250,
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => SettingsScreen(
+                          themeNotifier: widget.themeNotifier,
+                          onThemeChanged: widget.onThemeChanged,
+                          appFlowController: widget.appFlowController,
                         ),
-
-                        curve: Curves.easeOut,
-
-                        child: index == 2
-                            ? WafferWMark(
-                                size: 26,
-                                color: isSelected
-                                    ? accent
-                                    : textPrimary.withValues(alpha: 0.35),
-                              )
-                            : index == 4
-                                ? _NotificationsTabIcon(
-                                    selected: isSelected,
-                                    accent: accent,
-                                    idle: textPrimary.withValues(alpha: 0.35),
-                                  )
-                                : Icon(
-                                    index == 0
-                                        ? Icons.home_rounded
-                                        : index == 1
-                                            ? Icons.bar_chart_rounded
-                                            : Icons.circle_outlined,
-                                    size: 26,
-                                    color: isSelected
-                                        ? accent
-                                        : textPrimary.withValues(alpha: 0.35),
-                                  ),
                       ),
                     );
                   },
                 ),
               ),
+              title: Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'Waffer',
+                  style: Theme.of(context).textTheme.displayLarge,
+                ),
+              ),
+            ),
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _tabCount,
+                onPageChanged: _onPageChanged,
+                itemBuilder: (context, index) => _tabPages[index],
+              ),
+            ),
+            _BottomNavBar(
+              tabIndex: _tabIndex,
+              tabCount: _tabCount,
+              onTap: _onTabTapped,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BottomNavBar extends StatelessWidget {
+  final ValueNotifier<int> tabIndex;
+  final int tabCount;
+  final ValueChanged<int> onTap;
+
+  const _BottomNavBar({
+    required this.tabIndex,
+    required this.tabCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final surface =
+        isDark ? AppColors.darkSurface : AppColors.lightBackground;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+
+    return ValueListenableBuilder<int>(
+      valueListenable: tabIndex,
+      builder: (context, currentIndex, _) {
+        return Container(
+          decoration: BoxDecoration(
+            color: surface,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 12,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(tabCount, (index) {
+              final isSelected = index == currentIndex;
+
+              return GestureDetector(
+                onTap: () => onTap(index),
+                child: AnimatedScale(
+                  scale: isSelected ? 1.25 : 1.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                  child: index == 4
+                      ? _NotificationsTabIcon(
+                          selected: isSelected,
+                          accent: accent,
+                          idle: textPrimary.withValues(alpha: 0.35),
+                        )
+                      : Icon(
+                          index == 0
+                              ? Icons.home_rounded
+                              : index == 1
+                                  ? Icons.bar_chart_rounded
+                                  : index == 2
+                                      ? Icons.wallet_rounded
+                                      : Icons.circle_outlined,
+                              size: 26,
+                              color: isSelected
+                                  ? accent
+                                  : textPrimary.withValues(alpha: 0.35),
+                            ),
+                ),
+              );
+            }),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,10 +1,11 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass.dart';
+
+/// Dim used in place of the old BackdropFilter overlay.
+const Color kSheetBarrierColor = Color.fromARGB(114, 0, 0, 0);
 
 /// نافذة سفلية زجاجية تُضبّب الشاشة التي تحتها.
 Future<T?> showGlassSheet<T>({
@@ -15,7 +16,7 @@ Future<T?> showGlassSheet<T>({
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.transparent,
+    barrierColor: kSheetBarrierColor,
     elevation: 0,
     builder: (context) => _GlassSheetShell(builder: builder),
   );
@@ -31,42 +32,15 @@ class _GlassSheetShell extends StatelessWidget {
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final screenHeight = MediaQuery.sizeOf(context).height;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final available =
-            constraints.maxHeight.isFinite ? constraints.maxHeight : screenHeight;
+    final maxSheetHeight =
+        (screenHeight - keyboard - 28).clamp(220.0, screenHeight);
 
-        final maxSheetHeight =
-            (available - keyboard - 28).clamp(220.0, available);
-
-        return SizedBox.expand(
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => Navigator.of(context).maybePop(),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                    child: ColoredBox(
-                      color: Colors.black.withValues(alpha: 0.18),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: keyboard,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: maxSheetHeight),
-                  child: builder(context),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxSheetHeight),
+        child: builder(context),
+      ),
     );
   }
 }
@@ -81,17 +55,22 @@ class GlassSheetBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassContainer(
       colorType: GlassColorType.surface,
-      tintOpacity: 0.92,
-      blurSigma: 18,
+      tintOpacity: 1,
       radius: const BorderRadius.vertical(top: Radius.circular(34)),
       padding: EdgeInsets.zero,
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: children,
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 360),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            clipBehavior: Clip.none,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
+            ),
           ),
         ),
       ),
@@ -141,7 +120,7 @@ class GlassSheetHeader extends StatelessWidget {
                     title,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Tajawal',
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: accent,
@@ -152,7 +131,7 @@ class GlassSheetHeader extends StatelessWidget {
                     subtitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Tajawal',
                       fontSize: 13,
                       color: textSecondary,
                     ),
@@ -240,29 +219,30 @@ class SheetFieldLabel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          if (optional)
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: 6),
-              child: Text(
-                'اختياري',
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 11,
-                  color: textSecondary.withValues(alpha: 0.6),
-                ),
-              ),
-            ),
           Text(
             text,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
               color: textSecondary,
             ),
           ),
+          
+          if (optional)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 6),
+              child: Text(
+                ' (اختياري)',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 11,
+                  color: textSecondary.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -304,7 +284,7 @@ class SheetAmountField extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 13,
               color: textSecondary,
             ),
@@ -323,7 +303,7 @@ class SheetAmountField extends StatelessWidget {
                   inputFormatters: [ThousandsInputFormatter()],
                   cursorColor: textPrimary,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 34,
                     fontWeight: FontWeight.bold,
                     color: textPrimary,
@@ -333,7 +313,7 @@ class SheetAmountField extends StatelessWidget {
                     border: InputBorder.none,
                     hintText: '0',
                     hintStyle: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Tajawal',
                       fontSize: 34,
                       fontWeight: FontWeight.bold,
                       color: textSecondary.withValues(alpha: 0.55),
@@ -347,7 +327,7 @@ class SheetAmountField extends StatelessWidget {
                   currencyLabel,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: textSecondary,
@@ -361,7 +341,7 @@ class SheetAmountField extends StatelessWidget {
             Text(
               helper!,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 11.5,
                 color: textSecondary.withValues(alpha: 0.75),
               ),
@@ -410,7 +390,7 @@ class SheetTextField extends StatelessWidget {
       textAlign: TextAlign.right,
       cursorColor: textPrimary,
       style: TextStyle(
-        fontFamily: 'Cairo',
+        fontFamily: 'Tajawal',
         fontSize: 15,
         color: enabled ? textPrimary : textSecondary.withValues(alpha: 0.55),
       ),
@@ -419,7 +399,7 @@ class SheetTextField extends StatelessWidget {
         fillColor: sheetFieldColor(context),
         hintText: hint,
         hintStyle: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: 'Tajawal',
           fontSize: 14,
           color: textSecondary.withValues(alpha: 0.7),
         ),
@@ -464,49 +444,153 @@ class SheetChoiceChips extends StatelessWidget {
     final textPrimary =
         isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
 
-    return Row(
-      children: options.map((option) {
-        final isSelected = option == selected;
+    if (options.isEmpty) return const SizedBox.shrink();
 
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
-            child: GestureDetector(
-              onTap: enabled ? () => onSelected(option) : null,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 6),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? accent.withValues(alpha: 0.14)
-                      : sheetFieldColor(context),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected ? accent : Colors.transparent,
-                    width: 1.4,
-                  ),
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    option,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      fontSize: 13.5,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected ? accent : textPrimary,
+    final selectedIndex = options.indexOf(selected).clamp(0, options.length - 1);
+
+    return Opacity(
+      opacity: enabled ? 1 : 0.45,
+      child: Container(
+        decoration: BoxDecoration(
+          color: sheetFieldColor(context),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.all(3),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = constraints.maxWidth / options.length;
+
+            return Stack(
+              children: [
+                AnimatedPositionedDirectional(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOutCubic,
+                  start: selectedIndex * itemWidth,
+                  width: itemWidth,
+                  top: 0,
+                  bottom: 0,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: accent, width: 1.4),
                     ),
                   ),
                 ),
-              ),
+                Row(
+                  children: [
+                    for (final option in options)
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: enabled ? () => onSelected(option) : null,
+                          behavior: HitTestBehavior.opaque,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 6,
+                            ),
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOut,
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 13.5,
+                                fontWeight: option == selected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                color: option == selected ? accent : textPrimary,
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  option,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// يظهر أو يخفي محتوى الشيت مع تمدد وبهتان هادئ.
+class SheetExpand extends StatelessWidget {
+  final bool visible;
+  final Widget child;
+
+  const SheetExpand({super.key, required this.visible, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 340),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      clipBehavior: Clip.none,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 260),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.04),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
             ),
+          );
+        },
+        layoutBuilder: (currentChild, _) =>
+            currentChild ?? const SizedBox(width: double.infinity),
+        child: visible
+            ? KeyedSubtree(key: const ValueKey('sheet-expand-on'), child: child)
+            : const SizedBox(width: double.infinity, key: ValueKey('off')),
+      ),
+    );
+  }
+}
+
+/// تبديل محتوى الشيت عند تغيير الخيار، مع بهتان خفيف.
+class SheetSwap extends StatelessWidget {
+  final Object switchKey;
+  final Widget child;
+
+  const SheetSwap({super.key, required this.switchKey, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 280),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.05),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
           ),
         );
-      }).toList(),
+      },
+      layoutBuilder: (currentChild, _) =>
+          currentChild ?? const SizedBox(width: double.infinity),
+      child: KeyedSubtree(key: ValueKey(switchKey), child: child),
     );
   }
 }
@@ -546,7 +630,7 @@ class SheetSaveButton extends StatelessWidget {
               Text(
                 label,
                 style: const TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,

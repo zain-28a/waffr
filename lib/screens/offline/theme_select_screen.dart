@@ -50,7 +50,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                   color: textPrimary,
                   fontSize: 60,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                 ),
                 child:Text.rich(
                   TextSpan(children:[

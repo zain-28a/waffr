@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/backup_service.dart';
+import 'package:waffer/core/data/category_store.dart';
 import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/data/shopping_list_store.dart';
@@ -15,6 +16,8 @@ import 'package:waffer/screens/offline/settings/account_screen.dart';
 import 'package:waffer/screens/offline/settings/ai_permissions_screen.dart';
 import 'package:waffer/screens/offline/settings/help_screen.dart';
 import 'package:waffer/screens/offline/settings/privacy_info_screen.dart';
+import 'package:waffer/widgets/brand/waffer_page_header.dart';
+import 'package:waffer/widgets/containers/glass_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeNotifier;
@@ -46,8 +49,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _hasWeeklyIncome = false;
   double _monthlyIncome = 0;
   double _weeklyIncome = 0;
+  /// الدخل الأسبوعي يبقى في المنطق، لكنه مخفي مؤقتاً من خيارات المستخدم.
+  static const bool _weeklyIncomeChoiceEnabled = false;
 
   final LocalAuthentication _auth = LocalAuthentication();
+  final ValueNotifier<bool> _headerElevated = ValueNotifier(false);
 
   @override
   void initState() {
@@ -61,6 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     widget.themeNotifier.removeListener(_onThemeChanged);
+    _headerElevated.dispose();
 
     super.dispose();
   }
@@ -127,14 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (!supported) {
           if (!mounted) return;
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'جهازك لا يدعم المصادقة البيومترية',
-                textAlign: TextAlign.center,
-              ),
-            ),
-          );
+          showAppSnackBar(context, 'جهازك لا يدعم المصادقة البيومترية');
 
           setState(() {
             _isAuthenticating = false;
@@ -167,14 +167,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'تم تفعيل قفل التطبيق',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
+            showAppSnackBar(context, 'تم تفعيل قفل التطبيق', success: true);
           }
         }
       } on LocalAuthException catch (_) {
@@ -206,11 +199,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم تعطيل قفل التطبيق', textAlign: TextAlign.center),
-          ),
-        );
+        showAppSnackBar(context, 'تم إيقاف قفل التطبيق', success: true);
       }
     }
   }
@@ -233,6 +222,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      barrierColor: kSheetBarrierColor,
 
       builder: (context) {
         return Container(
@@ -270,7 +260,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                 ),
               ),
 
@@ -284,7 +274,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(
                   fontSize: 15,
                   color: textSecondary,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   height: 1.5,
                 ),
               ),
@@ -299,7 +289,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   color: textSecondary,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                 ),
               ),
 
@@ -322,7 +312,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Text(
                     'حسناً',
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Tajawal',
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -362,63 +352,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _editIncome(RecurringFrequency frequency) async {
     final isMonthly = frequency == RecurringFrequency.monthly;
     final current = isMonthly ? _monthlyIncome : _weeklyIncome;
-    final controller = TextEditingController(
-      text: current > 0 ? formatMoney(current) : '',
-    );
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
-    final confirmed = await showDialog<bool>(
+    final amount = await showDialog<double>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(isMonthly ? 'الدخل الشهري' : 'الدخل الأسبوعي'),
-          content: TextField(
-            controller: controller,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            decoration: const InputDecoration(
-              hintText: 'المبلغ',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text('حفظ', style: TextStyle(color: accent)),
-            ),
-          ],
-        );
-      },
+      builder: (context) => _EditIncomeDialog(
+        title: isMonthly ? 'الدخل الشهري' : 'الدخل الأسبوعي',
+        initialAmount: current,
+        accent: accent,
+      ),
     );
 
-    final amount = double.tryParse(
-          controller.text.replaceAll(',', '').trim(),
-        ) ??
-        0;
-    controller.dispose();
+    if (!mounted || amount == null) return;
 
-    if (confirmed != true) return;
-    if (amount <= 0) {
-      if (!mounted) return;
-      showAppSnackBar(context, 'أدخل مبلغاً أكبر من صفر');
-      return;
-    }
-
-    await TransactionStore.instance.setPreferredIncomeAmount(
+    final saved = await TransactionStore.instance.setPreferredIncomeAmount(
       frequency: frequency,
       amount: amount,
     );
 
-    await _loadSettings();
     if (!mounted) return;
+
+    if (!saved) {
+      showAppSnackBar(context, 'تعذر حفظ الدخل. حاول مرة أخرى.');
+      return;
+    }
+
+    setState(() {
+      if (isMonthly) {
+        _monthlyIncome = amount;
+        _hasMonthlyIncome = true;
+      } else {
+        _weeklyIncome = amount;
+        _hasWeeklyIncome = true;
+      }
+    });
+
     showAppSnackBar(
       context,
-      isMonthly ? 'تم تحديث الدخل الشهري' : 'تم تحديث الدخل الأسبوعي',
+      isMonthly ? 'تم حفظ دخلك الشهري' : 'تم حفظ دخلك الأسبوعي',
+      success: true,
     );
   }
 
@@ -471,6 +445,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     NotificationService.instance.resetCache();
     ShoppingListStore.instance.resetCache();
     RecurringExpenseStore.instance.resetCache();
+    CategoryStore.instance.resetCache();
 
     if (!mounted) return;
 
@@ -497,30 +472,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
-        centerTitle: true,
-
-        title: Text(
-          'الإعدادات',
-
-          style: TextStyle(
-            color: textPrimary,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Cairo',
-          ),
-        ),
-
-        leading: IconButton(
-          icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
-
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-
-      body: ListView(
+      body: SafeArea(
+        child: Column(
+          children: [
+            WafferPageHeader(
+              centerTitle: true,
+              elevated: _headerElevated,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
+                onPressed: () => Navigator.pop(context),
+              ),
+              title: Text(
+                'الإعدادات',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+            ),
+            Expanded(
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification.depth != 0) return false;
+                  final next = notification.metrics.pixels > 6;
+                  if (_headerElevated.value != next) {
+                    _headerElevated.value = next;
+                  }
+                  return false;
+                },
+                child: ListView(
         padding: const EdgeInsets.all(20),
 
         children: [
@@ -558,7 +535,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
 
-          if (_hasWeeklyIncome) ...[
+          if (_weeklyIncomeChoiceEnabled && _hasWeeklyIncome) ...[
             const SizedBox(height: 12),
             _SettingsTile(
               icon: Icons.date_range_outlined,
@@ -766,7 +743,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           Center(
             child: Text(
-              'Waffer 2.2.0',
+              'Waffer 2.3.0',
 
               style: TextStyle(
                 color: textSecondary.withValues(alpha: 0.6),
@@ -778,6 +755,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
         ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -999,6 +981,89 @@ class _SettingsTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _EditIncomeDialog extends StatefulWidget {
+  final String title;
+  final double initialAmount;
+  final Color accent;
+
+  const _EditIncomeDialog({
+    required this.title,
+    required this.initialAmount,
+    required this.accent,
+  });
+
+  @override
+  State<_EditIncomeDialog> createState() => _EditIncomeDialogState();
+}
+
+class _EditIncomeDialogState extends State<_EditIncomeDialog> {
+  static const double _maxAmount = 999999999;
+
+  late final TextEditingController _controller;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.initialAmount > 0 && widget.initialAmount.isFinite
+          ? formatMoney(widget.initialAmount)
+          : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final amount = parseAmount(_controller.text);
+    if (!amount.isFinite || amount <= 0) {
+      setState(() => _error = 'أدخل مبلغاً أكبر من صفر');
+      return;
+    }
+    if (amount > _maxAmount) {
+      setState(() => _error = 'المبلغ أكبر من الحد المسموح');
+      return;
+    }
+    Navigator.of(context).pop(amount);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        keyboardType: TextInputType.number,
+        inputFormatters: [ThousandsInputFormatter()],
+        textAlign: TextAlign.center,
+        onChanged: (_) {
+          if (_error != null) setState(() => _error = null);
+        },
+        onSubmitted: (_) => _submit(),
+        decoration: InputDecoration(
+          hintText: 'المبلغ',
+          errorText: _error,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('إلغاء'),
+        ),
+        TextButton(
+          onPressed: _submit,
+          child: Text('حفظ', style: TextStyle(color: widget.accent)),
+        ),
+      ],
     );
   }
 }

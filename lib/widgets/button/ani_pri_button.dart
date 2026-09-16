@@ -57,7 +57,7 @@ class _AnimatedPrimaryButtonState extends State<AnimatedPrimaryButton> {
               color: widget.textColor,
               fontSize: 17,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
             ),
           ),
         ),

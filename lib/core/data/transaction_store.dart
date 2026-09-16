@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/calendar_period.dart';
@@ -18,6 +20,7 @@ class TransactionStore extends ChangeNotifier {
   static const String balanceKey = 'balance';
   static const String maxBalanceKey = 'max_balance';
   static const String savingsGoalsKey = 'savings_goals';
+  static const String legacySavingsGoalKey = 'savings_goal';
   static const String processedPeriodsKey = 'processed_periods';
   static const String savingsBalanceKey = 'savings_balance';
   static const String monthlyIncomeKey = 'monthly_income_amount';
@@ -61,15 +64,25 @@ class TransactionStore extends ChangeNotifier {
 
   List<SavingsGoal> get goals => List.unmodifiable(_goals);
 
-  SavingsGoal? get activeGoal {
-    for (final goal in _goals) {
-      if (!goal.isCompleted) {
-        return goal;
-      }
-    }
+  /// الأهداف غير المكتملة حسب الأولوية (0 = الأعلى).
+  List<SavingsGoal> get activeGoals =>
+      _goals.where((goal) => !goal.isCompleted).toList(growable: false);
 
+  /// أعلى هدف أولوية غير مكتمل.
+  SavingsGoal? get activeGoal {
+    final current = activeGoals;
+    return current.isEmpty ? null : current.first;
+  }
+
+  /// أول هدف نشط بخصم دوري، حسب الأولوية.
+  SavingsGoal? get activePeriodicGoal {
+    for (final goal in activeGoals) {
+      if (goal.isPeriodic) return goal;
+    }
     return null;
   }
+
+  bool get hasActivePeriodicPlan => activePeriodicGoal != null;
 
   List<SavingsGoal> get completedGoals =>
       _goals.where((goal) => goal.isCompleted).toList(growable: false)..sort(
@@ -107,9 +120,7 @@ class TransactionStore extends ChangeNotifier {
       return true;
     }
 
-    return incomes.any(
-      (item) => item.frequency == RecurringFrequency.monthly,
-    );
+    return incomes.any((item) => item.frequency == RecurringFrequency.monthly);
   }
 
   bool get hasWeeklyIncome {
@@ -117,9 +128,7 @@ class TransactionStore extends ChangeNotifier {
       return true;
     }
 
-    return incomes.any(
-      (item) => item.frequency == RecurringFrequency.weekly,
-    );
+    return incomes.any((item) => item.frequency == RecurringFrequency.weekly);
   }
 
   bool get hasRecurringIncome => hasMonthlyIncome || hasWeeklyIncome;
@@ -184,9 +193,13 @@ class TransactionStore extends ChangeNotifier {
     return net < 0 ? 0 : net;
   }
 
+  /// المبلغ المدّخر حالياً لهذا الهدف.
+  double currentSaved(SavingsGoal goal) => goalProgress(goal);
+
   /// تقدّم الهدف:
-  /// فقط ما أُضيف إلى الادخار بعد إنشاء الهدف،
-  /// ناقص ما سُحب بعد إنشائه.
+  /// التحويلات الموسومة بـ [SavingsGoal.id]،
+  /// بالإضافة إلى التحويلات القديمة بلا وسم — تُنسب للهدف
+  /// الذي كان نشطاً وقت إنشائها حتى لا يُفقد تقدّم المستخدم الحالي.
   double goalProgress(SavingsGoal goal) {
     if (goal.isCompleted) {
       return goal.completedAmount ?? goal.targetAmount;
@@ -197,6 +210,10 @@ class TransactionStore extends ChangeNotifier {
 
     for (final item in _transactions) {
       if (item.dateTime.isBefore(goal.createdAt)) {
+        continue;
+      }
+
+      if (!_countsTowardGoal(item, goal)) {
         continue;
       }
 
@@ -359,7 +376,7 @@ class TransactionStore extends ChangeNotifier {
   }) async {
     await ensureLoaded();
 
-    if (amount <= 0) {
+    if (!amount.isFinite || amount <= 0) {
       return false;
     }
 
@@ -369,12 +386,42 @@ class TransactionStore extends ChangeNotifier {
     }
 
     _setOverride(frequency, amount);
+    final goalsChanged = _syncPeriodicGoalAmounts(frequency, amount);
 
     final prefs = await SharedPreferences.getInstance();
     await _persistIncomeOverrides(prefs);
+    if (goalsChanged) {
+      await _persistGoals(prefs);
+    }
+
+    // After the income dialog closes, let the current frame finish
+    // before waking Home/Report/Savings (charts + keep-alive tabs).
+    await Future<void>.delayed(Duration.zero);
     notifyListeners();
 
     return true;
+  }
+
+  bool _syncPeriodicGoalAmounts(RecurringFrequency frequency, double income) {
+    var changed = false;
+
+    for (var i = 0; i < _goals.length; i++) {
+      final goal = _goals[i];
+      if (goal.isCompleted || !goal.isPeriodic) continue;
+      if (goal.deductFrequency != frequency) continue;
+
+      final percent = goal.allocatePercent;
+      if (percent == null || percent <= 0) continue;
+
+      final perPeriod = income * percent / 100;
+      if (!perPeriod.isFinite || perPeriod <= 0) continue;
+      if (perPeriod == goal.allocateAmount) continue;
+
+      _goals[i] = goal.copyWith(allocateAmount: perPeriod);
+      changed = true;
+    }
+
+    return changed;
   }
 
   /// يرجع العملية عند النجاح، أو `null` إذا كان المبلغ أكبر من الرصيد.
@@ -472,10 +519,9 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
-  /// إنشاء هدف ادخار دوري.
+  /// إنشاء هدف ادخار.
   ///
-  /// الهدف يستخدم نوع دخل المستخدم:
-  /// Weekly أو Monthly.
+  /// الهدف الجديد يُضاف في نهاية القائمة (أقل أولوية).
   Future<bool> createGoal({
     required String name,
     required double targetAmount,
@@ -487,11 +533,6 @@ class TransactionStore extends ChangeNotifier {
     int? durationCount,
   }) async {
     await ensureLoaded();
-
-    /// لا يسمح بأكثر من هدف نشط.
-    if (activeGoal != null) {
-      return false;
-    }
 
     if (name.trim().isEmpty || targetAmount <= 0) {
       return false;
@@ -529,8 +570,11 @@ class TransactionStore extends ChangeNotifier {
         durationCount: durationCount != null && durationCount > 0
             ? durationCount
             : null,
+        priority: _goals.length,
       ),
     );
+
+    _reindexPriorities();
 
     final prefs = await SharedPreferences.getInstance();
 
@@ -593,9 +637,12 @@ class TransactionStore extends ChangeNotifier {
           deductFrequency: frequency,
           isPeriodic: true,
           durationCount: cycles,
+          priority: _goals.length,
         ),
       );
     }
+
+    _reindexPriorities();
 
     final prefs = await SharedPreferences.getInstance();
 
@@ -604,6 +651,69 @@ class TransactionStore extends ChangeNotifier {
     notifyListeners();
 
     return true;
+  }
+
+  /// حذف هدف بعد تأكيد المستخدم.
+  /// المدخرات نفسها تبقى في الرصيد؛ يُحذف سجل الهدف فقط.
+  Future<bool> deleteGoal(String id) async {
+    await ensureLoaded();
+
+    final index = _goals.indexWhere((goal) => goal.id == id);
+
+    if (index < 0) {
+      return false;
+    }
+
+    _goals.removeAt(index);
+    _reindexPriorities();
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await _persistGoals(prefs);
+
+    notifyListeners();
+
+    return true;
+  }
+
+  /// إعادة ترتيب الأهداف النشطة.
+  /// [newIndex] هو الموقع النهائي بعد إزالة العنصر.
+  Future<void> reorderActiveGoals(int oldIndex, int newIndex) async {
+    await ensureLoaded();
+
+    final active = activeGoals.toList();
+
+    if (oldIndex < 0 || oldIndex >= active.length) {
+      return;
+    }
+
+    if (newIndex < 0 || newIndex >= active.length) {
+      return;
+    }
+
+    if (oldIndex == newIndex) {
+      return;
+    }
+
+    final moved = active.removeAt(oldIndex);
+    active.insert(newIndex, moved);
+
+    var activeIndex = 0;
+    for (var i = 0; i < _goals.length; i++) {
+      if (_goals[i].isCompleted) {
+        continue;
+      }
+
+      _goals[i] = active[activeIndex++];
+    }
+
+    _reindexPriorities();
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await _persistGoals(prefs);
+
+    notifyListeners();
   }
 
   /// إعادة تحميل البيانات من SharedPreferences.
@@ -712,7 +822,28 @@ class TransactionStore extends ChangeNotifier {
 
     final storedGoals = prefs.getStringList(savingsGoalsKey) ?? const [];
 
-    _goals.addAll(storedGoals.map(SavingsGoal.decode).whereType<SavingsGoal>());
+    var schemaNeedsWrite = false;
+
+    if (storedGoals.isNotEmpty) {
+      for (final raw in storedGoals) {
+        final decoded = SavingsGoal.decode(raw);
+        if (decoded == null) continue;
+        _goals.add(decoded);
+        if (!_encodedHasPriority(raw)) {
+          schemaNeedsWrite = true;
+        }
+      }
+    } else {
+      final legacy = _loadLegacySingleGoal(prefs);
+      if (legacy != null) {
+        _goals.add(legacy);
+        schemaNeedsWrite = true;
+      }
+    }
+
+    if (_normalizeGoalPriorities() || schemaNeedsWrite) {
+      await _persistGoals(prefs);
+    }
 
     final storedPeriods = prefs.getStringList(processedPeriodsKey) ?? const [];
 
@@ -744,17 +875,22 @@ class TransactionStore extends ChangeNotifier {
 
       final now = DateTime.now();
 
-      final initialGoal = activeGoal;
+      final periodicIds = [
+        for (final goal in activeGoals)
+          if (goal.isPeriodic &&
+              goal.allocateAmount != null &&
+              goal.allocateAmount! > 0 &&
+              goal.deductFrequency != RecurringFrequency.none)
+            goal.id,
+      ];
 
-      // ==========================================
-      // الاقتطاع الدوري للهدف
-      // ==========================================
+      for (final goalId in periodicIds) {
+        final initialGoal = _goalById(goalId);
 
-      if (initialGoal != null &&
-          initialGoal.isPeriodic &&
-          initialGoal.allocateAmount != null &&
-          initialGoal.allocateAmount! > 0 &&
-          initialGoal.deductFrequency != RecurringFrequency.none) {
+        if (initialGoal == null || initialGoal.isCompleted) {
+          continue;
+        }
+
         final keys = CalendarPeriod.completedKeysSince(
           initialGoal.deductFrequency,
           initialGoal.createdAt,
@@ -766,9 +902,9 @@ class TransactionStore extends ChangeNotifier {
         var processedGoalCycles = 0;
 
         for (final key in keys) {
-          final goal = activeGoal;
+          final goal = _goalById(goalId);
 
-          if (goal == null || goal.id != initialGoal.id || goal.isCompleted) {
+          if (goal == null || goal.isCompleted) {
             break;
           }
 
@@ -943,32 +1079,150 @@ class TransactionStore extends ChangeNotifier {
   }
 
   bool _completeGoalIfNeeded() {
-    final goal = activeGoal;
+    var changed = false;
 
-    if (goal == null) {
+    for (final goal in List<SavingsGoal>.from(activeGoals)) {
+      final progress = goalProgress(goal);
+
+      if (progress + 0.0001 < goal.targetAmount) {
+        continue;
+      }
+
+      final index = _goals.indexWhere((item) => item.id == goal.id);
+
+      if (index < 0) {
+        continue;
+      }
+
+      _goals[index] = goal.copyWith(
+        completedAt: DateTime.now(),
+        completedAmount: progress > goal.targetAmount
+            ? progress
+            : goal.targetAmount,
+      );
+      changed = true;
+    }
+
+    if (changed) {
+      _reindexPriorities();
+    }
+
+    return changed;
+  }
+
+  bool _countsTowardGoal(WafferTransaction item, SavingsGoal goal) {
+    if (!item.isSavingsIn && !item.isSavingsOut) {
       return false;
     }
 
-    final progress = goalProgress(goal);
+    final taggedId = item.goalId;
 
-    if (progress + 0.0001 < goal.targetAmount) {
+    if (taggedId != null && taggedId.isNotEmpty) {
+      return taggedId == goal.id;
+    }
+
+    return _legacyGoalIdFor(item.dateTime) == goal.id;
+  }
+
+  /// التحويلات القديمة بلا [WafferTransaction.goalId] تُنسب للهدف
+  /// الأقدم الذي كان لا يزال غير مكتمل وقت التحويل.
+  String? _legacyGoalIdFor(DateTime at) {
+    SavingsGoal? best;
+
+    for (final goal in _goals) {
+      if (goal.createdAt.isAfter(at)) {
+        continue;
+      }
+
+      if (goal.completedAt != null && !goal.completedAt!.isAfter(at)) {
+        continue;
+      }
+
+      if (best == null || goal.createdAt.isBefore(best.createdAt)) {
+        best = goal;
+      }
+    }
+
+    return best?.id;
+  }
+
+  SavingsGoal? _goalById(String id) {
+    for (final goal in _goals) {
+      if (goal.id == id) {
+        return goal;
+      }
+    }
+
+    return null;
+  }
+
+  void _reindexPriorities() {
+    for (var i = 0; i < _goals.length; i++) {
+      if (_goals[i].priority != i) {
+        _goals[i] = _goals[i].copyWith(priority: i);
+      }
+    }
+  }
+
+  /// يرتّب القائمة حسب [SavingsGoal.priority] مع الحفاظ على ترتيب
+  /// التخزين عند تساوي القيمة (هدف قديم بلا حقل أولوية).
+  bool _normalizeGoalPriorities() {
+    if (_goals.isEmpty) {
       return false;
     }
 
-    final index = _goals.indexWhere((item) => item.id == goal.id);
+    final original = List<SavingsGoal>.from(_goals);
 
-    if (index < 0) {
-      return false;
+    final indexed =
+        [for (var i = 0; i < _goals.length; i++) (index: i, goal: _goals[i])]
+          ..sort((a, b) {
+            final byPriority = a.goal.priority.compareTo(b.goal.priority);
+            if (byPriority != 0) return byPriority;
+            return a.index.compareTo(b.index);
+          });
+
+    var changed = false;
+
+    for (var i = 0; i < indexed.length; i++) {
+      final next = indexed[i].goal.priority == i
+          ? indexed[i].goal
+          : indexed[i].goal.copyWith(priority: i);
+
+      if (original[i].id != next.id || original[i].priority != next.priority) {
+        changed = true;
+      }
+
+      _goals[i] = next;
     }
 
-    _goals[index] = goal.copyWith(
-      completedAt: DateTime.now(),
-      completedAmount: progress > goal.targetAmount
-          ? progress
-          : goal.targetAmount,
-    );
+    return changed;
+  }
 
-    return true;
+  bool _encodedHasPriority(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is Map && decoded.containsKey('priority');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  SavingsGoal? _loadLegacySingleGoal(SharedPreferences prefs) {
+    try {
+      final raw = prefs.getString(legacySavingsGoalKey);
+      if (raw == null || raw.trim().isEmpty) {
+        return null;
+      }
+
+      final goal = SavingsGoal.decode(raw);
+      if (goal == null) {
+        return null;
+      }
+
+      return goal.copyWith(priority: 0);
+    } catch (_) {
+      return null;
+    }
   }
 
   bool _markProcessed(String token) {

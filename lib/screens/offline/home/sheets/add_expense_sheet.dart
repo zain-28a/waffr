@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:waffer/core/data/category_store.dart';
 import 'package:waffer/core/data/expense_categories.dart';
 import 'package:waffer/core/data/recurring_expense.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
@@ -126,37 +127,43 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
             setState(() => _recurring = value == _recurringLabel);
           },
         ),
-        if (_recurring) ...[
-          const SizedBox(height: 18),
-          const SheetFieldLabel(text: 'التكرار'),
-          SheetChoiceChips(
-            options: const ['يوم', 'أسبوع', 'شهر'],
-            selected: _recurringUnit.label,
-            onSelected: (value) {
-              setState(() {
-                _recurringUnit = switch (value) {
-                  'أسبوع' => RecurringUnit.week,
-                  'شهر' => RecurringUnit.month,
-                  _ => RecurringUnit.day,
-                };
-              });
-            },
-          ),
-          const SizedBox(height: 18),
-          SheetFieldLabel(
-            text: 'كل كم ${_recurringUnit.label}؟',
-          ),
-          SheetTextField(
-            controller: _intervalController,
-            hint: 'مثال: 1',
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(2),
+        SheetExpand(
+          visible: _recurring,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 18),
+              const SheetFieldLabel(text: 'التكرار'),
+              SheetChoiceChips(
+                options: const ['يوم', 'أسبوع', 'شهر'],
+                selected: _recurringUnit.label,
+                onSelected: (value) {
+                  setState(() {
+                    _recurringUnit = switch (value) {
+                      'أسبوع' => RecurringUnit.week,
+                      'شهر' => RecurringUnit.month,
+                      _ => RecurringUnit.day,
+                    };
+                  });
+                },
+              ),
+              const SizedBox(height: 18),
+              SheetFieldLabel(
+                text: 'كل كم ${_recurringUnit.label}؟',
+              ),
+              SheetTextField(
+                controller: _intervalController,
+                hint: 'مثال: 1',
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(2),
+                ],
+                onChanged: (_) => setState(() {}),
+              ),
             ],
-            onChanged: (_) => setState(() {}),
           ),
-        ],
+        ),
         const SizedBox(height: 18),
         const SheetFieldLabel(text: 'التصنيف'),
         ExpenseCategoryGrid(
@@ -165,7 +172,8 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         ),
         const SizedBox(height: 18),
         const SheetFieldLabel(text: 'طريقة الدفع'),
-        _PaymentMethods(
+        SheetChoiceChips(
+          options: paymentMethods,
           selected: _paymentMethod,
           onSelected: (method) => setState(() => _paymentMethod = method),
         ),
@@ -186,7 +194,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   }
 }
 
-class ExpenseCategoryGrid extends StatelessWidget {
+class ExpenseCategoryGrid extends StatefulWidget {
   final String selected;
   final ValueChanged<String> onSelected;
 
@@ -197,23 +205,219 @@ class ExpenseCategoryGrid extends StatelessWidget {
   });
 
   @override
+  State<ExpenseCategoryGrid> createState() => _ExpenseCategoryGridState();
+}
+
+class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
+  @override
+  void initState() {
+    super.initState();
+    CategoryStore.instance.ensureLoaded();
+  }
+
+  Future<void> _createCustom() async {
+    final draft = await showDialog<_CustomCategoryDraft>(
+      context: context,
+      builder: (_) => const _CustomCategoryNameDialog(),
+    );
+    if (draft == null || !mounted) return;
+
+    final created = await CategoryStore.instance.addCustom(
+      draft.label,
+      iconIndex: draft.iconIndex,
+    );
+    if (created == null || !mounted) return;
+
+    widget.onSelected(created);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 4,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 0.92,
-      children: expenseCategories
-          .map(
-            (category) => _CategoryTile(
-              category: category,
-              isSelected: category.label == selected,
-              onTap: () => onSelected(category.label),
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: ListenableBuilder(
+        listenable: CategoryStore.instance,
+        builder: (context, _) {
+          final categories = CategoryStore.instance.selectableCategories;
+          return GridView.count(
+            crossAxisCount: 4,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.92,
+            children: [
+              for (final category in categories)
+                _CategoryTile(
+                  key: ValueKey(category.label),
+                  category: category,
+                  isSelected: category.label == widget.selected,
+                  onTap: () => widget.onSelected(category.label),
+                ),
+              _CategoryTile(
+                key: const ValueKey('__custom_action__'),
+                category: customCategoryAction,
+                isSelected: false,
+                isAction: true,
+                onTap: _createCustom,
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CustomCategoryDraft {
+  final String label;
+  final int iconIndex;
+
+  const _CustomCategoryDraft({
+    required this.label,
+    required this.iconIndex,
+  });
+}
+
+class _CustomCategoryNameDialog extends StatefulWidget {
+  const _CustomCategoryNameDialog();
+
+  @override
+  State<_CustomCategoryNameDialog> createState() =>
+      _CustomCategoryNameDialogState();
+}
+
+class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
+  final TextEditingController _controller = TextEditingController();
+  String? _error;
+  int _iconIndex = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final error = CategoryStore.instance.validateName(_controller.text);
+    if (error != null) {
+      setState(() => _error = error);
+      return;
+    }
+    Navigator.of(context).pop(
+      _CustomCategoryDraft(
+        label: _controller.text.trim(),
+        iconIndex: _iconIndex,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    return AlertDialog(
+      title: const Text('تصنيف مخصص'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              textAlign: TextAlign.center,
+              maxLength: 16,
+              onChanged: (_) {
+                if (_error != null) setState(() => _error = null);
+              },
+              onSubmitted: (_) => _submit(),
+              decoration: InputDecoration(
+                hintText: 'مثال: إيجار، قهوة...',
+                errorText: _error,
+                counterText: '',
+              ),
             ),
-          )
-          .toList(),
+            const SizedBox(height: 16),
+            Text(
+              'الشعار',
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: textPrimary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                for (var i = 0; i < customCategoryIconChoices.length; i++)
+                  _IconChoice(
+                    icon: customCategoryIconChoices[i],
+                    selected: i == _iconIndex,
+                    accent: accent,
+                    onTap: () => setState(() => _iconIndex = i),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('إلغاء'),
+        ),
+        TextButton(
+          onPressed: _submit,
+          child: Text('إضافة', style: TextStyle(color: accent)),
+        ),
+      ],
+    );
+  }
+}
+
+class _IconChoice extends StatelessWidget {
+  final IconData icon;
+  final bool selected;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _IconChoice({
+    required this.icon,
+    required this.selected,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: selected ? accent : sheetFieldColor(context),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: selected ? Colors.white : accent,
+        ),
+      ),
     );
   }
 }
@@ -221,12 +425,15 @@ class ExpenseCategoryGrid extends StatelessWidget {
 class _CategoryTile extends StatelessWidget {
   final ExpenseCategory category;
   final bool isSelected;
+  final bool isAction;
   final VoidCallback onTap;
 
   const _CategoryTile({
+    super.key,
     required this.category,
     required this.isSelected,
     required this.onTap,
+    this.isAction = false,
   });
 
   @override
@@ -239,15 +446,23 @@ class _CategoryTile extends StatelessWidget {
         : AppColors.lightTextPrimary;
 
     final foreground = isSelected ? Colors.white : textPrimary;
+    final iconColor = isSelected ? Colors.white : accent;
 
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
-          color: isSelected ? accent : sheetFieldColor(context),
+          color: isSelected
+              ? accent
+              : isAction
+                  ? sheetFieldColor(context).withValues(alpha: 0.55)
+                  : sheetFieldColor(context),
           borderRadius: BorderRadius.circular(18),
+          border: isAction
+              ? Border.all(color: accent.withValues(alpha: 0.32), width: 1.2)
+              : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -255,7 +470,7 @@ class _CategoryTile extends StatelessWidget {
             Icon(
               category.icon,
               size: 22,
-              color: isSelected ? Colors.white : accent,
+              color: iconColor,
             ),
             const SizedBox(height: 8),
             Text(
@@ -263,7 +478,7 @@ class _CategoryTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: foreground,
@@ -272,63 +487,6 @@ class _CategoryTile extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _PaymentMethods extends StatelessWidget {
-  final String selected;
-  final ValueChanged<String> onSelected;
-
-  const _PaymentMethods({required this.selected, required this.onSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-
-    return Row(
-      children: paymentMethods.map((method) {
-        final isSelected = method == selected;
-
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
-            child: GestureDetector(
-              onTap: () => onSelected(method),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? accent.withValues(alpha: 0.14)
-                      : sheetFieldColor(context),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected ? accent : Colors.transparent,
-                    width: 1.4,
-                  ),
-                ),
-                child: Text(
-                  method,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 13.5,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? accent : textPrimary,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 }

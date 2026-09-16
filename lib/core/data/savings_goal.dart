@@ -7,12 +7,12 @@ enum GoalDurationPreset { week, month, threeMonths, sixMonths, year }
 
 extension GoalDurationPresetLabel on GoalDurationPreset {
   String get label => switch (this) {
-        GoalDurationPreset.week => 'أسبوع',
-        GoalDurationPreset.month => 'شهر',
-        GoalDurationPreset.threeMonths => '3 أشهر',
-        GoalDurationPreset.sixMonths => '6 أشهر',
-        GoalDurationPreset.year => 'سنة',
-      };
+    GoalDurationPreset.week => 'أسبوع',
+    GoalDurationPreset.month => 'شهر',
+    GoalDurationPreset.threeMonths => '3 أشهر',
+    GoalDurationPreset.sixMonths => '6 أشهر',
+    GoalDurationPreset.year => 'سنة',
+  };
 
   static GoalDurationPreset fromCount(
     int count, {
@@ -48,6 +48,8 @@ extension GoalDurationPresetLabel on GoalDurationPreset {
 }
 
 /// هدف ادخار واحد. التقدّم يُحتسب فقط من التحويلات بعد [createdAt].
+///
+/// [priority] يحدد ترتيب العرض: 0 = أعلى أولوية.
 class SavingsGoal {
   final String id;
   final String name;
@@ -61,6 +63,7 @@ class SavingsGoal {
   final RecurringFrequency deductFrequency;
   final bool isPeriodic;
   final int? durationCount;
+  final int priority;
 
   const SavingsGoal({
     required this.id,
@@ -75,6 +78,7 @@ class SavingsGoal {
     this.deductFrequency = RecurringFrequency.monthly,
     this.isPeriodic = false,
     this.durationCount,
+    this.priority = 0,
   });
 
   int cyclesFor(RecurringFrequency frequency) {
@@ -92,6 +96,7 @@ class SavingsGoal {
     RecurringFrequency? deductFrequency,
     bool? isPeriodic,
     int? durationCount,
+    int? priority,
   }) {
     return SavingsGoal(
       id: id,
@@ -106,23 +111,25 @@ class SavingsGoal {
       deductFrequency: deductFrequency ?? this.deductFrequency,
       isPeriodic: isPeriodic ?? this.isPeriodic,
       durationCount: durationCount ?? this.durationCount,
+      priority: priority ?? this.priority,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'targetAmount': targetAmount,
-        'createdAt': createdAt.toIso8601String(),
-        'completedAt': completedAt?.toIso8601String(),
-        'completedAmount': completedAmount,
-        'duration': duration.name,
-        'allocatePercent': allocatePercent,
-        'allocateAmount': allocateAmount,
-        'deductFrequency': deductFrequency.name,
-        'isPeriodic': isPeriodic,
-        'durationCount': durationCount,
-      };
+    'id': id,
+    'name': name,
+    'targetAmount': targetAmount,
+    'createdAt': createdAt.toIso8601String(),
+    'completedAt': completedAt?.toIso8601String(),
+    'completedAmount': completedAmount,
+    'duration': duration.name,
+    'allocatePercent': allocatePercent,
+    'allocateAmount': allocateAmount,
+    'deductFrequency': deductFrequency.name,
+    'isPeriodic': isPeriodic,
+    'durationCount': durationCount,
+    'priority': priority,
+  };
 
   String encode() => jsonEncode(toJson());
 
@@ -141,9 +148,12 @@ class SavingsGoal {
         id: decoded['id']?.toString() ?? newId(),
         name: name,
         targetAmount: target,
-        createdAt: DateTime.tryParse(decoded['createdAt']?.toString() ?? '') ??
+        createdAt:
+            DateTime.tryParse(decoded['createdAt']?.toString() ?? '') ??
             DateTime.now(),
-        completedAt: DateTime.tryParse(decoded['completedAt']?.toString() ?? ''),
+        completedAt: DateTime.tryParse(
+          decoded['completedAt']?.toString() ?? '',
+        ),
         completedAmount: (decoded['completedAmount'] as num?)?.toDouble(),
         duration: _parseDuration(decoded['duration']?.toString()),
         allocatePercent: (decoded['allocatePercent'] as num?)?.toDouble(),
@@ -154,6 +164,7 @@ class SavingsGoal {
         ),
         isPeriodic: decoded['isPeriodic'] == true,
         durationCount: (decoded['durationCount'] as num?)?.toInt(),
+        priority: (decoded['priority'] as num?)?.toInt() ?? 0,
       );
     } catch (_) {
       return null;
@@ -172,7 +183,10 @@ class SavingsGoal {
     };
   }
 
-  static RecurringFrequency _parseFrequency(String? raw, {bool periodic = false}) {
+  static RecurringFrequency _parseFrequency(
+    String? raw, {
+    bool periodic = false,
+  }) {
     return switch (raw) {
       'weekly' => RecurringFrequency.weekly,
       'monthly' => RecurringFrequency.monthly,
