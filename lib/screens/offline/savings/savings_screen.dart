@@ -6,10 +6,10 @@ import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/offline/savings/sheets/completed_goals_sheet.dart';
 import 'package:waffer/screens/offline/savings/sheets/create_goal_sheet.dart';
+import 'package:waffer/screens/offline/savings/sheets/manage_goals_sheet.dart';
 import 'package:waffer/screens/offline/savings/sheets/manual_save_sheet.dart';
 import 'package:waffer/screens/offline/savings/sheets/periodic_goals_sheet.dart';
 import 'package:waffer/screens/offline/savings/sheets/shopping_list_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/recurring_expenses_sheet.dart';
 import 'package:waffer/screens/offline/savings/sheets/withdraw_savings_sheet.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
@@ -21,7 +21,8 @@ class SavingsScreen extends StatefulWidget {
   State<SavingsScreen> createState() => _SavingsScreenState();
 }
 
-class _SavingsScreenState extends State<SavingsScreen> {
+class _SavingsScreenState extends State<SavingsScreen>
+    with AutomaticKeepAliveClientMixin {
   static const int _maxPeriodOffset = 240;
 
   final TransactionStore _store = TransactionStore.instance;
@@ -29,6 +30,9 @@ class _SavingsScreenState extends State<SavingsScreen> {
 
   SavingsRange _range = SavingsRange.month;
   int _periodOffset = 0;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -75,10 +79,11 @@ class _SavingsScreenState extends State<SavingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return AnimatedBuilder(
       animation: _store,
       builder: (context, _) {
-        final goal = _store.activeGoal;
+        final goals = _store.activeGoals;
 
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 26),
@@ -142,25 +147,22 @@ class _SavingsScreenState extends State<SavingsScreen> {
 
               const SizedBox(height: 12),
 
-              // الهدف + أزرار الأهداف
-              _SplitActionRow(
-                leading: goal == null
-                    ? _CreateGoalCard(
-                        onCreate: () => showCreateGoalSheet(context),
-                      )
-                    : _GoalProgressCard(
-                        goal: goal,
-                        saved: _store.goalProgress(goal),
-                      ),
-                first: _ActionButton(
-                  label: 'خطط دورية',
-                  mark: false,
-                  onTap: () => showPeriodicGoalsSheet(context),
-                ),
-                second: _ActionButton(
-                  label: 'الأهداف المحققة',
-                  onTap: () => showCompletedGoalsSheet(context),
-                ),
+              _ActiveGoalsPanel(
+                goals: goals,
+                store: _store,
+                onManage: () => showManageGoalsSheet(context),
+                onCreate: () => showCreateGoalSheet(context),
+              ),
+
+              const SizedBox(height: 12),
+
+              _PlanButtonsRow(
+                periodicLabel: _store.hasActivePeriodicPlan
+                    ? 'خطة جارية'
+                    : 'خطط دورية',
+                periodicActive: _store.hasActivePeriodicPlan,
+                onPeriodic: () => showPeriodicGoalsSheet(context),
+                onCompleted: () => showCompletedGoalsSheet(context),
               ),
 
               const SizedBox(height: 12),
@@ -168,7 +170,6 @@ class _SavingsScreenState extends State<SavingsScreen> {
               const ShoppingListPreviewCard(),
 
               const SizedBox(height: 12),
-
             ],
           ),
         );
@@ -235,7 +236,7 @@ class _TimeRangeSelector extends StatelessWidget {
                                 duration: const Duration(milliseconds: 200),
                                 curve: Curves.easeOut,
                                 style: TextStyle(
-                                  fontFamily: 'Cairo',
+                                  fontFamily: 'Tajawal',
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
                                   color: selected == range
@@ -312,7 +313,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                     Text(
                       'المبلغ الموفر',
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 12,
                         color: colors.textSecondary,
                       ),
@@ -328,7 +329,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Cairo',
+                          fontFamily: 'Tajawal',
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: colors.textPrimary,
@@ -354,7 +355,7 @@ class _PeriodSavingsCard extends StatelessWidget {
               'لا يوجد توفير في هذه الفترة',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 13,
                 color: colors.textPrimary.withValues(alpha: 0.55),
               ),
@@ -371,7 +372,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                     child: Text(
                       formatMoney(amount),
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
                         color: colors.accent,
@@ -383,7 +384,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                 Text(
                   currencyLabel,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 13,
                     color: colors.textSecondary,
                   ),
@@ -395,7 +396,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                   Text(
                     comparison.text,
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Tajawal',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: comparison.color,
@@ -519,6 +520,206 @@ class _SplitActionRow extends StatelessWidget {
   }
 }
 
+class _ActiveGoalsPanel extends StatelessWidget {
+  final List<SavingsGoal> goals;
+  final TransactionStore store;
+  final VoidCallback onManage;
+  final VoidCallback onCreate;
+
+  const _ActiveGoalsPanel({
+    required this.goals,
+    required this.store,
+    required this.onManage,
+    required this.onCreate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _SavingsColors.of(context);
+
+    final ordered = List<SavingsGoal>.from(goals)
+      ..sort((a, b) => a.priority.compareTo(b.priority));
+
+    if (ordered.isEmpty) {
+      return GlassContainer(
+        colorType: GlassColorType.surface,
+        borderRadius: 28,
+        padding: const EdgeInsets.fromLTRB(16, 15, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SavingsGoalsHeader(
+              colors: colors,
+              count: 0,
+            ),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.only(right: 15),
+              child: Text(
+                "لايوجد اهداف محددة حاليا",
+                textAlign: TextAlign.start,
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 48,
+              child: _CreateGoalCard(onCreate: onCreate),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.45;
+    final goalsContent = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < ordered.length; i++) ...[
+          if (i > 0) const SizedBox(height: 14),
+          _GoalProgressCard(
+            goal: ordered[i],
+            saved: store.currentSaved(ordered[i]),
+          ),
+        ],
+      ],
+    );
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _SavingsGoalsHeader(
+          colors: colors,
+          count: ordered.length,
+        ),
+        const SizedBox(height: 14),
+        ordered.length > 3
+            ? ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                child: SingleChildScrollView(child: goalsContent),
+              )
+            : goalsContent,
+      ],
+    );
+
+    return GestureDetector(
+      onTap: onManage,
+      behavior: HitTestBehavior.opaque,
+      child: GlassContainer(
+        colorType: GlassColorType.surface,
+        borderRadius: 28,
+        padding: const EdgeInsets.fromLTRB(16, 15, 16, 16),
+        child: content,
+      ),
+    );
+  }
+}
+
+class _SavingsGoalsHeader extends StatelessWidget {
+  final _SavingsColors colors;
+  final int count;
+
+  const _SavingsGoalsHeader({
+    required this.colors,
+    required this.count,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: colors.accent.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.wallet_rounded,
+            size: 19,
+            color: colors.accent,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'أهداف التوفير',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 1),
+              
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PlanButtonsRow extends StatelessWidget {
+  final String periodicLabel;
+  final bool periodicActive;
+  final VoidCallback onPeriodic;
+  final VoidCallback onCompleted;
+
+  const _PlanButtonsRow({
+    required this.periodicLabel,
+    required this.periodicActive,
+    required this.onPeriodic,
+    required this.onCompleted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      child: Row(
+        children: [
+          Expanded(
+            child: _ActionButton(
+              label: periodicLabel,
+              onTap: onPeriodic,
+              leading: periodicActive
+                  ? const Icon(
+                      Icons.check_circle_rounded,
+                      size: 16,
+                      color: Color(0xFF3D8A4A),
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _ActionButton(
+              label: 'الأهداف المحققة',
+              onTap: onCompleted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TotalSavingsCard extends StatelessWidget {
   final double total;
 
@@ -539,14 +740,14 @@ class _TotalSavingsCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 34,
-                height: 24,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   color: colors.accent.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  Icons.account_balance_wallet,
+                  Icons.attach_money,
                   size: 19,
                   color: colors.accent,
                 ),
@@ -558,7 +759,7 @@ class _TotalSavingsCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: colors.textSecondary,
@@ -568,13 +769,13 @@ class _TotalSavingsCard extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 5),
 
           if (total <= 0)
             Text(
               'لا توجد مبالغ موفرة بعد',
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: colors.textSecondary.withValues(alpha: 0.65),
@@ -591,7 +792,7 @@ class _TotalSavingsCard extends StatelessWidget {
                     child: Text(
                       formatMoney(total),
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 27,
                         fontWeight: FontWeight.bold,
                         color: colors.accent,
@@ -605,7 +806,7 @@ class _TotalSavingsCard extends StatelessWidget {
                   child: Text(
                     currencyLabel,
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Tajawal',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: colors.textSecondary,
@@ -624,9 +825,9 @@ class _TotalSavingsCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 10.5,
-              color: colors.textSecondary.withValues(alpha: 0.65),
+              color: colors.textSecondary,
             ),
           ),
         ],
@@ -638,12 +839,12 @@ class _TotalSavingsCard extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
-  final bool mark;
+  final Widget? leading;
 
   const _ActionButton({
     required this.label,
     required this.onTap,
-    this.mark = false,
+    this.leading,
   });
 
   @override
@@ -656,28 +857,28 @@ class _ActionButton extends StatelessWidget {
       borderRadius: 22,
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (mark) ...[const SizedBox(height: 2)],
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: colors.textPrimary,
-                  ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (leading != null) ...[
+                leading!,
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: colors.textPrimary,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -695,25 +896,21 @@ class _CreateGoalCard extends StatelessWidget {
 
     return GlassButton(
       onTap: onCreate,
-      colorType: GlassColorType.surface,
-      borderRadius: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 8),
-          Text(
-            'إنشاء هدف',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Cairo',
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: colors.textPrimary,
-            ),
+      colorType: GlassColorType.accent, tintOpacity: 9, 
+      borderRadius: 22,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Center(
+        child: Text(
+          'إنشاء هدف',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 13.5,
+            fontWeight: FontWeight.bold,
+            color: Color.fromARGB(255, 255, 255, 255),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -723,7 +920,10 @@ class _GoalProgressCard extends StatelessWidget {
   final SavingsGoal goal;
   final double saved;
 
-  const _GoalProgressCard({required this.goal, required this.saved});
+  const _GoalProgressCard({
+    required this.goal,
+    required this.saved,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -733,85 +933,76 @@ class _GoalProgressCard extends StatelessWidget {
         ? 0.0
         : (saved / goal.targetAmount).clamp(0.0, 1.0);
 
-    return GlassContainer(
-      colorType: GlassColorType.surface,
-      borderRadius: 28,
-      padding: const EdgeInsets.fromLTRB(16, 15, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // اسم الهدف
-          Text(
-            goal.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          goal.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 14.5,
+            fontWeight: FontWeight.bold,
+            color: colors.textPrimary,
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: _HorizontalProgress(
+                ratio: ratio,
+                height: 18,
+                trackColor: colors.textPrimary.withValues(alpha: 0.08),
+                fillColor: colors.accent,
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            Text(
+              '${(ratio * 100).round()}%',
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: colors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 10),
+
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            '${formatMoney(saved)} / ${formatMoney(goal.targetAmount)}',
             style: TextStyle(
-              fontFamily: 'Cairo',
-              fontSize: 14.5,
+              fontFamily: 'Tajawal',
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               color: colors.textPrimary,
             ),
           ),
+        ),
 
-          const SizedBox(height: 10),
+        const SizedBox(height: 2),
 
-          // البار الأفقي + النسبة
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: _HorizontalProgress(
-                  ratio: ratio,
-                  height: 18,
-                  trackColor: colors.textPrimary.withValues(alpha: 0.08),
-                  fillColor: colors.accent,
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              Text(
-                '${(ratio * 100).round()}%',
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: colors.textSecondary,
-                ),
-              ),
-            ],
+        Text(
+          currencyLabel,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 11,
+            color: colors.textSecondary,
           ),
-
-          const SizedBox(height: 10),
-
-          // المبلغ الحالي / الهدف
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              '${formatMoney(saved)} / ${formatMoney(goal.targetAmount)}',
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: colors.textPrimary,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 2),
-
-          Text(
-            currencyLabel,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Cairo',
-              fontSize: 11,
-              color: colors.textSecondary,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

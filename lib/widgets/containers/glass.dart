@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart'; // عدل المسار حسب مكان الملف عندك
 
@@ -28,7 +27,7 @@ class GlassContainer extends StatelessWidget {
     this.margin = EdgeInsets.zero,
     this.borderRadius = 20,
     this.radius,
-    this.blurSigma = 10,
+    this.blurSigma = 00,
     this.colorType = GlassColorType.accent,
     this.tintOpacity = 0.8,
   });
@@ -59,8 +58,15 @@ class GlassContainer extends StatelessWidget {
       width: width,
       height: height,
       margin: margin,
+      padding: padding,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
+        color: baseColor.withValues(alpha: tintOpacity),
         borderRadius: shape,
+        border: Border.all(
+          color: borderColor.withValues(alpha: 0.1),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.12),
@@ -69,24 +75,7 @@ class GlassContainer extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: shape,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              color: baseColor.withValues(alpha: tintOpacity),
-              borderRadius: shape,
-              border: Border.all(
-                color: borderColor.withValues(alpha: 0.1),
-                width: 1,
-              ),
-            ),
-            child: child,
-          ),
-        ),
-      ),
+      child: child,
     );
   }
 }

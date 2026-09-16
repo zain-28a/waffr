@@ -12,8 +12,12 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen>
+    with AutomaticKeepAliveClientMixin {
   final NotificationService _service = NotificationService.instance;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -35,7 +39,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             'مسح سجل الإشعارات',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontWeight: FontWeight.bold,
               color: colors.textPrimary,
             ),
@@ -44,7 +48,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             'سيتم حذف سجل الإشعارات فقط. لن يتأثر رصيدك أو ادخارك أو أهدافك، ولن يتغيّر إعداد الكتم.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 14,
               color: colors.textSecondary,
             ),
@@ -54,14 +58,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               onPressed: () => Navigator.pop(context, false),
               child: Text(
                 'إلغاء',
-                style: TextStyle(fontFamily: 'Cairo', color: colors.textSecondary),
+                style: TextStyle(fontFamily: 'Tajawal', color: colors.textSecondary),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
                 'مسح السجل',
-                style: TextStyle(fontFamily: 'Cairo', color: colors.accent),
+                style: TextStyle(fontFamily: 'Tajawal', color: colors.accent),
               ),
             ),
           ],
@@ -76,6 +80,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return AnimatedBuilder(
       animation: _service,
       builder: (context, _) {
@@ -96,7 +101,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         child: Text(
                           'الإشعارات',
                           style: TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Tajawal',
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: colors.accent,
@@ -198,7 +203,7 @@ class _MuteControl extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: colors.textPrimary,
@@ -211,7 +216,7 @@ class _MuteControl extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 12,
                         color: colors.textSecondary,
                       ),
@@ -291,7 +296,7 @@ class _EmptyNotifications extends StatelessWidget {
               'لا توجد إشعارات بعد',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: colors.textPrimary,
@@ -302,7 +307,7 @@ class _EmptyNotifications extends StatelessWidget {
               'ستظهر هنا تنبيهات الرصيد والأهداف والادخار عند حدوثها',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 13,
                 color: colors.textSecondary,
               ),
@@ -337,7 +342,7 @@ class _NotificationGroupView extends StatelessWidget {
             child: Text(
               group.label,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
                 color: colors.textSecondary,
@@ -426,7 +431,7 @@ class _NotificationTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontFamily: 'Cairo',
+                              fontFamily: 'Tajawal',
                               fontSize: 14.5,
                               fontWeight: unread ? FontWeight.w800 : FontWeight.w700,
                               color: colors.textPrimary.withValues(
@@ -439,7 +444,7 @@ class _NotificationTile extends StatelessWidget {
                         Text(
                           formatTime(notification.createdAt),
                           style: TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Tajawal',
                             fontSize: 11.5,
                             color: colors.textSecondary,
                           ),
@@ -452,7 +457,7 @@ class _NotificationTile extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 12.5,
                         color: colors.textSecondary,
                       ),
@@ -461,7 +466,7 @@ class _NotificationTile extends StatelessWidget {
                     Text(
                       formatDate(notification.createdAt),
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 11,
                         color: colors.textSecondary.withValues(alpha: 0.8),
                       ),

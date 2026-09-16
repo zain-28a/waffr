@@ -71,7 +71,7 @@ class _RecurringExpensesPreviewCardState
                         Text(
                           'المصروفات المتكررة',
                           style: TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Tajawal',
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: colors.textPrimary,
@@ -82,7 +82,7 @@ class _RecurringExpensesPreviewCardState
                               ? 'لا يوجد اشتراك أو مصروف متكرر'
                               : '${_store.items.length} عناصر محفوظة',
                           style: TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Tajawal',
                             fontSize: 11.5,
                             color: colors.textSecondary,
                           ),
@@ -104,7 +104,7 @@ class _RecurringExpensesPreviewCardState
                       '+ ${_store.items.length - preview.length} عناصر أخرى',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: colors.accent,
@@ -195,7 +195,7 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
                     Text(
                       'لا توجد مصروفات متكررة بعد',
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 14,
                         color: colors.textSecondary,
                       ),
@@ -248,7 +248,7 @@ class _PreviewItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 12.5,
                 color: item.enabled ? colors.textPrimary : colors.textSecondary,
               ),
@@ -257,7 +257,7 @@ class _PreviewItem extends StatelessWidget {
           Text(
             item.intervalDescription,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 11,
               color: colors.textSecondary,
             ),
@@ -299,7 +299,7 @@ class _RecurringItemTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Tajawal',
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: colors.textPrimary,
@@ -309,7 +309,7 @@ class _RecurringItemTile extends StatelessWidget {
                   Text(
                     '${formatMoney(item.amount)} $currencyLabel · ${item.intervalDescription}',
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Tajawal',
                       fontSize: 11.5,
                       color: colors.textSecondary,
                     ),

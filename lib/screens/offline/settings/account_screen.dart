@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:waffer/core/data/backup_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
+import 'package:waffer/widgets/brand/waffer_page_header.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -63,7 +64,7 @@ class _AccountScreenState extends State<AccountScreen> {
     await BackupService.instance.updateDisplayName(name);
     if (!mounted) return;
     setState(() => _savingName = false);
-    showAppSnackBar(context, 'تم حفظ الاسم');
+    showAppSnackBar(context, 'تم حفظ الاسم', success: true);
   }
 
   Future<void> _signOut() async {
@@ -166,6 +167,7 @@ class _AccountScreenState extends State<AccountScreen> {
       result == GoogleLinkResult.restored
           ? 'تم استعادة بيانات الحساب'
           : 'تم ربط الحساب',
+      success: true,
     );
   }
 
@@ -182,21 +184,15 @@ class _AccountScreenState extends State<AccountScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
+      appBar: WafferPageHeader(
         centerTitle: true,
-        title: Text(
-          'الحساب',
-          style: TextStyle(
-            color: textPrimary,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Cairo',
-          ),
-        ),
         leading: IconButton(
           icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
           onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'الحساب',
+          style: Theme.of(context).textTheme.headlineSmall,
         ),
       ),
       body: ListView(
@@ -250,7 +246,7 @@ class _AccountScreenState extends State<AccountScreen> {
               onPressed: _savingName ? null : _saveName,
               child: Text(
                 _savingName ? 'جارٍ الحفظ...' : 'حفظ الاسم',
-                style: TextStyle(color: accent, fontFamily: 'Cairo'),
+                style: TextStyle(color: accent, fontFamily: 'Tajawal'),
               ),
             ),
           ),

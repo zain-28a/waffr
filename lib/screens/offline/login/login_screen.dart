@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:waffer/core/data/backup_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/widgets/brand/waffer_w_mark.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
@@ -34,13 +35,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (result == GoogleLinkResult.failed) {
       setState(() => _busy = false);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'لم يتم تسجيل الدخول. يمكنك المحاولة مجدداً أو المتابعة كضيف.',
-            textAlign: TextAlign.center,
-          ),
-        ),
+      showAppSnackBar(
+        context,
+        'لم يتم تسجيل الدخول. يمكنك المحاولة مجدداً أو المتابعة كضيف.',
       );
 
       return;
@@ -103,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: textPrimary,
                   fontSize: 34,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                 ),
               ),
 
@@ -129,20 +126,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       accent: accent,
                       textPrimary: textPrimary,
                     ),
-                    const SizedBox(height: 14),
-                    _InfoRow(
-                      icon: Icons.lock_outline_rounded,
-                      text: 'النسخة محفوظة في مجلد خاص بالتطبيق لا يطّلع عليه أحد',
-                      accent: accent,
-                      textPrimary: textPrimary,
-                    ),
-                    const SizedBox(height: 14),
-                    _InfoRow(
-                      icon: Icons.wifi_off_rounded,
-                      text: 'التطبيق يعمل بالكامل دون إنترنت في كل الأحوال',
-                      accent: accent,
-                      textPrimary: textPrimary,
-                    ),
                   ],
                 ),
               ),
@@ -151,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               GlassButton(
                 onTap: _signInWithGoogle,
-                colorType: GlassColorType.surface,
+                colorType: GlassColorType.accent,
                 borderRadius: 22,
                 padding: const EdgeInsets.symmetric(
                   vertical: 18,
@@ -174,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Icon(
                             Icons.login_rounded,
                             size: 20,
-                            color: accent,
+                            color: Color.fromARGB(255, 255, 255, 255),
                           ),
                           const SizedBox(width: 8),
                           Flexible(
@@ -183,10 +166,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontFamily: 'Cairo',
+                                fontFamily: 'Tajawal',
                                 fontSize: 14.5,
                                 fontWeight: FontWeight.w700,
-                                color: textPrimary,
+                                color: Color.fromARGB(255, 255, 255, 255),
                               ),
                             ),
                           ),
@@ -204,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: textSecondary,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                   ),
                 ),
               ),

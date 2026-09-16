@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/widgets/brand/waffer_page_header.dart';
 
 class PrivacyInfoScreen extends StatelessWidget {
   const PrivacyInfoScreen({super.key});
@@ -33,30 +34,18 @@ class PrivacyInfoScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: bg,
 
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
+      appBar: WafferPageHeader(
         centerTitle: true,
-
-        title: Text(
-          'الخصوصية والبيانات',
-
-          style: TextStyle(
-            color: textPrimary,
-            fontWeight:
-                FontWeight.bold,
-            fontFamily: 'Cairo',
-          ),
-        ),
-
         leading: IconButton(
           icon: Icon(
             Icons.arrow_forward_ios_rounded,
             color: textPrimary,
           ),
-
-          onPressed: () =>
-              Navigator.pop(context),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'الخصوصية والبيانات',
+          style: Theme.of(context).textTheme.headlineSmall,
         ),
       ),
 
@@ -191,7 +180,7 @@ class PrivacyInfoScreen extends StatelessWidget {
                           fontWeight:
                               FontWeight.w600,
                           color: textPrimary,
-                          fontFamily: 'Cairo',
+                          fontFamily: 'Tajawal',
                           height: 1.5,
                         ),
                       ),
@@ -220,7 +209,7 @@ class PrivacyInfoScreen extends StatelessWidget {
                           fontWeight:
                               FontWeight.w600,
                           color: textPrimary,
-                          fontFamily: 'Cairo',
+                          fontFamily: 'Tajawal',
                           height: 1.5,
                         ),
                       ),
@@ -309,7 +298,7 @@ class _InfoSection
                     fontWeight:
                         FontWeight.bold,
                     color: textPrimary,
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                   ),
                 ),
               ),
@@ -325,7 +314,7 @@ class _InfoSection
               fontSize: 14,
               height: 1.6,
               color: textSecondary,
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
             ),
           ),
         ],

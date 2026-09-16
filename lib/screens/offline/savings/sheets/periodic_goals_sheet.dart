@@ -8,9 +8,13 @@ import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
 Future<void> showPeriodicGoalsSheet(BuildContext context) {
+  final plan = TransactionStore.instance.activePeriodicGoal;
+
   return showGlassSheet<void>(
     context: context,
-    builder: (context) => const _PeriodicGoalsSheet(),
+    builder: (context) => plan == null
+        ? const _PeriodicGoalsSheet()
+        : _PeriodicPlanDetailsSheet(goal: plan),
   );
 }
 
@@ -86,7 +90,13 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
               : (_isMeaningful ? () => setState(() => _preview = true) : null),
         ),
         const SizedBox(height: 18),
-        if (!_preview) ..._buildPicker(context) else ..._buildPreview(context),
+        SheetSwap(
+          switchKey: _preview,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: _preview ? _buildPreview(context) : _buildPicker(context),
+          ),
+        ),
         const SizedBox(height: 22),
         SheetSaveButton(
           label: _preview ? 'تأكيد الخطة' : 'معاينة الخطة',
@@ -107,10 +117,10 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 28),
           child: Text(
-            'أضف دخلاً أسبوعياً أو شهرياً أولاً لاقتراح خطط مناسبة.',
+            'أضف دخلاً شهرياً أولاً لاقتراح خطط مناسبة.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 14,
               color: textSecondary,
             ),
@@ -129,7 +139,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
         '${formatMoney(_income)} $currencyLabel',
         textAlign: TextAlign.center,
         style: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: 'Tajawal',
           fontSize: 22,
           fontWeight: FontWeight.bold,
           color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
@@ -241,7 +251,7 @@ class _PreviewRow extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 13.5,
                 color: textSecondary,
               ),
@@ -252,7 +262,7 @@ class _PreviewRow extends StatelessWidget {
               value,
               textAlign: TextAlign.end,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: emphasize ? 16 : 14,
                 fontWeight: FontWeight.bold,
                 color: textPrimary,
@@ -261,6 +271,195 @@ class _PreviewRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PeriodicPlanDetailsSheet extends StatefulWidget {
+  final SavingsGoal goal;
+
+  const _PeriodicPlanDetailsSheet({required this.goal});
+
+  @override
+  State<_PeriodicPlanDetailsSheet> createState() =>
+      _PeriodicPlanDetailsSheetState();
+}
+
+class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
+  final TransactionStore _store = TransactionStore.instance;
+  bool _deleting = false;
+
+  Future<void> _confirmDelete() async {
+    if (_deleting) return;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+          title: Text(
+            'حذف الخطة',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontWeight: FontWeight.bold,
+              color: textPrimary,
+            ),
+          ),
+          content: const Text(
+            'هل أنت متأكد من حذف هذه الخطة الدورية؟',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontFamily: 'Tajawal', fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'إلغاء',
+                style: TextStyle(fontFamily: 'Tajawal', color: textSecondary),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                'حذف',
+                style: TextStyle(fontFamily: 'Tajawal', color: accent),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deleting = true);
+    final deleted = await _store.deleteGoal(widget.goal.id);
+    if (!mounted) return;
+    if (deleted) {
+      Navigator.of(context).maybePop();
+      return;
+    }
+    setState(() => _deleting = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final periodWord = switch (widget.goal.deductFrequency) {
+      RecurringFrequency.weekly => 'أسبوعياً',
+      RecurringFrequency.monthly => 'شهرياً',
+      RecurringFrequency.none => 'بدون تكرار',
+    };
+    final percent = widget.goal.allocatePercent;
+    final amount = widget.goal.allocateAmount;
+
+    return GlassSheetBody(
+      children: [
+        const GlassSheetHeader(
+          title: 'الخطة الجارية',
+          subtitle: 'تفاصيل الخطة الدورية المحفوظة.',
+        ),
+        const SizedBox(height: 18),
+        GlassContainer(
+          colorType: GlassColorType.surface,
+          borderRadius: 22,
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+          child: Column(
+            children: [
+              _PreviewRow(
+                label: 'الاسم',
+                value: widget.goal.name,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+              ),
+              if (percent != null && percent > 0)
+                _PreviewRow(
+                  label: 'نسبة الادخار',
+                  value: '${percent.round()}٪',
+                  textPrimary: textPrimary,
+                  textSecondary: textSecondary,
+                ),
+              if (amount != null && amount > 0)
+                _PreviewRow(
+                  label: 'الاقتطاع $periodWord',
+                  value: '${formatMoney(amount)} $currencyLabel',
+                  textPrimary: textPrimary,
+                  textSecondary: textSecondary,
+                ),
+              _PreviewRow(
+                label: 'التردد',
+                value: periodWord,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+              ),
+              _PreviewRow(
+                label: 'المدة',
+                value: widget.goal.duration.label,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+              ),
+              _PreviewRow(
+                label: 'المبلغ المستهدف',
+                value:
+                    '${formatMoney(widget.goal.targetAmount)} $currencyLabel',
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                emphasize: true,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 22),
+        Material(
+          color: textPrimary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(22),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: _deleting ? null : _confirmDelete,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'حذف الخطة',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.delete_outline_rounded,
+                    size: 20,
+                    color: textPrimary.withValues(alpha: 0.75),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

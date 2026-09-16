@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/widgets/containers/glass.dart';
@@ -11,7 +10,6 @@ class GlassButton extends StatefulWidget {
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry margin;
   final double borderRadius;
-  final double blurSigma;
   final GlassColorType colorType;
   final double tintOpacity;
 
@@ -24,7 +22,6 @@ class GlassButton extends StatefulWidget {
     this.padding = const EdgeInsets.all(16),
     this.margin = EdgeInsets.zero,
     this.borderRadius = 20,
-    this.blurSigma = 10,
     this.colorType = GlassColorType.accent,
     this.tintOpacity = 0.8,
   });
@@ -82,8 +79,15 @@ class _GlassButtonState extends State<GlassButton> {
           width: widget.width,
           height: widget.height,
           margin: widget.margin,
+          padding: widget.padding,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
+            color: baseColor.withValues(alpha: widget.tintOpacity),
             borderRadius: BorderRadius.circular(widget.borderRadius),
+            border: Border.all(
+              color: borderColor.withValues(alpha: 0.1),
+              width: 1,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.12),
@@ -92,24 +96,7 @@ class _GlassButtonState extends State<GlassButton> {
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: widget.blurSigma, sigmaY: widget.blurSigma),
-              child: Container(
-                padding: widget.padding,
-                decoration: BoxDecoration(
-                  color: baseColor.withValues(alpha: widget.tintOpacity),
-                  borderRadius: BorderRadius.circular(widget.borderRadius),
-                  border: Border.all(
-                    color: borderColor.withValues(alpha: 0.1),
-                    width: 1,
-                  ),
-                ),
-                child: widget.child,
-              ),
-            ),
-          ),
+          child: widget.child,
         ),
       ),
     );

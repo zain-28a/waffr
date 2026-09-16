@@ -1,19 +1,20 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:waffer/core/data/category_store.dart';
 import 'package:waffer/core/data/expense_categories.dart';
+import 'package:waffer/core/data/savings_goal.dart';
 import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffer/screens/offline/home/sheets/add_income_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/recurring_expenses_sheet.dart';
 import 'package:waffer/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
-const double kDashboardListFabEnd = 31;
-const double kDashboardListFabBottom = 614;
+const double kDashboardListFabEnd = 29;
+const double kDashboardListFabBottom = 636;
 const double kDashboardListFabSize = 48;
 
 class HomeScreen extends StatefulWidget {
@@ -23,92 +24,96 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with AutomaticKeepAliveClientMixin {
   final TransactionStore _store = TransactionStore.instance;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
     _store.ensureLoaded();
+    CategoryStore.instance.ensureLoaded();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return AnimatedBuilder(
-      animation: _store,
+      animation: Listenable.merge([_store, CategoryStore.instance]),
       builder: (context, _) {
         return Stack(
           children: [
             SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 26),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _BalanceCard(
-                balance: _store.balance,
-                spent: _store.totalExpense,
-                maxBalance: _store.maxBalance,
-                ratio: _store.remainingRatio,
-              ),
-              const SizedBox(height: 16),
-              Row(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: _ActionButton(
-                      label: 'إضافة دخل',
-                      icon: Icons.add_circle_outline_rounded,
-                      onTap: () => showAddIncomeSheet(context),
-                    ),
+                  _BalanceCard(
+                    balance: _store.balance,
+                    spent: _store.totalExpense,
+                    maxBalance: _store.maxBalance,
+                    ratio: _store.remainingRatio,
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _ActionButton(
-                      label: 'إضافة مصروف',
-                      icon: Icons.remove_circle_outline_rounded,
-                      onTap: () => showAddExpenseSheet(context),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ActionButton(
+                          label: 'إضافة دخل',
+                          icon: Icons.add_circle_outline_rounded,
+                          onTap: () => showAddIncomeSheet(context),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _ActionButton(
+                          label: 'إضافة مصروف',
+                          icon: Icons.remove_circle_outline_rounded,
+                          onTap: () => showAddExpenseSheet(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  _DistributionCard(
+                    totals: _store.expensesByCategory(),
+                    totalExpense: _store.totalExpense,
+                  ),
+                  const SizedBox(height: 6),
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 7,
+                          child: _RecentExpensesCard(
+                            expenses: _store.expenses,
+                            compact: true,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          flex: 4,
+                          child: _SavingGoalCard(
+                            compact: true,
+                            goals: _store.activeGoals,
+                            store: _store,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              _DistributionCard(
-                totals: _store.expensesByCategory(),
-                totalExpense: _store.totalExpense,
-              ),
-              const SizedBox(height: 16),
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 7,
-                      child: _RecentExpensesCard(
-                        expenses: _store.expenses,
-                        compact: true,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      flex: 4,
-                      child: _SavingGoalCard(
-                        compact: true,
-                        saved: _store.activeGoal == null
-                            ? 0
-                            : _store.goalProgress(_store.activeGoal!),
-                        target: _store.activeGoal?.targetAmount ?? 0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
             PositionedDirectional(
               end: kDashboardListFabEnd,
               bottom: kDashboardListFabBottom,
               child: _DashboardListFab(
-                onTap: () => showShoppingListSheet(context)
+                onTap: () => showShoppingListSheet(context),
               ),
             ),
           ],
@@ -166,8 +171,9 @@ class _BalanceCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return GlassContainer(
       colorType: GlassColorType.surface,
@@ -176,13 +182,17 @@ class _BalanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'الرصيد الحالي',
-            style: TextStyle(
-              fontFamily: 'Cairo',
-              fontSize: 13.5,
-              color: textSecondary,
-            ),
+          Row(
+            children: [
+              Text(
+                'الرصيد الحالي',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 13.5,
+                  color: textSecondary,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 6),
           Row(
@@ -196,7 +206,7 @@ class _BalanceCard extends StatelessWidget {
                   child: Text(
                     formatMoney(balance),
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Tajawal',
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
                       color: accent,
@@ -208,7 +218,7 @@ class _BalanceCard extends StatelessWidget {
               Text(
                 currencyLabel,
                 style: TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   fontSize: 15,
                   color: textSecondary,
                 ),
@@ -221,7 +231,7 @@ class _BalanceCard extends StatelessWidget {
             child: Text(
               '${(ratio * 100).round()}%',
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
                 color: textSecondary,
@@ -239,7 +249,7 @@ class _BalanceCard extends StatelessWidget {
             'مصروف ${formatMoney(spent)} $currencyLabel '
             'من ${formatMoney(maxBalance)} $currencyLabel',
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 12.5,
               color: textSecondary,
             ),
@@ -303,8 +313,9 @@ class _ActionButton extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
     return GlassButton(
       onTap: onTap,
@@ -322,7 +333,7 @@ class _ActionButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 14.5,
                 fontWeight: FontWeight.w700,
                 color: textPrimary,
@@ -341,15 +352,13 @@ class _DistributionCard extends StatelessWidget {
   final List<({String category, double amount})> totals;
   final double totalExpense;
 
-  const _DistributionCard({
-    required this.totals,
-    required this.totalExpense,
-  });
+  const _DistributionCard({required this.totals, required this.totalExpense});
 
   @override
   Widget build(BuildContext context) {
     return _SectionCard(
       title: 'توزيع المصروفات',
+      caption: 'النسبة من إجمالي الصرف وليس الرصيد',
       child: totals.isEmpty || totalExpense <= 0
           ? const _EmptyState(
               icon: Icons.pie_chart_outline_rounded,
@@ -381,24 +390,23 @@ class _DistributionChart extends StatelessWidget {
   final List<({String category, double amount})> totals;
   final double totalExpense;
 
-  const _DistributionChart({
-    required this.totals,
-    required this.totalExpense,
-  });
+  const _DistributionChart({required this.totals, required this.totalExpense});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
     final topShare = (totals.first.amount / totalExpense * 100).round();
 
     return SizedBox(
-      width: 118,
-      height: 100,
+      width: 112,
+      height: 112,
       child: Stack(
+        clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
           Directionality(
@@ -408,16 +416,18 @@ class _DistributionChart extends StatelessWidget {
                 startDegreeOffset: -90,
                 sectionsSpace: 2,
                 centerSpaceRadius: 34,
-                sections: totals
-                    .map(
-                      (item) => PieChartSectionData(
-                        value: item.amount,
-                        color: categoryFor(item.category).color,
-                        radius: 20,
-                        showTitle: false,
-                      ),
-                    )
-                    .toList(),
+                centerSpaceColor: isDark
+                    ? AppColors.darkSurface
+                    : AppColors.lightSurface,
+                sections: [
+                  for (var i = 0; i < totals.length; i++)
+                    PieChartSectionData(
+                      value: totals[i].amount,
+                      color: categoryChartColor(context, totals[i].category),
+                      radius: i == 0 ? 18 : 15,
+                      showTitle: false,
+                    ),
+                ],
               ),
             ),
           ),
@@ -427,7 +437,7 @@ class _DistributionChart extends StatelessWidget {
               Text(
                 '$topShare%',
                 style: TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -436,7 +446,7 @@ class _DistributionChart extends StatelessWidget {
               Text(
                 totals.first.category,
                 style: TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   fontSize: 10.5,
                   color: textPrimary.withValues(alpha: 0.6),
                 ),
@@ -453,35 +463,42 @@ class _DistributionLegend extends StatelessWidget {
   final List<({String category, double amount})> totals;
   final double totalExpense;
 
-  const _DistributionLegend({
-    required this.totals,
-    required this.totalExpense,
-  });
+  const _DistributionLegend({required this.totals, required this.totalExpense});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: totals.take(5).map((item) {
         final share = (item.amount / totalExpense * 100).round();
+        final swatch = categoryChartColor(context, item.category);
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Row(
             children: [
               Container(
-                width: 9,
-                height: 9,
+                width: 12,
+                height: 12,
                 decoration: BoxDecoration(
-                  color: categoryFor(item.category).color,
+                  color: swatch,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: swatch.withValues(alpha: 0.35),
+                      blurRadius: 5,
+                      spreadRadius: 0.4,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -491,7 +508,7 @@ class _DistributionLegend extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: textPrimary,
@@ -501,7 +518,7 @@ class _DistributionLegend extends StatelessWidget {
               Text(
                 '$share%',
                 style: TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: textSecondary,
@@ -517,30 +534,99 @@ class _DistributionLegend extends StatelessWidget {
 
 // ================= هدف التوفير =================
 
-class _SavingGoalCard extends StatelessWidget {
+class _SavingGoalCard extends StatefulWidget {
   final bool compact;
-  final double saved;
-  final double target;
+  final List<SavingsGoal> goals;
+  final TransactionStore store;
 
   const _SavingGoalCard({
     this.compact = false,
-    this.saved = 0,
-    this.target = 0,
+    required this.goals,
+    required this.store,
   });
+
+  @override
+  State<_SavingGoalCard> createState() => _SavingGoalCardState();
+}
+
+class _SavingGoalCardState extends State<_SavingGoalCard> {
+  late final PageController _controller;
+  String? _goalId;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+    if (widget.goals.isNotEmpty) {
+      _goalId = widget.goals.first.id;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _SavingGoalCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncVisibleGoal();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _syncVisibleGoal() {
+    final goals = widget.goals;
+    if (goals.isEmpty) {
+      _goalId = null;
+      return;
+    }
+
+    var index = goals.indexWhere((goal) => goal.id == _goalId);
+    if (index < 0) {
+      index = 0;
+    }
+    _goalId = goals[index].id;
+
+    if (!_controller.hasClients) {
+      return;
+    }
+
+    final current = _controller.page?.round() ?? _controller.initialPage;
+    if (current == index) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_controller.hasClients) {
+        return;
+      }
+      final length = widget.goals.length;
+      if (length == 0) {
+        return;
+      }
+      final next = index.clamp(0, length - 1);
+      if ((_controller.page?.round() ?? _controller.initialPage) != next) {
+        _controller.jumpToPage(next);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
-    final ratio = target <= 0 ? 0.0 : (saved / target).clamp(0.0, 1.0);
+    final compact = widget.compact;
+    final goals = widget.goals;
 
-    if (target <= 0) {
+    if (goals.isEmpty) {
       return _SectionCard(
         title: 'هدف التوفير',
         compact: compact,
@@ -549,7 +635,7 @@ class _SavingGoalCard extends StatelessWidget {
           'لا يوجد هدف حالياً',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'Tajawal',
             fontSize: compact ? 13 : 15,
             fontWeight: FontWeight.w700,
             color: textSecondary,
@@ -562,51 +648,112 @@ class _SavingGoalCard extends StatelessWidget {
       title: 'هدف التوفير',
       compact: compact,
       centerChild: compact,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _VerticalProgress(
-                ratio: ratio,
-                width: compact ? 26 : 30,
-                height: compact ? 92 : 96,
-                trackColor: textPrimary.withValues(alpha: 0.08),
-                fillColor: accent,
-              ),
-              SizedBox(width: compact ? 6 : 10),
-              Flexible(
-                child: Text(
-                  '${(ratio * 100).round()}%',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: compact ? 11 : 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: textSecondary,
-                  ),
+      child: SizedBox(
+        height: compact ? 140 : 150,
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            return notification.metrics.axis == Axis.horizontal;
+          },
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: goals.length,
+            physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
+            onPageChanged: (index) {
+              _goalId = goals[index].id;
+            },
+            itemBuilder: (context, index) {
+              final goal = goals[index];
+              final saved = widget.store.currentSaved(goal);
+              final target = goal.targetAmount;
+              final ratio = target <= 0
+                  ? 0.0
+                  : (saved / target).clamp(0.0, 1.0);
+
+              return Center(
+                child: _SavingGoalPage(
+                  compact: compact,
+                  ratio: ratio,
+                  saved: saved,
+                  target: target,
+                  accent: accent,
+                  textPrimary: textPrimary,
+                  textSecondary: textSecondary,
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SavingGoalPage extends StatelessWidget {
+  final bool compact;
+  final double ratio;
+  final double saved;
+  final double target;
+  final Color accent;
+  final Color textPrimary;
+  final Color textSecondary;
+
+  const _SavingGoalPage({
+    required this.compact,
+    required this.ratio,
+    required this.saved,
+    required this.target,
+    required this.accent,
+    required this.textPrimary,
+    required this.textSecondary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _VerticalProgress(
+              ratio: ratio,
+              width: compact ? 26 : 30,
+              height: compact ? 92 : 96,
+              trackColor: textPrimary.withValues(alpha: 0.08),
+              fillColor: accent,
+            ),
+            SizedBox(width: compact ? 6 : 10),
+            Flexible(
+              child: Text(
+                '${(ratio * 100).round()}%',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: compact ? 11 : 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: textSecondary,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              '${formatMoney(saved)} / ${formatMoney(target)}',
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: compact ? 14 : 17,
-                fontWeight: FontWeight.bold,
-                color: textPrimary,
-              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            '${formatMoney(saved)} / ${formatMoney(target)}',
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: compact ? 14 : 17,
+              fontWeight: FontWeight.bold,
+              color: textPrimary,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -661,17 +808,15 @@ class _RecentExpensesCard extends StatelessWidget {
   final List<WafferTransaction> expenses;
   final bool compact;
 
-  const _RecentExpensesCard({
-    required this.expenses,
-    this.compact = false,
-  });
+  const _RecentExpensesCard({required this.expenses, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
     final latest = expenses.take(3).toList();
 
@@ -712,10 +857,12 @@ class _ExpenseRow extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     final category = categoryFor(expense.category);
     final note = expense.note;
@@ -726,7 +873,7 @@ class _ExpenseRow extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       textAlign: TextAlign.end,
       style: TextStyle(
-        fontFamily: 'Cairo',
+        fontFamily: 'Tajawal',
         fontSize: compact ? 11.5 : 14,
         fontWeight: FontWeight.bold,
         color: accent,
@@ -745,11 +892,7 @@ class _ExpenseRow extends StatelessWidget {
             shape: BoxShape.circle,
             color: accent.withValues(alpha: 0.12),
           ),
-          child: Icon(
-            category.icon,
-            size: compact ? 14 : 21,
-            color: accent,
-          ),
+          child: Icon(category.icon, size: compact ? 14 : 21, color: accent),
         ),
         SizedBox(width: compact ? 6 : 12),
         Expanded(
@@ -762,7 +905,7 @@ class _ExpenseRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   fontSize: compact ? 12.5 : 15.5,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -775,7 +918,7 @@ class _ExpenseRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: compact ? 10.5 : 12.5,
                     color: textSecondary,
                   ),
@@ -788,7 +931,7 @@ class _ExpenseRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   fontSize: compact ? 9 : 11,
                   color: textSecondary.withValues(alpha: 0.8),
                 ),
@@ -807,10 +950,7 @@ class _ExpenseRow extends StatelessWidget {
             ),
           )
         else
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: amount,
-          ),
+          Padding(padding: const EdgeInsets.only(top: 2), child: amount),
       ],
     );
   }
@@ -820,6 +960,7 @@ class _ExpenseRow extends StatelessWidget {
 
 class _SectionCard extends StatelessWidget {
   final String title;
+  final String? caption;
   final Widget child;
   final bool compact;
 
@@ -829,6 +970,7 @@ class _SectionCard extends StatelessWidget {
   const _SectionCard({
     required this.title,
     required this.child,
+    this.caption,
     this.compact = false,
     this.centerChild = false,
   });
@@ -837,8 +979,12 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return GlassContainer(
       colorType: GlassColorType.surface,
@@ -849,17 +995,50 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Cairo',
-              fontSize: compact ? 14.5 : 16,
-              fontWeight: FontWeight.bold,
-              color: textPrimary,
+          if (caption == null)
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontSize: compact ? 14.5 : 16,
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
+              ),
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: compact ? 14.5 : 16,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    caption!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: compact ? 10.5 : 11,
+                      fontWeight: FontWeight.w500,
+                      color: textSecondary,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
           SizedBox(height: compact ? 14 : 16),
           if (centerChild) Expanded(child: Center(child: child)) else child,
         ],
@@ -883,8 +1062,9 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: compact ? 12 : 18),
@@ -900,7 +1080,7 @@ class _EmptyState extends StatelessWidget {
             message,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: compact ? 12 : 13.5,
               color: textPrimary.withValues(alpha: 0.55),
             ),

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:waffer/core/data/category_store.dart';
 import 'package:waffer/core/data/expense_categories.dart';
 import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
@@ -17,7 +18,8 @@ class ReportScreen extends StatefulWidget {
   State<ReportScreen> createState() => _ReportScreenState();
 }
 
-class _ReportScreenState extends State<ReportScreen> {
+class _ReportScreenState extends State<ReportScreen>
+    with AutomaticKeepAliveClientMixin {
   static const int _maxPeriodOffset = 240;
 
   final TransactionStore _store = TransactionStore.instance;
@@ -26,9 +28,13 @@ class _ReportScreenState extends State<ReportScreen> {
   int _periodOffset = 0;
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
     _store.ensureLoaded();
+    CategoryStore.instance.ensureLoaded();
   }
 
   @override
@@ -74,8 +80,9 @@ class _ReportScreenState extends State<ReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return AnimatedBuilder(
-      animation: _store,
+      animation: Listenable.merge([_store, CategoryStore.instance]),
       builder: (context, _) {
         final expenses = _store.expenses;
         final period = _periodFor(_range, _periodOffset);
@@ -95,7 +102,7 @@ class _ReportScreenState extends State<ReportScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _TimeRangeSelector(selected: _range, onSelected: _selectRange),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               SizedBox(
                 height: chartHeight,
                 child: PageView.builder(
@@ -119,14 +126,14 @@ class _ReportScreenState extends State<ReportScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 6),
               _SpendingSummary(
                 total: report.total,
                 onHistory: _openExpenseHistory,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 6),
               _ExpenseDistribution(report: report),
-              const SizedBox(height: 16),
+              const SizedBox(height: 6),
               _ImprovementCard(
                 currentTotal: report.total,
                 previousTotal: previousTotal,
@@ -306,7 +313,7 @@ class _TimeRangeSelector extends StatelessWidget {
                                 duration: const Duration(milliseconds: 200),
                                 curve: Curves.easeOut,
                                 style: TextStyle(
-                                  fontFamily: 'Cairo',
+                                  fontFamily: 'Tajawal',
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
                                   color: selected == range
@@ -368,7 +375,7 @@ class _SpendingChartCard extends StatelessWidget {
                     Text(
                       'الصرف خلال الفترة',
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 13,
                         color: colors.textSecondary,
                       ),
@@ -383,7 +390,7 @@ class _SpendingChartCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Cairo',
+                          fontFamily: 'Tajawal',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: colors.textPrimary,
@@ -518,7 +525,7 @@ class _SpendingLineChart extends StatelessWidget {
                     maxLines: 1,
                     textAlign: TextAlign.right,
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Tajawal',
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: colors.textSecondary,
@@ -549,7 +556,7 @@ class _SpendingLineChart extends StatelessWidget {
                     text,
                     maxLines: 1,
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Tajawal',
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: colors.textSecondary,
@@ -601,7 +608,7 @@ class _SpendingLineChart extends StatelessWidget {
                   '${buckets[index].label}\n'
                   '${formatMoney(spot.y)} $currencyLabel',
                   TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: colors.surface,
@@ -661,7 +668,7 @@ class _SpendingSummary extends StatelessWidget {
                 Text(
                   'الصرف',
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 13.5,
                     color: colors.textSecondary,
                   ),
@@ -678,7 +685,7 @@ class _SpendingSummary extends StatelessWidget {
                         child: Text(
                           formatMoney(total),
                           style: TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Tajawal',
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
                             color: colors.accent,
@@ -690,7 +697,7 @@ class _SpendingSummary extends StatelessWidget {
                     Text(
                       currencyLabel,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 14,
                         color: colors.textSecondary,
                       ),
@@ -722,7 +729,7 @@ class _SpendingSummary extends StatelessWidget {
                   Text(
                     'سجل المصاريف',
                     style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Tajawal',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: colors.textPrimary,
@@ -753,14 +760,34 @@ class _ExpenseDistribution extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'توزيع المصروفات',
-            style: TextStyle(
-              fontFamily: 'Cairo',
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: colors.textPrimary,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                'توزيع المصروفات',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '<النسبة من إجمالي الصرف وليس الرصيد>',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           if (report.total <= 0 || report.categoryTotals.isEmpty)
@@ -817,7 +844,7 @@ class _DistributionBar extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 350),
                   curve: Curves.easeOut,
-                  color: categoryFor(totals[index].category).color,
+                  color: categoryChartColor(context, totals[index].category),
                 ),
               ),
             ],
@@ -838,6 +865,7 @@ class _CategoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = _ReportColors.of(context);
     final category = categoryFor(item.category);
+    final swatch = categoryChartColor(context, item.category);
     final percentage = total <= 0 ? 0 : item.amount / total * 100;
     return Row(
       children: [
@@ -846,9 +874,9 @@ class _CategoryRow extends StatelessWidget {
           height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: category.color.withValues(alpha: 0.18),
+            color: swatch.withValues(alpha: 0.18),
           ),
-          child: Icon(category.icon, size: 19, color: category.color),
+          child: Icon(category.icon, size: 19, color: swatch),
         ),
         const SizedBox(width: 11),
         Expanded(
@@ -857,7 +885,7 @@ class _CategoryRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: colors.textPrimary,
@@ -867,7 +895,7 @@ class _CategoryRow extends StatelessWidget {
         Text(
           '${percentage.round()}%',
           style: TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'Tajawal',
             fontSize: 12.5,
             fontWeight: FontWeight.w700,
             color: colors.textSecondary,
@@ -881,7 +909,7 @@ class _CategoryRow extends StatelessWidget {
             child: Text(
               '${formatMoney(item.amount)} $currencyLabel',
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: colors.accent,
@@ -934,7 +962,7 @@ class _ImprovementCard extends StatelessWidget {
                 Text(
                   'نسبة التحسن',
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: colors.textPrimary,
@@ -951,7 +979,7 @@ class _ImprovementCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Cairo',
+                          fontFamily: 'Tajawal',
                           fontSize: comparison.hasPercentage ? 22 : 12.5,
                           fontWeight: FontWeight.bold,
                           color: valueColor,
@@ -966,7 +994,7 @@ class _ImprovementCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 12,
                     color: colors.textSecondary,
                   ),
@@ -986,9 +1014,9 @@ class _ImprovementCard extends StatelessWidget {
                 Icon(Icons.auto_graph_rounded, size: 17, color: colors.accent),
                 const SizedBox(width: 6),
                 Text(
-                  'بس نعمل ai خال',
+                  "بس اعمل الai",
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                     color: colors.textSecondary,
@@ -1087,7 +1115,7 @@ class _ExpenseHistoryScreenState extends State<_ExpenseHistoryScreen> {
         title: Text(
           'سجل المصاريف',
           style: TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'Tajawal',
             fontSize: 23,
             fontWeight: FontWeight.bold,
             color: colors.textPrimary,
@@ -1095,7 +1123,7 @@ class _ExpenseHistoryScreenState extends State<_ExpenseHistoryScreen> {
         ),
       ),
       body: AnimatedBuilder(
-        animation: _store,
+        animation: Listenable.merge([_store, CategoryStore.instance]),
         builder: (context, _) {
           final expenses = _store.expenses;
           final groups = _groupExpensesByDay(expenses);
@@ -1121,7 +1149,7 @@ class _ExpenseHistoryScreenState extends State<_ExpenseHistoryScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontFamily: 'Cairo',
+                                fontFamily: 'Tajawal',
                                 fontSize: 13,
                                 color: colors.textSecondary,
                               ),
@@ -1130,7 +1158,7 @@ class _ExpenseHistoryScreenState extends State<_ExpenseHistoryScreen> {
                               '${formatMoney(_sumExpenses(expenses))} '
                               '$currencyLabel',
                               style: TextStyle(
-                                fontFamily: 'Cairo',
+                                fontFamily: 'Tajawal',
                                 fontSize: 21,
                                 fontWeight: FontWeight.bold,
                                 color: colors.accent,
@@ -1199,7 +1227,7 @@ class _HistoryDayGroup extends StatelessWidget {
           child: Text(
             _historyDateLabel(date),
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: colors.textSecondary,
@@ -1260,7 +1288,7 @@ class _HistoryExpenseRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: colors.textPrimary,
@@ -1273,7 +1301,7 @@ class _HistoryExpenseRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 12.5,
                     color: colors.textSecondary,
                   ),
@@ -1285,7 +1313,7 @@ class _HistoryExpenseRow extends StatelessWidget {
                 '${formatTime(expense.dateTime)}',
                 textDirection: TextDirection.ltr,
                 style: TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   fontSize: 10.5,
                   color: colors.textSecondary.withValues(alpha: 0.85),
                 ),
@@ -1301,7 +1329,7 @@ class _HistoryExpenseRow extends StatelessWidget {
             child: Text(
               '${formatMoney(expense.amount)} $currencyLabel',
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: colors.accent,
@@ -1339,7 +1367,7 @@ class _EmptyState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 13,
                 color: colors.textPrimary.withValues(alpha: 0.55),
               ),

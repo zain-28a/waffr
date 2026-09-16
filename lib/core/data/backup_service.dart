@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffer/core/data/category_store.dart';
 import 'package:waffer/core/data/drive_backup_client.dart';
 import 'package:waffer/core/data/google_auth_service.dart';
 import 'package:waffer/core/data/notification_service.dart';
@@ -765,12 +766,14 @@ class BackupService {
     NotificationService.instance.resetCache();
     ShoppingListStore.instance.resetCache();
     RecurringExpenseStore.instance.resetCache();
+    CategoryStore.instance.resetCache();
 
     await Future.wait<void>(<Future<void>>[
       TransactionStore.instance.ensureLoaded(),
       NotificationService.instance.ensureLoaded(),
       ShoppingListStore.instance.ensureLoaded(),
       RecurringExpenseStore.instance.ensureLoaded(),
+      CategoryStore.instance.ensureLoaded(),
     ]);
 
     await RecurringExpenseStore.instance.processDue();
@@ -909,5 +912,6 @@ class BackupService {
     NotificationService.instance.addListener(scheduleBackup);
     ShoppingListStore.instance.addListener(scheduleBackup);
     RecurringExpenseStore.instance.addListener(scheduleBackup);
+    CategoryStore.instance.addListener(scheduleBackup);
   }
 }

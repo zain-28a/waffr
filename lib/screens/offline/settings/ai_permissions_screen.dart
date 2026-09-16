@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/widgets/brand/waffer_page_header.dart';
 
 class AIPermissionsScreen extends StatelessWidget {
   const AIPermissionsScreen({super.key});
@@ -17,21 +18,15 @@ class AIPermissionsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: background,
-      appBar: AppBar(
-        backgroundColor: background,
-        elevation: 0,
+      appBar: WafferPageHeader(
         centerTitle: true,
-        title: Text(
-          'أذونات الذكاء الاصطناعي',
-          style: TextStyle(
-            color: textPrimary,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Cairo',
-          ),
-        ),
         leading: IconButton(
           icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
           onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'أذونات الذكاء الاصطناعي',
+          style: Theme.of(context).textTheme.headlineSmall,
         ),
       ),
       body: Center(
@@ -52,7 +47,7 @@ class AIPermissionsScreen extends StatelessWidget {
                   'لا توجد أذونات حاليا',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: textPrimary,

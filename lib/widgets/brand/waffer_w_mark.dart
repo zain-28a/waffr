@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// حرف W بخط عنوان التطبيق، لأزرار الادخار والهدف والخطط.
 class WafferWMark extends StatelessWidget {
@@ -14,17 +13,16 @@ class WafferWMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final base = Theme.of(context).textTheme.displayMedium;
+
     return Text(
       'W',
       textHeightBehavior: const TextHeightBehavior(
         applyHeightToFirstAscent: false,
         applyHeightToLastDescent: false,
       ),
-      style: GoogleFonts.playfairDisplay(
+      style: (base ?? const TextStyle()).copyWith(
         fontSize: size,
-        fontWeight: FontWeight.w700,
-        fontStyle: FontStyle.italic,
-        height: 1,
         color: color,
       ),
     );

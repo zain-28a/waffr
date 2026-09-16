@@ -59,7 +59,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                       borderRadius: BorderRadius.circular(13),
                     ),
                     child: Icon(
-                      Icons.shopping_cart_outlined,
+                      Icons.format_list_bulleted_rounded,
                       size: 21,
                       color: colors.accent,
                     ),
@@ -72,7 +72,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                         Text(
                           'قائمة المشتريات',
                           style: TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Tajawal',
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: colors.textPrimary,
@@ -83,7 +83,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                               ? 'أضف ما تحتاج إلى شرائه'
                               : '${_store.items.length} عناصر محفوظة',
                           style: TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Tajawal',
                             fontSize: 11.5,
                             color: colors.textSecondary,
                           ),
@@ -105,7 +105,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                       '+ ${_store.items.length - preview.length} عناصر أخرى',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: colors.accent,
@@ -149,7 +149,7 @@ class _PreviewItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 12.5,
                 color: item.isPurchased
                     ? colors.textSecondary
@@ -275,7 +275,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
                     Text(
                       'قائمة المشتريات فارغة',
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Tajawal',
                         fontSize: 14,
                         color: colors.textSecondary,
                       ),
@@ -337,7 +337,7 @@ class _ShoppingItemTile extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Tajawal',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: item.isPurchased
@@ -353,7 +353,7 @@ class _ShoppingItemTile extends StatelessWidget {
               Text(
                 item.isPurchased ? 'تم الشراء' : 'تسجيل الشراء',
                 style: TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   fontSize: 10.5,
                   color: item.isPurchased
                       ? colors.textSecondary

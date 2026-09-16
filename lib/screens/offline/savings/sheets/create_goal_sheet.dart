@@ -27,8 +27,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _targetController = TextEditingController();
   final TextEditingController _percentController = TextEditingController();
-  final TextEditingController _fixedAmountController =
-      TextEditingController();
+  final TextEditingController _fixedAmountController = TextEditingController();
 
   final TransactionStore _store = TransactionStore.instance;
 
@@ -41,17 +40,14 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
   double get _fixedAmount => parseAmount(_fixedAmountController.text);
 
-  RecurringFrequency get _frequency =>
-      _store.preferredIncomeFrequency;
+  RecurringFrequency get _frequency => _store.preferredIncomeFrequency;
 
-  double get _income =>
-      _store.referenceIncome(_frequency);
+  double get _income => _store.referenceIncome(_frequency);
 
   bool get _isCustom => _type == _ContributionType.custom;
 
   int get _percent {
-    final value =
-        int.tryParse(_percentController.text.trim()) ?? 0;
+    final value = int.tryParse(_percentController.text.trim()) ?? 0;
 
     return value.clamp(0, 100);
   }
@@ -113,15 +109,11 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
   }
 
   String get _frequencyTitle {
-    return _frequency == RecurringFrequency.weekly
-        ? 'أسبوعي'
-        : 'شهري';
+    return _frequency == RecurringFrequency.weekly ? 'أسبوعي' : 'شهري';
   }
 
   String get _periodSingular {
-    return _frequency == RecurringFrequency.weekly
-        ? 'أسبوع'
-        : 'شهر';
+    return _frequency == RecurringFrequency.weekly ? 'أسبوع' : 'شهر';
   }
 
   @override
@@ -196,9 +188,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
           ? _percent.toDouble()
           : null,
       allocateAmount: _isCustom ? null : _periodAmount,
-      deductFrequency: _isCustom
-          ? RecurringFrequency.none
-          : _frequency,
+      deductFrequency: _isCustom ? RecurringFrequency.none : _frequency,
       isPeriodic: !_isCustom,
       durationCount: periods,
     );
@@ -227,8 +217,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final colors = _GoalColors(
       textPrimary: isDark
@@ -237,9 +226,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
       textSecondary: isDark
           ? AppColors.darkTextSecondary
           : AppColors.lightTextSecondary,
-      accent: isDark
-          ? AppColors.darkAccent
-          : AppColors.lightAccent,
+      accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
     );
 
     return GlassSheetBody(
@@ -252,9 +239,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
         const SizedBox(height: 18),
 
-        const SheetFieldLabel(
-          text: 'اسم الهدف',
-        ),
+        const SheetFieldLabel(text: 'اسم الهدف'),
 
         SheetTextField(
           controller: _nameController,
@@ -274,7 +259,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
         Text(
           'نوع الخطة',
           style: TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'Tajawal',
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: colors.textPrimary,
@@ -319,83 +304,99 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
         const SizedBox(height: 18),
 
-        if (_type == _ContributionType.percent)
-          ...[
-            const SheetFieldLabel(
-              text: 'نسبة الادخار',
-            ),
+        SheetSwap(
+          switchKey: _type,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_type == _ContributionType.percent) ...[
+                const SheetFieldLabel(text: 'نسبة الادخار'),
+                Stack(
+                  children: [
+                    SheetTextField(
+                      controller: _percentController,
+                      hint: 'مثال: 10',
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(3),
+                      ],
+                    ),Row(mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 25,top: 18),
+                          child: Text("%",style: TextStyle(fontSize: 20,fontWeight: FontWeight.w700,color: colors.textPrimary),),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'الدخل المرجعي: '
+                  '${formatMoney(_income)} '
+                  '$currencyLabel / $_periodSingular',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 12,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ] else if (_type == _ContributionType.fixed) ...[
+                const SheetFieldLabel(text: 'مبلغ الادخار لكل شهر'),
+                
+                Stack(
+                  children: [
+                    SheetTextField(
+                      controller: _percentController,
+                      hint: 'مثال: 100',
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(3),
+                      ],
+                    ),Row(mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 25,top: 18),
+                          child: Text("ل.س",style: TextStyle(fontFamily: 'Tajawal',fontSize: 15,fontWeight: FontWeight.w700,color: colors.textPrimary),),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'سيتم اقتطاع هذا المبلغ من الدخل كل '
+                  '$_periodSingular.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 12,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ] else
+                Text(
+                  'الادخار هنا ليس تلقائيا. انقل بنفسك من رصيدك إلى الهدف متى شئت عبر «ادخار مبلغ».',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 12,
+                    height: 1.5,
+                    color: colors.textSecondary,
+                  ),
+                ),
+            ],
+          ),
+        ),
 
-            SheetTextField(
-              controller: _percentController,
-              hint: 'مثال: 10',
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(3),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            Text(
-              'الدخل المرجعي: '
-              '${formatMoney(_income)} '
-              '$currencyLabel / $_periodSingular',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 12,
-                color: colors.textSecondary,
-              ),
-            ),
-          ]
-        else if (_type == _ContributionType.fixed)
-          ...[
-            const SheetFieldLabel(
-              text: 'مبلغ الادخار لكل دورة',
-            ),
-
-            SheetTextField(
-              controller: _fixedAmountController,
-              hint: 'مثال: 100000',
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                ThousandsInputFormatter(),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            Text(
-              'سيتم اقتطاع هذا المبلغ من الدخل كل '
-              '$_periodSingular.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 12,
-                color: colors.textSecondary,
-              ),
-            ),
-          ]
-        else
-          ...[
-            Text(
-              'المساهمات هنا ليست تلقائية. انقل بنفسك من رصيدك إلى الهدف متى شئت عبر «ادخار مبلغ».',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Cairo',
-                fontSize: 12,
-                height: 1.5,
-                color: colors.textSecondary,
-              ),
-            ),
-          ],
-
-        if (!_isCustom && _periodAmount > 0 && _target > 0)
-          ...[
-            const SizedBox(height: 18),
-
-            _GoalPreview(
+        SheetExpand(
+          visible: !_isCustom && _periodAmount > 0 && _target > 0,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 18),
+            child: _GoalPreview(
               target: _target,
               periodAmount: _periodAmount,
               periods: _requiredPeriods,
@@ -403,7 +404,8 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
               frequency: _frequency,
               colors: colors,
             ),
-          ],
+          ),
+        ),
 
         const SizedBox(height: 22),
 
@@ -438,11 +440,9 @@ class _MethodButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 12,
-        ),
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
           color: selected
               ? colors.accent.withValues(alpha: 0.12)
@@ -463,12 +463,10 @@ class _MethodButton extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 style: TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
-                  color: selected
-                      ? colors.accent
-                      : colors.textPrimary,
+                  color: selected ? colors.accent : colors.textPrimary,
                 ),
               ),
             ),
@@ -476,7 +474,7 @@ class _MethodButton extends StatelessWidget {
             Text(
               subtitle,
               style: TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Tajawal',
                 fontSize: 10.5,
                 color: colors.textSecondary,
               ),
@@ -507,19 +505,15 @@ class _GoalPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final periodSingular =
-        frequency == RecurringFrequency.weekly
-            ? 'أسبوع'
-            : 'شهر';
+    final periodSingular = frequency == RecurringFrequency.weekly
+        ? 'أسبوع'
+        : 'شهر';
 
-    final periodPlural =
-        frequency == RecurringFrequency.weekly
-            ? 'أسابيع'
-            : 'أشهر';
+    final periodPlural = frequency == RecurringFrequency.weekly
+        ? 'أسابيع'
+        : 'أشهر';
 
-    final durationText = periods == 1
-        ? 'أسبوع واحد'
-        : '$periods $periodPlural';
+    final durationText = periods == 1 ? 'أسبوع واحد' : '$periods $periodPlural';
 
     return Container(
       width: double.infinity,
@@ -527,16 +521,14 @@ class _GoalPreview extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.accent.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: colors.accent.withValues(alpha: 0.14),
-        ),
+        border: Border.all(color: colors.accent.withValues(alpha: 0.14)),
       ),
       child: Column(
         children: [
           Text(
             'معاينة الخطة',
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: colors.textSecondary,
@@ -550,7 +542,7 @@ class _GoalPreview extends StatelessWidget {
             '$currencyLabel / $periodSingular',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: colors.accent,
@@ -563,7 +555,7 @@ class _GoalPreview extends StatelessWidget {
             'المدة المتوقعة: $durationText',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 12,
               color: colors.textPrimary,
             ),
@@ -576,7 +568,7 @@ class _GoalPreview extends StatelessWidget {
             '${formatMoney(expected)} $currencyLabel',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 11.5,
               color: colors.textSecondary,
             ),
@@ -588,7 +580,7 @@ class _GoalPreview extends StatelessWidget {
             'الهدف: ${formatMoney(target)} $currencyLabel',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
               fontSize: 11,
               color: colors.textSecondary,
             ),

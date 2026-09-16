@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/widgets/brand/waffer_page_header.dart';
 
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
@@ -13,7 +14,7 @@ class HelpScreen extends StatelessWidget {
       ),
       (
         question: 'ماذا تعني «مدة المبلغ» و«نقل الرصيد للتوفير»؟',
-        answer: 'اختيار «أسبوعي» أو «شهري» يربط الدخل بتلك الفترة، وعند انتهائها ينقل وفّر ما تبقى منها بعد المصروفات والادخار الدوري إلى التوفير. لا يُضاف دخل جديد تلقائياً. أما «بدون مدة» فلا يجري هذا النقل. وإذا اخترت «نقل الرصيد للتوفير»، ينتقل رصيدك الحالي كله إلى التوفير قبل إضافة الدخل الجديد.',
+        answer: 'اختيار «شهري» يربط الدخل بتلك الفترة، وعند انتهائها ينقل وفّر ما تبقى منها بعد المصروفات والادخار الدوري إلى التوفير. لا يُضاف دخل جديد تلقائياً. أما «بدون مدة» فلا يجري هذا النقل. وإذا اخترت «نقل الرصيد للتوفير»، ينتقل رصيدك الحالي كله إلى التوفير قبل إضافة الدخل الجديد.',
       ),
       (
         question: 'كيف أسجّل مصروفاً؟',
@@ -37,11 +38,11 @@ class HelpScreen extends StatelessWidget {
       ),
       (
         question: 'كيف أنشئ هدف توفير؟',
-        answer: 'سجّل دخلاً أسبوعياً أو شهرياً أولاً، ثم افتح شاشة التوفير واضغط «إنشاء هدف». أدخل اسم الهدف والمبلغ المستهدف، واختر الادخار كنسبة من الدخل أو كمبلغ ثابت لكل فترة، وراجع المعاينة ثم اضغط «حفظ الهدف». يمكن أن يكون لديك هدف نشط واحد فقط، ولا تتوفر حالياً إمكانية تعديل الهدف أو حذفه.',
+        answer: 'سجّل دخلاً شهرياً أولاً، ثم افتح شاشة التوفير واضغط «إنشاء هدف». أدخل اسم الهدف والمبلغ المستهدف، واختر الادخار كنسبة من الدخل أو كمبلغ ثابت لكل فترة، وراجع المعاينة ثم اضغط «حفظ الهدف». يمكن أن يكون لديك هدف نشط واحد فقط، ولا تتوفر حالياً إمكانية تعديل الهدف أو حذفه.',
       ),
       (
         question: 'كيف تعمل الخطط الدورية؟',
-        answer: 'بعد تسجيل دخل أسبوعي أو شهري، افتح شاشة التوفير واضغط «خطط دورية». اختر نسبة الادخار والمدة، ثم راجع المبلغ الدوري والمبلغ المستهدف واضغط «تأكيد الخطة». عند اكتمال كل فترة، ينقل وفّر مبلغ الخطة من الرصيد المتاح إلى التوفير بحد أقصى ما يتوفر في الرصيد.',
+        answer: 'بعد تسجيل دخل شهري، افتح شاشة التوفير واضغط «خطط دورية». اختر نسبة الادخار والمدة، ثم راجع المبلغ الدوري والمبلغ المستهدف واضغط «تأكيد الخطة». عند اكتمال كل فترة، ينقل وفّر مبلغ الخطة من الرصيد المتاح إلى التوفير بحد أقصى ما يتوفر في الرصيد.',
       ),
       (
         question: 'كيف يُحسب تقدّم الهدف وأين أرى الأهداف المحققة؟',
@@ -92,21 +93,15 @@ class HelpScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
+      appBar: WafferPageHeader(
         centerTitle: true,
-        title: Text(
-          'المساعدة',
-          style: TextStyle(
-            color: textPrimary,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Cairo',
-          ),
-        ),
         leading: IconButton(
           icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
           onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'المساعدة',
+          style: Theme.of(context).textTheme.headlineSmall,
         ),
       ),
       body: ListView(
@@ -118,7 +113,7 @@ class HelpScreen extends StatelessWidget {
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: textPrimary,
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
             ),
           ),
           const SizedBox(height: 5),
@@ -127,7 +122,7 @@ class HelpScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               color: textSecondary,
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
             ),
           ),
           const SizedBox(height: 25),
@@ -215,7 +210,7 @@ class _FAQItemState extends State<_FAQItem> {
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: widget.textPrimary,
-              fontFamily: 'Cairo',
+              fontFamily: 'Tajawal',
             ),
           ),
           children: [
@@ -227,7 +222,7 @@ class _FAQItemState extends State<_FAQItem> {
                   fontSize: 14,
                   height: 1.6,
                   color: widget.textSecondary,
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Tajawal',
                 ),
               ),
             ),
