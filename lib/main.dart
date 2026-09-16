@@ -99,7 +99,7 @@ class _WafarAppState extends State<WafarApp> {
       valueListenable: _themeMode,
       builder: (context, themeMode, child) {
         return MaterialApp(
-          title: 'Waffer 1.2.0',
+          title: 'Waffer 2.2.0',
           debugShowCheckedModeBanner: false,
 
           locale: const Locale('ar'),
