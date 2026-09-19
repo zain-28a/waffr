@@ -202,11 +202,13 @@ class SheetCircleButton extends StatelessWidget {
 class SheetFieldLabel extends StatelessWidget {
   final String text;
   final bool optional;
+  final Widget? action;
 
   const SheetFieldLabel({
     super.key,
     required this.text,
     this.optional = false,
+    this.action,
   });
 
   @override
@@ -243,6 +245,10 @@ class SheetFieldLabel extends StatelessWidget {
                 ),
               ),
             ),
+          if (action != null) ...[
+            const SizedBox(width: 8),
+            action!,
+          ],
         ],
       ),
     );

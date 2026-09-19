@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:waffer/core/data/recurring_expense.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffer/widgets/dialogs/edit_amount_dialog.dart';
 
 Future<void> showRecurringExpensesSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -167,6 +169,32 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
     await _store.deleteExpense(item.id);
   }
 
+  Future<void> _edit(RecurringExpense item) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+
+    final amount = await showDialog<double>(
+      context: context,
+      builder: (context) => EditAmountDialog(
+        title: item.note ?? item.category,
+        initialAmount: item.amount,
+        accent: accent,
+      ),
+    );
+
+    if (!mounted || amount == null) return;
+
+    final saved = await _store.updateAmount(item.id, amount);
+    if (!mounted) return;
+
+    if (!saved) {
+      showAppSnackBar(context, 'تعذر حفظ المصروف المتكرر. حاول مرة أخرى.');
+      return;
+    }
+
+    showAppSnackBar(context, 'تم حفظ المصروف المتكرر', success: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = _RecurringColors.of(context);
@@ -208,6 +236,7 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
                 _RecurringItemTile(
                   item: item,
                   colors: colors,
+                  onEdit: () => _edit(item),
                   onToggle: (enabled) => _store.setEnabled(item.id, enabled),
                   onDelete: () => _delete(item),
                 ),
@@ -271,12 +300,14 @@ class _PreviewItem extends StatelessWidget {
 class _RecurringItemTile extends StatelessWidget {
   final RecurringExpense item;
   final _RecurringColors colors;
+  final VoidCallback onEdit;
   final ValueChanged<bool> onToggle;
   final VoidCallback onDelete;
 
   const _RecurringItemTile({
     required this.item,
     required this.colors,
+    required this.onEdit,
     required this.onToggle,
     required this.onDelete,
   });
@@ -286,50 +317,54 @@ class _RecurringItemTile extends StatelessWidget {
     return Material(
       color: sheetFieldColor(context),
       borderRadius: BorderRadius.circular(18),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.note ?? item.category,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: colors.textPrimary,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.note ?? item.category,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${formatMoney(item.amount)} $currencyLabel · ${item.intervalDescription}',
-                    style: TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 11.5,
-                      color: colors.textSecondary,
+                    const SizedBox(height: 3),
+                    Text(
+                      '${formatMoney(item.amount)} $currencyLabel · ${item.intervalDescription}',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 11.5,
+                        color: colors.textSecondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Switch(
-              value: item.enabled,
-              activeThumbColor: colors.accent,
-              onChanged: onToggle,
-            ),
-            IconButton(
-              onPressed: onDelete,
-              icon: Icon(
-                Icons.delete_outline_rounded,
-                color: colors.textSecondary,
+              Switch(
+                value: item.enabled,
+                activeThumbColor: colors.accent,
+                onChanged: onToggle,
               ),
-            ),
-          ],
+              IconButton(
+                onPressed: onDelete,
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  color: colors.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

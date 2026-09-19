@@ -61,6 +61,24 @@ class RecurringExpenseStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  static const double _maxAmount = 999999999;
+
+  Future<bool> updateAmount(String id, double amount) async {
+    if (!amount.isFinite || amount <= 0 || amount > _maxAmount) {
+      return false;
+    }
+
+    await ensureLoaded();
+
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index < 0) return false;
+
+    _items[index] = _items[index].copyWith(amount: amount);
+    await _persist();
+    notifyListeners();
+    return true;
+  }
+
   Future<void> setEnabled(String id, bool enabled) async {
     await ensureLoaded();
 

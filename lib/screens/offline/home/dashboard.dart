@@ -9,13 +9,15 @@ import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffer/screens/offline/home/sheets/add_income_sheet.dart';
+import 'package:waffer/screens/offline/report/reportscreen.dart';
 import 'package:waffer/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
-const double kDashboardListFabEnd = 29;
-const double kDashboardListFabBottom = 636;
-const double kDashboardListFabSize = 48;
+const double kBalanceCardActionTop = 14;
+const double kBalanceCardActionEnd = 14;
+const double kBalanceCardActionGap = 8;
+const double kDashboardCardActionSize = 48;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,89 +46,87 @@ class _HomeScreenState extends State<HomeScreen>
     return AnimatedBuilder(
       animation: Listenable.merge([_store, CategoryStore.instance]),
       builder: (context, _) {
-        return Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _BalanceCard(
+                balance: _store.balance,
+                spent: _store.totalExpense,
+                maxBalance: _store.maxBalance,
+                ratio: _store.remainingRatio,
+                onShoppingList: () => showShoppingListSheet(context),
+                onIncomeLog: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const TransactionHistoryScreen.incomes(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 6),
+              Row(
                 children: [
-                  _BalanceCard(
-                    balance: _store.balance,
-                    spent: _store.totalExpense,
-                    maxBalance: _store.maxBalance,
-                    ratio: _store.remainingRatio,
+                  Expanded(
+                    child: _ActionButton(
+                      label: 'إضافة دخل',
+                      icon: Icons.add_circle_outline_rounded,
+                      onTap: () => showAddIncomeSheet(context),
+                    ),
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ActionButton(
-                          label: 'إضافة دخل',
-                          icon: Icons.add_circle_outline_rounded,
-                          onTap: () => showAddIncomeSheet(context),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: _ActionButton(
-                          label: 'إضافة مصروف',
-                          icon: Icons.remove_circle_outline_rounded,
-                          onTap: () => showAddExpenseSheet(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  _DistributionCard(
-                    totals: _store.expensesByCategory(),
-                    totalExpense: _store.totalExpense,
-                  ),
-                  const SizedBox(height: 6),
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          flex: 7,
-                          child: _RecentExpensesCard(
-                            expenses: _store.expenses,
-                            compact: true,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          flex: 4,
-                          child: _SavingGoalCard(
-                            compact: true,
-                            goals: _store.activeGoals,
-                            store: _store,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _ActionButton(
+                      label: 'إضافة مصروف',
+                      icon: Icons.remove_circle_outline_rounded,
+                      onTap: () => showAddExpenseSheet(context),
                     ),
                   ),
                 ],
               ),
-            ),
-            PositionedDirectional(
-              end: kDashboardListFabEnd,
-              bottom: kDashboardListFabBottom,
-              child: _DashboardListFab(
-                onTap: () => showShoppingListSheet(context),
+              const SizedBox(height: 6),
+              _DistributionCard(
+                totals: _store.expensesByCategory(),
+                totalExpense: _store.totalExpense,
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 7,
+                      child: _RecentExpensesCard(
+                        expenses: _store.expenses,
+                        compact: true,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      flex: 4,
+                      child: _SavingGoalCard(
+                        compact: true,
+                        goals: _store.activeGoals,
+                        store: _store,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 }
 
-class _DashboardListFab extends StatelessWidget {
+class _BalanceCardIconButton extends StatelessWidget {
+  final IconData icon;
   final VoidCallback onTap;
 
-  const _DashboardListFab({required this.onTap});
+  const _BalanceCardIconButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -135,14 +135,14 @@ class _DashboardListFab extends StatelessWidget {
 
     return GlassButton(
       onTap: onTap,
-      width: kDashboardListFabSize,
-      height: kDashboardListFabSize,
+      width: kDashboardCardActionSize,
+      height: kDashboardCardActionSize,
       borderRadius: 999,
       padding: EdgeInsets.zero,
       colorType: GlassColorType.surface,
       child: Center(
         child: Icon(
-          Icons.format_list_bulleted_rounded,
+          icon,
           color: accent,
           size: 22,
         ),
@@ -158,12 +158,16 @@ class _BalanceCard extends StatelessWidget {
   final double spent;
   final double maxBalance;
   final double ratio;
+  final VoidCallback onShoppingList;
+  final VoidCallback onIncomeLog;
 
   const _BalanceCard({
     required this.balance,
     required this.spent,
     required this.maxBalance,
     required this.ratio,
+    required this.onShoppingList,
+    required this.onIncomeLog,
   });
 
   @override
@@ -178,80 +182,105 @@ class _BalanceCard extends StatelessWidget {
     return GlassContainer(
       colorType: GlassColorType.surface,
       borderRadius: 28,
-      padding: const EdgeInsets.fromLTRB(22, 20, 22, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.zero,
+      child: Stack(
         children: [
-          Row(
-            children: [
-              Text(
-                'الرصيد الحالي',
-                style: TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontSize: 13.5,
-                  color: textSecondary,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 20, 22, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'الرصيد الحالي',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 13.5,
+                        color: textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: AlignmentDirectional.centerStart,
+                const SizedBox(height: 6),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                          formatMoney(balance),
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                            color: accent,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      currencyLabel,
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 15,
+                        color: textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 0),
+                Align(
+                  alignment: Alignment.centerLeft,
                   child: Text(
-                    formatMoney(balance),
+                    '${(ratio * 100).round()}%',
                     style: TextStyle(
                       fontFamily: 'Tajawal',
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: accent,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: textSecondary,
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                currencyLabel,
-                style: TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontSize: 15,
-                  color: textSecondary,
+                const SizedBox(height: 3),
+                _HorizontalProgress(
+                  ratio: ratio,
+                  trackColor: accent.withValues(alpha: 0.12),
+                  fillColor: accent,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 0),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '${(ratio * 100).round()}%',
-              style: TextStyle(
-                fontFamily: 'Tajawal',
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: textSecondary,
-              ),
+                const SizedBox(height: 8),
+                Text(
+                  'مصروف ${formatMoney(spent)} $currencyLabel '
+                  'من ${formatMoney(maxBalance)} $currencyLabel',
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 12.5,
+                    color: textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 3),
-          _HorizontalProgress(
-            ratio: ratio,
-            trackColor: accent.withValues(alpha: 0.12),
-            fillColor: accent,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'مصروف ${formatMoney(spent)} $currencyLabel '
-            'من ${formatMoney(maxBalance)} $currencyLabel',
-            style: TextStyle(
-              fontFamily: 'Tajawal',
-              fontSize: 12.5,
-              color: textSecondary,
+          PositionedDirectional(
+            top: kBalanceCardActionTop,
+            end: kBalanceCardActionEnd,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _BalanceCardIconButton(
+                  icon: Icons.payments_outlined,
+                  onTap: onIncomeLog,
+                ),
+                const SizedBox(width: kBalanceCardActionGap),
+                _BalanceCardIconButton(
+                  icon: Icons.format_list_bulleted_rounded,
+                  onTap: onShoppingList,
+                ),
+              ],
             ),
           ),
         ],

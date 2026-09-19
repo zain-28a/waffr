@@ -51,12 +51,13 @@ class RecurringExpense {
   }
 
   RecurringExpense copyWith({
+    double? amount,
     DateTime? nextDueAt,
     bool? enabled,
   }) {
     return RecurringExpense(
       id: id,
-      amount: amount,
+      amount: amount ?? this.amount,
       category: category,
       paymentMethod: paymentMethod,
       note: note,

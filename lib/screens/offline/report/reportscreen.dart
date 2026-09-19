@@ -8,6 +8,7 @@ import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
+import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
@@ -73,7 +74,7 @@ class _ReportScreenState extends State<ReportScreen>
   void _openExpenseHistory() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => const _ExpenseHistoryScreen(),
+        builder: (_) => const TransactionHistoryScreen.expenses(),
       ),
     );
   }
@@ -1092,41 +1093,55 @@ class _ImprovementComparison {
   }
 }
 
-class _ExpenseHistoryScreen extends StatefulWidget {
-  const _ExpenseHistoryScreen();
+class TransactionHistoryScreen extends StatefulWidget {
+  final bool isIncome;
+
+  const TransactionHistoryScreen.expenses({super.key}) : isIncome = false;
+
+  const TransactionHistoryScreen.incomes({super.key}) : isIncome = true;
 
   @override
-  State<_ExpenseHistoryScreen> createState() => _ExpenseHistoryScreenState();
+  State<TransactionHistoryScreen> createState() =>
+      _TransactionHistoryScreenState();
 }
 
-class _ExpenseHistoryScreenState extends State<_ExpenseHistoryScreen> {
+class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   final TransactionStore _store = TransactionStore.instance;
 
   @override
   Widget build(BuildContext context) {
     final colors = _ReportColors.of(context);
+    final isIncome = widget.isIncome;
+    final title = isIncome ? 'سجل الدخل' : 'سجل المصاريف';
+    final summaryLabel = isIncome ? 'كل الدخل' : 'كل المصاريف';
+    final emptyMessage = isIncome
+        ? 'لا يوجد دخل مسجّل بعد'
+        : 'لا يوجد مصروف مسجّل بعد';
+    final summaryIcon = isIncome
+        ? Icons.payments_outlined
+        : Icons.receipt_long_outlined;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: colors.background.withValues(alpha: 0),
-        elevation: 0,
+      appBar: WafferPageHeader(
         centerTitle: true,
-        iconTheme: IconThemeData(color: colors.textPrimary),
-        title: Text(
-          'سجل المصاريف',
-          style: TextStyle(
-            fontFamily: 'Tajawal',
-            fontSize: 23,
-            fontWeight: FontWeight.bold,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_forward_ios_rounded,
             color: colors.textPrimary,
           ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          title,
+          style: Theme.of(context).textTheme.headlineSmall,
         ),
       ),
       body: AnimatedBuilder(
         animation: Listenable.merge([_store, CategoryStore.instance]),
         builder: (context, _) {
-          final expenses = _store.expenses;
-          final groups = _groupExpensesByDay(expenses);
+          final items = isIncome ? _store.incomes : _store.expenses;
+          final groups = _groupExpensesByDay(items);
           return Column(
             children: [
               Padding(
@@ -1145,7 +1160,7 @@ class _ExpenseHistoryScreenState extends State<_ExpenseHistoryScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'كل المصاريف',
+                              summaryLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -1155,7 +1170,7 @@ class _ExpenseHistoryScreenState extends State<_ExpenseHistoryScreen> {
                               ),
                             ),
                             Text(
-                              '${formatMoney(_sumExpenses(expenses))} '
+                              '${formatMoney(_sumExpenses(items))} '
                               '$currencyLabel',
                               style: TextStyle(
                                 fontFamily: 'Tajawal',
@@ -1167,17 +1182,17 @@ class _ExpenseHistoryScreenState extends State<_ExpenseHistoryScreen> {
                           ],
                         ),
                       ),
-                      Icon(Icons.receipt_long_outlined, color: colors.accent),
+                      Icon(summaryIcon, color: colors.accent),
                     ],
                   ),
                 ),
               ),
               Expanded(
-                child: expenses.isEmpty
-                    ? const Center(
+                child: items.isEmpty
+                    ? Center(
                         child: _EmptyState(
-                          icon: Icons.receipt_long_outlined,
-                          message: 'لا يوجد مصروف مسجّل بعد',
+                          icon: summaryIcon,
+                          message: emptyMessage,
                         ),
                       )
                     : ListView.builder(
@@ -1190,6 +1205,7 @@ class _ExpenseHistoryScreenState extends State<_ExpenseHistoryScreen> {
                             child: _HistoryDayGroup(
                               date: group.date,
                               expenses: group.expenses,
+                              isIncome: isIncome,
                             ),
                           );
                         },
@@ -1213,8 +1229,13 @@ class _ExpenseDayGroup {
 class _HistoryDayGroup extends StatelessWidget {
   final DateTime date;
   final List<WafferTransaction> expenses;
+  final bool isIncome;
 
-  const _HistoryDayGroup({required this.date, required this.expenses});
+  const _HistoryDayGroup({
+    required this.date,
+    required this.expenses,
+    this.isIncome = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1246,7 +1267,10 @@ class _HistoryDayGroup extends StatelessWidget {
                     height: 22,
                     color: colors.textPrimary.withValues(alpha: 0.08),
                   ),
-                _HistoryExpenseRow(expense: expenses[index]),
+                _HistoryExpenseRow(
+                  expense: expenses[index],
+                  isIncome: isIncome,
+                ),
               ],
             ],
           ),
@@ -1258,14 +1282,27 @@ class _HistoryDayGroup extends StatelessWidget {
 
 class _HistoryExpenseRow extends StatelessWidget {
   final WafferTransaction expense;
+  final bool isIncome;
 
-  const _HistoryExpenseRow({required this.expense});
+  const _HistoryExpenseRow({
+    required this.expense,
+    this.isIncome = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colors = _ReportColors.of(context);
     final category = categoryFor(expense.category);
     final note = expense.note?.trim();
+    final title = isIncome
+        ? (note != null && note.isNotEmpty
+            ? note
+            : _incomeFrequencyLabel(expense.frequency))
+        : category.label;
+    final subtitle = isIncome && note != null && note.isNotEmpty
+        ? _incomeFrequencyLabel(expense.frequency)
+        : (!isIncome ? note : null);
+    final icon = isIncome ? Icons.payments_outlined : category.icon;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1276,7 +1313,7 @@ class _HistoryExpenseRow extends StatelessWidget {
             shape: BoxShape.circle,
             color: colors.accent.withValues(alpha: 0.12),
           ),
-          child: Icon(category.icon, size: 21, color: colors.accent),
+          child: Icon(icon, size: 21, color: colors.accent),
         ),
         const SizedBox(width: 11),
         Expanded(
@@ -1284,7 +1321,7 @@ class _HistoryExpenseRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                category.label,
+                title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -1294,10 +1331,10 @@ class _HistoryExpenseRow extends StatelessWidget {
                   color: colors.textPrimary,
                 ),
               ),
-              if (note != null && note.isNotEmpty) ...[
+              if (subtitle != null && subtitle.isNotEmpty) ...[
                 const SizedBox(height: 1),
                 Text(
-                  note,
+                  subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -1586,6 +1623,14 @@ List<_ExpenseDayGroup> _groupExpensesByDay(List<WafferTransaction> expenses) {
       .map((entry) => _ExpenseDayGroup(entry.key, entry.value))
       .toList()
     ..sort((a, b) => b.date.compareTo(a.date));
+}
+
+String _incomeFrequencyLabel(RecurringFrequency frequency) {
+  return switch (frequency) {
+    RecurringFrequency.weekly => 'دخل أسبوعي',
+    RecurringFrequency.monthly => 'دخل شهري',
+    RecurringFrequency.none => 'دخل',
+  };
 }
 
 String _historyDateLabel(DateTime date) {
