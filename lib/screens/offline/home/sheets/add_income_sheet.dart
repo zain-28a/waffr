@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
@@ -87,6 +88,56 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
     Navigator.of(context).maybePop();
   }
 
+  void _showBalanceInfo() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+          title: Text(
+            'الرصيد الحالي',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontWeight: FontWeight.bold,
+              color: textPrimary,
+            ),
+          ),
+          content: Text(
+            'يُظهر هذا القسم الرصيد المتبقي لديك من الفترة السابقة. اختر ما تريد فعله به: نقله إلى التوفير، أو إبقاءه ضمن رصيدك الجديد.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 14,
+              height: 1.6,
+              color: textSecondary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'حسناً',
+                style: TextStyle(fontFamily: 'Tajawal', color: accent),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasBalance = _store.balance > 0;
@@ -118,7 +169,10 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 18),
-              const SheetFieldLabel(text: 'الرصيد الحالي'),
+              SheetFieldLabel(
+                text: 'الرصيد الحالي',
+                action: _SheetInfoButton(onTap: _showBalanceInfo),
+              ),
               SheetChoiceChips(
                 options: const [_keepBalance, _moveBalance],
                 selected: _balanceAction,
@@ -140,6 +194,42 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
           onTap: _save,
         ),
       ],
+    );
+  }
+}
+
+class _SheetInfoButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _SheetInfoButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: textSecondary.withValues(alpha: 0.45)),
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            Icons.info_outline_rounded,
+            size: 14,
+            color: accent,
+          ),
+        ),
+      ),
     );
   }
 }

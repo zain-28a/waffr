@@ -16,8 +16,10 @@ import 'package:waffer/screens/offline/settings/account_screen.dart';
 import 'package:waffer/screens/offline/settings/ai_permissions_screen.dart';
 import 'package:waffer/screens/offline/settings/help_screen.dart';
 import 'package:waffer/screens/offline/settings/privacy_info_screen.dart';
+import 'package:waffer/screens/offline/savings/sheets/recurring_expenses_sheet.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffer/widgets/dialogs/edit_amount_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeNotifier;
@@ -358,7 +360,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final amount = await showDialog<double>(
       context: context,
-      builder: (context) => _EditIncomeDialog(
+      builder: (context) => EditAmountDialog(
         title: isMonthly ? 'الدخل الشهري' : 'الدخل الأسبوعي',
         initialAmount: current,
         accent: accent,
@@ -548,6 +550,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => _editIncome(RecurringFrequency.weekly),
             ),
           ],
+
+          const SizedBox(height: 12),
+          _SettingsTile(
+            icon: Icons.event_repeat_rounded,
+            title: 'المصروفات المتكررة',
+            subtitle: 'تعديل المبلغ أو إيقاف الخصم التلقائي',
+            accent: accent,
+            surface: surface,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
+            onTap: () => showRecurringExpensesSheet(context),
+          ),
 
           const SizedBox(height: 25),
 
@@ -985,85 +999,3 @@ class _SettingsTile extends StatelessWidget {
   }
 }
 
-class _EditIncomeDialog extends StatefulWidget {
-  final String title;
-  final double initialAmount;
-  final Color accent;
-
-  const _EditIncomeDialog({
-    required this.title,
-    required this.initialAmount,
-    required this.accent,
-  });
-
-  @override
-  State<_EditIncomeDialog> createState() => _EditIncomeDialogState();
-}
-
-class _EditIncomeDialogState extends State<_EditIncomeDialog> {
-  static const double _maxAmount = 999999999;
-
-  late final TextEditingController _controller;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(
-      text: widget.initialAmount > 0 && widget.initialAmount.isFinite
-          ? formatMoney(widget.initialAmount)
-          : '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final amount = parseAmount(_controller.text);
-    if (!amount.isFinite || amount <= 0) {
-      setState(() => _error = 'أدخل مبلغاً أكبر من صفر');
-      return;
-    }
-    if (amount > _maxAmount) {
-      setState(() => _error = 'المبلغ أكبر من الحد المسموح');
-      return;
-    }
-    Navigator.of(context).pop(amount);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        keyboardType: TextInputType.number,
-        inputFormatters: [ThousandsInputFormatter()],
-        textAlign: TextAlign.center,
-        onChanged: (_) {
-          if (_error != null) setState(() => _error = null);
-        },
-        onSubmitted: (_) => _submit(),
-        decoration: InputDecoration(
-          hintText: 'المبلغ',
-          errorText: _error,
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('إلغاء'),
-        ),
-        TextButton(
-          onPressed: _submit,
-          child: Text('حفظ', style: TextStyle(color: widget.accent)),
-        ),
-      ],
-    );
-  }
-}

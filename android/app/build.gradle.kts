@@ -1,10 +1,13 @@
+import com.android.build.api.dsl.ApplicationExtension
+import java.io.File
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-android {
+configure<ApplicationExtension> {
     namespace = "com.example.waffer"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
@@ -46,4 +49,28 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+tasks.configureEach {
+    if (name != "assembleRelease") return@configureEach
+    doLast {
+        val named = "Waffer-${flutter.versionName}.apk"
+        val outputs = layout.buildDirectory.get().asFile
+        val releaseApk = outputs.resolve("outputs/apk/release/app-release.apk")
+        val flutterDir = outputs.resolve("outputs/flutter-apk")
+        val flutterApk = flutterDir.resolve("app-release.apk")
+
+        fun copyNamed(source: File) {
+            if (!source.exists()) return
+            source.copyTo(File(source.parentFile, named), overwrite = true)
+        }
+
+        copyNamed(releaseApk)
+        copyNamed(flutterApk)
+
+        if (releaseApk.exists()) {
+            flutterDir.mkdirs()
+            releaseApk.copyTo(flutterDir.resolve(named), overwrite = true)
+        }
+    }
 }

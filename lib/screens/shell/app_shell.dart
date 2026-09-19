@@ -117,9 +117,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
     final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
 
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-
     return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
@@ -210,37 +207,43 @@ class _BottomNavBar extends StatelessWidget {
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: List.generate(tabCount, (index) {
               final isSelected = index == currentIndex;
 
-              return GestureDetector(
-                onTap: () => onTap(index),
-                child: AnimatedScale(
-                  scale: isSelected ? 1.25 : 1.0,
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                  child: index == 4
-                      ? _NotificationsTabIcon(
-                          selected: isSelected,
-                          accent: accent,
-                          idle: textPrimary.withValues(alpha: 0.35),
-                        )
-                      : Icon(
-                          index == 0
-                              ? Icons.home_rounded
-                              : index == 1
-                                  ? Icons.bar_chart_rounded
-                                  : index == 2
-                                      ? Icons.wallet_rounded
-                                      : Icons.circle_outlined,
-                              size: 26,
-                              color: isSelected
-                                  ? accent
-                                  : textPrimary.withValues(alpha: 0.35),
-                            ),
+              return Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onTap(index),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Center(
+                      child: AnimatedScale(
+                        scale: isSelected ? 1.25 : 1.0,
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOut,
+                        child: index == 4
+                            ? _NotificationsTabIcon(
+                                selected: isSelected,
+                                accent: accent,
+                                idle: textPrimary.withValues(alpha: 0.35),
+                              )
+                            : Icon(
+                                index == 0
+                                    ? Icons.home_rounded
+                                    : index == 1
+                                        ? Icons.bar_chart_rounded
+                                        : index == 2
+                                            ? Icons.wallet_rounded
+                                            : Icons.circle_outlined,
+                                size: 26,
+                                color: isSelected
+                                    ? accent
+                                    : textPrimary.withValues(alpha: 0.35),
+                              ),
+                      ),
+                    ),
+                  ),
                 ),
               );
             }),
