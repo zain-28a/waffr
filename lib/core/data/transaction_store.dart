@@ -5,6 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/calendar_period.dart';
 import 'package:waffer/core/data/savings_goal.dart';
 import 'package:waffer/core/data/transaction.dart';
+import 'package:waffer/core/sync/sync_clock.dart';
+import 'package:waffer/core/sync/sync_dirty.dart';
+import 'package:waffer/core/sync/sync_mapper.dart';
+import 'package:waffer/core/sync/sync_merge.dart';
+import 'package:waffer/core/sync/sync_tombstones.dart';
 
 /// المصدر الوحيد لبيانات العمليات والرصيد والادخار.
 ///
@@ -48,6 +53,10 @@ class TransactionStore extends ChangeNotifier {
   bool get isLoaded => _loaded;
 
   Set<String> get processedPeriodTokens => Set.unmodifiable(_processedPeriods);
+
+  double? get monthlyIncomeOverride => _monthlyIncomeOverride;
+
+  double? get weeklyIncomeOverride => _weeklyIncomeOverride;
 
   /// من الأحدث إلى الأقدم.
   List<WafferTransaction> get transactions => List.unmodifiable(_transactions);
@@ -386,6 +395,7 @@ class TransactionStore extends ChangeNotifier {
     }
 
     _setOverride(frequency, amount);
+    await SyncDirty.mark(settings: true);
     final goalsChanged = _syncPeriodicGoalAmounts(frequency, amount);
 
     final prefs = await SharedPreferences.getInstance();
@@ -417,7 +427,7 @@ class TransactionStore extends ChangeNotifier {
       if (!perPeriod.isFinite || perPeriod <= 0) continue;
       if (perPeriod == goal.allocateAmount) continue;
 
-      _goals[i] = goal.copyWith(allocateAmount: perPeriod);
+      _goals[i] = goal.copyWith(allocateAmount: perPeriod, touch: true);
       changed = true;
     }
 
@@ -484,6 +494,7 @@ class TransactionStore extends ChangeNotifier {
     if (index < 0) return false;
 
     _transactions.removeAt(index);
+    await SyncTombstones.instance.add(SyncCollection.transactions, id);
 
     final prefs = await SharedPreferences.getInstance();
     await _persist(prefs);
@@ -640,6 +651,7 @@ class TransactionStore extends ChangeNotifier {
         deductFrequency: frequency,
         isPeriodic: true,
         durationCount: cycles,
+        touch: true,
       );
     } else {
       _goals.add(
@@ -682,6 +694,7 @@ class TransactionStore extends ChangeNotifier {
     }
 
     _goals.removeAt(index);
+    await SyncTombstones.instance.add(SyncCollection.savingsGoals, id);
     _reindexPriorities();
 
     final prefs = await SharedPreferences.getInstance();
@@ -730,6 +743,86 @@ class TransactionStore extends ChangeNotifier {
 
     await _persistGoals(prefs);
 
+    notifyListeners();
+  }
+
+  Future<void> applyRemoteSync({
+    required List<Map<String, dynamic>> transactions,
+    required List<SyncTombstone> transactionDeletes,
+    required List<Map<String, dynamic>> transfers,
+    required List<SyncTombstone> transferDeletes,
+    required List<Map<String, dynamic>> goals,
+    required List<SyncTombstone> goalDeletes,
+    Map<String, dynamic>? settings,
+  }) async {
+    await ensureLoaded();
+
+    var changed = mergeRemoteRecords<WafferTransaction>(
+      items: _transactions,
+      upserts: [
+        for (final raw in transactions)
+          if (transactionFromSync(raw) != null) transactionFromSync(raw)!,
+      ],
+      deletes: transactionDeletes,
+      collection: SyncCollection.transactions,
+      idOf: (item) => item.id,
+      updatedOf: (item) => item.syncUpdatedAt,
+    );
+
+    changed |= mergeRemoteRecords<WafferTransaction>(
+      items: _transactions,
+      upserts: [
+        for (final raw in transfers)
+          if (transferFromSync(raw) != null) transferFromSync(raw)!,
+      ],
+      deletes: transferDeletes,
+      collection: SyncCollection.savingsTransfers,
+      idOf: (item) => item.id,
+      updatedOf: (item) => item.syncUpdatedAt,
+    );
+
+    changed |= mergeRemoteRecords<SavingsGoal>(
+      items: _goals,
+      upserts: [
+        for (final raw in goals)
+          if (goalFromSync(raw) != null) goalFromSync(raw)!,
+      ],
+      deletes: goalDeletes,
+      collection: SyncCollection.savingsGoals,
+      idOf: (item) => item.id,
+      updatedOf: (item) => item.syncUpdatedAt,
+    );
+
+    if (settings != null) {
+      final keys = settings['processed_period_keys'];
+      if (keys is List) {
+        final before = _processedPeriods.length;
+        _processedPeriods.addAll(keys.map((item) => item.toString()));
+        if (_processedPeriods.length != before) changed = true;
+      }
+
+      final remoteUpdated = parseSyncDate(settings['updated_at']);
+      final localUpdated = await SyncDirty.settingsUpdatedAt();
+      if (newerOrEqual(remoteUpdated, localUpdated)) {
+        if (settings.containsKey('monthly_income_amount')) {
+          _monthlyIncomeOverride = parseMoney(settings['monthly_income_amount']);
+        }
+        if (settings.containsKey('weekly_income_amount')) {
+          _weeklyIncomeOverride = parseMoney(settings['weekly_income_amount']);
+        }
+        if (remoteUpdated != null) {
+          await SyncDirty.setSettingsUpdatedAt(remoteUpdated);
+        }
+        changed = true;
+      }
+    }
+
+    if (!changed) return;
+
+    _sort();
+    _completeGoalIfNeeded();
+    final prefs = await SharedPreferences.getInstance();
+    await _persistAll(prefs);
     notifyListeners();
   }
 
@@ -1116,6 +1209,7 @@ class TransactionStore extends ChangeNotifier {
         completedAmount: progress > goal.targetAmount
             ? progress
             : goal.targetAmount,
+        touch: true,
       );
       changed = true;
     }
@@ -1286,6 +1380,7 @@ class TransactionStore extends ChangeNotifier {
     await prefs.setDouble(savingsBalanceKey, savingsBalance);
 
     await _persistIncomeOverrides(prefs);
+    await SyncDirty.mark();
   }
 
   Future<void> _persistIncomeOverrides(SharedPreferences prefs) async {
@@ -1325,6 +1420,7 @@ class TransactionStore extends ChangeNotifier {
     );
 
     await prefs.setStringList(processedPeriodsKey, _processedPeriods.toList());
+    await SyncDirty.mark();
   }
 
   Future<void> _persistAll(SharedPreferences prefs) async {

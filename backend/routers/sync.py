@@ -1,0 +1,517 @@
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import or_
+from sqlalchemy.orm import Session
+
+from auth import get_current_user
+from crud_utils import (
+    apply_frequency,
+    as_utc,
+    as_utc_or_now,
+    direction_from_kind,
+    empty_to_none,
+    period_from_unit,
+    unit_from_period,
+    utc_now,
+)
+from database import get_db
+from goal_model import SavingsGoal, SavingsTransfer
+from models import Notification, User, UserSettings
+from shopping_model import ShoppingItem, ShoppingList
+from sync_schemas import (
+    GoalSyncIn,
+    NotificationSyncIn,
+    RecurringSyncIn,
+    SettingsSyncIn,
+    SettingsSyncOut,
+    ShoppingItemSyncIn,
+    ShoppingListSyncIn,
+    SyncCollectionOut,
+    SyncRequest,
+    SyncResponse,
+    TombstoneIn,
+    TransactionSyncIn,
+    TransferSyncIn,
+)
+from transaction_model import RecurringExpense, Transaction
+
+router = APIRouter(tags=["sync"])
+
+
+def _newer_or_equal(incoming: datetime | None, current: datetime | None) -> bool:
+    if incoming is None:
+        return current is None
+    if current is None:
+        return True
+    incoming_utc = as_utc(incoming)
+    current_utc = as_utc(current)
+    return incoming_utc >= current_utc
+
+
+def _parse_many(model, items: list[dict]):
+    parsed = []
+    for item in items:
+        try:
+            parsed.append(model.model_validate(item))
+        except Exception as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+    return parsed
+
+
+def _get_by_client(db: Session, model, user_id: int, client_id: str):
+    db.flush()
+    return (
+        db.query(model)
+        .filter(model.user_id == user_id, model.client_id == client_id)
+        .first()
+    )
+
+
+def _apply_delete(row, deleted_at: datetime | None) -> None:
+    stamp = as_utc_or_now(deleted_at)
+    if row.deleted_at is not None and not _newer_or_equal(stamp, row.deleted_at):
+        return
+    if hasattr(row, "updated_at") and not _newer_or_equal(stamp, row.updated_at):
+        return
+    row.deleted_at = stamp
+    if hasattr(row, "updated_at"):
+        row.updated_at = stamp
+
+
+def _changed_since(query, model, last_sync: datetime | None):
+    if last_sync is None:
+        return query
+    filters = [model.updated_at > last_sync]
+    if hasattr(model, "deleted_at"):
+        filters.append(model.deleted_at > last_sync)
+    return query.filter(or_(*filters))
+
+
+def _settings_row(db: Session, user: User) -> tuple[UserSettings, bool]:
+    existing = db.query(UserSettings).filter(UserSettings.user_id == user.id).first()
+    if existing is not None:
+        return existing, False
+    row = UserSettings(user_id=user.id, processed_period_keys=[])
+    db.add(row)
+    db.flush()
+    return row, True
+
+
+def _apply_settings(
+    row: UserSettings,
+    data: SettingsSyncIn,
+    *,
+    created: bool = False,
+) -> None:
+    incoming = as_utc(data.updated_at)
+    if (
+        not created
+        and incoming is not None
+        and not _newer_or_equal(incoming, row.updated_at)
+    ):
+        keys = set(row.processed_period_keys or [])
+        keys.update(data.processed_period_keys or [])
+        row.processed_period_keys = sorted(keys)
+        return
+
+    if data.notifications_muted is not None:
+        row.notifications_enabled = not data.notifications_muted
+    if data.notifications_enabled is not None:
+        row.notifications_enabled = data.notifications_enabled
+    for field in (
+        "notify_low_balance",
+        "notify_spending_threshold",
+        "notify_goal_reached",
+        "notify_recurring_expense",
+        "ai_data_enabled",
+        "monthly_income_amount",
+        "weekly_income_amount",
+    ):
+        value = getattr(data, field)
+        if value is not None:
+            setattr(row, field, value)
+    keys = set(row.processed_period_keys or [])
+    keys.update(data.processed_period_keys or [])
+    row.processed_period_keys = sorted(keys)
+    if incoming is not None:
+        row.updated_at = incoming
+
+
+def _settings_out(row: UserSettings) -> SettingsSyncOut:
+    return SettingsSyncOut(
+        notifications_enabled=row.notifications_enabled,
+        notifications_muted=not row.notifications_enabled,
+        notify_low_balance=row.notify_low_balance,
+        notify_spending_threshold=row.notify_spending_threshold,
+        notify_goal_reached=row.notify_goal_reached,
+        notify_recurring_expense=row.notify_recurring_expense,
+        ai_data_enabled=row.ai_data_enabled,
+        monthly_income_amount=row.monthly_income_amount,
+        weekly_income_amount=row.weekly_income_amount,
+        processed_period_keys=list(row.processed_period_keys or []),
+        updated_at=row.updated_at,
+    )
+
+
+def _apply_transaction(db: Session, user_id: int, data: TransactionSyncIn) -> None:
+    row = _get_by_client(db, Transaction, user_id, data.client_id)
+    incoming = as_utc_or_now(data.updated_at or data.occurred_at)
+    frequency, is_recurring, recurring_period = apply_frequency(data.frequency)
+    if row is None:
+        row = Transaction(user_id=user_id, client_id=data.client_id)
+        db.add(row)
+    elif not _newer_or_equal(incoming, row.updated_at):
+        return
+    row.type = data.type
+    row.amount = data.amount
+    row.category = empty_to_none(data.category)
+    row.payment_method = empty_to_none(data.payment_method)
+    row.note = empty_to_none(data.note)
+    row.source_id = empty_to_none(data.source_id)
+    row.occurred_at = as_utc_or_now(data.occurred_at)
+    row.frequency = frequency
+    row.period_key = empty_to_none(data.period_key)
+    row.is_recurring = is_recurring
+    row.recurring_period = recurring_period
+    row.deleted_at = None
+    row.updated_at = incoming
+
+
+def _apply_goal(db: Session, user_id: int, data: GoalSyncIn) -> None:
+    row = _get_by_client(db, SavingsGoal, user_id, data.client_id)
+    incoming = as_utc_or_now(data.updated_at or data.created_at)
+    if row is None:
+        row = SavingsGoal(user_id=user_id, client_id=data.client_id)
+        db.add(row)
+    elif not _newer_or_equal(incoming, row.updated_at):
+        return
+    row.name = data.name
+    row.target_amount = data.target_amount
+    row.duration = data.duration
+    row.deadline = as_utc(data.deadline)
+    row.allocate_percent = data.allocate_percent
+    row.allocate_amount = data.allocate_amount
+    row.deduct_frequency = data.deduct_frequency
+    row.is_periodic = data.is_periodic
+    row.duration_count = data.duration_count
+    row.priority = data.priority
+    row.completed_at = as_utc(data.completed_at)
+    row.completed_amount = data.completed_amount
+    row.is_completed = row.completed_at is not None
+    if data.created_at is not None:
+        row.created_at = as_utc_or_now(data.created_at)
+    row.deleted_at = None
+    row.updated_at = incoming
+
+
+def _apply_transfer(db: Session, user_id: int, data: TransferSyncIn) -> None:
+    row = _get_by_client(db, SavingsTransfer, user_id, data.client_id)
+    incoming = as_utc_or_now(data.updated_at or data.occurred_at)
+    goal = None
+    goal_client_id = empty_to_none(data.goal_client_id)
+    if goal_client_id is not None:
+        goal = _get_by_client(db, SavingsGoal, user_id, goal_client_id)
+    if row is None:
+        row = SavingsTransfer(user_id=user_id, client_id=data.client_id)
+        db.add(row)
+    elif not _newer_or_equal(incoming, row.updated_at):
+        return
+    row.goal_id = None if goal is None else goal.id
+    row.amount = data.amount
+    row.direction = direction_from_kind(data.kind, data.direction)
+    row.kind = data.kind
+    row.note = empty_to_none(data.note)
+    row.occurred_at = as_utc_or_now(data.occurred_at)
+    row.processed_period_key = empty_to_none(data.processed_period_key)
+    row.deleted_at = None
+    row.updated_at = incoming
+
+
+def _apply_list(db: Session, user_id: int, data: ShoppingListSyncIn) -> None:
+    row = _get_by_client(db, ShoppingList, user_id, data.client_id)
+    incoming = as_utc_or_now(data.updated_at)
+    if row is None:
+        row = ShoppingList(user_id=user_id, client_id=data.client_id)
+        db.add(row)
+    elif not _newer_or_equal(incoming, row.updated_at):
+        return
+    row.name = data.name
+    row.deleted_at = None
+    row.updated_at = incoming
+
+
+def _apply_item(db: Session, user_id: int, data: ShoppingItemSyncIn) -> None:
+    shopping_list = _get_by_client(db, ShoppingList, user_id, data.list_client_id)
+    if shopping_list is None:
+        shopping_list = ShoppingList(
+            user_id=user_id,
+            client_id=data.list_client_id,
+            name="المشتريات",
+        )
+        db.add(shopping_list)
+        db.flush()
+    row = _get_by_client(db, ShoppingItem, user_id, data.client_id)
+    incoming = as_utc_or_now(data.updated_at or data.created_at)
+    if row is None:
+        row = ShoppingItem(user_id=user_id, client_id=data.client_id)
+        db.add(row)
+    elif not _newer_or_equal(incoming, row.updated_at):
+        return
+    row.list_id = shopping_list.id
+    row.name = data.name
+    row.quantity = max(1, data.quantity)
+    row.price = data.price
+    row.is_purchased = data.is_purchased
+    row.purchased_at = as_utc(data.purchased_at)
+    row.expense_client_id = empty_to_none(data.expense_client_id)
+    if data.created_at is not None:
+        row.created_at = as_utc_or_now(data.created_at)
+    row.deleted_at = None
+    row.updated_at = incoming
+
+
+def _apply_recurring(db: Session, user_id: int, data: RecurringSyncIn) -> None:
+    row = _get_by_client(db, RecurringExpense, user_id, data.client_id)
+    incoming = as_utc_or_now(data.updated_at or data.created_at)
+    if row is None:
+        row = RecurringExpense(user_id=user_id, client_id=data.client_id)
+        db.add(row)
+    elif not _newer_or_equal(incoming, row.updated_at):
+        return
+    row.amount = data.amount
+    row.category = data.category
+    row.payment_method = data.payment_method
+    row.note = empty_to_none(data.note)
+    row.period = period_from_unit(data.unit)
+    row.interval_count = max(1, data.interval_count)
+    row.next_run_at = as_utc_or_now(data.next_due_at)
+    row.is_active = data.enabled
+    if data.created_at is not None:
+        row.created_at = as_utc_or_now(data.created_at)
+    row.deleted_at = None
+    row.updated_at = incoming
+
+
+def _apply_notification(db: Session, user_id: int, data: NotificationSyncIn) -> None:
+    row = _get_by_client(db, Notification, user_id, data.client_id)
+    if row is None:
+        row = (
+            db.query(Notification)
+            .filter(
+                Notification.user_id == user_id,
+                Notification.event_key == data.event_key,
+                Notification.deleted_at.is_(None),
+            )
+            .first()
+        )
+    incoming = as_utc_or_now(data.updated_at or data.created_at)
+    if row is None:
+        row = Notification(user_id=user_id, client_id=data.client_id)
+        db.add(row)
+    elif not _newer_or_equal(incoming, row.updated_at):
+        return
+    row.type = data.type
+    row.title = data.title
+    row.message = data.message
+    row.event_key = data.event_key
+    row.related_id = empty_to_none(data.related_id)
+    row.event_metadata = data.metadata
+    row.is_read = data.is_read
+    if data.created_at is not None:
+        row.created_at = as_utc_or_now(data.created_at)
+    row.deleted_at = None
+    row.updated_at = incoming
+
+
+def _apply_deletes(db: Session, model, user_id: int, deletes: list[TombstoneIn]) -> None:
+    for item in deletes:
+        row = _get_by_client(db, model, user_id, item.client_id)
+        if row is None:
+            continue
+        _apply_delete(row, item.deleted_at)
+
+
+def _collection_out(live_rows, tombstones, serialize) -> SyncCollectionOut:
+    return SyncCollectionOut(
+        upserts=[serialize(row) for row in live_rows],
+        deletes=tombstones,
+    )
+
+
+@router.post("/sync", response_model=SyncResponse)
+def sync_changes(
+    payload: SyncRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
+    last_sync = as_utc(payload.last_sync_at)
+
+    try:
+        for item in _parse_many(GoalSyncIn, payload.savings_goals.upserts):
+            _apply_goal(db, user_id, item)
+        for item in _parse_many(ShoppingListSyncIn, payload.shopping_lists.upserts):
+            _apply_list(db, user_id, item)
+        for item in _parse_many(TransactionSyncIn, payload.transactions.upserts):
+            _apply_transaction(db, user_id, item)
+        for item in _parse_many(TransferSyncIn, payload.savings_transfers.upserts):
+            _apply_transfer(db, user_id, item)
+        for item in _parse_many(ShoppingItemSyncIn, payload.shopping_items.upserts):
+            _apply_item(db, user_id, item)
+        for item in _parse_many(RecurringSyncIn, payload.recurring_expenses.upserts):
+            _apply_recurring(db, user_id, item)
+        for item in _parse_many(NotificationSyncIn, payload.notifications.upserts):
+            _apply_notification(db, user_id, item)
+
+        _apply_deletes(db, ShoppingItem, user_id, payload.shopping_items.deletes)
+        _apply_deletes(db, SavingsTransfer, user_id, payload.savings_transfers.deletes)
+        _apply_deletes(db, Transaction, user_id, payload.transactions.deletes)
+        _apply_deletes(db, RecurringExpense, user_id, payload.recurring_expenses.deletes)
+        _apply_deletes(db, Notification, user_id, payload.notifications.deletes)
+        _apply_deletes(db, SavingsGoal, user_id, payload.savings_goals.deletes)
+        _apply_deletes(db, ShoppingList, user_id, payload.shopping_lists.deletes)
+
+        settings, settings_created = _settings_row(db, current_user)
+        if payload.settings is not None:
+            _apply_settings(settings, payload.settings, created=settings_created)
+
+        db.flush()
+        server_time = utc_now()
+
+        def dump_changed(model, serialize_live):
+            rows = _changed_since(
+                db.query(model).filter(model.user_id == user_id),
+                model,
+                last_sync,
+            ).all()
+            live = [row for row in rows if row.deleted_at is None]
+            deleted = [
+                TombstoneIn(client_id=row.client_id, deleted_at=row.deleted_at)
+                for row in rows
+                if row.deleted_at is not None
+            ]
+            return _collection_out(live, deleted, serialize_live)
+
+        goals = {row.id: row for row in db.query(SavingsGoal).filter(SavingsGoal.user_id == user_id).all()}
+        lists = {row.id: row for row in db.query(ShoppingList).filter(ShoppingList.user_id == user_id).all()}
+
+        response = SyncResponse(
+            server_time=server_time,
+            transactions=dump_changed(
+                Transaction,
+                lambda row: {
+                    "client_id": row.client_id,
+                    "type": row.type,
+                    "amount": str(row.amount),
+                    "category": row.category,
+                    "payment_method": row.payment_method,
+                    "note": row.note,
+                    "source_id": row.source_id,
+                    "occurred_at": row.occurred_at,
+                    "frequency": row.frequency,
+                    "period_key": row.period_key,
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                },
+            ),
+            savings_goals=dump_changed(
+                SavingsGoal,
+                lambda row: {
+                    "client_id": row.client_id,
+                    "name": row.name,
+                    "target_amount": str(row.target_amount),
+                    "duration": row.duration,
+                    "deadline": row.deadline,
+                    "allocate_percent": None if row.allocate_percent is None else str(row.allocate_percent),
+                    "allocate_amount": None if row.allocate_amount is None else str(row.allocate_amount),
+                    "deduct_frequency": row.deduct_frequency,
+                    "is_periodic": row.is_periodic,
+                    "duration_count": row.duration_count,
+                    "priority": row.priority,
+                    "completed_at": row.completed_at,
+                    "completed_amount": None if row.completed_amount is None else str(row.completed_amount),
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                },
+            ),
+            savings_transfers=dump_changed(
+                SavingsTransfer,
+                lambda row: {
+                    "client_id": row.client_id,
+                    "goal_client_id": None if row.goal_id is None else getattr(goals.get(row.goal_id), "client_id", None),
+                    "amount": str(row.amount),
+                    "direction": row.direction,
+                    "kind": row.kind,
+                    "note": row.note,
+                    "occurred_at": row.occurred_at,
+                    "processed_period_key": row.processed_period_key,
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                },
+            ),
+            shopping_lists=dump_changed(
+                ShoppingList,
+                lambda row: {
+                    "client_id": row.client_id,
+                    "name": row.name,
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                },
+            ),
+            shopping_items=dump_changed(
+                ShoppingItem,
+                lambda row: {
+                    "client_id": row.client_id,
+                    "list_client_id": getattr(lists.get(row.list_id), "client_id", "shopping_default"),
+                    "name": row.name,
+                    "quantity": row.quantity,
+                    "price": None if row.price is None else str(row.price),
+                    "is_purchased": row.is_purchased,
+                    "purchased_at": row.purchased_at,
+                    "expense_client_id": row.expense_client_id,
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                },
+            ),
+            recurring_expenses=dump_changed(
+                RecurringExpense,
+                lambda row: {
+                    "client_id": row.client_id,
+                    "amount": str(row.amount),
+                    "category": row.category,
+                    "payment_method": row.payment_method,
+                    "note": row.note,
+                    "unit": unit_from_period(row.period),
+                    "interval_count": row.interval_count,
+                    "next_due_at": row.next_run_at,
+                    "enabled": row.is_active,
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                },
+            ),
+            notifications=dump_changed(
+                Notification,
+                lambda row: {
+                    "client_id": row.client_id,
+                    "type": row.type,
+                    "title": row.title,
+                    "message": row.message,
+                    "event_key": row.event_key,
+                    "related_id": row.related_id,
+                    "metadata": row.event_metadata or {},
+                    "is_read": row.is_read,
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                },
+            ),
+            settings=_settings_out(settings),
+        )
+        db.commit()
+        return response
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as error:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(error)) from error

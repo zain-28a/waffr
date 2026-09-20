@@ -8,6 +8,7 @@ import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/data/shopping_list_store.dart';
 import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/core/sync/sync_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
@@ -119,6 +120,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _monthlyIncome = store.referenceIncome(RecurringFrequency.monthly);
       _weeklyIncome = store.referenceIncome(RecurringFrequency.weekly);
     });
+  }
+
+  Future<void> _syncNow() async {
+    showAppSnackBar(context, 'جاري المزامنة...');
+    final result = await SyncService.instance.syncNow(force: true);
+    if (!mounted) return;
+    showAppSnackBar(
+      context,
+      result.userMessage,
+      success: result.status == SyncStatus.success,
+    );
   }
 
   Future<void> _toggleAppLock(bool value) async {
@@ -562,6 +574,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             textPrimary: textPrimary,
             textSecondary: textSecondary,
             onTap: () => showRecurringExpensesSheet(context),
+          ),
+
+          const SizedBox(height: 12),
+          _SettingsTile(
+            icon: Icons.cloud_sync_outlined,
+            title: 'مزامنة السحابة',
+            subtitle: 'رفع البيانات المحلية وجلب تغييرات الحساب',
+            accent: accent,
+            surface: surface,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
+            onTap: _syncNow,
           ),
 
           const SizedBox(height: 25),

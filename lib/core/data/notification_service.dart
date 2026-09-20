@@ -7,6 +7,10 @@ import 'package:waffer/core/data/app_notification.dart';
 import 'package:waffer/core/data/calendar_period.dart';
 import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/core/sync/sync_dirty.dart';
+import 'package:waffer/core/sync/sync_mapper.dart';
+import 'package:waffer/core/sync/sync_merge.dart';
+import 'package:waffer/core/sync/sync_tombstones.dart';
 import 'package:waffer/core/utils/money.dart';
 
 /// خدمة الإشعارات المركزية: تقييم الأحداث، منع التكرار، والتخزين.
@@ -131,6 +135,7 @@ class NotificationService extends ChangeNotifier {
     _muted = muted;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_mutedKey, muted);
+    await SyncDirty.mark(settings: true);
     notifyListeners();
   }
 
@@ -161,8 +166,47 @@ class NotificationService extends ChangeNotifier {
   Future<void> clearHistory() async {
     await ensureLoaded();
     if (_items.isEmpty) return;
+    await SyncTombstones.instance.addMany(
+      SyncCollection.notifications,
+      _items.map((item) => item.id),
+    );
     _items.clear();
     await _persistItems();
+    notifyListeners();
+  }
+
+  Future<void> applyRemoteSync({
+    required List<Map<String, dynamic>> upserts,
+    required List<SyncTombstone> deletes,
+    bool? muted,
+  }) async {
+    await ensureLoaded();
+
+    var changed = mergeRemoteRecords<AppNotification>(
+      items: _items,
+      upserts: [
+        for (final raw in upserts)
+          if (notificationFromSync(raw) != null) notificationFromSync(raw)!,
+      ],
+      deletes: deletes,
+      collection: SyncCollection.notifications,
+      idOf: (item) => item.id,
+      updatedOf: (item) => item.syncUpdatedAt,
+    );
+
+    for (final item in _items) {
+      _eventKeys.add(item.eventKey);
+    }
+
+    if (muted != null && muted != _muted) {
+      _muted = muted;
+      changed = true;
+    }
+
+    if (!changed) return;
+
+    _sort();
+    await _persist();
     notifyListeners();
   }
 
@@ -535,6 +579,7 @@ class NotificationService extends ChangeNotifier {
     await prefs.setStringList(_eventKeysKey, _eventKeys.toList());
     await prefs.setBool(_mutedKey, _muted);
     await prefs.setString(_snapshotKey, _snapshot.encode());
+    await SyncDirty.mark();
   }
 
   Future<void> _persistItems() async {
@@ -543,6 +588,7 @@ class NotificationService extends ChangeNotifier {
       _itemsKey,
       _items.map((item) => item.encode()).toList(),
     );
+    await SyncDirty.mark();
   }
 
   Future<void> _persistSnapshot() async {

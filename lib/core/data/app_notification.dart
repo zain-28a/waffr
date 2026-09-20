@@ -35,6 +35,7 @@ class AppNotification {
   final String eventKey;
   final String? relatedId;
   final Map<String, String> metadata;
+  final DateTime? updatedAt;
 
   const AppNotification({
     required this.id,
@@ -46,7 +47,10 @@ class AppNotification {
     this.isRead = false,
     this.relatedId,
     this.metadata = const {},
+    this.updatedAt,
   });
+
+  DateTime get syncUpdatedAt => (updatedAt ?? createdAt).toUtc();
 
   NotificationPriority get priority => switch (type) {
         NotificationType.balanceWarning => NotificationPriority.warning,
@@ -59,7 +63,11 @@ class AppNotification {
         NotificationType.recurringExpenseBlocked => NotificationPriority.warning,
       };
 
-  AppNotification copyWith({bool? isRead}) {
+  AppNotification copyWith({
+    bool? isRead,
+    DateTime? updatedAt,
+    bool touch = true,
+  }) {
     return AppNotification(
       id: id,
       type: type,
@@ -70,6 +78,8 @@ class AppNotification {
       isRead: isRead ?? this.isRead,
       relatedId: relatedId,
       metadata: metadata,
+      updatedAt: updatedAt ??
+          (touch ? DateTime.now().toUtc() : this.updatedAt),
     );
   }
 
@@ -83,6 +93,7 @@ class AppNotification {
         'eventKey': eventKey,
         'relatedId': relatedId,
         'metadata': metadata,
+        'updatedAt': syncUpdatedAt.toIso8601String(),
       };
 
   String encode() => jsonEncode(toJson());
@@ -118,6 +129,7 @@ class AppNotification {
         eventKey: eventKey,
         relatedId: _text(decoded['relatedId']),
         metadata: metadata,
+        updatedAt: DateTime.tryParse(decoded['updatedAt']?.toString() ?? ''),
       );
     } catch (_) {
       return null;

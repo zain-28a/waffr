@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/backup_service.dart';
 import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/core/sync/sync_service.dart';
 import 'package:waffer/core/theme/app theme.dart';
 import 'package:waffer/screens/offline/applock/applockscreen.dart';
 import 'package:waffer/screens/offline/login/login_screen.dart';
@@ -19,6 +20,7 @@ void main() {
 
   // مزامنة انتهازية مع Drive. لا تحجب الإقلاع ولا تُظهر أخطاء.
   unawaited(BackupService.instance.initialize());
+  unawaited(SyncService.instance.initialize());
 
   runApp(const WafarApp());
 }
@@ -212,6 +214,7 @@ class _AppFlowControllerState
   Future<void> _onAuthChoiceCompleted() async {
     await _syncThemeFromPrefs();
     await _checkAppState();
+    unawaited(SyncService.instance.syncNow());
   }
 
   void _onRemoteRestored() {
@@ -236,6 +239,7 @@ class _AppFlowControllerState
     );
 
     BackupService.instance.scheduleBackup();
+    unawaited(SyncService.instance.syncNow());
 
     if (!mounted) return;
 
