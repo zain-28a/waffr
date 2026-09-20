@@ -17,11 +17,24 @@ class ThemeSelectScreen extends StatefulWidget {
 }
 
 class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
-  bool _isDark = false; //light by default
+  late bool _isDark;
+
+  @override
+  void initState() {
+    super.initState();
+    _isDark =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+        Brightness.dark;
+  }
 
   void _toggle(bool value) {
     setState(() => _isDark = value);
     widget.onThemeChanged(_isDark ? ThemeMode.dark : ThemeMode.light);
+  }
+
+  void _continue() {
+    widget.onThemeChanged(_isDark ? ThemeMode.dark : ThemeMode.light);
+    widget.onContinue();
   }
 
   @override
@@ -105,7 +118,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
   backgroundColor: accent,
   textColor: surface,
                   style: TextStyle(color: surface, fontSize: 18, fontWeight: FontWeight.bold),
-  onPressed: widget.onContinue,
+  onPressed: _continue,
 )
               ),
               

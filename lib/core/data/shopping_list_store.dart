@@ -26,14 +26,15 @@ class ShoppingItem {
     bool? isPurchased,
     DateTime? purchasedAt,
     String? expenseId,
+    bool clearPurchase = false,
   }) {
     return ShoppingItem(
       id: id,
       name: name,
       createdAt: createdAt,
-      isPurchased: isPurchased ?? this.isPurchased,
-      purchasedAt: purchasedAt ?? this.purchasedAt,
-      expenseId: expenseId ?? this.expenseId,
+      isPurchased: clearPurchase ? false : (isPurchased ?? this.isPurchased),
+      purchasedAt: clearPurchase ? null : (purchasedAt ?? this.purchasedAt),
+      expenseId: clearPurchase ? null : (expenseId ?? this.expenseId),
     );
   }
 
@@ -114,6 +115,15 @@ class ShoppingListStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> clearAll() async {
+    await ensureLoaded();
+    if (_items.isEmpty) return;
+
+    _items.clear();
+    await _persist();
+    notifyListeners();
+  }
+
   Future<bool> completePurchase({
     required String itemId,
     required double amount,
@@ -153,6 +163,17 @@ class ShoppingListStore extends ChangeNotifier {
     notifyListeners();
 
     return true;
+  }
+
+  Future<void> revertPurchaseForExpense(String expenseId) async {
+    await ensureLoaded();
+
+    final index = _items.indexWhere((item) => item.expenseId == expenseId);
+    if (index < 0) return;
+
+    _items[index] = _items[index].copyWith(clearPurchase: true);
+    await _persist();
+    notifyListeners();
   }
 
   void resetCache() {

@@ -13,6 +13,7 @@ import 'package:waffer/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffer/screens/offline/savings/sheets/withdraw_savings_sheet.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
+import 'package:waffer/widgets/containers/glass_sheet.dart';
 
 class SavingsScreen extends StatefulWidget {
   const SavingsScreen({super.key});
@@ -89,7 +90,15 @@ class _SavingsScreenState extends State<SavingsScreen>
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 26),
           child: Column(
             children: [
-              _TimeRangeSelector(selected: _range, onSelected: _selectRange),
+              SheetChoiceChips(
+                options: [for (final range in SavingsRange.values) range.label],
+                selected: _range.label,
+                onSelected: (label) {
+                  _selectRange(
+                    SavingsRange.values.firstWhere((range) => range.label == label),
+                  );
+                },
+              ),
 
               const SizedBox(height: 10),
 
@@ -174,88 +183,6 @@ class _SavingsScreenState extends State<SavingsScreen>
           ),
         );
       },
-    );
-  }
-}
-
-class _TimeRangeSelector extends StatelessWidget {
-  final SavingsRange selected;
-  final ValueChanged<SavingsRange> onSelected;
-
-  const _TimeRangeSelector({required this.selected, required this.onSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _SavingsColors.of(context);
-    final ranges = SavingsRange.values;
-    final selectedIndex = ranges.indexOf(selected);
-
-    return GlassContainer(
-      colorType: GlassColorType.surface,
-      borderRadius: 28,
-      padding: const EdgeInsets.all(5),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final itemWidth = constraints.maxWidth / ranges.length;
-
-          return Stack(
-            children: [
-              AnimatedPositionedDirectional(
-                duration: const Duration(milliseconds: 240),
-                curve: Curves.easeOutCubic,
-                start: selectedIndex * itemWidth,
-                width: itemWidth,
-                top: 0,
-                bottom: 0,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colors.accent,
-                    borderRadius: BorderRadius.circular(23),
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  for (final range in ranges)
-                    Expanded(
-                      child: Semantics(
-                        selected: selected == range,
-                        button: true,
-                        label: range.label,
-                        child: GestureDetector(
-                          onTap: () => onSelected(range),
-                          behavior: HitTestBehavior.opaque,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 2,
-                              vertical: 11,
-                            ),
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 200),
-                                curve: Curves.easeOut,
-                                style: TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: selected == range
-                                      ? colors.surface
-                                      : colors.textPrimary,
-                                ),
-                                child: Text(range.label, maxLines: 1),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          );
-        },
-      ),
     );
   }
 }

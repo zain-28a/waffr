@@ -478,6 +478,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           children: [
             WafferPageHeader(
+              applySafeArea: false,
               centerTitle: true,
               elevated: _headerElevated,
               leading: IconButton(
@@ -757,7 +758,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           Center(
             child: Text(
-              'Waffer 2.3.0',
+              'Waffer 2.4.0',
 
               style: TextStyle(
                 color: textSecondary.withValues(alpha: 0.6),

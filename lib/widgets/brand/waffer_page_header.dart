@@ -10,6 +10,7 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
   final Widget? leading;
   final bool centerTitle;
   final ValueListenable<bool>? elevated;
+  final bool applySafeArea;
 
   const WafferPageHeader({
     super.key,
@@ -17,6 +18,7 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
     this.leading,
     this.centerTitle = false,
     this.elevated,
+    this.applySafeArea = true,
   });
 
   @override
@@ -30,6 +32,7 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
         leading: leading,
         centerTitle: centerTitle,
         elevated: false,
+        applySafeArea: applySafeArea,
       );
     }
 
@@ -41,6 +44,7 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
           leading: leading,
           centerTitle: centerTitle,
           elevated: isElevated,
+          applySafeArea: applySafeArea,
         );
       },
     );
@@ -52,12 +56,14 @@ class _HeaderChrome extends StatelessWidget {
   final Widget? leading;
   final bool centerTitle;
   final bool elevated;
+  final bool applySafeArea;
 
   const _HeaderChrome({
     required this.title,
     required this.leading,
     required this.centerTitle,
     required this.elevated,
+    required this.applySafeArea,
   });
 
   @override
@@ -93,33 +99,36 @@ class _HeaderChrome extends StatelessWidget {
           ),
         ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: SizedBox(
-          height: WafferPageHeader.height,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 48,
-                  child: leading,
-                ),
-                Expanded(
-                  child: centerTitle
-                      ? Center(child: title)
-                      : Align(
-                          alignment: AlignmentDirectional.centerEnd,
-                          child: Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 12),
-                            child: title,
-                          ),
-                        ),
-                ),
-                if (centerTitle) const SizedBox(width: 48),
-              ],
+      child: applySafeArea
+          ? SafeArea(bottom: false, child: _bar)
+          : _bar,
+    );
+  }
+
+  Widget get _bar {
+    return SizedBox(
+      height: WafferPageHeader.height,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 48,
+              child: leading,
             ),
-          ),
+            Expanded(
+              child: centerTitle
+                  ? Center(child: title)
+                  : Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 12),
+                        child: title,
+                      ),
+                    ),
+            ),
+            if (centerTitle) const SizedBox(width: 48),
+          ],
         ),
       ),
     );

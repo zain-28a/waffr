@@ -69,14 +69,26 @@ class CategoryStore extends ChangeNotifier {
     return null;
   }
 
-  String? validateName(String rawName) {
+  bool isCustom(String label) =>
+      _entries.any((entry) => entry.label == label);
+
+  int iconIndexOf(String label) {
+    for (final entry in _entries) {
+      if (entry.label == label) return entry.iconIndex;
+    }
+    return 0;
+  }
+
+  String? validateName(String rawName, {String? ignoring}) {
     final name = rawName.trim();
     if (name.isEmpty) return 'أدخل اسماً للتصنيف';
     if (name == customCategoryActionLabel ||
         name == fallbackCategory.label) {
       return 'هذا الاسم محجوز';
     }
-    if (selectableCategories.any((item) => item.label == name)) {
+    if (selectableCategories.any(
+      (item) => item.label == name && item.label != ignoring,
+    )) {
       return 'هذا التصنيف موجود مسبقاً';
     }
     return null;
@@ -97,6 +109,41 @@ class CategoryStore extends ChangeNotifier {
     await _persist();
     notifyListeners();
     return name;
+  }
+
+  Future<String?> renameCustom(
+    String oldLabel,
+    String rawName, {
+    int? iconIndex,
+  }) async {
+    await ensureLoaded();
+
+    final index = _entries.indexWhere((entry) => entry.label == oldLabel);
+    if (index < 0) return null;
+
+    final error = validateName(rawName, ignoring: oldLabel);
+    if (error != null) return null;
+
+    final name = rawName.trim();
+    _entries[index] = CustomCategoryEntry(
+      label: name,
+      iconIndex: clampCustomIconIndex(iconIndex ?? _entries[index].iconIndex),
+    );
+    await _persist();
+    notifyListeners();
+    return name;
+  }
+
+  Future<bool> removeCustom(String label) async {
+    await ensureLoaded();
+
+    final before = _entries.length;
+    _entries.removeWhere((entry) => entry.label == label);
+    if (_entries.length == before) return false;
+
+    await _persist();
+    notifyListeners();
+    return true;
   }
 
   void resetCache() {

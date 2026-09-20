@@ -11,6 +11,7 @@ const Color kSheetBarrierColor = Color.fromARGB(114, 0, 0, 0);
 Future<T?> showGlassSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
+  double? heightFactor,
 }) {
   return showModalBottomSheet<T>(
     context: context,
@@ -18,14 +19,21 @@ Future<T?> showGlassSheet<T>({
     backgroundColor: Colors.transparent,
     barrierColor: kSheetBarrierColor,
     elevation: 0,
-    builder: (context) => _GlassSheetShell(builder: builder),
+    builder: (context) => _GlassSheetShell(
+      builder: builder,
+      heightFactor: heightFactor,
+    ),
   );
 }
 
 class _GlassSheetShell extends StatelessWidget {
   final WidgetBuilder builder;
+  final double? heightFactor;
 
-  const _GlassSheetShell({required this.builder});
+  const _GlassSheetShell({
+    required this.builder,
+    this.heightFactor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +45,52 @@ class _GlassSheetShell extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(bottom: keyboard),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxSheetHeight),
-        child: builder(context),
+      child: heightFactor == null
+          ? ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxSheetHeight),
+              child: builder(context),
+            )
+          : SizedBox(
+              height: (screenHeight * heightFactor!).clamp(220.0, maxSheetHeight),
+              child: builder(context),
+            ),
+    );
+  }
+}
+
+/// هيكل ثابت الارتفاع: الترويسة ثابتة والمحتوى يتمرّر داخل الشيت.
+class GlassSheetFixedBody extends StatelessWidget {
+  final Widget header;
+  final Widget body;
+
+  const GlassSheetFixedBody({
+    super.key,
+    required this.header,
+    required this.body,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(
+      child: GlassContainer(
+        colorType: GlassColorType.surface,
+        tintOpacity: 1,
+        radius: const BorderRadius.vertical(top: Radius.circular(34)),
+        padding: EdgeInsets.zero,
+        child: SafeArea(
+          top: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                child: header,
+              ),
+              const SizedBox(height: 8),
+              Expanded(child: body),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -48,8 +99,13 @@ class _GlassSheetShell extends StatelessWidget {
 /// الهيكل الزجاجي للنافذة: زوايا علوية كبيرة ومحتوى قابل للتمرير.
 class GlassSheetBody extends StatelessWidget {
   final List<Widget> children;
+  final EdgeInsetsGeometry padding;
 
-  const GlassSheetBody({super.key, required this.children});
+  const GlassSheetBody({
+    super.key,
+    required this.children,
+    this.padding = const EdgeInsets.fromLTRB(20, 14, 20, 20),
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +117,7 @@ class GlassSheetBody extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+          padding: padding,
           child: AnimatedSize(
             duration: const Duration(milliseconds: 360),
             curve: Curves.easeOutCubic,
@@ -493,26 +549,23 @@ class SheetChoiceChips extends StatelessWidget {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               vertical: 12,
-                              horizontal: 6,
+                              horizontal: 4,
                             ),
                             child: AnimatedDefaultTextStyle(
                               duration: const Duration(milliseconds: 220),
                               curve: Curves.easeOut,
                               style: TextStyle(
                                 fontFamily: 'Tajawal',
-                                fontSize: 13.5,
-                                fontWeight: option == selected
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                height: 1.1,
                                 color: option == selected ? accent : textPrimary,
                               ),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  option,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                ),
+                              child: Text(
+                                option,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ),

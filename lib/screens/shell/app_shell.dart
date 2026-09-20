@@ -6,7 +6,7 @@ import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/screens/offline/home/dashboard.dart';
 import 'package:waffer/screens/offline/notifications/notifications_screen.dart';
-import 'package:waffer/screens/offline/placeholder/placeholder.dart';
+import 'package:waffer/screens/online/online_screen.dart';
 import 'package:waffer/screens/offline/report/reportscreen.dart';
 import 'package:waffer/screens/offline/savings/savings_screen.dart';
 import 'package:waffer/screens/offline/settings/settings_screen.dart';
@@ -41,7 +41,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     HomeScreen(),
     ReportScreen(),
     SavingsScreen(),
-    PlaceholderScreen(label: 'شاشة 4'),
+    OnlineScreen(),
     NotificationsScreen(),
   ];
 
@@ -123,6 +123,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         child: Column(
           children: [
             WafferPageHeader(
+              applySafeArea: false,
               leading: Padding(
                 padding: const EdgeInsets.only(top: 15),
                 child: IconButton(
@@ -235,7 +236,7 @@ class _BottomNavBar extends StatelessWidget {
                                         ? Icons.bar_chart_rounded
                                         : index == 2
                                             ? Icons.wallet_rounded
-                                            : Icons.circle_outlined,
+                                            : Icons.public_rounded,
                                 size: 26,
                                 color: isSelected
                                     ? accent

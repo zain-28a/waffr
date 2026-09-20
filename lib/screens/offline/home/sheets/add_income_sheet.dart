@@ -220,12 +220,12 @@ class _SheetInfoButton extends StatelessWidget {
           height: 22,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: textSecondary.withValues(alpha: 0.45)),
+            border: Border.all(color: textSecondary.withValues(alpha: 0.0)),
           ),
           alignment: Alignment.center,
           child: Icon(
             Icons.info_outline_rounded,
-            size: 14,
+            size: 18,
             color: accent,
           ),
         ),
