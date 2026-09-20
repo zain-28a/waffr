@@ -203,6 +203,68 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
     setState(() => _adding = false);
   }
 
+  Future<void> _clearList() async {
+    if (_store.items.isEmpty) return;
+
+    final colors = _ShoppingColors.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+          title: Text(
+            'إفراغ قائمة المشتريات',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontWeight: FontWeight.bold,
+              color: colors.textPrimary,
+            ),
+          ),
+          content: Text(
+            'سيتم حذف كل العناصر من القائمة. المصروفات المسجّلة لن تتأثر.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 14,
+              color: colors.textSecondary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'إلغاء',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                'إفراغ',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  color: colors.accent,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+    await _store.clearAll();
+    if (!mounted) return;
+    showAppSnackBar(context, 'تم إفراغ قائمة المشتريات', success: true);
+  }
+
   Future<void> _purchase(ShoppingItem item) async {
     if (item.isPurchased) return;
     await showPurchaseShoppingItemSheet(context, item);
@@ -283,7 +345,28 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
                   ],
                 ),
               )
-            else
+            else ...[
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: TextButton.icon(
+                  onPressed: _clearList,
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 18,
+                    color: colors.textSecondary,
+                  ),
+                  label: Text(
+                    'إفراغ القائمة',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
               for (final item in _store.items) ...[
                 _ShoppingItemTile(
                   item: item,
@@ -292,6 +375,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
                 ),
                 const SizedBox(height: 8),
               ],
+            ],
           ],
         );
       },
@@ -471,11 +555,13 @@ class _PurchaseShoppingItemSheetState
 
 class _ShoppingColors {
   final Color accent;
+  final Color surface;
   final Color textPrimary;
   final Color textSecondary;
 
   const _ShoppingColors({
     required this.accent,
+    required this.surface,
     required this.textPrimary,
     required this.textSecondary,
   });
@@ -485,6 +571,7 @@ class _ShoppingColors {
 
     return _ShoppingColors(
       accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
+      surface: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       textPrimary: isDark
           ? AppColors.darkTextPrimary
           : AppColors.lightTextPrimary,

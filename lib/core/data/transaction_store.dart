@@ -474,6 +474,23 @@ class TransactionStore extends ChangeNotifier {
     }
   }
 
+  /// يحذف المصروف من السجل فيعود مبلغه إلى الرصيد.
+  Future<bool> undoExpense(String id) async {
+    await ensureLoaded();
+
+    final index = _transactions.indexWhere(
+      (item) => item.id == id && item.isExpense,
+    );
+    if (index < 0) return false;
+
+    _transactions.removeAt(index);
+
+    final prefs = await SharedPreferences.getInstance();
+    await _persist(prefs);
+    notifyListeners();
+    return true;
+  }
+
   /// ادخار يدوي من الرصيد التشغيلي.
   Future<bool> saveManually(double amount) async {
     await ensureLoaded();

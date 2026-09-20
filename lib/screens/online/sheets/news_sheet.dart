@@ -1,0 +1,132 @@
+import 'package:flutter/material.dart';
+import 'package:waffer/core/data/news_article.dart';
+import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/utils/money.dart';
+import 'package:waffer/widgets/containers/glass_sheet.dart';
+
+Future<void> showNewsSheet(
+  BuildContext context, {
+  required List<NewsArticle> articles,
+}) {
+  return showGlassSheet<void>(
+    context: context,
+    heightFactor: 0.85,
+    builder: (context) => _NewsSheet(articles: articles),
+  );
+}
+
+class _NewsSheet extends StatelessWidget {
+  final List<NewsArticle> articles;
+
+  const _NewsSheet({required this.articles});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
+    return GlassSheetFixedBody(
+      header: const GlassSheetHeader(
+        title: 'الأخبار',
+        subtitle: 'آخر العناوين',
+      ),
+      body: articles.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.newspaper_outlined,
+                    size: 38,
+                    color: textPrimary.withValues(alpha: 0.3),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'لا توجد أخبار حالياً',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 14,
+                      color: textPrimary.withValues(alpha: 0.55),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              itemCount: articles.length,
+              separatorBuilder: (_, __) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: textSecondary.withValues(alpha: 0.22),
+                ),
+              ),
+              itemBuilder: (context, index) {
+                return _NewsArticleBlock(
+                  article: articles[index],
+                  textPrimary: textPrimary,
+                  textSecondary: textSecondary,
+                );
+              },
+            ),
+    );
+  }
+}
+
+class _NewsArticleBlock extends StatelessWidget {
+  final NewsArticle article;
+  final Color textPrimary;
+  final Color textSecondary;
+
+  const _NewsArticleBlock({
+    required this.article,
+    required this.textPrimary,
+    required this.textSecondary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          article.title,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: textPrimary,
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          article.body,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 13.5,
+            fontWeight: FontWeight.w400,
+            color: textPrimary.withValues(alpha: 0.82),
+            height: 1.65,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          '${article.source} · ${formatDate(article.publishedAt)} · ${formatTime(article.publishedAt)}',
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}

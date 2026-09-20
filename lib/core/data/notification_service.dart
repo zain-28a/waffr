@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -84,12 +85,13 @@ class NotificationService extends ChangeNotifier {
       changed |= _evaluatePeriods(store);
       changed |= _evaluateLargeExpenses(store);
 
+      final previous = _snapshot;
       _refreshSnapshot(store);
 
       if (changed) {
         await _persist();
         notifyListeners();
-      } else {
+      } else if (!_snapshot.sameAs(previous)) {
         await _persistSnapshot();
       }
     } finally {
@@ -176,7 +178,9 @@ class NotificationService extends ChangeNotifier {
   }
 
   void _onStoreChanged() {
-    evaluate();
+    scheduleMicrotask(() {
+      unawaited(evaluate());
+    });
   }
 
   Future<void> _load() async {
@@ -564,6 +568,25 @@ class _NotificationSnapshot {
     required this.knownTransactionIds,
     required this.knownProcessedTokens,
   });
+
+  bool sameAs(_NotificationSnapshot other) {
+    if (identical(this, other)) return true;
+    if (initialized != other.initialized) return false;
+    if (remainingRatio != other.remainingRatio) return false;
+    if (spentRatio != other.spentRatio) return false;
+    if (goalRatios.length != other.goalRatios.length) return false;
+    if (knownTransactionIds.length != other.knownTransactionIds.length) {
+      return false;
+    }
+    if (knownProcessedTokens.length != other.knownProcessedTokens.length) {
+      return false;
+    }
+    for (final entry in goalRatios.entries) {
+      if (other.goalRatios[entry.key] != entry.value) return false;
+    }
+    return knownTransactionIds.containsAll(other.knownTransactionIds) &&
+        knownProcessedTokens.containsAll(other.knownProcessedTokens);
+  }
 
   factory _NotificationSnapshot.empty() {
     return const _NotificationSnapshot(

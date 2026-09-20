@@ -7,10 +7,13 @@ import 'package:waffer/core/data/expense_categories.dart';
 import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/data/shopping_list_store.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
+import 'package:waffer/widgets/containers/glass_sheet.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -24,6 +27,10 @@ class _ReportScreenState extends State<ReportScreen>
   static const int _maxPeriodOffset = 240;
 
   final TransactionStore _store = TransactionStore.instance;
+  late final Listenable _listenables = Listenable.merge([
+    _store,
+    CategoryStore.instance,
+  ]);
   final PageController _periodController = PageController();
   _ReportRange _range = _ReportRange.month;
   int _periodOffset = 0;
@@ -83,7 +90,7 @@ class _ReportScreenState extends State<ReportScreen>
   Widget build(BuildContext context) {
     super.build(context);
     return AnimatedBuilder(
-      animation: Listenable.merge([_store, CategoryStore.instance]),
+      animation: _listenables,
       builder: (context, _) {
         final expenses = _store.expenses;
         final period = _periodFor(_range, _periodOffset);
@@ -102,7 +109,15 @@ class _ReportScreenState extends State<ReportScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _TimeRangeSelector(selected: _range, onSelected: _selectRange),
+              SheetChoiceChips(
+                options: [for (final range in _ReportRange.values) range.label],
+                selected: _range.label,
+                onSelected: (label) {
+                  _selectRange(
+                    _ReportRange.values.firstWhere((range) => range.label == label),
+                  );
+                },
+              ),
               const SizedBox(height: 6),
               SizedBox(
                 height: chartHeight,
@@ -253,87 +268,6 @@ class _ReportData {
       total: total,
       categoryTotals: categoryTotals,
       chartBuckets: _buildChartBuckets(expenses, period),
-    );
-  }
-}
-
-class _TimeRangeSelector extends StatelessWidget {
-  final _ReportRange selected;
-  final ValueChanged<_ReportRange> onSelected;
-
-  const _TimeRangeSelector({required this.selected, required this.onSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _ReportColors.of(context);
-    final ranges = _ReportRange.values;
-    final selectedIndex = ranges.indexOf(selected);
-
-    return GlassContainer(
-      colorType: GlassColorType.surface,
-      borderRadius: 28,
-      padding: const EdgeInsets.all(5),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final itemWidth = constraints.maxWidth / ranges.length;
-          return Stack(
-            children: [
-              AnimatedPositionedDirectional(
-                duration: const Duration(milliseconds: 240),
-                curve: Curves.easeOutCubic,
-                start: selectedIndex * itemWidth,
-                width: itemWidth,
-                top: 0,
-                bottom: 0,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colors.accent,
-                    borderRadius: BorderRadius.circular(23),
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  for (final range in ranges)
-                    Expanded(
-                      child: Semantics(
-                        selected: selected == range,
-                        button: true,
-                        label: range.label,
-                        child: GestureDetector(
-                          onTap: () => onSelected(range),
-                          behavior: HitTestBehavior.opaque,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 2,
-                              vertical: 11,
-                            ),
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 200),
-                                curve: Curves.easeOut,
-                                style: TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: selected == range
-                                      ? colors.surface
-                                      : colors.textPrimary,
-                                ),
-                                child: Text(range.label, maxLines: 1),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          );
-        },
-      ),
     );
   }
 }
@@ -1107,6 +1041,10 @@ class TransactionHistoryScreen extends StatefulWidget {
 
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   final TransactionStore _store = TransactionStore.instance;
+  late final Listenable _listenables = Listenable.merge([
+    _store,
+    CategoryStore.instance,
+  ]);
 
   @override
   Widget build(BuildContext context) {
@@ -1138,7 +1076,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         ),
       ),
       body: AnimatedBuilder(
-        animation: Listenable.merge([_store, CategoryStore.instance]),
+        animation: _listenables,
         builder: (context, _) {
           final items = isIncome ? _store.incomes : _store.expenses;
           final groups = _groupExpensesByDay(items);
@@ -1226,6 +1164,67 @@ class _ExpenseDayGroup {
   const _ExpenseDayGroup(this.date, this.expenses);
 }
 
+Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async {
+  final colors = _ReportColors.of(context);
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        title: Text(
+          'التراجع عن المصروف',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontWeight: FontWeight.bold,
+            color: colors.textPrimary,
+          ),
+        ),
+        content: Text(
+          'سيُحذف هذا المصروف من السجل ويُعاد ${formatMoney(expense.amount)} $currencyLabel إلى رصيدك.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 14,
+            color: colors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'إلغاء',
+              style: TextStyle(fontFamily: 'Tajawal', color: colors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'تراجع',
+              style: TextStyle(fontFamily: 'Tajawal', color: colors.accent),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (confirmed != true || !context.mounted) return;
+
+  final undone = await TransactionStore.instance.undoExpense(expense.id);
+  if (!context.mounted) return;
+
+  if (!undone) {
+    showAppSnackBar(context, 'تعذر التراجع عن هذا المصروف.');
+    return;
+  }
+
+  await ShoppingListStore.instance.revertPurchaseForExpense(expense.id);
+  if (!context.mounted) return;
+  showAppSnackBar(context, 'تم التراجع عن المصروف', success: true);
+}
+
 class _HistoryDayGroup extends StatelessWidget {
   final DateTime date;
   final List<WafferTransaction> expenses;
@@ -1270,6 +1269,9 @@ class _HistoryDayGroup extends StatelessWidget {
                 _HistoryExpenseRow(
                   expense: expenses[index],
                   isIncome: isIncome,
+                  onUndo: isIncome
+                      ? null
+                      : () => _undoExpense(context, expenses[index]),
                 ),
               ],
             ],
@@ -1283,10 +1285,12 @@ class _HistoryDayGroup extends StatelessWidget {
 class _HistoryExpenseRow extends StatelessWidget {
   final WafferTransaction expense;
   final bool isIncome;
+  final VoidCallback? onUndo;
 
   const _HistoryExpenseRow({
     required this.expense,
     this.isIncome = false,
+    this.onUndo,
   });
 
   @override
@@ -1359,20 +1363,36 @@ class _HistoryExpenseRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Flexible(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: AlignmentDirectional.centerEnd,
-            child: Text(
-              '${formatMoney(expense.amount)} $currencyLabel',
-              style: TextStyle(
-                fontFamily: 'Tajawal',
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: colors.accent,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerEnd,
+              child: Text(
+                '${formatMoney(expense.amount)} $currencyLabel',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: colors.accent,
+                ),
               ),
             ),
-          ),
+            if (onUndo != null)
+              IconButton(
+                tooltip: 'تراجع',
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: onUndo,
+                icon: Icon(
+                  Icons.undo_rounded,
+                  size: 18,
+                  color: colors.textSecondary,
+                ),
+              ),
+          ],
         ),
       ],
     );

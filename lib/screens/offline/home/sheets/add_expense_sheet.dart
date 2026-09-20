@@ -106,19 +106,20 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   @override
   Widget build(BuildContext context) {
     return GlassSheetBody(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       children: [
         GlassSheetHeader(
           title: 'إضافة مصروف',
           subtitle: 'أدخل المبلغ واختر التصنيف.',
           onNext: _isValid ? _save : null,
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 10),
         SheetAmountField(
           label: 'المبلغ',
           controller: _amountController,
           onChanged: (_) => setState(() {}),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 10),
         const SheetFieldLabel(text: 'نوع المصروف'),
         SheetChoiceChips(
           options: const [_onceLabel, _recurringLabel],
@@ -132,7 +133,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 18),
+              const SizedBox(height: 10),
               const SheetFieldLabel(text: 'التكرار'),
               SheetChoiceChips(
                 options: const ['يوم', 'أسبوع', 'شهر'],
@@ -147,7 +148,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                   });
                 },
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 10),
               SheetFieldLabel(
                 text: 'كل كم ${_recurringUnit.label}؟',
               ),
@@ -164,26 +165,20 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
             ],
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 10),
         const SheetFieldLabel(text: 'التصنيف'),
         ExpenseCategoryGrid(
           selected: _category,
           onSelected: (label) => setState(() => _category = label),
         ),
-        const SizedBox(height: 18),
-        const SheetFieldLabel(text: 'طريقة الدفع'),
-        SheetChoiceChips(
-          options: paymentMethods,
-          selected: _paymentMethod,
-          onSelected: (method) => setState(() => _paymentMethod = method),
-        ),
-        const SizedBox(height: 18),
+        
+        const SizedBox(height: 10),
         const SheetFieldLabel(text: 'ملاحظة', optional: true),
         SheetTextField(
           controller: _noteController,
           hint: 'مثال: غداء، تاكسي، فاتورة إنترنت...',
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 12),
         SheetSaveButton(
           label: _recurring ? 'حفظ المصروف المتكرر' : 'حفظ المصروف',
           enabled: _isValid && !_saving,
@@ -216,10 +211,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
   }
 
   Future<void> _createCustom() async {
-    final draft = await showDialog<_CustomCategoryDraft>(
-      context: context,
-      builder: (_) => const _CustomCategoryNameDialog(),
-    );
+    final draft = await _openCategoryDialog();
     if (draft == null || !mounted) return;
 
     final created = await CategoryStore.instance.addCustom(
@@ -229,6 +221,123 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
     if (created == null || !mounted) return;
 
     widget.onSelected(created);
+  }
+
+  Future<_CustomCategoryDraft?> _openCategoryDialog({
+    ExpenseCategory? editing,
+  }) {
+    final store = CategoryStore.instance;
+    return showDialog<_CustomCategoryDraft>(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) => _CustomCategoryNameDialog(
+        title: editing == null ? 'تصنيف مخصص' : 'تعديل التصنيف',
+        submitLabel: editing == null ? 'إضافة' : 'حفظ',
+        initialLabel: editing?.label,
+        initialIconIndex:
+            editing == null ? 0 : store.iconIndexOf(editing.label),
+        ignoring: editing?.label,
+      ),
+    );
+  }
+
+  Future<void> _showActions(
+    BuildContext tileContext,
+    ExpenseCategory category,
+  ) async {
+    if (!CategoryStore.instance.isCustom(category.label)) return;
+
+    final tileBox = tileContext.findRenderObject() as RenderBox?;
+    if (tileBox == null || !tileBox.hasSize) return;
+
+    final origin = tileBox.localToGlobal(Offset.zero);
+    final size = tileBox.size;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+
+    final action = await showMenu<String>(
+      context: context,
+      color: surface,
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      position: RelativeRect.fromLTRB(
+        origin.dx,
+        origin.dy - 8,
+        origin.dx + size.width,
+        origin.dy,
+      ),
+      items: [
+        PopupMenuItem(
+          value: 'edit',
+          height: 44,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.edit_rounded, size: 18, color: textPrimary.withValues(alpha: 0.8)),
+              const SizedBox(width: 8),
+              Text(
+                'تعديل',
+                style: TextStyle(fontFamily: 'Tajawal', color: textPrimary),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'delete',
+          height: 44,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.delete_rounded, size: 18, color: Color(0xFFD3544D)),
+              SizedBox(width: 8),
+              Text(
+                'حذف',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  color: Color(0xFFD3544D),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (!mounted || action == null) return;
+
+    if (action == 'edit') {
+      await _editCustom(category);
+    } else if (action == 'delete') {
+      await _deleteCustom(category.label);
+    }
+  }
+
+  Future<void> _editCustom(ExpenseCategory category) async {
+    final store = CategoryStore.instance;
+    final draft = await _openCategoryDialog(editing: category);
+    if (draft == null || !mounted) return;
+
+    final renamed = await store.renameCustom(
+      category.label,
+      draft.label,
+      iconIndex: draft.iconIndex,
+    );
+    if (renamed == null || !mounted) return;
+
+    if (widget.selected == category.label) {
+      widget.onSelected(renamed);
+    }
+  }
+
+  Future<void> _deleteCustom(String label) async {
+    final removed = await CategoryStore.instance.removeCustom(label);
+    if (!removed || !mounted) return;
+
+    if (widget.selected == label) {
+      widget.onSelected(expenseCategories.first.label);
+    }
   }
 
   @override
@@ -242,19 +351,27 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
         builder: (context, _) {
           final categories = CategoryStore.instance.selectableCategories;
           return GridView.count(
-            crossAxisCount: 4,
+            crossAxisCount: 5,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 0.92,
+            crossAxisSpacing: 6,
+            mainAxisSpacing: 6,
+            childAspectRatio: 1.12,
             children: [
               for (final category in categories)
-                _CategoryTile(
-                  key: ValueKey(category.label),
-                  category: category,
-                  isSelected: category.label == widget.selected,
-                  onTap: () => widget.onSelected(category.label),
+                Builder(
+                  builder: (tileContext) {
+                    return _CategoryTile(
+                      key: ValueKey(category.label),
+                      category: category,
+                      isSelected: category.label == widget.selected,
+                      onTap: () => widget.onSelected(category.label),
+                      onLongPress:
+                          CategoryStore.instance.isCustom(category.label)
+                          ? () => _showActions(tileContext, category)
+                          : null,
+                    );
+                  },
                 ),
               _CategoryTile(
                 key: const ValueKey('__custom_action__'),
@@ -282,7 +399,19 @@ class _CustomCategoryDraft {
 }
 
 class _CustomCategoryNameDialog extends StatefulWidget {
-  const _CustomCategoryNameDialog();
+  final String title;
+  final String submitLabel;
+  final String? initialLabel;
+  final int initialIconIndex;
+  final String? ignoring;
+
+  const _CustomCategoryNameDialog({
+    this.title = 'تصنيف مخصص',
+    this.submitLabel = 'إضافة',
+    this.initialLabel,
+    this.initialIconIndex = 0,
+    this.ignoring,
+  });
 
   @override
   State<_CustomCategoryNameDialog> createState() =>
@@ -290,9 +419,16 @@ class _CustomCategoryNameDialog extends StatefulWidget {
 }
 
 class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
-  final TextEditingController _controller = TextEditingController();
+  late final TextEditingController _controller;
   String? _error;
-  int _iconIndex = 0;
+  late int _iconIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialLabel ?? '');
+    _iconIndex = clampCustomIconIndex(widget.initialIconIndex);
+  }
 
   @override
   void dispose() {
@@ -301,7 +437,10 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
   }
 
   void _submit() {
-    final error = CategoryStore.instance.validateName(_controller.text);
+    final error = CategoryStore.instance.validateName(
+      _controller.text,
+      ignoring: widget.ignoring,
+    );
     if (error != null) {
       setState(() => _error = error);
       return;
@@ -321,67 +460,115 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.72;
 
-    return AlertDialog(
-      title: const Text('تصنيف مخصص'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _controller,
-              autofocus: true,
-              textAlign: TextAlign.center,
-              maxLength: 16,
-              onChanged: (_) {
-                if (_error != null) setState(() => _error = null);
-              },
-              onSubmitted: (_) => _submit(),
-              decoration: InputDecoration(
-                hintText: 'مثال: إيجار، قهوة...',
-                errorText: _error,
-                counterText: '',
+    return Dialog(
+      backgroundColor: surface,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: SizedBox(
+        width: 420,
+        height: maxHeight,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
+          child: Column(
+            children: [
+              Text(
+                widget.title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: accent,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'الشعار',
-              style: TextStyle(
-                fontFamily: 'Tajawal',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: textPrimary,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children: [
-                for (var i = 0; i < customCategoryIconChoices.length; i++)
-                  _IconChoice(
-                    icon: customCategoryIconChoices[i],
-                    selected: i == _iconIndex,
-                    accent: accent,
-                    onTap: () => setState(() => _iconIndex = i),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _controller,
+                autofocus: true,
+                textAlign: TextAlign.center,
+                maxLength: 16,
+                onChanged: (_) {
+                  if (_error != null) setState(() => _error = null);
+                },
+                onSubmitted: (_) => _submit(),
+                decoration: InputDecoration(
+                  hintText: 'مثال: إيجار، قهوة...',
+                  errorText: _error,
+                  counterText: '',
+                  filled: true,
+                  fillColor: sheetFieldColor(context),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
                   ),
-              ],
-            ),
-          ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  'الشعار',
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: GridView.builder(
+                  itemCount: customCategoryIconChoices.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 5,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                  ),
+                  itemBuilder: (context, i) {
+                    return _IconChoice(
+                      icon: customCategoryIconChoices[i],
+                      selected: i == _iconIndex,
+                      accent: accent,
+                      onTap: () => setState(() => _iconIndex = i),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text(
+                        'إلغاء',
+                        style: TextStyle(fontFamily: 'Tajawal'),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: _submit,
+                      child: Text(
+                        widget.submitLabel,
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontWeight: FontWeight.w800,
+                          color: accent,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('إلغاء'),
-        ),
-        TextButton(
-          onPressed: _submit,
-          child: Text('إضافة', style: TextStyle(color: accent)),
-        ),
-      ],
     );
   }
 }
@@ -403,20 +590,28 @@ class _IconChoice extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: selected ? accent : sheetFieldColor(context),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: selected ? Colors.white : accent,
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final side = constraints.biggest.shortestSide;
+          return Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              width: side,
+              height: side,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected ? accent : sheetFieldColor(context),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: selected ? Colors.white : accent,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -427,12 +622,14 @@ class _CategoryTile extends StatelessWidget {
   final bool isSelected;
   final bool isAction;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const _CategoryTile({
     super.key,
     required this.category,
     required this.isSelected,
     required this.onTap,
+    this.onLongPress,
     this.isAction = false,
   });
 
@@ -450,6 +647,7 @@ class _CategoryTile extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
@@ -459,7 +657,7 @@ class _CategoryTile extends StatelessWidget {
               : isAction
                   ? sheetFieldColor(context).withValues(alpha: 0.55)
                   : sheetFieldColor(context),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           border: isAction
               ? Border.all(color: accent.withValues(alpha: 0.32), width: 1.2)
               : null,
@@ -469,17 +667,17 @@ class _CategoryTile extends StatelessWidget {
           children: [
             Icon(
               category.icon,
-              size: 22,
+              size: 18,
               color: iconColor,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Text(
               category.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontFamily: 'Tajawal',
-                fontSize: 12,
+                fontSize: 10.5,
                 fontWeight: FontWeight.w600,
                 color: foreground,
               ),

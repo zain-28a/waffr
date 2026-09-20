@@ -2,10 +2,6 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-/// نتيجة البحث عن ملف النسخة الاحتياطية.
-///
-/// التمييز بين «لا يوجد ملف» و«فشل الاتصال» ضروري حتى لا
-/// يُنشأ ملف جديد يطغى على نسخة موجودة عندما تكون الشبكة مقطوعة.
 class DriveBackupLookup {
   const DriveBackupLookup._(this.fileId, this.failed);
 
@@ -21,10 +17,6 @@ class DriveBackupLookup {
   bool get exists => fileId != null && fileId!.isNotEmpty;
 }
 
-/// عميل مبسّط لـ Google Drive يعمل داخل مجلد بيانات التطبيق
-/// المخفي (`appDataFolder`) فقط.
-///
-/// كل الدوال تفشل بصمت، لأن المزامنة انتهازية ويجب ألّا توقف التطبيق.
 class DriveBackupClient {
   DriveBackupClient._();
 

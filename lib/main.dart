@@ -32,7 +32,7 @@ class WafarApp extends StatefulWidget {
 
 class _WafarAppState extends State<WafarApp> {
   final ValueNotifier<ThemeMode> _themeMode =
-      ValueNotifier<ThemeMode>(ThemeMode.light);
+      ValueNotifier<ThemeMode>(ThemeMode.system);
 
   bool _themeLoaded = false;
 
@@ -44,11 +44,7 @@ class _WafarAppState extends State<WafarApp> {
 
   Future<void> _loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
-
-    final isDark = prefs.getBool('dark_mode') ?? false;
-
-    _themeMode.value =
-        isDark ? ThemeMode.dark : ThemeMode.light;
+    _themeMode.value = _themeModeFromPrefs(prefs);
 
     setState(() {
       _themeLoaded = true;
@@ -57,6 +53,8 @@ class _WafarAppState extends State<WafarApp> {
 
   Future<void> _changeTheme(ThemeMode mode) async {
     _themeMode.value = mode;
+
+    if (mode == ThemeMode.system) return;
 
     final prefs = await SharedPreferences.getInstance();
 
@@ -98,7 +96,7 @@ class _WafarAppState extends State<WafarApp> {
       valueListenable: _themeMode,
       builder: (context, themeMode, child) {
         return MaterialApp(
-          title: 'Waffer 2.3.0',
+          title: 'Waffer 2.4.0',
           debugShowCheckedModeBanner: false,
 
           locale: const Locale('ar'),
@@ -222,10 +220,7 @@ class _AppFlowControllerState
 
   Future<void> _syncThemeFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-
-    final mode = (prefs.getBool('dark_mode') ?? false)
-        ? ThemeMode.dark
-        : ThemeMode.light;
+    final mode = _themeModeFromPrefs(prefs);
 
     if (mode != widget.themeMode) {
       widget.onThemeChanged(mode);
@@ -350,4 +345,16 @@ class _AppFlowControllerState
       appFlowController: this,
     );
   }
+}
+
+/// قبل اختيار المستخدم: اتبع ثيم الجهاز. بعد الاختيار: فاتح أو غامق محفوظ.
+ThemeMode _themeModeFromPrefs(SharedPreferences prefs) {
+  if (prefs.containsKey('dark_mode')) {
+    return (prefs.getBool('dark_mode') ?? false)
+        ? ThemeMode.dark
+        : ThemeMode.light;
+  }
+
+  final firstLaunch = prefs.getBool('first_launch') ?? true;
+  return firstLaunch ? ThemeMode.system : ThemeMode.light;
 }

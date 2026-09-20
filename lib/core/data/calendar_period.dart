@@ -1,6 +1,5 @@
 import 'package:waffer/core/data/transaction.dart';
 
-/// نطاق عرض شاشة الادخار، مطابق لمحدد الفترة في تقرير المصاريف.
 enum SavingsRange { week, month, threeMonths, sixMonths, year }
 
 extension SavingsRangeLabel on SavingsRange {
@@ -13,7 +12,6 @@ extension SavingsRangeLabel on SavingsRange {
       };
 }
 
-/// فترة تقويمية: البداية inclusive والنهاية exclusive.
 class CalendarPeriod {
   final DateTime start;
   final DateTime end;

@@ -29,6 +29,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with AutomaticKeepAliveClientMixin {
   final TransactionStore _store = TransactionStore.instance;
+  late final Listenable _listenables = Listenable.merge([
+    _store,
+    CategoryStore.instance,
+  ]);
 
   @override
   bool get wantKeepAlive => true;
@@ -44,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     super.build(context);
     return AnimatedBuilder(
-      animation: Listenable.merge([_store, CategoryStore.instance]),
+      animation: _listenables,
       builder: (context, _) {
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
