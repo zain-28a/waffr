@@ -10,6 +10,8 @@ import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/data/shopping_list_store.dart';
 import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/core/sync/api_config.dart';
+import 'package:waffer/core/sync/auth_session.dart';
 
 /// نتيجة محاولة ربط حساب Google من شاشة الدخول.
 enum GoogleLinkResult {
@@ -127,6 +129,9 @@ class BackupService {
     linkedPhotoKey,
     accountsKey,
     restorePendingKey,
+    AuthSession.tokenKey,
+    AuthSession.lastSyncKey,
+    ApiConfig.overrideKey,
   };
 
   static const int _schemaVersion = 1;

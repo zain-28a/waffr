@@ -43,6 +43,9 @@ class WafferTransaction {
   /// الفترة التي سُوِّيت عند إنهاء المدة (لمنع التكرار).
   final String? processedPeriodKey;
 
+  /// وقت آخر تعديل محلي/سحابي. إن غاب يُستخدم [dateTime].
+  final DateTime? updatedAt;
+
   const WafferTransaction({
     required this.id,
     required this.type,
@@ -57,7 +60,10 @@ class WafferTransaction {
     this.transferKind,
     this.goalId,
     this.processedPeriodKey,
+    this.updatedAt,
   });
+
+  DateTime get syncUpdatedAt => (updatedAt ?? dateTime).toUtc();
 
   bool get isIncome => type == TransactionType.income;
 
@@ -81,6 +87,7 @@ class WafferTransaction {
     'transferKind': transferKind?.name,
     'goalId': goalId,
     'processedPeriodKey': processedPeriodKey,
+    'updatedAt': syncUpdatedAt.toIso8601String(),
   };
 
   String encode() => jsonEncode(toJson());
@@ -109,6 +116,7 @@ class WafferTransaction {
         transferKind: _parseTransferKind(_text(decoded['transferKind'])),
         goalId: _text(decoded['goalId']),
         processedPeriodKey: _text(decoded['processedPeriodKey']),
+        updatedAt: DateTime.tryParse(_text(decoded['updatedAt']) ?? ''),
       );
     } catch (_) {
       return null;
@@ -127,6 +135,12 @@ class WafferTransaction {
       _ => TransactionType.expense,
     };
   }
+
+  static RecurringFrequency frequencyFrom(String? raw) =>
+      _parseFrequency(raw);
+
+  static SavingsTransferKind? transferKindFrom(String? raw) =>
+      _parseTransferKind(raw);
 
   static RecurringFrequency _parseFrequency(String? raw) {
     return switch (raw) {

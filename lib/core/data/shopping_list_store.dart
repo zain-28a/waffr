@@ -4,6 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/expense_categories.dart';
 import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/core/sync/sync_clock.dart';
+import 'package:waffer/core/sync/sync_dirty.dart';
+import 'package:waffer/core/sync/sync_mapper.dart';
+import 'package:waffer/core/sync/sync_merge.dart';
+import 'package:waffer/core/sync/sync_tombstones.dart';
 
 class ShoppingItem {
   final String id;
@@ -12,6 +17,7 @@ class ShoppingItem {
   final bool isPurchased;
   final DateTime? purchasedAt;
   final String? expenseId;
+  final DateTime? updatedAt;
 
   const ShoppingItem({
     required this.id,
@@ -20,13 +26,18 @@ class ShoppingItem {
     this.isPurchased = false,
     this.purchasedAt,
     this.expenseId,
+    this.updatedAt,
   });
+
+  DateTime get syncUpdatedAt => (updatedAt ?? createdAt).toUtc();
 
   ShoppingItem copyWith({
     bool? isPurchased,
     DateTime? purchasedAt,
     String? expenseId,
+    DateTime? updatedAt,
     bool clearPurchase = false,
+    bool touch = true,
   }) {
     return ShoppingItem(
       id: id,
@@ -35,6 +46,36 @@ class ShoppingItem {
       isPurchased: clearPurchase ? false : (isPurchased ?? this.isPurchased),
       purchasedAt: clearPurchase ? null : (purchasedAt ?? this.purchasedAt),
       expenseId: clearPurchase ? null : (expenseId ?? this.expenseId),
+      updatedAt: updatedAt ??
+          (touch ? DateTime.now().toUtc() : this.updatedAt),
+    );
+  }
+
+  Map<String, dynamic> toSyncJson() => {
+    'client_id': id,
+    'list_client_id': defaultShoppingListId,
+    'name': name,
+    'quantity': 1,
+    'price': null,
+    'is_purchased': isPurchased,
+    'purchased_at': purchasedAt == null ? null : toSyncIso(purchasedAt),
+    'expense_client_id': expenseId,
+    'created_at': toSyncIso(createdAt),
+    'updated_at': toSyncIso(syncUpdatedAt),
+  };
+
+  static ShoppingItem? fromSync(Map<String, dynamic> raw) {
+    final id = raw['client_id']?.toString().trim() ?? '';
+    final name = raw['name']?.toString().trim() ?? '';
+    if (id.isEmpty || name.isEmpty) return null;
+    return ShoppingItem(
+      id: id,
+      name: name,
+      createdAt: parseSyncDateOrNow(raw['created_at'] ?? raw['createdAt']),
+      isPurchased: raw['is_purchased'] == true || raw['isPurchased'] == true,
+      purchasedAt: parseSyncDate(raw['purchased_at'] ?? raw['purchasedAt']),
+      expenseId: (raw['expense_client_id'] ?? raw['expenseId'])?.toString(),
+      updatedAt: parseSyncDate(raw['updated_at'] ?? raw['updatedAt']),
     );
   }
 
@@ -45,6 +86,7 @@ class ShoppingItem {
     'isPurchased': isPurchased,
     'purchasedAt': purchasedAt?.toIso8601String(),
     'expenseId': expenseId,
+    'updatedAt': syncUpdatedAt.toIso8601String(),
   });
 
   static ShoppingItem? decode(String raw) {
@@ -71,6 +113,7 @@ class ShoppingItem {
           decoded['purchasedAt']?.toString() ?? '',
         ),
         expenseId: decoded['expenseId']?.toString(),
+        updatedAt: DateTime.tryParse(decoded['updatedAt']?.toString() ?? ''),
       );
     } catch (_) {
       return null;
@@ -119,6 +162,10 @@ class ShoppingListStore extends ChangeNotifier {
     await ensureLoaded();
     if (_items.isEmpty) return;
 
+    await SyncTombstones.instance.addMany(
+      SyncCollection.shoppingItems,
+      _items.map((item) => item.id),
+    );
     _items.clear();
     await _persist();
     notifyListeners();
@@ -176,6 +223,31 @@ class ShoppingListStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> applyRemoteSync({
+    required List<Map<String, dynamic>> upserts,
+    required List<SyncTombstone> deletes,
+  }) async {
+    await ensureLoaded();
+
+    final changed = mergeRemoteRecords<ShoppingItem>(
+      items: _items,
+      upserts: [
+        for (final raw in upserts)
+          if (ShoppingItem.fromSync(raw) != null) ShoppingItem.fromSync(raw)!,
+      ],
+      deletes: deletes,
+      collection: SyncCollection.shoppingItems,
+      idOf: (item) => item.id,
+      updatedOf: (item) => item.syncUpdatedAt,
+    );
+
+    if (!changed) return;
+
+    _items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    await _persist();
+    notifyListeners();
+  }
+
   void resetCache() {
     _items.clear();
     _loaded = false;
@@ -202,6 +274,7 @@ class ShoppingListStore extends ChangeNotifier {
       itemsKey,
       _items.map((item) => item.encode()).toList(),
     );
+    await SyncDirty.mark();
   }
 
   static int _sequence = 0;

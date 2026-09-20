@@ -64,6 +64,7 @@ class SavingsGoal {
   final bool isPeriodic;
   final int? durationCount;
   final int priority;
+  final DateTime? updatedAt;
 
   const SavingsGoal({
     required this.id,
@@ -79,7 +80,10 @@ class SavingsGoal {
     this.isPeriodic = false,
     this.durationCount,
     this.priority = 0,
+    this.updatedAt,
   });
+
+  DateTime get syncUpdatedAt => (updatedAt ?? createdAt).toUtc();
 
   int cyclesFor(RecurringFrequency frequency) {
     if (durationCount != null && durationCount! > 0) return durationCount!;
@@ -97,6 +101,8 @@ class SavingsGoal {
     bool? isPeriodic,
     int? durationCount,
     int? priority,
+    DateTime? updatedAt,
+    bool touch = false,
   }) {
     return SavingsGoal(
       id: id,
@@ -112,6 +118,8 @@ class SavingsGoal {
       isPeriodic: isPeriodic ?? this.isPeriodic,
       durationCount: durationCount ?? this.durationCount,
       priority: priority ?? this.priority,
+      updatedAt: updatedAt ??
+          (touch ? DateTime.now().toUtc() : this.updatedAt),
     );
   }
 
@@ -129,6 +137,7 @@ class SavingsGoal {
     'isPeriodic': isPeriodic,
     'durationCount': durationCount,
     'priority': priority,
+    'updatedAt': syncUpdatedAt.toIso8601String(),
   };
 
   String encode() => jsonEncode(toJson());
@@ -165,6 +174,7 @@ class SavingsGoal {
         isPeriodic: decoded['isPeriodic'] == true,
         durationCount: (decoded['durationCount'] as num?)?.toInt(),
         priority: (decoded['priority'] as num?)?.toInt() ?? 0,
+        updatedAt: DateTime.tryParse(decoded['updatedAt']?.toString() ?? ''),
       );
     } catch (_) {
       return null;

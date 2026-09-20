@@ -4,6 +4,10 @@ import 'package:waffer/core/data/app_notification.dart';
 import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/recurring_expense.dart';
 import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/core/sync/sync_dirty.dart';
+import 'package:waffer/core/sync/sync_mapper.dart';
+import 'package:waffer/core/sync/sync_merge.dart';
+import 'package:waffer/core/sync/sync_tombstones.dart';
 import 'package:waffer/core/utils/money.dart';
 
 /// مخزن المصروفات المتكررة. يُفحص عند فتح التطبيق وفي كل استئناف.
@@ -97,6 +101,7 @@ class RecurringExpenseStore extends ChangeNotifier {
     _items.removeWhere((item) => item.id == id);
     if (_items.length == before) return;
 
+    await SyncTombstones.instance.add(SyncCollection.recurringExpenses, id);
     await _persist();
     notifyListeners();
   }
@@ -183,6 +188,31 @@ class RecurringExpenseStore extends ChangeNotifier {
     }
   }
 
+  Future<void> applyRemoteSync({
+    required List<Map<String, dynamic>> upserts,
+    required List<SyncTombstone> deletes,
+  }) async {
+    await ensureLoaded();
+
+    final changed = mergeRemoteRecords<RecurringExpense>(
+      items: _items,
+      upserts: [
+        for (final raw in upserts)
+          if (recurringFromSync(raw) != null) recurringFromSync(raw)!,
+      ],
+      deletes: deletes,
+      collection: SyncCollection.recurringExpenses,
+      idOf: (item) => item.id,
+      updatedOf: (item) => item.syncUpdatedAt,
+    );
+
+    if (!changed) return;
+
+    _items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    await _persist();
+    notifyListeners();
+  }
+
   void resetCache() {
     _items.clear();
     _loaded = false;
@@ -209,5 +239,6 @@ class RecurringExpenseStore extends ChangeNotifier {
       itemsKey,
       _items.map((item) => item.encode()).toList(),
     );
+    await SyncDirty.mark();
   }
 }

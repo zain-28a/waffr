@@ -28,6 +28,7 @@ class RecurringExpense {
   final DateTime createdAt;
   final DateTime nextDueAt;
   final bool enabled;
+  final DateTime? updatedAt;
 
   const RecurringExpense({
     required this.id,
@@ -40,7 +41,10 @@ class RecurringExpense {
     required this.nextDueAt,
     this.note,
     this.enabled = true,
+    this.updatedAt,
   });
+
+  DateTime get syncUpdatedAt => (updatedAt ?? createdAt).toUtc();
 
   String get intervalDescription {
     if (intervalCount <= 1) {
@@ -54,6 +58,8 @@ class RecurringExpense {
     double? amount,
     DateTime? nextDueAt,
     bool? enabled,
+    DateTime? updatedAt,
+    bool touch = true,
   }) {
     return RecurringExpense(
       id: id,
@@ -66,6 +72,8 @@ class RecurringExpense {
       createdAt: createdAt,
       nextDueAt: nextDueAt ?? this.nextDueAt,
       enabled: enabled ?? this.enabled,
+      updatedAt: updatedAt ??
+          (touch ? DateTime.now().toUtc() : this.updatedAt),
     );
   }
 
@@ -80,6 +88,7 @@ class RecurringExpense {
     'createdAt': createdAt.toIso8601String(),
     'nextDueAt': nextDueAt.toIso8601String(),
     'enabled': enabled,
+    'updatedAt': syncUpdatedAt.toIso8601String(),
   };
 
   String encode() => jsonEncode(toJson());
@@ -115,6 +124,7 @@ class RecurringExpense {
         createdAt: createdAt,
         nextDueAt: nextDueAt,
         enabled: decoded['enabled'] != false,
+        updatedAt: DateTime.tryParse(decoded['updatedAt']?.toString() ?? ''),
       );
     } catch (_) {
       return null;
