@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/calendar_period.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/savings_goal.dart';
 import 'package:waffer/core/data/transaction.dart';
+import 'package:waffer/core/sync/profile_sync.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_mapper.dart';
@@ -30,6 +32,8 @@ class TransactionStore extends ChangeNotifier {
   static const String savingsBalanceKey = 'savings_balance';
   static const String monthlyIncomeKey = 'monthly_income_amount';
   static const String weeklyIncomeKey = 'weekly_income_amount';
+  static const String incomeOverridesByCurrencyKey =
+      'income_overrides_by_currency';
 
   /// التنسيق القديم:
   /// `amount|description|isoDate`.
@@ -43,8 +47,9 @@ class TransactionStore extends ChangeNotifier {
   Future<void>? _loader;
   bool _loaded = false;
   bool _processingPeriods = false;
-  double? _monthlyIncomeOverride;
-  double? _weeklyIncomeOverride;
+  bool _listeningToCurrency = false;
+  final Map<String, double> _monthlyIncomeByCurrency = {};
+  final Map<String, double> _weeklyIncomeByCurrency = {};
 
   /// بعد قراءة البيانات المحفوظة وقبل معالجة
   /// الفترات المستحقة.
@@ -54,27 +59,78 @@ class TransactionStore extends ChangeNotifier {
 
   Set<String> get processedPeriodTokens => Set.unmodifiable(_processedPeriods);
 
-  double? get monthlyIncomeOverride => _monthlyIncomeOverride;
+  String get _activeCode => CurrencyStore.instance.activeCode;
 
-  double? get weeklyIncomeOverride => _weeklyIncomeOverride;
+  double? get monthlyIncomeOverride => monthlyIncomeOverrideFor(_activeCode);
+
+  double? get weeklyIncomeOverride => weeklyIncomeOverrideFor(_activeCode);
+
+  double? monthlyIncomeOverrideFor(String currencyCode) {
+    return _monthlyIncomeByCurrency[Currencies.normalize(currencyCode)];
+  }
+
+  double? weeklyIncomeOverrideFor(String currencyCode) {
+    return _weeklyIncomeByCurrency[Currencies.normalize(currencyCode)];
+  }
+
+  Object? get incomeOverridesByCurrencyPayload {
+    final encoded = _encodeIncomeOverrides();
+    if (encoded == null) return null;
+    try {
+      return jsonDecode(encoded);
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// من الأحدث إلى الأقدم.
   List<WafferTransaction> get transactions => List.unmodifiable(_transactions);
 
-  List<WafferTransaction> get expenses =>
-      _transactions.where((item) => item.isExpense).toList(growable: false);
+  List<WafferTransaction> get expenses => expensesFor(_activeCode);
 
-  List<WafferTransaction> get incomes =>
-      _transactions.where((item) => item.isIncome).toList(growable: false);
+  List<WafferTransaction> get incomes => incomesFor(_activeCode);
 
-  List<WafferTransaction> get savingsTransfers => _transactions
-      .where((item) => item.isSavingsIn || item.isSavingsOut)
-      .toList(growable: false);
+  List<WafferTransaction> get savingsTransfers =>
+      savingsTransfersFor(_activeCode);
+
+  List<WafferTransaction> expensesFor(String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
+    return _transactions
+        .where((item) => item.isExpense && item.currencyCode == code)
+        .toList(growable: false);
+  }
+
+  List<WafferTransaction> incomesFor(String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
+    return _transactions
+        .where((item) => item.isIncome && item.currencyCode == code)
+        .toList(growable: false);
+  }
+
+  List<WafferTransaction> savingsTransfersFor(String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
+    return _transactions
+        .where(
+          (item) =>
+              (item.isSavingsIn || item.isSavingsOut) &&
+              item.currencyCode == code,
+        )
+        .toList(growable: false);
+  }
 
   List<SavingsGoal> get goals => List.unmodifiable(_goals);
 
   /// الأهداف غير المكتملة حسب الأولوية (0 = الأعلى).
-  List<SavingsGoal> get activeGoals =>
+  List<SavingsGoal> get activeGoals => activeGoalsFor(_activeCode);
+
+  List<SavingsGoal> activeGoalsFor(String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
+    return _goals
+        .where((goal) => !goal.isCompleted && goal.currencyCode == code)
+        .toList(growable: false);
+  }
+
+  List<SavingsGoal> get _allActiveGoals =>
       _goals.where((goal) => !goal.isCompleted).toList(growable: false);
 
   /// أعلى هدف أولوية غير مكتمل.
@@ -93,76 +149,139 @@ class TransactionStore extends ChangeNotifier {
 
   bool get hasActivePeriodicPlan => activePeriodicGoal != null;
 
-  List<SavingsGoal> get completedGoals =>
-      _goals.where((goal) => goal.isCompleted).toList(growable: false)..sort(
+  List<SavingsGoal> get completedGoals => completedGoalsFor(_activeCode);
+
+  List<SavingsGoal> completedGoalsFor(String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
+    return _goals.where((goal) => goal.isCompleted && goal.currencyCode == code)
+        .toList(growable: false)
+      ..sort(
         (a, b) => (b.completedAt ?? b.createdAt).compareTo(
           a.completedAt ?? a.createdAt,
         ),
       );
+  }
 
-  double get totalIncome => _totalOf(TransactionType.income);
+  double get totalIncome => totalIncomeFor(_activeCode);
 
-  double get totalExpense => _totalOf(TransactionType.expense);
+  double get totalExpense => totalExpenseFor(_activeCode);
 
-  double get totalSavingsIn => _totalOf(TransactionType.savingsIn);
+  double get totalSavingsIn => totalSavingsInFor(_activeCode);
 
-  double get totalSavingsOut => _totalOf(TransactionType.savingsOut);
+  double get totalSavingsOut => totalSavingsOutFor(_activeCode);
+
+  double totalIncomeFor(String currencyCode) =>
+      _totalOf(TransactionType.income, currencyCode);
+
+  double totalExpenseFor(String currencyCode) =>
+      _totalOf(TransactionType.expense, currencyCode);
+
+  double totalSavingsInFor(String currencyCode) =>
+      _totalOf(TransactionType.savingsIn, currencyCode);
+
+  double totalSavingsOutFor(String currencyCode) =>
+      _totalOf(TransactionType.savingsOut, currencyCode);
 
   /// المال الموجود حالياً في قسم الادخار.
-  double get savingsBalance {
-    final value = totalSavingsIn - totalSavingsOut;
+  double get savingsBalance => savingsBalanceFor(_activeCode);
+
+  double savingsBalanceFor(String currencyCode) {
+    final value =
+        totalSavingsInFor(currencyCode) - totalSavingsOutFor(currencyCode);
 
     return value < 0 ? 0 : value;
   }
 
   /// الرصيد التشغيلي المتاح للصرف.
   /// لا يشمل المدخرات.
-  double get balance {
-    return totalIncome - totalExpense - savingsBalance;
+  double get balance => balanceFor(_activeCode);
+
+  double balanceFor(String currencyCode) {
+    return totalIncomeFor(currencyCode) -
+        totalExpenseFor(currencyCode) -
+        savingsBalanceFor(currencyCode);
   }
 
   /// هل يمكن خصم [amount] دون أن يصبح الرصيد سالباً.
-  bool canDeduct(double amount) => amount > 0 && amount <= balance;
-
-  bool get hasMonthlyIncome {
-    if (_monthlyIncomeOverride != null && _monthlyIncomeOverride! > 0) {
-      return true;
-    }
-
-    return incomes.any((item) => item.frequency == RecurringFrequency.monthly);
+  bool canDeduct(double amount, {String? currencyCode}) {
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
+    return amount > 0 && amount <= balanceFor(code);
   }
 
-  bool get hasWeeklyIncome {
-    if (_weeklyIncomeOverride != null && _weeklyIncomeOverride! > 0) {
+  bool get hasMonthlyIncome => hasMonthlyIncomeFor(_activeCode);
+
+  bool hasMonthlyIncomeFor(String currencyCode) {
+    final override = monthlyIncomeOverrideFor(currencyCode);
+    if (override != null && override > 0) {
       return true;
     }
 
-    return incomes.any((item) => item.frequency == RecurringFrequency.weekly);
+    return incomesFor(currencyCode).any(
+      (item) => item.frequency == RecurringFrequency.monthly,
+    );
+  }
+
+  /// الدخل الشهري الذي ضبطه المستخدم من الإعدادات، مستقلاً عن سجل العمليات.
+  bool get hasConfiguredMonthlyIncome =>
+      hasConfiguredMonthlyIncomeFor(_activeCode);
+
+  bool hasConfiguredMonthlyIncomeFor(String currencyCode) {
+    final amount = monthlyIncomeOverrideFor(currencyCode);
+    return amount != null && amount > 0;
+  }
+
+  double? get configuredMonthlyIncome =>
+      configuredMonthlyIncomeFor(_activeCode);
+
+  double? configuredMonthlyIncomeFor(String currencyCode) {
+    return hasConfiguredMonthlyIncomeFor(currencyCode)
+        ? monthlyIncomeOverrideFor(currencyCode)
+        : null;
+  }
+
+  bool get hasWeeklyIncome => hasWeeklyIncomeFor(_activeCode);
+
+  bool hasWeeklyIncomeFor(String currencyCode) {
+    final override = weeklyIncomeOverrideFor(currencyCode);
+    if (override != null && override > 0) {
+      return true;
+    }
+
+    return incomesFor(currencyCode).any(
+      (item) => item.frequency == RecurringFrequency.weekly,
+    );
   }
 
   bool get hasRecurringIncome => hasMonthlyIncome || hasWeeklyIncome;
 
   /// أقصى رصيد وصل إليه المستخدم.
   /// أي مجموع كل الدخل المسجل.
-  double get maxBalance => totalIncome;
+  double get maxBalance => maxBalanceFor(_activeCode);
+
+  double maxBalanceFor(String currencyCode) => totalIncomeFor(currencyCode);
 
   /// نسبة ما تبقى من الرصيد التشغيلي.
-  double get remainingRatio {
-    final max = maxBalance;
+  double get remainingRatio => remainingRatioFor(_activeCode);
+
+  double remainingRatioFor(String currencyCode) {
+    final max = maxBalanceFor(currencyCode);
 
     if (max <= 0) {
       return 0;
     }
 
-    return (balance / max).clamp(0.0, 1.0);
+    return (balanceFor(currencyCode) / max).clamp(0.0, 1.0);
   }
 
   /// مجموع المصروف لكل تصنيف،
   /// من الأكبر إلى الأصغر.
-  List<({String category, double amount})> expensesByCategory() {
+  List<({String category, double amount})> expensesByCategory({
+    String? currencyCode,
+  }) {
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
     final totals = <String, double>{};
 
-    for (final expense in expenses) {
+    for (final expense in expensesFor(code)) {
       final category = expense.category ?? 'أخرى';
 
       totals[category] = (totals[category] ?? 0) + expense.amount;
@@ -179,11 +298,19 @@ class TransactionStore extends ChangeNotifier {
 
   /// صافي الادخار داخل فترة [start, end):
   /// ما دخل الادخار ناقص ما سُحب.
-  double savingsNetDuring(DateTime start, DateTime end) {
+  double savingsNetDuring(
+    DateTime start,
+    DateTime end, {
+    String? currencyCode,
+  }) {
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
     var incoming = 0.0;
     var outgoing = 0.0;
 
     for (final item in _transactions) {
+      if (item.currencyCode != code) {
+        continue;
+      }
       if (item.dateTime.isBefore(start) || !item.dateTime.isBefore(end)) {
         continue;
       }
@@ -249,21 +376,25 @@ class TransactionStore extends ChangeNotifier {
   }
 
   /// دخل الفترة الحالية أو السابقة حسب التردد.
-  double referenceIncome(RecurringFrequency frequency) {
-    final override = _overrideFor(frequency);
+  double referenceIncome(
+    RecurringFrequency frequency, {
+    String? currencyCode,
+  }) {
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
+    final override = _overrideFor(frequency, code);
     if (override != null && override > 0) {
       return override;
     }
 
     if (frequency == RecurringFrequency.none) {
-      return _incomeInCalendar(RecurringFrequency.monthly, DateTime.now());
+      return _incomeInCalendar(RecurringFrequency.monthly, deviceNow(), code);
     }
 
-    final now = DateTime.now();
+    final now = deviceNow();
 
     final currentKey = CalendarPeriod.keyFor(frequency, now);
 
-    final current = _incomeForPeriod(frequency, currentKey);
+    final current = _incomeForPeriod(frequency, currentKey, code);
 
     if (current > 0) {
       return current;
@@ -277,13 +408,13 @@ class TransactionStore extends ChangeNotifier {
 
     final previousKey = CalendarPeriod.keyFor(frequency, previousStart);
 
-    final previous = _incomeForPeriod(frequency, previousKey);
+    final previous = _incomeForPeriod(frequency, previousKey, code);
 
     if (previous > 0) {
       return previous;
     }
 
-    return _incomeInCalendar(frequency, now);
+    return _incomeInCalendar(frequency, now, code);
   }
 
   /// يحدد نوع دخل المستخدم من آخر دخل دوري سجله.
@@ -293,10 +424,10 @@ class TransactionStore extends ChangeNotifier {
   ///
   /// إذا كان آخر راتب Monthly:
   /// الخطة تصبح Monthly.
-  RecurringFrequency get preferredIncomeFrequency {
+  RecurringFrequency preferredIncomeFrequencyFor(String currencyCode) {
     WafferTransaction? latestRecurringIncome;
 
-    for (final income in incomes) {
+    for (final income in incomesFor(currencyCode)) {
       if (income.frequency == RecurringFrequency.weekly ||
           income.frequency == RecurringFrequency.monthly) {
         latestRecurringIncome = income;
@@ -308,11 +439,16 @@ class TransactionStore extends ChangeNotifier {
       return latestRecurringIncome.frequency;
     }
 
-    final weekly = _incomeInCalendar(RecurringFrequency.weekly, DateTime.now());
+    final weekly = _incomeInCalendar(
+      RecurringFrequency.weekly,
+      deviceNow(),
+      currencyCode,
+    );
 
     final monthly = _incomeInCalendar(
       RecurringFrequency.monthly,
-      DateTime.now(),
+      deviceNow(),
+      currencyCode,
     );
 
     if (weekly > 0 && monthly <= 0) {
@@ -322,6 +458,9 @@ class TransactionStore extends ChangeNotifier {
     return RecurringFrequency.monthly;
   }
 
+  RecurringFrequency get preferredIncomeFrequency =>
+      preferredIncomeFrequencyFor(_activeCode);
+
   Future<void> ensureLoaded() => _loader ??= _load();
 
   Future<void> addIncome({
@@ -329,10 +468,15 @@ class TransactionStore extends ChangeNotifier {
     String? source,
     RecurringFrequency frequency = RecurringFrequency.none,
     bool moveBalanceToSavings = false,
+    String? currencyCode,
   }) async {
     await ensureLoaded();
 
-    final currentBalance = balance;
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
+    final currentBalance = balanceFor(code);
+    final currentGoal = activeGoalsFor(code).isEmpty
+        ? null
+        : activeGoalsFor(code).first;
 
     if (moveBalanceToSavings && currentBalance > 0) {
       await _add(
@@ -340,23 +484,25 @@ class TransactionStore extends ChangeNotifier {
           id: WafferTransaction.newId(),
           type: TransactionType.savingsIn,
           amount: currentBalance,
+          currencyCode: code,
           note: 'نقل الرصيد الحالي إلى التوفير',
-          dateTime: DateTime.now(),
+          dateTime: deviceNow(),
           transferKind: SavingsTransferKind.manual,
-          goalId: activeGoal?.id,
+          goalId: currentGoal?.id,
         ),
         persist: false,
         notify: false,
       );
     }
 
-    final now = DateTime.now();
+    final now = deviceNow();
 
     await _add(
       WafferTransaction(
         id: WafferTransaction.newId(),
         type: TransactionType.income,
         amount: amount,
+        currencyCode: code,
         note: source,
         dateTime: now,
         frequency: frequency,
@@ -370,7 +516,7 @@ class TransactionStore extends ChangeNotifier {
 
     if (frequency == RecurringFrequency.monthly ||
         frequency == RecurringFrequency.weekly) {
-      _setOverride(frequency, amount);
+      _setOverride(frequency, amount, code);
     }
 
     final prefs = await SharedPreferences.getInstance();
@@ -382,6 +528,7 @@ class TransactionStore extends ChangeNotifier {
   Future<bool> setPreferredIncomeAmount({
     required RecurringFrequency frequency,
     required double amount,
+    String? currencyCode,
   }) async {
     await ensureLoaded();
 
@@ -394,9 +541,10 @@ class TransactionStore extends ChangeNotifier {
       return false;
     }
 
-    _setOverride(frequency, amount);
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
+    _setOverride(frequency, amount, code);
     await SyncDirty.mark(settings: true);
-    final goalsChanged = _syncPeriodicGoalAmounts(frequency, amount);
+    final goalsChanged = _syncPeriodicGoalAmounts(frequency, amount, code);
 
     final prefs = await SharedPreferences.getInstance();
     await _persistIncomeOverrides(prefs);
@@ -412,12 +560,40 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
-  bool _syncPeriodicGoalAmounts(RecurringFrequency frequency, double income) {
+  /// يلغي الدخل الشهري أو الأسبوعي المضبوط من الإعدادات دون حذف السجل.
+  Future<bool> clearPreferredIncomeAmount({
+    required RecurringFrequency frequency,
+    String? currencyCode,
+  }) async {
+    await ensureLoaded();
+
+    if (frequency != RecurringFrequency.monthly &&
+        frequency != RecurringFrequency.weekly) {
+      return false;
+    }
+
+    _clearOverride(frequency, Currencies.normalize(currencyCode ?? _activeCode));
+    await SyncDirty.mark(settings: true);
+
+    final prefs = await SharedPreferences.getInstance();
+    await _persistIncomeOverrides(prefs);
+    await Future<void>.delayed(Duration.zero);
+    notifyListeners();
+    return true;
+  }
+
+  bool _syncPeriodicGoalAmounts(
+    RecurringFrequency frequency,
+    double income,
+    String currencyCode,
+  ) {
     var changed = false;
+    final code = Currencies.normalize(currencyCode);
 
     for (var i = 0; i < _goals.length; i++) {
       final goal = _goals[i];
       if (goal.isCompleted || !goal.isPeriodic) continue;
+      if (goal.currencyCode != code) continue;
       if (goal.deductFrequency != frequency) continue;
 
       final percent = goal.allocatePercent;
@@ -441,17 +617,17 @@ class TransactionStore extends ChangeNotifier {
     required String paymentMethod,
     String? note,
     String? sourceId,
+    DateTime? occurredAt,
+    String? currencyCode,
   }) async {
     await ensureLoaded();
 
-    if (!canDeduct(amount)) {
-      return null;
-    }
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
 
     if (sourceId != null) {
-      for (final expense in expenses) {
-        if (expense.sourceId == sourceId) {
-          return expense;
+      for (final item in _transactions) {
+        if (item.isExpense && item.sourceId == sourceId) {
+          return item;
         }
       }
 
@@ -461,12 +637,18 @@ class TransactionStore extends ChangeNotifier {
       }
     }
 
+    if (!canDeduct(amount, currencyCode: code)) {
+      return null;
+    }
+
     final future = _createExpense(
       amount: amount,
       category: category,
       paymentMethod: paymentMethod,
       note: note,
       sourceId: sourceId,
+      occurredAt: occurredAt,
+      currencyCode: code,
     );
 
     if (sourceId == null) {
@@ -502,23 +684,47 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
-  /// ادخار يدوي من الرصيد التشغيلي.
-  Future<bool> saveManually(double amount) async {
+  /// يحذف الدخل من السجل فيُخصم مبلغه من الرصيد.
+  Future<bool> undoIncome(String id) async {
     await ensureLoaded();
 
-    if (amount <= 0 || amount > balance) {
+    final index = _transactions.indexWhere(
+      (item) => item.id == id && item.isIncome,
+    );
+    if (index < 0) return false;
+
+    _transactions.removeAt(index);
+    await SyncTombstones.instance.add(SyncCollection.transactions, id);
+
+    final prefs = await SharedPreferences.getInstance();
+    await _persist(prefs);
+    notifyListeners();
+    return true;
+  }
+
+  /// ادخار يدوي من الرصيد التشغيلي.
+  Future<bool> saveManually(double amount, {String? currencyCode}) async {
+    await ensureLoaded();
+
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
+    if (amount <= 0 || amount > balanceFor(code)) {
       return false;
     }
+
+    final currentGoal = activeGoalsFor(code).isEmpty
+        ? null
+        : activeGoalsFor(code).first;
 
     await _add(
       WafferTransaction(
         id: WafferTransaction.newId(),
         type: TransactionType.savingsIn,
         amount: amount,
+        currencyCode: code,
         note: 'ادخار يدوي',
-        dateTime: DateTime.now(),
+        dateTime: deviceNow(),
         transferKind: SavingsTransferKind.manual,
-        goalId: activeGoal?.id,
+        goalId: currentGoal?.id,
       ),
     );
 
@@ -526,10 +732,11 @@ class TransactionStore extends ChangeNotifier {
   }
 
   /// سحب جزء أو كل المدخرات.
-  Future<bool> withdrawFromSavings(double amount) async {
+  Future<bool> withdrawFromSavings(double amount, {String? currencyCode}) async {
     await ensureLoaded();
 
-    if (amount <= 0 || amount > savingsBalance) {
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
+    if (amount <= 0 || amount > savingsBalanceFor(code)) {
       return false;
     }
 
@@ -538,8 +745,9 @@ class TransactionStore extends ChangeNotifier {
         id: WafferTransaction.newId(),
         type: TransactionType.savingsOut,
         amount: amount,
+        currencyCode: code,
         note: 'سحب إلى الرصيد',
-        dateTime: DateTime.now(),
+        dateTime: deviceNow(),
         transferKind: SavingsTransferKind.withdraw,
       ),
     );
@@ -559,6 +767,7 @@ class TransactionStore extends ChangeNotifier {
     RecurringFrequency deductFrequency = RecurringFrequency.monthly,
     bool isPeriodic = false,
     int? durationCount,
+    String? currencyCode,
   }) async {
     await ensureLoaded();
 
@@ -582,13 +791,15 @@ class TransactionStore extends ChangeNotifier {
       }
     }
 
-    final now = DateTime.now();
+    final now = deviceNow();
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
 
     _goals.add(
       SavingsGoal(
         id: SavingsGoal.newId(),
         name: name.trim(),
         targetAmount: targetAmount,
+        currencyCode: code,
         createdAt: now,
         duration: duration,
         allocatePercent: allocatePercent,
@@ -619,6 +830,7 @@ class TransactionStore extends ChangeNotifier {
     required GoalDurationPreset duration,
     required RecurringFrequency frequency,
     required double income,
+    String? currencyCode,
   }) async {
     await ensureLoaded();
 
@@ -626,6 +838,7 @@ class TransactionStore extends ChangeNotifier {
       return false;
     }
 
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
     final cycles = duration.cycleCount(frequency);
 
     final perPeriod = income * percent / 100;
@@ -636,7 +849,9 @@ class TransactionStore extends ChangeNotifier {
 
     final target = perPeriod * cycles;
 
-    final existing = activeGoal;
+    final existing = activeGoalsFor(code).isEmpty
+        ? null
+        : activeGoalsFor(code).first;
 
     if (existing != null) {
       final index = _goals.indexWhere((goal) => goal.id == existing.id);
@@ -659,7 +874,8 @@ class TransactionStore extends ChangeNotifier {
           id: SavingsGoal.newId(),
           name: 'ادخار ${percent.round()}٪',
           targetAmount: target,
-          createdAt: DateTime.now(),
+          currencyCode: code,
+          createdAt: deviceNow(),
           duration: duration,
           allocatePercent: percent,
           allocateAmount: perPeriod,
@@ -711,7 +927,8 @@ class TransactionStore extends ChangeNotifier {
   Future<void> reorderActiveGoals(int oldIndex, int newIndex) async {
     await ensureLoaded();
 
-    final active = activeGoals.toList();
+    final code = _activeCode;
+    final active = activeGoalsFor(code).toList();
 
     if (oldIndex < 0 || oldIndex >= active.length) {
       return;
@@ -731,6 +948,9 @@ class TransactionStore extends ChangeNotifier {
     var activeIndex = 0;
     for (var i = 0; i < _goals.length; i++) {
       if (_goals[i].isCompleted) {
+        continue;
+      }
+      if (_goals[i].currencyCode != code) {
         continue;
       }
 
@@ -761,7 +981,8 @@ class TransactionStore extends ChangeNotifier {
       items: _transactions,
       upserts: [
         for (final raw in transactions)
-          if (transactionFromSync(raw) != null) transactionFromSync(raw)!,
+          if (transactionFromSync(raw) != null)
+            _preserveEventTime(transactionFromSync(raw)!),
       ],
       deletes: transactionDeletes,
       collection: SyncCollection.transactions,
@@ -773,7 +994,8 @@ class TransactionStore extends ChangeNotifier {
       items: _transactions,
       upserts: [
         for (final raw in transfers)
-          if (transferFromSync(raw) != null) transferFromSync(raw)!,
+          if (transferFromSync(raw) != null)
+            _preserveEventTime(transferFromSync(raw)!),
       ],
       deletes: transferDeletes,
       collection: SyncCollection.savingsTransfers,
@@ -805,15 +1027,27 @@ class TransactionStore extends ChangeNotifier {
       final localUpdated = await SyncDirty.settingsUpdatedAt();
       if (newerOrEqual(remoteUpdated, localUpdated)) {
         if (settings.containsKey('monthly_income_amount')) {
-          _monthlyIncomeOverride = parseMoney(settings['monthly_income_amount']);
+          final amount = parseMoney(settings['monthly_income_amount']);
+          if (amount != null && amount > 0) {
+            _monthlyIncomeByCurrency[defaultCurrencyCode] = amount;
+          } else {
+            _monthlyIncomeByCurrency.remove(defaultCurrencyCode);
+          }
         }
         if (settings.containsKey('weekly_income_amount')) {
-          _weeklyIncomeOverride = parseMoney(settings['weekly_income_amount']);
+          final amount = parseMoney(settings['weekly_income_amount']);
+          if (amount != null && amount > 0) {
+            _weeklyIncomeByCurrency[defaultCurrencyCode] = amount;
+          } else {
+            _weeklyIncomeByCurrency.remove(defaultCurrencyCode);
+          }
         }
+        _applyIncomeOverridesJson(settings['income_overrides_by_currency']);
         if (remoteUpdated != null) {
           await SyncDirty.setSettingsUpdatedAt(remoteUpdated);
         }
         changed = true;
+        await ProfileSync.apply(settings);
       }
     }
 
@@ -832,8 +1066,8 @@ class TransactionStore extends ChangeNotifier {
     _goals.clear();
     _processedPeriods.clear();
     _pendingExpenseSources.clear();
-    _monthlyIncomeOverride = null;
-    _weeklyIncomeOverride = null;
+    _monthlyIncomeByCurrency.clear();
+    _weeklyIncomeByCurrency.clear();
 
     _loaded = false;
     _loader = null;
@@ -847,8 +1081,11 @@ class TransactionStore extends ChangeNotifier {
     required String paymentMethod,
     String? note,
     String? sourceId,
+    DateTime? occurredAt,
+    String? currencyCode,
   }) async {
-    if (!canDeduct(amount)) {
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
+    if (!canDeduct(amount, currencyCode: code)) {
       return null;
     }
 
@@ -856,11 +1093,12 @@ class TransactionStore extends ChangeNotifier {
       id: WafferTransaction.newId(),
       type: TransactionType.expense,
       amount: amount,
+      currencyCode: code,
       category: category,
       paymentMethod: paymentMethod,
       note: note,
       sourceId: sourceId,
-      dateTime: DateTime.now(),
+      dateTime: (occurredAt ?? deviceNow()).toLocal(),
     );
 
     await _add(transaction);
@@ -904,6 +1142,12 @@ class TransactionStore extends ChangeNotifier {
   }
 
   Future<void> _load() async {
+    await CurrencyStore.instance.ensureLoaded();
+    if (!_listeningToCurrency) {
+      _listeningToCurrency = true;
+      CurrencyStore.instance.addListener(notifyListeners);
+    }
+
     final prefs = await SharedPreferences.getInstance();
 
     final stored = prefs.getStringList(transactionsKey);
@@ -912,12 +1156,15 @@ class TransactionStore extends ChangeNotifier {
     _goals.clear();
     _processedPeriods.clear();
 
+    var stampCurrency = false;
+
     if (stored != null) {
       _transactions.addAll(
         stored.map(WafferTransaction.decode).whereType<WafferTransaction>(),
       );
 
       _sort();
+      stampCurrency = stored.any((raw) => !raw.contains('currencyCode'));
     } else {
       _transactions.addAll(
         _migrateLegacyExpenses(prefs.getStringList(legacyExpensesKey)),
@@ -939,7 +1186,7 @@ class TransactionStore extends ChangeNotifier {
         final decoded = SavingsGoal.decode(raw);
         if (decoded == null) continue;
         _goals.add(decoded);
-        if (!_encodedHasPriority(raw)) {
+        if (!_encodedHasPriority(raw) || !raw.contains('currencyCode')) {
           schemaNeedsWrite = true;
         }
       }
@@ -955,12 +1202,25 @@ class TransactionStore extends ChangeNotifier {
       await _persistGoals(prefs);
     }
 
+    if (stampCurrency && _transactions.isNotEmpty) {
+      await _persist(prefs);
+    }
+
     final storedPeriods = prefs.getStringList(processedPeriodsKey) ?? const [];
 
     _processedPeriods.addAll(storedPeriods);
 
-    _monthlyIncomeOverride = prefs.getDouble(monthlyIncomeKey);
-    _weeklyIncomeOverride = prefs.getDouble(weeklyIncomeKey);
+    _monthlyIncomeByCurrency.clear();
+    _weeklyIncomeByCurrency.clear();
+    final monthly = prefs.getDouble(monthlyIncomeKey);
+    if (monthly != null && monthly > 0) {
+      _monthlyIncomeByCurrency[defaultCurrencyCode] = monthly;
+    }
+    final weekly = prefs.getDouble(weeklyIncomeKey);
+    if (weekly != null && weekly > 0) {
+      _weeklyIncomeByCurrency[defaultCurrencyCode] = weekly;
+    }
+    _applyIncomeOverridesJson(prefs.getString(incomeOverridesByCurrencyKey));
 
     _loaded = true;
 
@@ -983,10 +1243,10 @@ class TransactionStore extends ChangeNotifier {
     try {
       var changed = false;
 
-      final now = DateTime.now();
+      final now = deviceNow();
 
       final periodicIds = [
-        for (final goal in activeGoals)
+        for (final goal in _allActiveGoals)
           if (goal.isPeriodic &&
               goal.allocateAmount != null &&
               goal.allocateAmount! > 0 &&
@@ -998,6 +1258,10 @@ class TransactionStore extends ChangeNotifier {
         final initialGoal = _goalById(goalId);
 
         if (initialGoal == null || initialGoal.isCompleted) {
+          continue;
+        }
+
+        if (_percentPlanNeedsIncome(initialGoal)) {
           continue;
         }
 
@@ -1046,9 +1310,13 @@ class TransactionStore extends ChangeNotifier {
       // معالجة المتبقي من الفترات
       // ==========================================
 
-      final leftoverKeys = <(RecurringFrequency, String)>{};
+      final leftoverKeys = <(RecurringFrequency, String, String)>{};
 
-      for (final income in incomes) {
+      for (final income in _transactions) {
+        if (!income.isIncome) {
+          continue;
+        }
+
         if (income.frequency == RecurringFrequency.none) {
           continue;
         }
@@ -1065,19 +1333,19 @@ class TransactionStore extends ChangeNotifier {
           continue;
         }
 
-        leftoverKeys.add((income.frequency, key));
+        leftoverKeys.add((income.frequency, key, income.currencyCode));
       }
 
       final leftovers = leftoverKeys.toList()
         ..sort((a, b) => a.$2.compareTo(b.$2));
 
       for (final entry in leftovers) {
-        final token = _leftoverToken(entry.$2);
+        final token = _leftoverToken(entry.$2, entry.$3);
 
         if (_markProcessed(token)) {
           changed = true;
 
-          changed |= _transferLeftover(entry.$1, entry.$2);
+          changed |= _transferLeftover(entry.$1, entry.$2, entry.$3);
         }
       }
 
@@ -1093,6 +1361,13 @@ class TransactionStore extends ChangeNotifier {
     }
   }
 
+  bool _percentPlanNeedsIncome(SavingsGoal goal) {
+    if (goal.deductFrequency != RecurringFrequency.monthly) return false;
+    final percent = goal.allocatePercent;
+    if (percent == null || percent <= 0) return false;
+    return !hasConfiguredMonthlyIncomeFor(goal.currencyCode);
+  }
+
   bool _deductGoalForPeriod(SavingsGoal goal, String periodKey) {
     if (goal.isCompleted) {
       return true;
@@ -1104,7 +1379,7 @@ class TransactionStore extends ChangeNotifier {
       return true;
     }
 
-    if (!canDeduct(amount)) {
+    if (!canDeduct(amount, currencyCode: goal.currencyCode)) {
       return false;
     }
 
@@ -1113,8 +1388,9 @@ class TransactionStore extends ChangeNotifier {
         id: WafferTransaction.newId(),
         type: TransactionType.savingsIn,
         amount: amount,
+        currencyCode: goal.currencyCode,
         note: 'ادخار دوري: ${goal.name}',
-        dateTime: DateTime.now(),
+        dateTime: deviceNow(),
         transferKind: SavingsTransferKind.goalPeriodic,
         goalId: goal.id,
         processedPeriodKey: periodKey,
@@ -1126,26 +1402,32 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
-  bool _transferLeftover(RecurringFrequency frequency, String periodKey) {
+  bool _transferLeftover(
+    RecurringFrequency frequency,
+    String periodKey,
+    String currencyCode,
+  ) {
     final period = CalendarPeriod.parseKey(periodKey);
 
     if (period == null) {
       return false;
     }
 
-    final periodIncome = _incomeForPeriod(frequency, periodKey);
+    final code = Currencies.normalize(currencyCode);
+    final periodIncome = _incomeForPeriod(frequency, periodKey, code);
 
     if (periodIncome <= 0) {
       return false;
     }
 
-    final periodExpense = expenses
+    final periodExpense = expensesFor(code)
         .where((item) => period.contains(item.dateTime))
         .fold<double>(0, (sum, item) => sum + item.amount);
 
     final alreadySaved = _transactions
         .where(
           (item) =>
+              item.currencyCode == code &&
               item.isSavingsIn &&
               item.processedPeriodKey == periodKey &&
               item.transferKind == SavingsTransferKind.goalPeriodic,
@@ -1158,7 +1440,7 @@ class TransactionStore extends ChangeNotifier {
       return false;
     }
 
-    final available = balance;
+    final available = balanceFor(code);
 
     if (leftover > available) {
       leftover = available;
@@ -1168,17 +1450,22 @@ class TransactionStore extends ChangeNotifier {
       return false;
     }
 
+    final leftoverGoal = activeGoalsFor(code).isEmpty
+        ? null
+        : activeGoalsFor(code).first;
+
     _transactions.add(
       WafferTransaction(
         id: WafferTransaction.newId(),
         type: TransactionType.savingsIn,
         amount: leftover,
+        currencyCode: code,
         note: frequency == RecurringFrequency.weekly
             ? 'توفير نهاية الأسبوع'
             : 'توفير نهاية الشهر',
-        dateTime: DateTime.now(),
+        dateTime: deviceNow(),
         transferKind: SavingsTransferKind.periodLeftover,
-        goalId: activeGoal?.id,
+        goalId: leftoverGoal?.id,
         processedPeriodKey: periodKey,
       ),
     );
@@ -1191,7 +1478,7 @@ class TransactionStore extends ChangeNotifier {
   bool _completeGoalIfNeeded() {
     var changed = false;
 
-    for (final goal in List<SavingsGoal>.from(activeGoals)) {
+    for (final goal in List<SavingsGoal>.from(_allActiveGoals)) {
       final progress = goalProgress(goal);
 
       if (progress + 0.0001 < goal.targetAmount) {
@@ -1205,7 +1492,7 @@ class TransactionStore extends ChangeNotifier {
       }
 
       _goals[index] = goal.copyWith(
-        completedAt: DateTime.now(),
+        completedAt: deviceNow(),
         completedAmount: progress > goal.targetAmount
             ? progress
             : goal.targetAmount,
@@ -1223,6 +1510,10 @@ class TransactionStore extends ChangeNotifier {
 
   bool _countsTowardGoal(WafferTransaction item, SavingsGoal goal) {
     if (!item.isSavingsIn && !item.isSavingsOut) {
+      return false;
+    }
+
+    if (item.currencyCode != goal.currencyCode) {
       return false;
     }
 
@@ -1340,26 +1631,38 @@ class TransactionStore extends ChangeNotifier {
     return _processedPeriods.add(token);
   }
 
-  String _leftoverToken(String periodKey) {
-    return 'leftover:$periodKey';
+  String _leftoverToken(String periodKey, String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
+    if (code == defaultCurrencyCode) {
+      return 'leftover:$periodKey';
+    }
+    return 'leftover:$code:$periodKey';
   }
 
   String _goalPeriodToken(String goalId, String periodKey) {
     return 'goal:$goalId:$periodKey';
   }
 
-  double _incomeForPeriod(RecurringFrequency frequency, String periodKey) {
-    return incomes
+  double _incomeForPeriod(
+    RecurringFrequency frequency,
+    String periodKey,
+    String currencyCode,
+  ) {
+    return incomesFor(currencyCode)
         .where(
           (item) => item.frequency == frequency && item.periodKey == periodKey,
         )
         .fold<double>(0, (sum, item) => sum + item.amount);
   }
 
-  double _incomeInCalendar(RecurringFrequency frequency, DateTime date) {
+  double _incomeInCalendar(
+    RecurringFrequency frequency,
+    DateTime date,
+    String currencyCode,
+  ) {
     final period = CalendarPeriod.ofFrequency(frequency, date);
 
-    return incomes
+    return incomesFor(currencyCode)
         .where(
           (item) =>
               item.frequency == frequency && period.contains(item.dateTime),
@@ -1384,31 +1687,65 @@ class TransactionStore extends ChangeNotifier {
   }
 
   Future<void> _persistIncomeOverrides(SharedPreferences prefs) async {
-    if (_monthlyIncomeOverride != null && _monthlyIncomeOverride! > 0) {
-      await prefs.setDouble(monthlyIncomeKey, _monthlyIncomeOverride!);
+    final sypMonthly = _monthlyIncomeByCurrency[defaultCurrencyCode];
+    if (sypMonthly != null && sypMonthly > 0) {
+      await prefs.setDouble(monthlyIncomeKey, sypMonthly);
     } else {
       await prefs.remove(monthlyIncomeKey);
     }
 
-    if (_weeklyIncomeOverride != null && _weeklyIncomeOverride! > 0) {
-      await prefs.setDouble(weeklyIncomeKey, _weeklyIncomeOverride!);
+    final sypWeekly = _weeklyIncomeByCurrency[defaultCurrencyCode];
+    if (sypWeekly != null && sypWeekly > 0) {
+      await prefs.setDouble(weeklyIncomeKey, sypWeekly);
     } else {
       await prefs.remove(weeklyIncomeKey);
     }
-  }
 
-  void _setOverride(RecurringFrequency frequency, double amount) {
-    if (frequency == RecurringFrequency.monthly) {
-      _monthlyIncomeOverride = amount;
-    } else if (frequency == RecurringFrequency.weekly) {
-      _weeklyIncomeOverride = amount;
+    final encoded = _encodeIncomeOverrides();
+    if (encoded == null) {
+      await prefs.remove(incomeOverridesByCurrencyKey);
+    } else {
+      await prefs.setString(incomeOverridesByCurrencyKey, encoded);
     }
   }
 
-  double? _overrideFor(RecurringFrequency frequency) {
+  void _setOverride(
+    RecurringFrequency frequency,
+    double amount,
+    String currencyCode,
+  ) {
+    final code = Currencies.normalize(currencyCode);
+    if (frequency == RecurringFrequency.monthly) {
+      _monthlyIncomeByCurrency[code] = amount;
+    } else if (frequency == RecurringFrequency.weekly) {
+      _weeklyIncomeByCurrency[code] = amount;
+    }
+  }
+
+  WafferTransaction _preserveEventTime(WafferTransaction incoming) {
+    for (final local in _transactions) {
+      if (local.id != incoming.id) continue;
+      return incoming.copyWith(
+        dateTime: earlierDeviceEventTime(local.dateTime, incoming.dateTime),
+      );
+    }
+    return incoming;
+  }
+
+  void _clearOverride(RecurringFrequency frequency, String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
+    if (frequency == RecurringFrequency.monthly) {
+      _monthlyIncomeByCurrency.remove(code);
+    } else if (frequency == RecurringFrequency.weekly) {
+      _weeklyIncomeByCurrency.remove(code);
+    }
+  }
+
+  double? _overrideFor(RecurringFrequency frequency, String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
     return switch (frequency) {
-      RecurringFrequency.monthly => _monthlyIncomeOverride,
-      RecurringFrequency.weekly => _weeklyIncomeOverride,
+      RecurringFrequency.monthly => _monthlyIncomeByCurrency[code],
+      RecurringFrequency.weekly => _weeklyIncomeByCurrency[code],
       RecurringFrequency.none => null,
     };
   }
@@ -1426,6 +1763,59 @@ class TransactionStore extends ChangeNotifier {
   Future<void> _persistAll(SharedPreferences prefs) async {
     await _persist(prefs);
     await _persistGoals(prefs);
+  }
+
+  String? _encodeIncomeOverrides() {
+    final codes = {
+      ..._monthlyIncomeByCurrency.keys,
+      ..._weeklyIncomeByCurrency.keys,
+    }..remove(defaultCurrencyCode);
+
+    if (codes.isEmpty) return null;
+
+    final payload = <String, Map<String, double>>{};
+    for (final code in codes) {
+      final monthly = _monthlyIncomeByCurrency[code];
+      final weekly = _weeklyIncomeByCurrency[code];
+      final entry = <String, double>{};
+      if (monthly != null && monthly > 0) entry['monthly'] = monthly;
+      if (weekly != null && weekly > 0) entry['weekly'] = weekly;
+      if (entry.isNotEmpty) payload[code] = entry;
+    }
+
+    if (payload.isEmpty) return null;
+    return jsonEncode(payload);
+  }
+
+  void _applyIncomeOverridesJson(Object? raw) {
+    Map<String, dynamic>? decoded;
+    if (raw is Map) {
+      decoded = Map<String, dynamic>.from(raw);
+    } else if (raw is String && raw.trim().isNotEmpty) {
+      try {
+        final value = jsonDecode(raw);
+        if (value is Map) {
+          decoded = Map<String, dynamic>.from(value);
+        }
+      } catch (_) {
+        return;
+      }
+    }
+    if (decoded == null) return;
+
+    decoded.forEach((code, value) {
+      if (value is! Map) return;
+      final normalized = Currencies.normalize(code);
+      if (normalized == defaultCurrencyCode) return;
+      final monthly = parseMoney(value['monthly']);
+      final weekly = parseMoney(value['weekly']);
+      if (monthly != null && monthly > 0) {
+        _monthlyIncomeByCurrency[normalized] = monthly;
+      }
+      if (weekly != null && weekly > 0) {
+        _weeklyIncomeByCurrency[normalized] = weekly;
+      }
+    });
   }
 
   List<WafferTransaction> _migrateLegacyExpenses(List<String>? legacy) {
@@ -1457,7 +1847,7 @@ class TransactionStore extends ChangeNotifier {
           amount: amount,
           category: 'أخرى',
           note: note,
-          dateTime: date ?? DateTime.now(),
+          dateTime: (date ?? deviceNow()).toLocal(),
         ),
       );
     }
@@ -1469,9 +1859,10 @@ class TransactionStore extends ChangeNotifier {
     _transactions.sort((a, b) => b.dateTime.compareTo(a.dateTime));
   }
 
-  double _totalOf(TransactionType type) {
+  double _totalOf(TransactionType type, String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
     return _transactions
-        .where((item) => item.type == type)
+        .where((item) => item.type == type && item.currencyCode == code)
         .fold<double>(0, (sum, item) => sum + item.amount);
   }
 }

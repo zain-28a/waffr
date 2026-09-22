@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/recurring_expense.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
@@ -37,10 +38,11 @@ class _RecurringExpensesPreviewCardState
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _store,
+      animation: Listenable.merge([_store, CurrencyStore.instance]),
       builder: (context, _) {
         final colors = _RecurringColors.of(context);
-        final preview = _store.items.take(3).toList(growable: false);
+        final items = _store.itemsFor(CurrencyStore.instance.activeCode);
+        final preview = items.take(3).toList(growable: false);
 
         return GlassButton(
           onTap: () => showRecurringExpensesSheet(context),
@@ -82,7 +84,7 @@ class _RecurringExpensesPreviewCardState
                         Text(
                           preview.isEmpty
                               ? 'لا يوجد اشتراك أو مصروف متكرر'
-                              : '${_store.items.length} عناصر محفوظة',
+                              : '${items.length} عناصر محفوظة',
                           style: TextStyle(
                             fontFamily: 'Tajawal',
                             fontSize: 11.5,
@@ -99,11 +101,11 @@ class _RecurringExpensesPreviewCardState
                 const SizedBox(height: 10),
                 for (final item in preview)
                   _PreviewItem(item: item, colors: colors),
-                if (_store.items.length > preview.length)
+                if (items.length > preview.length)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      '+ ${_store.items.length - preview.length} عناصر أخرى',
+                      '+ ${items.length - preview.length} عناصر أخرى',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Tajawal',
@@ -173,18 +175,23 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
-    final amount = await showDialog<double>(
+    final result = await showDialog<Object>(
       context: context,
       builder: (context) => EditAmountDialog(
         title: item.note ?? item.category,
         initialAmount: item.amount,
         accent: accent,
+        currencyCode: item.currencyCode,
       ),
     );
 
-    if (!mounted || amount == null) return;
+    if (!mounted || result is! EditAmountResult) return;
 
-    final saved = await _store.updateAmount(item.id, amount);
+    final saved = await _store.updateAmount(
+      item.id,
+      result.amount,
+      currencyCode: result.currencyCode,
+    );
     if (!mounted) return;
 
     if (!saved) {
@@ -200,8 +207,9 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
     final colors = _RecurringColors.of(context);
 
     return AnimatedBuilder(
-      animation: _store,
+      animation: Listenable.merge([_store, CurrencyStore.instance]),
       builder: (context, _) {
+        final items = _store.itemsFor(CurrencyStore.instance.activeCode);
         return GlassSheetBody(
           children: [
             const GlassSheetHeader(
@@ -209,7 +217,7 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
               subtitle: 'الاشتراكات والمصروفات التي تُخصم تلقائياً من رصيدك.',
             ),
             const SizedBox(height: 16),
-            if (_store.items.isEmpty)
+            if (items.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 28),
                 child: Column(
@@ -232,7 +240,7 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
                 ),
               )
             else
-              for (final item in _store.items) ...[
+              for (final item in items) ...[
                 _RecurringItemTile(
                   item: item,
                   colors: colors,
@@ -341,7 +349,7 @@ class _RecurringItemTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${formatMoney(item.amount)} $currencyLabel · ${item.intervalDescription}',
+                      '${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)} · ${item.intervalDescription}',
                       style: TextStyle(
                         fontFamily: 'Tajawal',
                         fontSize: 11.5,

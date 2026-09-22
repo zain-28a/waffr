@@ -20,13 +20,72 @@ class OnlineScreen extends StatefulWidget {
   State<OnlineScreen> createState() => _OnlineScreenState();
 }
 
+enum _NewsLoadState { loading, ready, empty, error }
+
 class _OnlineScreenState extends State<OnlineScreen>
-    with AutomaticKeepAliveClientMixin {
-  final OnlineFeedService _feed = OnlineFeedService.instance;
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   ExchangeAsset _selectedAsset = ExchangeAsset.usd;
+  List<NewsArticle> _articles = const [];
+  _NewsLoadState _newsState = _NewsLoadState.loading;
+  bool _newsRequestInFlight = false;
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadNews();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadNews();
+    }
+  }
+
+  Future<void> _loadNews() async {
+    if (_newsRequestInFlight) return;
+    _newsRequestInFlight = true;
+    final showLoading = _articles.isEmpty;
+    if (showLoading && mounted) {
+      setState(() => _newsState = _NewsLoadState.loading);
+    }
+
+    try {
+      final articles = await OnlineFeedService.instance.fetchArticles();
+      if (!mounted) return;
+      setState(() {
+        _articles = articles;
+        _newsState =
+            articles.isEmpty ? _NewsLoadState.empty : _NewsLoadState.ready;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _newsState =
+            _articles.isEmpty ? _NewsLoadState.error : _NewsLoadState.ready;
+      });
+    } finally {
+      _newsRequestInFlight = false;
+    }
+  }
+
+  void _onNewsTap() {
+    if (_newsState == _NewsLoadState.error) {
+      _loadNews();
+      return;
+    }
+    showNewsSheet(context, articles: _articles);
+  }
 
   Future<void> _openPlace(NearbyPlaceCategory category) async {
     final opened = await openNearbyPlaceSearch(category);
@@ -61,8 +120,9 @@ class _OnlineScreenState extends State<OnlineScreen>
           _NearbyPlacesCard(onOpen: _openPlace),
           const SizedBox(height: 6),
           _NewsPreviewCard(
-            article: _feed.articles.first,
-            onTap: () => showNewsSheet(context, articles: _feed.articles),
+            article: _articles.isEmpty ? null : _articles.first,
+            state: _newsState,
+            onTap: _newsState == _NewsLoadState.loading ? null : _onNewsTap,
           ),
         ],
       ),
@@ -524,7 +584,7 @@ class _RateValue extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            currencyLabel,
+            sypCurrencyLabel,
             style: TextStyle(
               fontFamily: 'Tajawal',
               fontSize: 12,
@@ -610,17 +670,20 @@ class _NearbyPlacesCard extends StatelessWidget {
 }
 
 class _NewsPreviewCard extends StatelessWidget {
-  final NewsArticle article;
-  final VoidCallback onTap;
+  final NewsArticle? article;
+  final _NewsLoadState state;
+  final VoidCallback? onTap;
 
   const _NewsPreviewCard({
     required this.article,
+    required this.state,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = _OnlineColors.of(context);
+    final item = state == _NewsLoadState.ready ? article : null;
 
     return Material(
       color: Colors.transparent,
@@ -654,49 +717,111 @@ class _NewsPreviewCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height:17),
-              Text(
-                article.title,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w500,
-                  height: 1.55,
-                  color: colors.textPrimary,
+              if (item != null) ...[
+                Text(
+                  item.title,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                    height: 1.55,
+                    color: colors.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      article.source,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.source,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '${formatDate(item.publishedAt)} · ${formatTime(item.publishedAt)}',
                       style: TextStyle(
                         fontFamily: 'Tajawal',
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 11.5,
                         color: colors.textSecondary,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    '${formatDate(article.publishedAt)} · ${formatTime(article.publishedAt)}',
-                    style: TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 11.5,
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ] else
+                _NewsStatus(state: state, colors: colors),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _NewsStatus extends StatelessWidget {
+  final _NewsLoadState state;
+  final _OnlineColors colors;
+
+  const _NewsStatus({
+    required this.state,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (state == _NewsLoadState.loading) {
+      return Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.2,
+            color: colors.accent,
+          ),
+        ),
+      );
+    }
+
+    final message = state == _NewsLoadState.error
+        ? 'تعذر تحميل الأخبار'
+        : 'لا توجد أخبار حالياً';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          message,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 13.5,
+            fontWeight: FontWeight.w500,
+            height: 1.55,
+            color: colors.textSecondary,
+          ),
+        ),
+        if (state == _NewsLoadState.error) ...[
+          const SizedBox(height: 10),
+          Text(
+            'اضغط لإعادة المحاولة',
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: colors.textSecondary,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

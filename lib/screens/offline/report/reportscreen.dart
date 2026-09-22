@@ -162,10 +162,11 @@ class _ReportScreenState extends State<ReportScreen>
   }
 }
 
-enum _ReportRange { week, month, threeMonths, sixMonths, year }
+enum _ReportRange { day, week, month, threeMonths, sixMonths, year }
 
 extension on _ReportRange {
   String get label => switch (this) {
+    _ReportRange.day => 'اليوم',
     _ReportRange.week => 'أسبوع',
     _ReportRange.month => 'شهر',
     _ReportRange.threeMonths => '3 أشهر',
@@ -188,6 +189,8 @@ class _ReportPeriod {
   String get label {
     final lastDay = end.subtract(const Duration(days: 1));
     switch (range) {
+      case _ReportRange.day:
+        return '${start.day} ${_monthName(start.month)} ${start.year}';
       case _ReportRange.week:
         if (start.month == lastDay.month && start.year == lastDay.year) {
           return '${start.day} – ${lastDay.day} '
@@ -1182,7 +1185,7 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
           ),
         ),
         content: Text(
-          'سيُحذف هذا المصروف من السجل ويُعاد ${formatMoney(expense.amount)} $currencyLabel إلى رصيدك.',
+          'سيُحذف هذا المصروف من السجل ويُعاد ${formatMoney(expense.amount)} ${currencyLabelFor(expense.currencyCode)} إلى رصيدك.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Tajawal',
@@ -1223,6 +1226,65 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
   await ShoppingListStore.instance.revertPurchaseForExpense(expense.id);
   if (!context.mounted) return;
   showAppSnackBar(context, 'تم التراجع عن المصروف', success: true);
+}
+
+Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
+  final colors = _ReportColors.of(context);
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        title: Text(
+          'التراجع عن الدخل',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontWeight: FontWeight.bold,
+            color: colors.textPrimary,
+          ),
+        ),
+        content: Text(
+          'سيُحذف هذا الدخل من السجل ويُخصم ${formatMoney(income.amount)} ${currencyLabelFor(income.currencyCode)} من رصيدك.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 14,
+            color: colors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'إلغاء',
+              style: TextStyle(fontFamily: 'Tajawal', color: colors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'تراجع',
+              style: TextStyle(fontFamily: 'Tajawal', color: colors.accent),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (confirmed != true || !context.mounted) return;
+
+  final undone = await TransactionStore.instance.undoIncome(income.id);
+  if (!context.mounted) return;
+
+  if (!undone) {
+    showAppSnackBar(context, 'تعذر التراجع عن هذا الدخل.');
+    return;
+  }
+
+  showAppSnackBar(context, 'تم التراجع عن الدخل', success: true);
 }
 
 class _HistoryDayGroup extends StatelessWidget {
@@ -1269,9 +1331,9 @@ class _HistoryDayGroup extends StatelessWidget {
                 _HistoryExpenseRow(
                   expense: expenses[index],
                   isIncome: isIncome,
-                  onUndo: isIncome
-                      ? null
-                      : () => _undoExpense(context, expenses[index]),
+                  onUndo: () => isIncome
+                      ? _undoIncome(context, expenses[index])
+                      : _undoExpense(context, expenses[index]),
                 ),
               ],
             ],
@@ -1474,6 +1536,9 @@ _ReportPeriod _periodFor(_ReportRange range, int offset) {
   late DateTime end;
 
   switch (range) {
+    case _ReportRange.day:
+      start = today.subtract(Duration(days: offset));
+      end = start.add(const Duration(days: 1));
     case _ReportRange.week:
       final daysFromSaturday = (today.weekday + 1) % 7;
       final currentWeekStart = today.subtract(
@@ -1523,6 +1588,15 @@ List<_ChartBucket> _buildChartBuckets(
   late final List<_ChartBucket> buckets;
 
   switch (period.range) {
+    case _ReportRange.day:
+      buckets = List.generate(24, (hour) {
+        final hourLabel = hour.toString().padLeft(2, '0');
+        return _ChartBucket(
+          label: '$hourLabel:00',
+          axisLabel: hour % 3 == 0 ? hourLabel : '',
+          amount: 0,
+        );
+      });
     case _ReportRange.week:
       const dayLabels = [
         'سبت',
@@ -1590,28 +1664,31 @@ List<_ChartBucket> _buildChartBuckets(
 
   final amounts = List<double>.filled(buckets.length, 0);
   for (final expense in expenses) {
+    final local = expense.dateTime.toLocal();
     late int index;
     switch (period.range) {
+      case _ReportRange.day:
+        index = local.hour;
       case _ReportRange.week:
       case _ReportRange.month:
         index = DateTime(
-          expense.dateTime.year,
-          expense.dateTime.month,
-          expense.dateTime.day,
+          local.year,
+          local.month,
+          local.day,
         ).difference(period.start).inDays;
       case _ReportRange.threeMonths:
         index =
             DateTime(
-              expense.dateTime.year,
-              expense.dateTime.month,
-              expense.dateTime.day,
+              local.year,
+              local.month,
+              local.day,
             ).difference(period.start).inDays ~/
             7;
       case _ReportRange.sixMonths:
       case _ReportRange.year:
         index =
-            (expense.dateTime.year - period.start.year) * 12 +
-            expense.dateTime.month -
+            (local.year - period.start.year) * 12 +
+            local.month -
             period.start.month;
     }
     if (index >= 0 && index < amounts.length) {
@@ -1632,11 +1709,8 @@ List<_ChartBucket> _buildChartBuckets(
 List<_ExpenseDayGroup> _groupExpensesByDay(List<WafferTransaction> expenses) {
   final grouped = <DateTime, List<WafferTransaction>>{};
   for (final expense in expenses) {
-    final date = DateTime(
-      expense.dateTime.year,
-      expense.dateTime.month,
-      expense.dateTime.day,
-    );
+    final local = expense.dateTime.toLocal();
+    final date = DateTime(local.year, local.month, local.day);
     grouped.putIfAbsent(date, () => []).add(expense);
   }
   return grouped.entries

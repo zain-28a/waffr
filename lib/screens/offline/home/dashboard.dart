@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:waffer/core/data/category_store.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/expense_categories.dart';
 import 'package:waffer/core/data/savings_goal.dart';
 import 'package:waffer/core/data/transaction.dart';
@@ -42,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen>
     super.initState();
     _store.ensureLoaded();
     CategoryStore.instance.ensureLoaded();
+    CurrencyStore.instance.ensureLoaded();
   }
 
   @override
@@ -189,84 +191,117 @@ class _BalanceCard extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(22, 20, 22, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          GestureDetector(
+            onVerticalDragUpdate:
+                CurrencyStore.instance.enabledCodes.length > 1 ? (_) {} : null,
+            onVerticalDragEnd: CurrencyStore.instance.enabledCodes.length > 1
+                ? (details) {
+                    final velocity = details.primaryVelocity ?? 0;
+                    if (velocity < -180) {
+                      CurrencyStore.instance.selectNext();
+                    } else if (velocity > 180) {
+                      CurrencyStore.instance.selectPrevious();
+                    }
+                  }
+                : null,
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 280),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.12),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: Padding(
+                key: ValueKey(CurrencyStore.instance.activeCode),
+                padding: const EdgeInsets.fromLTRB(22, 20, 22, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'الرصيد الحالي',
-                      style: TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 13.5,
-                        color: textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: AlignmentDirectional.centerStart,
-                        child: Text(
-                          formatMoney(balance),
+                    Row(
+                      children: [
+                        Text(
+                          'الرصيد الحالي',
                           style: TextStyle(
                             fontFamily: 'Tajawal',
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            color: accent,
+                            fontSize: 13.5,
+                            color: textSecondary,
                           ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Text(
+                              formatMoney(balance),
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: accent,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          currencyLabel,
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 15,
+                            color: textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 0),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '${(ratio * 100).round()}%',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: textSecondary,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(height: 3),
+                    _HorizontalProgress(
+                      ratio: ratio,
+                      trackColor: accent.withValues(alpha: 0.12),
+                      fillColor: accent,
+                    ),
+                    const SizedBox(height: 8),
                     Text(
-                      currencyLabel,
+                      'مصروف ${formatMoney(spent)} $currencyLabel '
+                      'من ${formatMoney(maxBalance)} $currencyLabel',
                       style: TextStyle(
                         fontFamily: 'Tajawal',
-                        fontSize: 15,
+                        fontSize: 12.5,
                         color: textSecondary,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 0),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '${(ratio * 100).round()}%',
-                    style: TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: textSecondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 3),
-                _HorizontalProgress(
-                  ratio: ratio,
-                  trackColor: accent.withValues(alpha: 0.12),
-                  fillColor: accent,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'مصروف ${formatMoney(spent)} $currencyLabel '
-                  'من ${formatMoney(maxBalance)} $currencyLabel',
-                  style: TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontSize: 12.5,
-                    color: textSecondary,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           PositionedDirectional(

@@ -144,6 +144,14 @@ class NotificationSyncIn(BaseModel):
     updated_at: datetime | None = None
 
 
+class CategorySyncIn(BaseModel):
+    client_id: str = Field(min_length=1, max_length=64)
+    label: str = Field(min_length=1, max_length=100)
+    icon_index: int = 0
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
 class SettingsSyncIn(BaseModel):
     notifications_muted: bool | None = None
     notifications_enabled: bool | None = None
@@ -155,6 +163,13 @@ class SettingsSyncIn(BaseModel):
     monthly_income_amount: Decimal | None = None
     weekly_income_amount: Decimal | None = None
     processed_period_keys: list[str] | None = None
+    display_name: str | None = Field(default=None, max_length=100)
+    gender: str | None = Field(default=None, max_length=20)
+    birthdate: str | None = Field(default=None, max_length=40)
+    country: str | None = Field(default=None, max_length=80)
+    city: str | None = Field(default=None, max_length=80)
+    street: str | None = Field(default=None, max_length=160)
+    dark_mode: bool | None = None
     updated_at: datetime | None = None
 
     @field_validator("monthly_income_amount", "weekly_income_amount", mode="before")
@@ -177,6 +192,7 @@ class SyncRequest(BaseModel):
     shopping_items: SyncCollectionIn = Field(default_factory=SyncCollectionIn)
     recurring_expenses: SyncCollectionIn = Field(default_factory=SyncCollectionIn)
     notifications: SyncCollectionIn = Field(default_factory=SyncCollectionIn)
+    expense_categories: SyncCollectionIn = Field(default_factory=SyncCollectionIn)
     settings: SettingsSyncIn | None = None
 
 
@@ -191,6 +207,15 @@ class SettingsSyncOut(BaseModel):
     monthly_income_amount: Decimal | None
     weekly_income_amount: Decimal | None
     processed_period_keys: list[str]
+    display_name: str | None = None
+    gender: str | None = None
+    birthdate: str | None = None
+    country: str | None = None
+    city: str | None = None
+    street: str | None = None
+    dark_mode: bool | None = None
+    has_photo: bool = False
+    photo_updated_at: datetime | None = None
     updated_at: datetime
 
     @field_serializer("monthly_income_amount", "weekly_income_amount")
@@ -212,4 +237,5 @@ class SyncResponse(BaseModel):
     shopping_items: SyncCollectionOut
     recurring_expenses: SyncCollectionOut
     notifications: SyncCollectionOut
+    expense_categories: SyncCollectionOut
     settings: SettingsSyncOut

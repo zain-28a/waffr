@@ -6,8 +6,19 @@ import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffer/widgets/sheets/monthly_income_required_sheet.dart';
 
-Future<void> showPeriodicGoalsSheet(BuildContext context) {
+Future<void> showPeriodicGoalsSheet(BuildContext context) async {
+  await TransactionStore.instance.ensureLoaded();
+  if (!context.mounted) return;
+  if (!TransactionStore.instance.hasConfiguredMonthlyIncome) {
+    await showMonthlyIncomeRequiredSheet(
+      context,
+      requirement: MonthlyIncomeRequirement.plan,
+    );
+    return;
+  }
+
   final plan = TransactionStore.instance.activePeriodicGoal;
 
   return showGlassSheet<void>(
@@ -40,9 +51,9 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
   bool _preview = false;
   bool _saving = false;
 
-  RecurringFrequency get _frequency => _store.preferredIncomeFrequency;
+  RecurringFrequency get _frequency => RecurringFrequency.monthly;
 
-  double get _income => _store.referenceIncome(_frequency);
+  double get _income => _store.configuredMonthlyIncome ?? 0;
 
   double get _perPeriod => _income * _percent / 100;
 

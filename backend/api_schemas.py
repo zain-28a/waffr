@@ -466,3 +466,20 @@ class UserSettingsOut(ApiModel):
     @field_serializer("monthly_income_amount", "weekly_income_amount")
     def _money(self, value: Decimal | None) -> str | None:
         return money_str(value)
+
+
+class NewsArticleOut(ApiModel):
+    id: int
+    title: str
+    source: str
+    published_at: datetime
+    url: str
+    summary: str | None = None
+
+
+class NewsRefreshOut(BaseModel):
+    ok: bool
+    fetched: int = 0
+    matched: int = 0
+    saved: int = 0
+    error: str | None = None

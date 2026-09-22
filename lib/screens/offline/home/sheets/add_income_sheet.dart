@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
@@ -42,6 +43,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
   String _frequencyLabel = _freqNone;
   String _balanceAction = _keepBalance;
   bool _saving = false;
+  late String _currencyCode;
 
   static const double _maxAmount = 999999999;
 
@@ -58,6 +60,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
   @override
   void initState() {
     super.initState();
+    _currencyCode = CurrencyStore.instance.activeCode;
     _store.ensureLoaded().then((_) {
       if (mounted) setState(() {});
     });
@@ -82,6 +85,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
       source: source.isEmpty ? null : source,
       frequency: _frequency,
       moveBalanceToSavings: _balanceAction == _moveBalance,
+      currencyCode: _currencyCode,
     );
 
     if (!mounted) return;
@@ -140,7 +144,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final hasBalance = _store.balance > 0;
+    final hasBalance = _store.balanceFor(_currencyCode) > 0;
 
     return GlassSheetBody(
       children: [
@@ -153,7 +157,10 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
         SheetAmountField(
           label: 'مبلغ الدخل',
           controller: _amountController,
-          helper: 'الحد الأقصى ${formatMoney(_maxAmount)} $currencyLabel',
+          helper:
+              'الحد الأقصى ${formatMoney(_maxAmount)} ${currencyLabelFor(_currencyCode)}',
+          currencyCode: _currencyCode,
+          onCurrencyChanged: (code) => setState(() => _currencyCode = code),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 18),

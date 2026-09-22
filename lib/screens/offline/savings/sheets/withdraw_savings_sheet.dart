@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
@@ -21,14 +22,17 @@ class _WithdrawSavingsSheetState extends State<_WithdrawSavingsSheet> {
   final TextEditingController _amountController = TextEditingController();
   final TransactionStore _store = TransactionStore.instance;
   bool _saving = false;
+  late String _currencyCode;
 
   double get _amount => parseAmount(_amountController.text);
 
-  bool get _isValid => _amount > 0 && _amount <= _store.savingsBalance;
+  bool get _isValid =>
+      _amount > 0 && _amount <= _store.savingsBalanceFor(_currencyCode);
 
   @override
   void initState() {
     super.initState();
+    _currencyCode = CurrencyStore.instance.activeCode;
     _store.ensureLoaded().then((_) {
       if (mounted) setState(() {});
     });
@@ -44,7 +48,10 @@ class _WithdrawSavingsSheetState extends State<_WithdrawSavingsSheet> {
     if (!_isValid || _saving) return;
     setState(() => _saving = true);
 
-    final ok = await _store.withdrawFromSavings(_amount);
+    final ok = await _store.withdrawFromSavings(
+      _amount,
+      currencyCode: _currencyCode,
+    );
     if (!mounted) return;
     if (ok) Navigator.of(context).maybePop();
     setState(() => _saving = false);
@@ -64,7 +71,9 @@ class _WithdrawSavingsSheetState extends State<_WithdrawSavingsSheet> {
           label: 'المبلغ',
           controller: _amountController,
           helper:
-              'المدّخر ${formatMoney(_store.savingsBalance)} $currencyLabel',
+              'المدّخر ${formatMoney(_store.savingsBalanceFor(_currencyCode))} ${currencyLabelFor(_currencyCode)}',
+          currencyCode: _currencyCode,
+          onCurrencyChanged: (code) => setState(() => _currencyCode = code),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 22),

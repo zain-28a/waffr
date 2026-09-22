@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 2.4.0+5
+version: 2.5.0+6
 
 environment:
   sdk: ^3.13.2
@@ -39,8 +39,12 @@ dependencies:
   shared_preferences: ^2.2.3
   local_auth: ^3.0.2
   google_sign_in: ^7.2.0
+  flutter_secure_storage: ^9.2.4
   http: ^1.6.0
+  connectivity_plus: ^6.1.4
   url_launcher: ^6.3.2
+  image_picker: ^1.1.2
+  path_provider: ^2.1.5
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -63,6 +67,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  assets:
+    - assets/brand/waffer_logo.png
+
   fonts:
     - family: Tajawal
       fonts:
@@ -80,9 +87,9 @@ flutter:
           weight: 800
         - asset: fonts/Tajawal-Black.ttf
           weight: 900
-    - family: Merriweather
+    - family: bebas neue
       fonts:
-        - asset: fonts/Merriweather-Italic-Variable.ttf
+        - asset: fonts/bebas neue-Italic-Variable.ttf
           style: italic
 
   # An image asset can refer to one or more resolution-specific "variants", see

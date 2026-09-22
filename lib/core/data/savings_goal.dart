@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/transaction.dart';
 
 /// مدة الهدف كما يختارها المستخدم في النافذة.
@@ -54,6 +55,7 @@ class SavingsGoal {
   final String id;
   final String name;
   final double targetAmount;
+  final String currencyCode;
   final DateTime createdAt;
   final DateTime? completedAt;
   final double? completedAmount;
@@ -70,6 +72,7 @@ class SavingsGoal {
     required this.id,
     required this.name,
     required this.targetAmount,
+    this.currencyCode = defaultCurrencyCode,
     required this.createdAt,
     required this.duration,
     this.completedAt,
@@ -108,6 +111,7 @@ class SavingsGoal {
       id: id,
       name: name,
       targetAmount: targetAmount,
+      currencyCode: currencyCode,
       createdAt: createdAt,
       duration: duration,
       completedAt: completedAt ?? this.completedAt,
@@ -127,6 +131,7 @@ class SavingsGoal {
     'id': id,
     'name': name,
     'targetAmount': targetAmount,
+    'currencyCode': currencyCode,
     'createdAt': createdAt.toIso8601String(),
     'completedAt': completedAt?.toIso8601String(),
     'completedAmount': completedAmount,
@@ -157,12 +162,17 @@ class SavingsGoal {
         id: decoded['id']?.toString() ?? newId(),
         name: name,
         targetAmount: target,
+        currencyCode: Currencies.normalize(
+          decoded['currencyCode']?.toString() ??
+              decoded['currency_code']?.toString(),
+        ),
         createdAt:
-            DateTime.tryParse(decoded['createdAt']?.toString() ?? '') ??
-            DateTime.now(),
+            (DateTime.tryParse(decoded['createdAt']?.toString() ?? '') ??
+                    DateTime.now())
+                .toLocal(),
         completedAt: DateTime.tryParse(
           decoded['completedAt']?.toString() ?? '',
-        ),
+        )?.toLocal(),
         completedAmount: (decoded['completedAmount'] as num?)?.toDouble(),
         duration: _parseDuration(decoded['duration']?.toString()),
         allocatePercent: (decoded['allocatePercent'] as num?)?.toDouble(),
