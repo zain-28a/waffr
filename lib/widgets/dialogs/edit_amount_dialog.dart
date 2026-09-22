@@ -3,16 +3,25 @@ import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
 /// حوار تعديل مبلغ، بنفس التحقق المستخدم للدخل الشهري.
+/// يُرجعه الحوار عندما يزيل المستخدم المبلغ المضبوط بالكامل.
+class AmountDialogCleared {
+  const AmountDialogCleared();
+}
+
+const amountDialogCleared = AmountDialogCleared();
+
 class EditAmountDialog extends StatefulWidget {
   final String title;
   final double initialAmount;
   final Color accent;
+  final bool allowClear;
 
   const EditAmountDialog({
     super.key,
     required this.title,
     required this.initialAmount,
     required this.accent,
+    this.allowClear = false,
   });
 
   @override
@@ -78,6 +87,11 @@ class _EditAmountDialogState extends State<EditAmountDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('إلغاء'),
         ),
+        if (widget.allowClear)
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(amountDialogCleared),
+            child: Text('إزالة الدخل', style: TextStyle(color: widget.accent)),
+          ),
         TextButton(
           onPressed: _submit,
           child: Text('حفظ', style: TextStyle(color: widget.accent)),

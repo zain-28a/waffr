@@ -4,6 +4,7 @@ import 'package:waffer/core/data/app_notification.dart';
 import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/recurring_expense.dart';
 import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_mapper.dart';
 import 'package:waffer/core/sync/sync_merge.dart';
@@ -43,8 +44,10 @@ class RecurringExpenseStore extends ChangeNotifier {
     if (amount <= 0 || intervalCount <= 0) return;
 
     await ensureLoaded();
+    await TransactionStore.instance.ensureLoaded();
+    if (!TransactionStore.instance.hasConfiguredMonthlyIncome) return;
 
-    final now = DateTime.now();
+    final now = deviceNow();
 
     _items.insert(
       0,
@@ -115,12 +118,14 @@ class RecurringExpenseStore extends ChangeNotifier {
     _processing = true;
 
     try {
-      final now = DateTime.now();
+      final now = deviceNow();
       var changed = false;
+      final incomeReady = TransactionStore.instance.hasConfiguredMonthlyIncome;
 
       for (var i = 0; i < _items.length; i++) {
         var item = _items[i];
         if (!item.enabled) continue;
+        if (!incomeReady) continue;
 
         var catchUps = 0;
 
@@ -151,6 +156,7 @@ class RecurringExpenseStore extends ChangeNotifier {
             paymentMethod: item.paymentMethod,
             note: item.note ?? item.intervalDescription,
             sourceId: sourceId,
+            occurredAt: item.nextDueAt.toLocal(),
           );
 
           if (added == null) {

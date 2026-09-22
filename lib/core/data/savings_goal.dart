@@ -158,11 +158,12 @@ class SavingsGoal {
         name: name,
         targetAmount: target,
         createdAt:
-            DateTime.tryParse(decoded['createdAt']?.toString() ?? '') ??
-            DateTime.now(),
+            (DateTime.tryParse(decoded['createdAt']?.toString() ?? '') ??
+                    DateTime.now())
+                .toLocal(),
         completedAt: DateTime.tryParse(
           decoded['completedAt']?.toString() ?? '',
-        ),
+        )?.toLocal(),
         completedAmount: (decoded['completedAmount'] as num?)?.toDouble(),
         duration: _parseDuration(decoded['duration']?.toString()),
         allocatePercent: (decoded['allocatePercent'] as num?)?.toDouble(),

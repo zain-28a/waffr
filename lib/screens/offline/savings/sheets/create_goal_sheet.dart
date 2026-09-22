@@ -6,6 +6,7 @@ import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffer/widgets/sheets/monthly_income_required_sheet.dart';
 
 Future<void> showCreateGoalSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -42,7 +43,12 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
   RecurringFrequency get _frequency => _store.preferredIncomeFrequency;
 
-  double get _income => _store.referenceIncome(_frequency);
+  double get _income {
+    if (_frequency == RecurringFrequency.monthly) {
+      return _store.configuredMonthlyIncome ?? 0;
+    }
+    return _store.referenceIncome(_frequency);
+  }
 
   bool get _isCustom => _type == _ContributionType.custom;
 
@@ -102,7 +108,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
     }
 
     if (_type == _ContributionType.fixed) {
-      return _fixedAmount > 0;
+      return _fixedAmount > 0 && _fixedAmount <= _maxAmount;
     }
 
     return _percent > 0;
@@ -120,7 +126,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
   void initState() {
     super.initState();
 
-    _type = _store.hasRecurringIncome
+    _type = _income > 0
         ? _ContributionType.percent
         : _ContributionType.custom;
 
@@ -128,7 +134,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
       if (!mounted) return;
 
       setState(() {
-        if (!_store.hasRecurringIncome) {
+        if (_income <= 0) {
           _type = _ContributionType.custom;
         }
       });
@@ -148,6 +154,14 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
   void _switchMethod(_ContributionType type) {
     if (_type == type) {
+      return;
+    }
+
+    if (type != _ContributionType.custom && _income <= 0) {
+      showMonthlyIncomeRequiredSheet(
+        context,
+        requirement: MonthlyIncomeRequirement.plan,
+      );
       return;
     }
 
@@ -345,25 +359,32 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                 ),
               ] else if (_type == _ContributionType.fixed) ...[
                 const SheetFieldLabel(text: 'مبلغ الادخار لكل شهر'),
-                
                 Stack(
                   children: [
                     SheetTextField(
-                      controller: _percentController,
-                      hint: 'مثال: 100',
+                      controller: _fixedAmountController,
+                      hint: 'مثال: 100000',
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(3),
-                      ],
-                    ),Row(mainAxisAlignment: MainAxisAlignment.end,
+                      inputFormatters: [ThousandsInputFormatter()],
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(left: 25,top: 18),
-                          child: Text("ل.س",style: TextStyle(fontFamily: 'Tajawal',fontSize: 15,fontWeight: FontWeight.w700,color: colors.textPrimary),),
+                          padding: const EdgeInsets.only(left: 25, top: 18),
+                          child: Text(
+                            'ل.س',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: colors.textPrimary,
+                            ),
+                          ),
                         ),
                       ],
-                    )
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),

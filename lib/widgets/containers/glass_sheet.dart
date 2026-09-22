@@ -318,12 +318,16 @@ class SheetAmountField extends StatelessWidget {
   final String? helper;
   final ValueChanged<String>? onChanged;
 
+  /// يحل محل الفراغ المقابل لـ «ل.س» على الجهة اليمنى.
+  final Widget? leading;
+
   const SheetAmountField({
     super.key,
     required this.label,
     required this.controller,
     this.helper,
     this.onChanged,
+    this.leading,
   });
 
   @override
@@ -355,7 +359,10 @@ class SheetAmountField extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(width: 46),
+              SizedBox(
+                width: 46,
+                child: leading,
+              ),
               Expanded(
                 child: TextField(
                   controller: controller,

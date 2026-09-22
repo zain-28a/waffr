@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:waffer/core/data/app_notification.dart';
+import 'package:waffer/core/data/category_store.dart';
 import 'package:waffer/core/data/recurring_expense.dart';
 import 'package:waffer/core/data/savings_goal.dart';
 import 'package:waffer/core/data/transaction.dart';
@@ -115,6 +116,15 @@ Map<String, dynamic> notificationToSync(AppNotification item) {
   };
 }
 
+Map<String, dynamic> categoryToSync(CustomCategoryEntry item) {
+  return {
+    'client_id': item.id,
+    'label': item.label,
+    'icon_index': item.iconIndex,
+    'updated_at': toSyncIso(item.syncUpdatedAt),
+  };
+}
+
 WafferTransaction? transactionFromSync(Map<String, dynamic> raw) {
   final amount = parseMoney(raw['amount']);
   if (amount == null || amount <= 0) return null;
@@ -125,6 +135,8 @@ WafferTransaction? transactionFromSync(Map<String, dynamic> raw) {
   final type = typeRaw == 'income'
       ? TransactionType.income
       : TransactionType.expense;
+  final occurred = parseEventLocal(raw['occurred_at'] ?? raw['dateTime']);
+  if (occurred == null) return null;
 
   return WafferTransaction(
     id: id,
@@ -134,7 +146,7 @@ WafferTransaction? transactionFromSync(Map<String, dynamic> raw) {
     paymentMethod: _text(raw['payment_method'] ?? raw['paymentMethod']),
     note: _text(raw['note']),
     sourceId: _text(raw['source_id'] ?? raw['sourceId']),
-    dateTime: parseSyncDateOrNow(raw['occurred_at'] ?? raw['dateTime']),
+    dateTime: occurred,
     frequency: WafferTransaction.frequencyFrom(
       raw['frequency']?.toString(),
     ),
@@ -153,13 +165,15 @@ WafferTransaction? transferFromSync(Map<String, dynamic> raw) {
   final kind = WafferTransaction.transferKindFrom(raw['kind']?.toString());
   final outgoing = direction == 'to_balance' ||
       kind == SavingsTransferKind.withdraw;
+  final occurred = parseEventLocal(raw['occurred_at'] ?? raw['dateTime']);
+  if (occurred == null) return null;
 
   return WafferTransaction(
     id: id,
     type: outgoing ? TransactionType.savingsOut : TransactionType.savingsIn,
     amount: amount,
     note: _text(raw['note']),
-    dateTime: parseSyncDateOrNow(raw['occurred_at'] ?? raw['dateTime']),
+    dateTime: occurred,
     transferKind: kind ??
         (outgoing
             ? SavingsTransferKind.withdraw
@@ -230,6 +244,10 @@ AppNotification? notificationFromSync(Map<String, dynamic> raw) {
       'updatedAt': raw['updated_at'] ?? raw['updatedAt'],
     }),
   );
+}
+
+CustomCategoryEntry? categoryFromSync(Map<String, dynamic> raw) {
+  return CustomCategoryEntry.fromSync(raw);
 }
 
 List<Map<String, dynamic>> asMapList(Object? raw) {

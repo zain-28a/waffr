@@ -7,6 +7,7 @@ import 'package:waffer/core/data/app_notification.dart';
 import 'package:waffer/core/data/calendar_period.dart';
 import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_mapper.dart';
 import 'package:waffer/core/sync/sync_merge.dart';
@@ -527,7 +528,7 @@ class NotificationService extends ChangeNotifier {
         type: type,
         title: title,
         message: message,
-        createdAt: createdAt ?? DateTime.now(),
+        createdAt: (createdAt ?? deviceNow()).toLocal(),
         eventKey: eventKey,
         relatedId: relatedId,
         metadata: metadata,

@@ -1,36 +1,71 @@
 import 'dart:convert';
-import 'dart:math';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/backup_service.dart';
+import 'package:waffer/core/data/registration_profile.dart';
 import 'package:waffer/core/sync/api_config.dart';
+import 'package:waffer/core/sync/auth_errors.dart';
+import 'package:waffer/core/sync/profile_sync.dart';
 
-/// Device JWT plus a Drive-backupable password so the same email can log in
-/// again after reinstall. Ownership always comes from the token, never Flutter.
+export 'package:waffer/core/sync/auth_errors.dart';
+
+class AuthResult {
+  final bool ok;
+  final String message;
+
+  const AuthResult.success()
+      : ok = true,
+        message = '';
+
+  const AuthResult.failure(this.message) : ok = false;
+}
+
+/// JWT session for the FastAPI `/auth` endpoints.
+///
+/// Ownership on the server always comes from the token. Guest mode has no
+/// token and never registers a hidden password.
 class AuthSession {
   AuthSession._();
 
   static final AuthSession instance = AuthSession._();
 
   static const String tokenKey = 'waffer_sync_token';
-  static const String passwordKey = 'waffer_sync_password';
   static const String lastSyncKey = 'waffer_last_sync_at';
+  static const String accountEmailKey = 'waffer_account_email';
+  static const String dataOwnerKey = 'waffer_data_owner_email';
+  static const String legacyPasswordKey = 'waffer_sync_password';
 
   static const Duration _timeout = Duration(seconds: 15);
 
+  static const FlutterSecureStorage _secure = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+
+  Future<bool> isLoggedIn() async {
+    final value = await token();
+    return value != null && value.isNotEmpty;
+  }
+
+  /// Signed-in API email, or `null` in guest mode.
   Future<String?> email() async {
     final prefs = await SharedPreferences.getInstance();
-    final google = prefs.getString(BackupService.linkedEmailKey)?.trim() ?? '';
-    if (google.contains('@')) return google.toLowerCase();
-    final local = prefs.getString('user_email')?.trim() ?? '';
-    if (local.contains('@')) return local.toLowerCase();
+    final stored = prefs.getString(accountEmailKey)?.trim() ?? '';
+    if (stored.contains('@')) return stored.toLowerCase();
+    return null;
+  }
+
+  Future<String?> dataOwnerEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString(dataOwnerKey)?.trim() ?? '';
+    if (stored.contains('@')) return stored.toLowerCase();
     return null;
   }
 
   Future<String?> token() async {
-    final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getString(tokenKey)?.trim() ?? '';
+    await _migrateLegacyToken();
+    final value = (await _secure.read(key: tokenKey))?.trim() ?? '';
     return value.isEmpty ? null : value;
   }
 
@@ -45,115 +80,215 @@ class AuthSession {
   }
 
   Future<void> clearToken() async {
+    await _secure.delete(key: tokenKey);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(tokenKey);
   }
 
+  /// Clears the API session. Local financial data and the data-owner stamp stay.
   Future<void> clearSession() async {
+    await clearToken();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(tokenKey);
     await prefs.remove(lastSyncKey);
+    await prefs.remove(accountEmailKey);
+    await prefs.remove(legacyPasswordKey);
   }
 
-  /// Returns a JWT or `null` when the user has no email / is offline.
-  Future<String?> ensureToken() async {
-    final address = await email();
-    if (address == null) return null;
-
-    final existing = await token();
-    if (existing != null) {
-      if (await _tokenWorks(existing)) return existing;
-      await clearToken();
-    }
-
-    return _loginOrRegister(address);
-  }
-
-  Future<String?> _loginOrRegister(String address) async {
+  Future<void> clearDataOwner() async {
     final prefs = await SharedPreferences.getInstance();
-    var password = prefs.getString(passwordKey)?.trim() ?? '';
-    if (password.isEmpty) {
-      password = _generatePassword();
-      await prefs.setString(passwordKey, password);
+    await prefs.remove(dataOwnerKey);
+  }
+
+  /// Returns the stored JWT, or `null` when the user is a guest / token is dead.
+  /// Never auto-registers.
+  Future<String?> ensureToken() async {
+    final existing = await token();
+    if (existing == null) return null;
+    final me = await _fetchMe(existing);
+    if (me == null) {
+      await clearToken();
+      return null;
     }
-
-    final name = prefs.getString('user_name')?.trim();
-    final base = await ApiConfig.baseUrl();
-
-    var token = await _postAuth(
-      Uri.parse('$base/auth/login'),
-      {'email': address, 'password': password},
-    );
-    if (token != null) {
-      await _storeToken(token);
-      return token;
+    final address = me['email']?.toString().trim() ?? '';
+    if (address.contains('@')) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(accountEmailKey, address.toLowerCase());
     }
+    return existing;
+  }
 
-    token = await _postAuth(
-      Uri.parse('$base/auth/register'),
-      {
-        'email': address,
+  Future<AuthResult> login({
+    required String email,
+    required String password,
+  }) {
+    return _authenticate(
+      path: '/auth/login',
+      body: {
+        'email': email.trim().toLowerCase(),
         'password': password,
-        if (name != null && name.isNotEmpty) 'name': name,
       },
     );
-    if (token != null) {
-      await _storeToken(token);
-      return token;
+  }
+
+  Future<AuthResult> register({
+    required String email,
+    required String password,
+    required RegistrationProfile profile,
+  }) {
+    return _authenticate(
+      path: '/auth/register',
+      body: {
+        'email': email.trim().toLowerCase(),
+        'password': password,
+        ...profile.toAuthBody(),
+      },
+    );
+  }
+
+  Future<AuthResult> _authenticate({
+    required String path,
+    required Map<String, dynamic> body,
+  }) async {
+    final address = body['email']?.toString() ?? '';
+    final password = body['password']?.toString() ?? '';
+    if (!_looksLikeEmail(address) || password.isEmpty) {
+      return const AuthResult.failure('أدخل البريد وكلمة المرور');
     }
 
-    token = await _postAuth(
-      Uri.parse('$base/auth/login'),
-      {'email': address, 'password': password},
-    );
-    if (token != null) {
-      await _storeToken(token);
+    try {
+      final base = await ApiConfig.baseUrl();
+      final response = await http
+          .post(
+            Uri.parse('$base$path'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(_timeout);
+
+      Object? decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } catch (_) {
+        decoded = null;
+      }
+
+      if (response.statusCode != 200) {
+        return AuthResult.failure(describeAuthError(response.statusCode, decoded));
+      }
+
+      if (decoded is! Map) {
+        return const AuthResult.failure('تعذر قراءة رد الخادم');
+      }
+      final access = decoded['access_token']?.toString() ?? '';
+      if (access.isEmpty) {
+        return const AuthResult.failure('تعذر قراءة رد الخادم');
+      }
+
+      final me = await _fetchMe(access);
+      final resolvedEmail = (me?['email']?.toString() ?? address).toLowerCase();
+
+      await _bindAccount(
+        email: resolvedEmail,
+        token: access,
+        profile: _mergedProfile(me, body),
+      );
+      return const AuthResult.success();
+    } catch (_) {
+      return const AuthResult.failure(
+        'لا يوجد اتصال. تحقق من الشبكة وحاول مرة أخرى',
+      );
     }
-    return token;
+  }
+
+  Future<void> _bindAccount({
+    required String email,
+    required String token,
+    required Map<String, dynamic> profile,
+  }) async {
+    final owner = await dataOwnerEmail();
+    final adopting = owner != email;
+    if (owner != null && adopting) {
+      await BackupService.instance.replaceLocalDataForAccountSwitch();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(lastSyncKey);
+    }
+
+    await _storeToken(token);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(accountEmailKey, email);
+    await prefs.setString(dataOwnerKey, email);
+    await prefs.setBool(BackupService.authChoiceKey, true);
+    await prefs.setString('user_email', email);
+    await prefs.remove(legacyPasswordKey);
+    await prefs.remove(tokenKey);
+
+    if (adopting) {
+      await ProfileSync.adoptAccount(profile);
+    } else {
+      await ProfileSync.fillMissing(profile);
+    }
+  }
+
+  Map<String, dynamic> _mergedProfile(
+    Map<String, dynamic>? me,
+    Map<String, dynamic> body,
+  ) {
+    const fields = [
+      'name',
+      'gender',
+      'birthdate',
+      'country',
+      'city',
+      'street',
+    ];
+    final profile = <String, dynamic>{};
+    for (final field in fields) {
+      if (me != null && me.containsKey(field)) {
+        profile[field] = me[field];
+      } else if (body.containsKey(field)) {
+        profile[field] = body[field];
+      }
+    }
+    return profile;
   }
 
   Future<void> _storeToken(String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(tokenKey, value);
+    await _secure.write(key: tokenKey, value: value);
   }
 
-  Future<bool> _tokenWorks(String value) async {
+  Future<void> _migrateLegacyToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final legacy = prefs.getString(tokenKey)?.trim() ?? '';
+    if (legacy.isEmpty) return;
+    final current = (await _secure.read(key: tokenKey))?.trim() ?? '';
+    if (current.isEmpty) {
+      await _secure.write(key: tokenKey, value: legacy);
+    }
+    await prefs.remove(tokenKey);
+    await prefs.remove(legacyPasswordKey);
+  }
+
+  Future<Map<String, dynamic>?> _fetchMe(String token) async {
     try {
       final base = await ApiConfig.baseUrl();
       final response = await http
           .get(
             Uri.parse('$base/auth/me'),
-            headers: {'Authorization': 'Bearer $value'},
-          )
-          .timeout(_timeout);
-      return response.statusCode == 200;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<String?> _postAuth(Uri uri, Map<String, String> body) async {
-    try {
-      final response = await http
-          .post(
-            uri,
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode(body),
+            headers: {'Authorization': 'Bearer $token'},
           )
           .timeout(_timeout);
       if (response.statusCode != 200) return null;
       final decoded = jsonDecode(response.body);
       if (decoded is! Map) return null;
-      final token = decoded['access_token']?.toString();
-      return (token == null || token.isEmpty) ? null : token;
+      return Map<String, dynamic>.from(decoded);
     } catch (_) {
       return null;
     }
   }
 
-  static String _generatePassword() {
-    final random = Random.secure();
-    final bytes = List<int>.generate(24, (_) => random.nextInt(256));
-    return base64UrlEncode(bytes);
+  static bool _looksLikeEmail(String value) {
+    final trimmed = value.trim();
+    return trimmed.contains('@') && trimmed.contains('.');
   }
 }

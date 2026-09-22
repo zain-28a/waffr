@@ -7,13 +7,15 @@ import 'package:waffer/core/data/category_store.dart';
 import 'package:waffer/core/data/drive_backup_client.dart';
 import 'package:waffer/core/data/google_auth_service.dart';
 import 'package:waffer/core/data/notification_service.dart';
+import 'package:waffer/core/data/profile_photo.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/data/shopping_list_store.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/sync/api_config.dart';
 import 'package:waffer/core/sync/auth_session.dart';
+import 'package:waffer/core/sync/sync_dirty.dart';
 
-/// نتيجة محاولة ربط حساب Google من شاشة الدخول.
+/// نتيجة محاولة ربط Google Drive للنسخة الاحتياطية فقط.
 enum GoogleLinkResult {
   /// وُجدت نسخة احتياطية وتمت استعادتها.
   restored,
@@ -100,8 +102,11 @@ class BackupService {
 
   static final BackupService instance = BackupService._();
 
+  /// Off while FastAPI sync is the cloud path. Flip to re-enable Drive.
+  static const bool driveBackupEnabled = false;
+
   /// مفتاح يدل على أن المستخدم تجاوز شاشة الدخول
-  /// (سواء بحساب Google أو كضيف).
+  /// (سواء بحساب أو كضيف).
   static const String authChoiceKey = 'auth_choice_made';
 
   /// هل الحساب مرتبط بـ Google.
@@ -131,7 +136,13 @@ class BackupService {
     restorePendingKey,
     AuthSession.tokenKey,
     AuthSession.lastSyncKey,
+    AuthSession.accountEmailKey,
+    AuthSession.dataOwnerKey,
+    AuthSession.legacyPasswordKey,
     ApiConfig.overrideKey,
+    ProfilePhoto.prefsKey,
+    ProfilePhoto.updatedAtKey,
+    ProfilePhoto.pendingKey,
   };
 
   static const int _schemaVersion = 1;
@@ -162,6 +173,8 @@ class BackupService {
   /// يستعيد جلسة Google السابقة إن وُجدت، ثم يرفع أي تغييرات
   /// حدثت أثناء عدم توفر الإنترنت.
   Future<void> initialize() async {
+    if (!driveBackupEnabled) return;
+
     _attachListeners();
 
     final prefs = await SharedPreferences.getInstance();
@@ -188,7 +201,7 @@ class BackupService {
   /// يطلب رفع نسخة محدّثة. الاستدعاء رخيص وغير حاجب،
   /// ويُجمَّع عدة مرات متتالية في رفعة واحدة.
   void scheduleBackup() {
-    if (_restoring) {
+    if (!driveBackupEnabled || _restoring) {
       return;
     }
 
@@ -201,6 +214,8 @@ class BackupService {
 
   /// يرفع النسخة الحالية فوراً. يرجع `true` عند نجاح الرفع.
   Future<bool> flushBackup() async {
+    if (!driveBackupEnabled) return false;
+
     _debounceTimer?.cancel();
 
     for (var i = 0; i < 25 && _uploading; i++) {
@@ -214,8 +229,12 @@ class BackupService {
   // تسجيل الدخول والخروج
   // ==========================================
 
-  /// يسجّل الدخول بحساب Google ويستعيد النسخة الاحتياطية إن وُجدت.
+  /// يربط Google Drive ويستعيد النسخة الاحتياطية إن وُجدت.
+  ///
+  /// هذا ليس تسجيل دخول إلى حساب وفّر.
   Future<GoogleLinkResult> signInAndRestore() async {
+    if (!driveBackupEnabled) return GoogleLinkResult.failed;
+
     final auth = GoogleAuthService.instance;
 
     final account = await auth.signIn();
@@ -265,6 +284,8 @@ class BackupService {
   /// لا يستعيد أي نسخة سابقة لأن الجهاز يحتوي بيانات عاملة،
   /// بل يرفع الحالة الحالية لتصبح هي النسخة المعتمدة.
   Future<bool> linkAccount() async {
+    if (!driveBackupEnabled) return false;
+
     final account = await GoogleAuthService.instance.signIn();
 
     if (account == null) {
@@ -285,6 +306,8 @@ class BackupService {
 
   /// إضافة حساب Google آخر ثم استعادة بياناته من Drive.
   Future<GoogleLinkResult> addOrSwitchAccount() async {
+    if (!driveBackupEnabled) return GoogleLinkResult.failed;
+
     final linked = await isLinked();
 
     if (linked) {
@@ -352,17 +375,34 @@ class BackupService {
     return restored ? GoogleLinkResult.restored : GoogleLinkResult.noBackup;
   }
 
-  /// متابعة بدون حساب. كل شيء يبقى محلياً كما هو.
-  Future<void> continueAsGuest() async {
+  /// يمسح البيانات المحلية القابلة للمزامنة قبل حساب آخر، دون المساس بجلسة Drive.
+  /// يبقى اختيار المظهر الأول حتى لا تُعاد شاشة المظهر بعد اكتمال الإعداد.
+  Future<void> replaceLocalDataForAccountSwitch() async {
     final prefs = await SharedPreferences.getInstance();
+    final firstLaunch = prefs.getBool('first_launch');
+    final hasDarkMode = prefs.containsKey('dark_mode');
+    final darkMode = prefs.getBool('dark_mode');
 
+    await ProfilePhoto.clear();
+    await _clearRestorableData();
+
+    if (firstLaunch != null) {
+      await prefs.setBool('first_launch', firstLaunch);
+    }
+    if (hasDarkMode && darkMode != null) {
+      await prefs.setBool('dark_mode', darkMode);
+    }
+  }
+
+  /// متابعة بدون حساب. كل شيء يبقى محلياً ولا يُزامَن.
+  Future<void> continueAsGuest() async {
+    await AuthSession.instance.clearSession();
+
+    final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(authChoiceKey, true);
   }
 
-  /// خروج من حساب Google فقط.
-  ///
-  /// لا يحذف البيانات المحلية ولا النسخة الموجودة في Drive،
-  /// بل يعيد الجهاز إلى وضع الضيف.
+  /// فصل Google Drive فقط. لا يمس جلسة JWT لحساب وفّر.
   Future<void> signOut() async {
     _debounceTimer?.cancel();
     _cachedFileId = null;
@@ -384,24 +424,26 @@ class BackupService {
     final auth = GoogleAuthService.instance;
     final email = auth.email ?? (await linkedEmail());
 
-    final headers = await auth.authHeaders(promptIfNecessary: true);
+    if (driveBackupEnabled) {
+      final headers = await auth.authHeaders(promptIfNecessary: true);
 
-    if (headers != null) {
-      var fileId = _cachedFileId;
+      if (headers != null) {
+        var fileId = _cachedFileId;
 
-      if (fileId == null) {
-        final lookup = await DriveBackupClient.lookupBackup(headers);
-        fileId = lookup.fileId;
+        if (fileId == null) {
+          final lookup = await DriveBackupClient.lookupBackup(headers);
+          fileId = lookup.fileId;
+        }
+
+        if (fileId != null) {
+          await DriveBackupClient.deleteBackup(headers, fileId);
+        }
       }
 
-      if (fileId != null) {
-        await DriveBackupClient.deleteBackup(headers, fileId);
-      }
+      await auth.disconnect();
     }
 
     _cachedFileId = null;
-
-    await auth.disconnect();
 
     final prefs = await SharedPreferences.getInstance();
 
@@ -415,11 +457,14 @@ class BackupService {
     await prefs.remove(restorePendingKey);
     await prefs.setBool(authChoiceKey, true);
 
+    await AuthSession.instance.clearSession();
+    await AuthSession.instance.clearDataOwner();
+    await ProfilePhoto.clear();
     await _clearRestorableData();
     _notifyRestored();
   }
 
-  /// الاسم المعروض يمكن تعديله محلياً فقط.
+  /// Updates the display name locally and marks settings dirty for sync.
   Future<void> updateDisplayName(String name) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
@@ -438,6 +483,7 @@ class BackupService {
     }
 
     scheduleBackup();
+    await SyncDirty.mark(settings: true);
   }
 
   Future<List<LinkedGoogleAccount>> linkedAccounts() async {
@@ -472,6 +518,8 @@ class BackupService {
   // ==========================================
 
   Future<bool> _uploadNow() async {
+    if (!driveBackupEnabled) return false;
+
     if (_uploading) {
       _pending = true;
       return false;

@@ -65,6 +65,25 @@ class WafferTransaction {
 
   DateTime get syncUpdatedAt => (updatedAt ?? dateTime).toUtc();
 
+  WafferTransaction copyWith({DateTime? dateTime}) {
+    return WafferTransaction(
+      id: id,
+      type: type,
+      amount: amount,
+      dateTime: dateTime ?? this.dateTime,
+      category: category,
+      paymentMethod: paymentMethod,
+      note: note,
+      sourceId: sourceId,
+      frequency: frequency,
+      periodKey: periodKey,
+      transferKind: transferKind,
+      goalId: goalId,
+      processedPeriodKey: processedPeriodKey,
+      updatedAt: updatedAt,
+    );
+  }
+
   bool get isIncome => type == TransactionType.income;
 
   bool get isExpense => type == TransactionType.expense;
@@ -109,8 +128,9 @@ class WafferTransaction {
         note: _text(decoded['note']),
         sourceId: _text(decoded['sourceId']),
         dateTime:
-            DateTime.tryParse(_text(decoded['dateTime']) ?? '') ??
-            DateTime.now(),
+            (DateTime.tryParse(_text(decoded['dateTime']) ?? '') ??
+                    DateTime.now())
+                .toLocal(),
         frequency: _parseFrequency(_text(decoded['frequency'])),
         periodKey: _text(decoded['periodKey']),
         transferKind: _parseTransferKind(_text(decoded['transferKind'])),

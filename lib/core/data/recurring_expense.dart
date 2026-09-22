@@ -107,11 +107,13 @@ class RecurringExpense {
       if (id.isEmpty || category.isEmpty) return null;
 
       final createdAt =
-          DateTime.tryParse(decoded['createdAt']?.toString() ?? '') ??
-          DateTime.now();
+          (DateTime.tryParse(decoded['createdAt']?.toString() ?? '') ??
+                  DateTime.now())
+              .toLocal();
       final nextDueAt =
-          DateTime.tryParse(decoded['nextDueAt']?.toString() ?? '') ??
-          createdAt;
+          (DateTime.tryParse(decoded['nextDueAt']?.toString() ?? '') ??
+                  createdAt)
+              .toLocal();
 
       return RecurringExpense(
         id: id,

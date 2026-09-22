@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:waffer/core/data/category_store.dart';
 import 'package:waffer/core/data/notification_service.dart';
@@ -35,6 +37,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   /// Tap target while the page animation is in flight; selection waits for it.
   int? _animatingToPage;
 
+  Timer? _dueTimer;
+
   static const int _tabCount = 5;
 
   static const List<Widget> _tabPages = [
@@ -50,6 +54,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _syncFinancialEvents();
+    _dueTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      _syncFinancialEvents();
+    });
   }
 
   @override
@@ -105,6 +112,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _dueTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     _tabIndex.dispose();

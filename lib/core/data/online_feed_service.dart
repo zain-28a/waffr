@@ -1,11 +1,18 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
 import 'package:waffer/core/data/exchange_rate.dart';
 import 'package:waffer/core/data/news_article.dart';
+import 'package:waffer/core/sync/api_config.dart';
 
-/// بيانات تجريبية للواجهة فقط. لا تُحمَّل أسعار أو أخبار حقيقية.
+/// أسعار الصرف ما زالت بيانات واجهة فقط.
+/// الأخبار تُجلب من الخادم عبر `GET /online/news`.
 class OnlineFeedService {
   OnlineFeedService._();
 
   static final OnlineFeedService instance = OnlineFeedService._();
+
+  static const Duration _timeout = Duration(seconds: 25);
 
   static const List<ExchangeRate> rates = [
     ExchangeRate(
@@ -42,51 +49,30 @@ class OnlineFeedService {
     return rates.firstWhere((rate) => rate.asset == asset);
   }
 
-  List<NewsArticle> get articles {
-    final now = DateTime.now();
-    return [
-      NewsArticle(
-        title: 'ارتفاع طفيف في أسعار المواد الغذائية مع بداية الأسبوع',
-        body:
-            'سجّلت أسواق الخضار والحبوب ارتفاعاً محدوداً مع عودة الحركة التجارية بعد العطلة. التجار عزوا التغير إلى تكاليف النقل، فيما بقيت أسعار الألبان والبيض شبه مستقرة في معظم الأحياء.',
-        source: 'الوطن',
-        publishedAt: now.subtract(const Duration(hours: 2)),
-      ),
-      NewsArticle(
-        title: 'تحسّن حركة النقل بين المحافظات بعد أعمال الصيانة',
-        body:
-            'عادت الحافلات إلى جداولها المعتادة على الخطوط الرئيسية بعد انتهاء أعمال الصيانة في عدة مقاطع. المسافرون لاحظوا انخفاضاً في زمن الرحلة، مع استمرار بعض التأخير في ساعات الذروة.',
-        source: 'سانا',
-        publishedAt: now.subtract(const Duration(hours: 5)),
-      ),
-      NewsArticle(
-        title: 'افتتاح سوق شعبي جديد يضم محال بقالة ومطاعم محلية',
-        body:
-            'افتُتح السوق في أحد الأحياء السكنية ويضم أكشاكاً للخضار والبقالة إلى جانب مطاعم صغيرة. الهدف تسهيل التسوق اليومي وتقليل الحاجة إلى التنقل نحو الأسواق المركزية.',
-        source: 'تشرين',
-        publishedAt: now.subtract(const Duration(hours: 8)),
-      ),
-      NewsArticle(
-        title: 'نصائح لتوفير استهلاك الوقود خلال التنقل اليومي',
-        body:
-            'أوصى مختصون بتجنب التسارع المفاجئ وصيانة الإطارات بانتظام لتقليل الاستهلاك. كما اقترحوا دمج المشاوير اليومية في رحلة واحدة عندما يكون ذلك ممكناً.',
-        source: 'الاقتصاد اليوم',
-        publishedAt: now.subtract(const Duration(hours: 11)),
-      ),
-      NewsArticle(
-        title: 'زيادة الإقبال على المقاهي مع اعتدال درجات الحرارة',
-        body:
-            'شهدت المقاهي الخارجية إقبالاً أوضح خلال الأيام الماضية مع تحسّن الطقس. أصحاب المحال قالوا إن الطلب ارتفع على المشروبات الباردة، مع بقاء الحركة المسائية هي الأعلى.',
-        source: 'أثر برس',
-        publishedAt: now.subtract(const Duration(days: 1, hours: 1)),
-      ),
-      NewsArticle(
-        title: 'صيدليات الأحياء تمدّد ساعات العمل في عطلة نهاية الأسبوع',
-        body:
-            'أعلنت عدة صيدليات عن تمديد الدوام مساء الجمعة والسبت لتغطية الطلب على الأدوية الأساسية. التنسيق يشمل تناوباً بين الأحياء حتى تبقى خدمة ليلية قريبة من السكان.',
-        source: 'الصحة',
-        publishedAt: now.subtract(const Duration(days: 1, hours: 4)),
-      ),
-    ];
+  Future<List<NewsArticle>> fetchArticles() async {
+    final base = await ApiConfig.baseUrl();
+    final response = await http
+        .get(
+          Uri.parse('$base/online/news'),
+          headers: const {'Accept': 'application/json'},
+        )
+        .timeout(_timeout);
+
+    if (response.statusCode != 200) {
+      throw Exception('news ${response.statusCode}');
+    }
+
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (decoded is! List) {
+      throw const FormatException('news payload');
+    }
+
+    final articles = <NewsArticle>[];
+    for (final item in decoded) {
+      if (item is! Map) continue;
+      final article = NewsArticle.fromApi(Map<String, dynamic>.from(item));
+      if (article != null) articles.add(article);
+    }
+    return articles;
   }
 }
