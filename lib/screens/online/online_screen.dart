@@ -1,10 +1,13 @@
+// Online tab: exchange rates, nearby place shortcuts, and a news preview.
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
-import 'package:waffer/core/data/exchange_rate.dart';
-import 'package:waffer/core/data/nearby_place_category.dart';
-import 'package:waffer/core/data/news_article.dart';
-import 'package:waffer/core/data/online_feed_service.dart';
+import 'package:waffer/data/models/exchange_rate.dart';
+import 'package:waffer/data/models/nearby_place_category.dart';
+import 'package:waffer/data/models/news_article.dart';
+import 'package:waffer/data/services/online_feed_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/theme/app_palette.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/online/sheets/news_sheet.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
@@ -13,6 +16,7 @@ import 'package:waffer/widgets/containers/glass_sheet.dart';
 
 final NumberFormat _rateFormat = NumberFormat('#,##0.##', 'en');
 
+// Hosts the three online cards and refreshes news when the app resumes.
 class OnlineScreen extends StatefulWidget {
   const OnlineScreen({super.key});
 
@@ -20,6 +24,7 @@ class OnlineScreen extends StatefulWidget {
   State<OnlineScreen> createState() => _OnlineScreenState();
 }
 
+// loading / ready / empty / error for the news preview card.
 enum _NewsLoadState { loading, ready, empty, error }
 
 class _OnlineScreenState extends State<OnlineScreen>
@@ -52,6 +57,7 @@ class _OnlineScreenState extends State<OnlineScreen>
     }
   }
 
+  // Fetches headlines; keeps prior articles on failure if we already had some.
   Future<void> _loadNews() async {
     if (_newsRequestInFlight) return;
     _newsRequestInFlight = true;
@@ -79,6 +85,7 @@ class _OnlineScreenState extends State<OnlineScreen>
     }
   }
 
+  // Retry on error; otherwise open the full news sheet.
   void _onNewsTap() {
     if (_newsState == _NewsLoadState.error) {
       _loadNews();
@@ -87,6 +94,7 @@ class _OnlineScreenState extends State<OnlineScreen>
     showNewsSheet(context, articles: _articles);
   }
 
+  // Opens Google Maps for the category; snacks if the URL launch fails.
   Future<void> _openPlace(NearbyPlaceCategory category) async {
     final opened = await openNearbyPlaceSearch(category);
     if (opened || !mounted) return;
@@ -96,7 +104,7 @@ class _OnlineScreenState extends State<OnlineScreen>
       SnackBar(
         content: const Text(
           'تعذر فتح خرائط Google',
-          style: TextStyle(fontFamily: 'Tajawal'),
+          style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal']),
         ),
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       ),
@@ -130,29 +138,7 @@ class _OnlineScreenState extends State<OnlineScreen>
   }
 }
 
-class _OnlineColors {
-  final Color accent;
-  final Color textPrimary;
-  final Color textSecondary;
-
-  const _OnlineColors({
-    required this.accent,
-    required this.textPrimary,
-    required this.textSecondary,
-  });
-
-  factory _OnlineColors.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return _OnlineColors(
-      accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-      textPrimary:
-          isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-      textSecondary:
-          isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-    );
-  }
-}
-
+// Buy/sell rates for the selected FX asset, with an overlay currency picker.
 class _ExchangeRateCard extends StatefulWidget {
   final ExchangeRate rate;
   final ValueChanged<ExchangeAsset> onSelected;
@@ -188,10 +174,11 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
     }
   }
 
+  // Anchors an animated overlay menu under the pair label.
   void _showMenu() {
     if (_menuOpen || _closingMenu) return;
 
-    final colors = _OnlineColors.of(context);
+    final colors = AppPalette.of(context);
     final overlay = Overlay.of(context);
     final direction = Directionality.of(context);
 
@@ -216,6 +203,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
     setState(() => _menuOpen = true);
   }
 
+  // Plays the collapse animation, then removes the overlay entry.
   Future<void> _hideMenu() async {
     if (!_menuOpen || _closingMenu) return;
     _closingMenu = true;
@@ -232,7 +220,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _OnlineColors.of(context);
+    final colors = AppPalette.of(context);
     final rate = widget.rate;
 
     return GlassContainer(
@@ -245,7 +233,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
           Text(
             'سعر الصرف',
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 13,
               color: colors.textSecondary,
             ),
@@ -279,7 +267,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
                         'الليرة السورية · ${rate.pairLabel}',
                         key: ValueKey(rate.asset),
                         style: TextStyle(
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: colors.textPrimary,
@@ -329,10 +317,11 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
   }
 }
 
+// Overlay dropdown listing available exchange assets.
 class _CurrencyMenuLayer extends StatefulWidget {
   final LayerLink link;
   final TextDirection direction;
-  final _OnlineColors colors;
+  final AppPalette colors;
   final ExchangeAsset selected;
   final VoidCallback onDismiss;
   final ValueChanged<ExchangeAsset> onSelected;
@@ -467,10 +456,11 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
   }
 }
 
+// One currency row inside the exchange-rate overlay menu.
 class _CurrencyOption extends StatelessWidget {
   final ExchangeRate option;
   final bool selected;
-  final _OnlineColors colors;
+  final AppPalette colors;
   final Animation<double> animation;
   final VoidCallback onTap;
 
@@ -501,7 +491,7 @@ class _CurrencyOption extends StatelessWidget {
                   child: Text(
                     option.pairLabel,
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                       fontSize: 15,
                       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                       color: selected ? colors.accent : colors.textPrimary,
@@ -519,10 +509,11 @@ class _CurrencyOption extends StatelessWidget {
   }
 }
 
+// Buy or sell figure with a crossfade when the selected asset changes.
 class _RateValue extends StatelessWidget {
   final String label;
   final double value;
-  final _OnlineColors colors;
+  final AppPalette colors;
   final String valueKey;
 
   const _RateValue({
@@ -545,7 +536,7 @@ class _RateValue extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
               color: colors.textSecondary,
@@ -574,7 +565,7 @@ class _RateValue extends StatelessWidget {
                 _rateFormat.format(value),
                 key: ValueKey(valueKey),
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   color: colors.accent,
@@ -586,7 +577,7 @@ class _RateValue extends StatelessWidget {
           Text(
             sypCurrencyLabel,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 12,
               color: colors.textSecondary,
             ),
@@ -597,6 +588,7 @@ class _RateValue extends StatelessWidget {
   }
 }
 
+// Grid of nearby-place categories that launch Google Maps searches.
 class _NearbyPlacesCard extends StatelessWidget {
   final ValueChanged<NearbyPlaceCategory> onOpen;
 
@@ -604,7 +596,7 @@ class _NearbyPlacesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _OnlineColors.of(context);
+    final colors = AppPalette.of(context);
 
     return GlassContainer(
       colorType: GlassColorType.surface,
@@ -616,7 +608,7 @@ class _NearbyPlacesCard extends StatelessWidget {
           Text(
             'مواقع قريبة:',
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 16,
               fontWeight: FontWeight.w800,
               color: colors.textPrimary,
@@ -650,7 +642,7 @@ class _NearbyPlacesCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           height: 1.15,
@@ -669,6 +661,7 @@ class _NearbyPlacesCard extends StatelessWidget {
   }
 }
 
+// Top headline teaser; tap opens the full news sheet (or retries on error).
 class _NewsPreviewCard extends StatelessWidget {
   final NewsArticle? article;
   final _NewsLoadState state;
@@ -682,7 +675,7 @@ class _NewsPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _OnlineColors.of(context);
+    final colors = AppPalette.of(context);
     final item = state == _NewsLoadState.ready ? article : null;
 
     return Material(
@@ -703,7 +696,7 @@ class _NewsPreviewCard extends StatelessWidget {
                     child: Text(
                       'الأخبار:',
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: colors.textPrimary,
@@ -723,7 +716,7 @@ class _NewsPreviewCard extends StatelessWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13.5,
                     fontWeight: FontWeight.w500,
                     height: 1.55,
@@ -739,7 +732,7 @@ class _NewsPreviewCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                           color: colors.textSecondary,
@@ -750,7 +743,7 @@ class _NewsPreviewCard extends StatelessWidget {
                     Text(
                       '${formatDate(item.publishedAt)} · ${formatTime(item.publishedAt)}',
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 11.5,
                         color: colors.textSecondary,
                       ),
@@ -767,9 +760,10 @@ class _NewsPreviewCard extends StatelessWidget {
   }
 }
 
+// Loading spinner or empty/error copy inside the news preview card.
 class _NewsStatus extends StatelessWidget {
   final _NewsLoadState state;
-  final _OnlineColors colors;
+  final AppPalette colors;
 
   const _NewsStatus({
     required this.state,
@@ -802,7 +796,7 @@ class _NewsStatus extends StatelessWidget {
         Text(
           message,
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
             fontSize: 13.5,
             fontWeight: FontWeight.w500,
             height: 1.55,
@@ -814,7 +808,7 @@ class _NewsStatus extends StatelessWidget {
           Text(
             'اضغط لإعادة المحاولة',
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
               color: colors.textSecondary,

@@ -2,21 +2,28 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/data/app_notification.dart';
-import 'package:waffer/core/data/calendar_period.dart';
-import 'package:waffer/core/data/transaction.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/models/app_notification.dart';
+import 'package:waffer/data/models/calendar_period.dart';
+import 'package:waffer/data/models/transaction.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_mapper.dart';
 import 'package:waffer/core/sync/sync_merge.dart';
 import 'package:waffer/core/sync/sync_tombstones.dart';
 import 'package:waffer/core/utils/money.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
-/// خدمة الإشعارات المركزية: تقييم الأحداث، منع التكرار، والتخزين.
+/// In-app notification engine for balance, spending, goals, savings, and periods.
 ///
-/// لا تُستدعى من داخل `build()`. الشاشة تعرض السجل فقط.
+/// Storage (AppPrefs): encoded [AppNotification] list, mute flag, dedupe
+/// [eventKey] set, and a [_NotificationSnapshot] of last-known ratios and IDs.
+/// Evaluation runs after [TransactionStore] changes ([listen] → [evaluate]), or
+/// via [seedIfNeeded] / [evaluate]; screens only display the feed—do not call
+/// from `build()`. Alerts fire when values cross thresholds vs the snapshot,
+/// not on every load. Thresholds ([NotificationThresholds]): remaining balance
+/// 30/20/10%; spending 50/70/80/90%; goals 25/50/75%; large expense = 2× prior
+/// average once there are more than four expenses.
 class NotificationService extends ChangeNotifier {
   NotificationService._();
 
@@ -49,14 +56,14 @@ class NotificationService extends ChangeNotifier {
 
   Future<void> ensureLoaded() => _loader ??= _load();
 
-  /// يستمع لتغيّر العمليات ويقيّم الأحداث بعد كل تحديث.
+  /// Subscribes to [TransactionStore] so each change schedules [evaluate].
   void listen() {
     if (_listening) return;
     _listening = true;
     TransactionStore.instance.addListener(_onStoreChanged);
   }
 
-  /// لقطة أولية بعد قراءة العمليات وقبل معالجة الفترات المستحقة.
+  /// Captures the first store baseline before due periods are processed.
   Future<void> seedIfNeeded() async {
     await ensureLoaded();
     if (_snapshot.initialized) return;
@@ -66,6 +73,7 @@ class NotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Compares current store state to the snapshot and emits new alerts.
   Future<void> evaluate() async {
     if (_evaluating) return;
     _evaluating = true;
@@ -104,7 +112,7 @@ class NotificationService extends ChangeNotifier {
     }
   }
 
-  /// واجهة عامة لإضافة إشعار من ميزة مستقبلية. يحترم الكتم ومنع التكرار.
+  /// Public entry for future features; respects mute and event-key dedupe.
   Future<bool> add({
     required NotificationType type,
     required String title,
@@ -130,11 +138,12 @@ class NotificationService extends ChangeNotifier {
     return true;
   }
 
+  /// Persists mute state and marks settings dirty for sync.
   Future<void> setMuted(bool muted) async {
     await ensureLoaded();
     if (_muted == muted) return;
     _muted = muted;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setBool(_mutedKey, muted);
     await SyncDirty.mark(settings: true);
     notifyListeners();
@@ -142,6 +151,7 @@ class NotificationService extends ChangeNotifier {
 
   Future<void> toggleMuted() => setMuted(!_muted);
 
+  /// Marks a single notification read and saves the list.
   Future<void> markRead(String id) async {
     await ensureLoaded();
     final index = _items.indexWhere((item) => item.id == id);
@@ -151,6 +161,7 @@ class NotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Marks every unread item read in one persist.
   Future<void> markAllRead() async {
     await ensureLoaded();
     if (_items.every((item) => item.isRead)) return;
@@ -163,7 +174,7 @@ class NotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// يحذف السجل فقط. لا يمسّ الرصيد أو الادخار أو الأهداف أو حالة الكتم.
+  /// Clears the feed only; leaves balance, savings, goals, and mute untouched.
   Future<void> clearHistory() async {
     await ensureLoaded();
     if (_items.isEmpty) return;
@@ -176,6 +187,7 @@ class NotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Merges remote notification upserts/deletes and optional mute into local state.
   Future<void> applyRemoteSync({
     required List<Map<String, dynamic>> upserts,
     required List<SyncTombstone> deletes,
@@ -211,7 +223,7 @@ class NotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// بعد حذف بيانات التطبيق بالكامل.
+  /// Drops in-memory state after a full local data wipe.
   void resetCache() {
     _items.clear();
     _eventKeys.clear();
@@ -228,8 +240,9 @@ class NotificationService extends ChangeNotifier {
     });
   }
 
+  /// Loads items, event keys, mute, and snapshot from AppPrefs.
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     _items
       ..clear()
@@ -254,6 +267,7 @@ class NotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Seeds snapshot from the store and pretends completed goals already notified.
   void _applyBaseline(TransactionStore store) {
     _snapshot = _NotificationSnapshot.fromStore(store);
 
@@ -270,6 +284,7 @@ class NotificationService extends ChangeNotifier {
     _snapshot = _NotificationSnapshot.fromStore(store);
   }
 
+  /// Fires when remaining balance drops through 30%, 20%, or 10%.
   bool _evaluateBalance(TransactionStore store) {
     if (store.maxBalance <= 0) return false;
 
@@ -300,6 +315,7 @@ class NotificationService extends ChangeNotifier {
     );
   }
 
+  /// Fires when spending climbs through 50%, 70%, 80%, or 90% of max balance.
   bool _evaluateSpending(TransactionStore store) {
     if (store.maxBalance <= 0) return false;
 
@@ -330,6 +346,7 @@ class NotificationService extends ChangeNotifier {
     );
   }
 
+  /// Goal reached at 100%, or progress at 25%/50%/75% crossings.
   bool _evaluateGoals(TransactionStore store) {
     var changed = false;
 
@@ -381,6 +398,7 @@ class NotificationService extends ChangeNotifier {
     return changed;
   }
 
+  /// Notifies for new period-leftover or goal-periodic savings transfers.
   bool _evaluateTransfers(TransactionStore store) {
     var changed = false;
 
@@ -424,6 +442,7 @@ class NotificationService extends ChangeNotifier {
     return changed;
   }
 
+  /// Period-completed alerts when leftover was processed without a transfer row.
   bool _evaluatePeriods(TransactionStore store) {
     var changed = false;
 
@@ -468,6 +487,7 @@ class NotificationService extends ChangeNotifier {
     return changed;
   }
 
+  /// Flags expenses ≥ 2× the average of earlier ones (needs >4 expenses).
   bool _evaluateLargeExpenses(TransactionStore store) {
     final expenses = store.expenses;
     if (expenses.length <= NotificationThresholds.minExpensesForLarge) {
@@ -508,6 +528,7 @@ class NotificationService extends ChangeNotifier {
     return changed;
   }
 
+  /// Dedupes by [eventKey]; when muted, keys are still claimed so events stay quiet.
   bool _tryAdd({
     required NotificationType type,
     required String title,
@@ -558,6 +579,7 @@ class NotificationService extends ChangeNotifier {
     return null;
   }
 
+  /// Arabic weekly/monthly adjective from period key or recurring frequency.
   String? _periodAdjective(WafferTransaction item) {
     final key = item.processedPeriodKey;
     if (key != null) {
@@ -571,8 +593,9 @@ class NotificationService extends ChangeNotifier {
     };
   }
 
+  /// Writes items, event keys, mute, and snapshot; marks sync dirty.
   Future<void> _persist() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setStringList(
       _itemsKey,
       _items.map((item) => item.encode()).toList(),
@@ -584,7 +607,7 @@ class NotificationService extends ChangeNotifier {
   }
 
   Future<void> _persistItems() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setStringList(
       _itemsKey,
       _items.map((item) => item.encode()).toList(),
@@ -593,12 +616,13 @@ class NotificationService extends ChangeNotifier {
   }
 
   Future<void> _persistSnapshot() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setStringList(_eventKeysKey, _eventKeys.toList());
     await prefs.setString(_snapshotKey, _snapshot.encode());
   }
 }
 
+/// Last-seen balances, goal ratios, and known IDs used to detect crossings.
 class _NotificationSnapshot {
   final bool initialized;
   final double? remainingRatio;
@@ -646,6 +670,7 @@ class _NotificationSnapshot {
     );
   }
 
+  /// Builds a snapshot from the live [TransactionStore].
   factory _NotificationSnapshot.fromStore(TransactionStore store) {
     final spent =
         store.maxBalance <= 0 ? 0.0 : store.totalExpense / store.maxBalance;
@@ -672,6 +697,7 @@ class _NotificationSnapshot {
         'knownProcessedTokens': knownProcessedTokens.toList(),
       });
 
+  /// Restores a snapshot from prefs JSON; empty on missing or corrupt input.
   static _NotificationSnapshot decode(String? raw) {
     if (raw == null || raw.isEmpty) {
       return _NotificationSnapshot.empty();
@@ -711,7 +737,7 @@ class _NotificationSnapshot {
   }
 }
 
-/// تجميع زمني ديناميكي من تاريخ الإشعار.
+/// Groups notifications into today / yesterday / this week / month buckets.
 class NotificationTimeGroup {
   final String label;
   final List<AppNotification> items;
@@ -721,6 +747,7 @@ class NotificationTimeGroup {
     required this.items,
   });
 
+  /// Buckets by calendar day relative to [now] (Arabic section labels).
   static List<NotificationTimeGroup> from(
     List<AppNotification> notifications, {
     DateTime? now,

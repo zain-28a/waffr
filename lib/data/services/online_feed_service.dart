@@ -1,12 +1,11 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:waffer/core/data/exchange_rate.dart';
-import 'package:waffer/core/data/news_article.dart';
+import 'package:waffer/data/models/exchange_rate.dart';
+import 'package:waffer/data/models/news_article.dart';
 import 'package:waffer/core/sync/api_config.dart';
 
-/// أسعار الصرف ما زالت بيانات واجهة فقط.
-/// الأخبار تُجلب من الخادم عبر `GET /online/news`.
+/// Online feed helpers: hardcoded exchange rates plus news from the API.
 class OnlineFeedService {
   OnlineFeedService._();
 
@@ -49,6 +48,7 @@ class OnlineFeedService {
     return rates.firstWhere((rate) => rate.asset == asset);
   }
 
+  /// GET `/online/news` and parse each map into a [NewsArticle].
   Future<List<NewsArticle>> fetchArticles() async {
     final base = await ApiConfig.baseUrl();
     final response = await http

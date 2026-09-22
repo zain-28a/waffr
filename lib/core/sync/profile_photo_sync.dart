@@ -1,19 +1,22 @@
+// Uploads and downloads the profile photo via /auth/photo, separate from /sync.
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:waffer/core/data/profile_photo.dart';
+import 'package:waffer/data/services/profile_photo.dart';
 import 'package:waffer/core/sync/api_config.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
 
-/// Uploads and downloads the profile photo through `/auth/photo`.
+// Keeps the on-device avatar in sync with the account photo endpoint.
 class ProfilePhotoSync {
   ProfilePhotoSync._();
 
   static const Duration _timeout = Duration(seconds: 25);
 
+  // After flushing pending local photo actions, pull or clear from settings.
   static Future<void> applyFromSettings(Map<String, dynamic>? settings) async {
     await flush();
     if (settings == null) return;
@@ -52,6 +55,7 @@ class ProfilePhotoSync {
     }
   }
 
+  // Run any pending upload or remote delete before the next sync continues.
   static Future<void> flush() async {
     final pending = await ProfilePhoto.pendingAction();
     if (pending == ProfilePhoto.pendingUpload) {

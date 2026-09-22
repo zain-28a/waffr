@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/app_notification.dart';
-import 'package:waffer/core/data/notification_service.dart';
+import 'package:waffer/data/models/app_notification.dart';
+import 'package:waffer/data/services/notification_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass.dart';
+
+// Notifications tab: mute toggle, mark-all-read, clear history, grouped list.
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -12,6 +14,7 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
+// Kept alive in the shell PageView like the other tabs.
 class _NotificationsScreenState extends State<NotificationsScreen>
     with AutomaticKeepAliveClientMixin {
   final NotificationService _service = NotificationService.instance;
@@ -25,6 +28,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     _service.ensureLoaded();
   }
 
+  // Clears history only — balance, savings, goals, and mute stay intact.
   Future<void> _confirmClear() async {
     final colors = _NotificationColors.of(context);
     final confirmed = await showDialog<bool>(
@@ -39,7 +43,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             'مسح سجل الإشعارات',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontWeight: FontWeight.bold,
               color: colors.textPrimary,
             ),
@@ -48,7 +52,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             'سيتم حذف سجل الإشعارات فقط. لن يتأثر رصيدك أو ادخارك أو أهدافك، ولن يتغيّر إعداد الكتم.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 14,
               color: colors.textSecondary,
             ),
@@ -58,14 +62,14 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               onPressed: () => Navigator.pop(context, false),
               child: Text(
                 'إلغاء',
-                style: TextStyle(fontFamily: 'Tajawal', color: colors.textSecondary),
+                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: colors.textSecondary),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
                 'مسح السجل',
-                style: TextStyle(fontFamily: 'Tajawal', color: colors.accent),
+                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: colors.accent),
               ),
             ),
           ],
@@ -101,7 +105,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                         child: Text(
                           'الإشعارات',
                           style: TextStyle(
-                            fontFamily: 'Tajawal',
+                            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: colors.accent,
@@ -154,6 +158,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 }
 
+// Toggle for whether new alerts are written to the history.
 class _MuteControl extends StatelessWidget {
   final bool muted;
   final VoidCallback onTap;
@@ -203,7 +208,7 @@ class _MuteControl extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: colors.textPrimary,
@@ -216,7 +221,7 @@ class _MuteControl extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 12,
                         color: colors.textSecondary,
                       ),
@@ -296,7 +301,7 @@ class _EmptyNotifications extends StatelessWidget {
               'لا توجد إشعارات بعد',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: colors.textPrimary,
@@ -307,7 +312,7 @@ class _EmptyNotifications extends StatelessWidget {
               'ستظهر هنا تنبيهات الرصيد والأهداف والادخار عند حدوثها',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 13,
                 color: colors.textSecondary,
               ),
@@ -319,6 +324,7 @@ class _EmptyNotifications extends StatelessWidget {
   }
 }
 
+// One time bucket (e.g. Today) and its tiles.
 class _NotificationGroupView extends StatelessWidget {
   final NotificationTimeGroup group;
   final ValueChanged<String> onOpen;
@@ -342,7 +348,7 @@ class _NotificationGroupView extends StatelessWidget {
             child: Text(
               group.label,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
                 color: colors.textSecondary,
@@ -431,7 +437,7 @@ class _NotificationTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontFamily: 'Tajawal',
+                              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                               fontSize: 14.5,
                               fontWeight: unread ? FontWeight.w800 : FontWeight.w700,
                               color: colors.textPrimary.withValues(
@@ -444,7 +450,7 @@ class _NotificationTile extends StatelessWidget {
                         Text(
                           formatTime(notification.createdAt),
                           style: TextStyle(
-                            fontFamily: 'Tajawal',
+                            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                             fontSize: 11.5,
                             color: colors.textSecondary,
                           ),
@@ -457,7 +463,7 @@ class _NotificationTile extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 12.5,
                         color: colors.textSecondary,
                       ),
@@ -466,7 +472,7 @@ class _NotificationTile extends StatelessWidget {
                     Text(
                       formatDate(notification.createdAt),
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 11,
                         color: colors.textSecondary.withValues(alpha: 0.8),
                       ),
@@ -495,6 +501,7 @@ class _NotificationTile extends StatelessWidget {
   }
 }
 
+// Theme colors for this screen so tiles stay consistent.
 class _NotificationColors {
   final Color surface;
   final Color accent;

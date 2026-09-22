@@ -1,13 +1,16 @@
+// Offline spending report: range chips, a swipeable period chart (fl_chart),
+// total spent, category distribution, and a comparison with the previous period.
+
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/category_store.dart';
-import 'package:waffer/core/data/expense_categories.dart';
-import 'package:waffer/core/data/transaction.dart';
-import 'package:waffer/core/data/transaction_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/data/shopping_list_store.dart';
+import 'package:waffer/data/stores/category_store.dart';
+import 'package:waffer/data/models/expense_categories.dart';
+import 'package:waffer/data/models/transaction.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
+import 'package:waffer/core/theme/app_palette.dart';
+import 'package:waffer/data/stores/shopping_list_store.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
@@ -15,6 +18,10 @@ import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
+// Picks a range (day / week / month / 3 months / 6 months / year) via chips.
+// A horizontal PageView pages between older and newer periods; itemBuilder
+// builds one _SpendingChartCard per offset (not every period at once).
+// Below the chart: total spent, category bars, and a prior-period comparison.
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
 
@@ -51,6 +58,7 @@ class _ReportScreenState extends State<ReportScreen>
     super.dispose();
   }
 
+  // Switching range resets to the current period (offset 0).
   void _selectRange(_ReportRange range) {
     if (_range == range) return;
     setState(() {
@@ -162,6 +170,7 @@ class _ReportScreenState extends State<ReportScreen>
   }
 }
 
+// Bucket width for the chart and summary (day through year).
 enum _ReportRange { day, week, month, threeMonths, sixMonths, year }
 
 extension on _ReportRange {
@@ -175,6 +184,7 @@ extension on _ReportRange {
   };
 }
 
+// Half-open [start, end) window for one page of the period PageView.
 class _ReportPeriod {
   final DateTime start;
   final DateTime end;
@@ -186,6 +196,7 @@ class _ReportPeriod {
     required this.range,
   });
 
+  // Human-readable caption shown above the chart for this window.
   String get label {
     final lastDay = end.subtract(const Duration(days: 1));
     switch (range) {
@@ -214,6 +225,7 @@ class _ReportPeriod {
   }
 }
 
+// One category's share of spending in the selected period.
 class _CategoryTotal {
   final String category;
   final double amount;
@@ -221,6 +233,7 @@ class _CategoryTotal {
   const _CategoryTotal(this.category, this.amount);
 }
 
+// One X-axis slot on the line chart (hour, day, week, or month depending on range).
 class _ChartBucket {
   final String label;
   final String axisLabel;
@@ -233,6 +246,7 @@ class _ChartBucket {
   });
 }
 
+// Filters expenses for a period, sums by category, and buckets them into chart points.
 class _ReportData {
   final _ReportPeriod period;
   final List<WafferTransaction> expenses;
@@ -275,6 +289,7 @@ class _ReportData {
   }
 }
 
+// One PageView page: period label, older/newer arrows, and the line chart (or empty state).
 class _SpendingChartCard extends StatelessWidget {
   final _ReportData report;
   final bool canShowNewer;
@@ -290,7 +305,7 @@ class _SpendingChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ReportColors.of(context);
+    final colors = AppPalette.of(context);
     return GlassContainer(
       colorType: GlassColorType.surface,
       borderRadius: 28,
@@ -313,7 +328,7 @@ class _SpendingChartCard extends StatelessWidget {
                     Text(
                       'الصرف خلال الفترة',
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 13,
                         color: colors.textSecondary,
                       ),
@@ -328,7 +343,7 @@ class _SpendingChartCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: colors.textPrimary,
@@ -367,6 +382,7 @@ class _SpendingChartCard extends StatelessWidget {
   }
 }
 
+// Chevrons that step the period PageView older or newer.
 class _PeriodArrow extends StatelessWidget {
   final IconData icon;
   final String tooltip;
@@ -382,7 +398,7 @@ class _PeriodArrow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ReportColors.of(context);
+    final colors = AppPalette.of(context);
     return IconButton(
       onPressed: enabled ? onTap : null,
       tooltip: tooltip,
@@ -397,6 +413,9 @@ class _PeriodArrow extends StatelessWidget {
   }
 }
 
+// Maps chart buckets to FlSpot values. Y axis uses a "nice" interval so labels
+// stay round. Touch shows a tooltip with the bucket label and amount. The area
+// under the line is a light accent fill. Dots shrink when there are many buckets.
 class _SpendingLineChart extends StatelessWidget {
   final List<_ChartBucket> buckets;
 
@@ -404,7 +423,7 @@ class _SpendingLineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ReportColors.of(context);
+    final colors = AppPalette.of(context);
     final spots = [
       for (var index = 0; index < buckets.length; index++)
         FlSpot(index.toDouble(), buckets[index].amount),
@@ -463,7 +482,7 @@ class _SpendingLineChart extends StatelessWidget {
                     maxLines: 1,
                     textAlign: TextAlign.right,
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: colors.textSecondary,
@@ -494,7 +513,7 @@ class _SpendingLineChart extends StatelessWidget {
                     text,
                     maxLines: 1,
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: colors.textSecondary,
@@ -546,7 +565,7 @@ class _SpendingLineChart extends StatelessWidget {
                   '${buckets[index].label}\n'
                   '${formatMoney(spot.y)} $currencyLabel',
                   TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: colors.surface,
@@ -586,6 +605,7 @@ class _SpendingLineChart extends StatelessWidget {
   }
 }
 
+// Total spent for the selected period, plus a shortcut into expense history.
 class _SpendingSummary extends StatelessWidget {
   final double total;
   final VoidCallback onHistory;
@@ -594,7 +614,7 @@ class _SpendingSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ReportColors.of(context);
+    final colors = AppPalette.of(context);
     return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
@@ -606,7 +626,7 @@ class _SpendingSummary extends StatelessWidget {
                 Text(
                   'الصرف',
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 13.5,
                     color: colors.textSecondary,
                   ),
@@ -623,7 +643,7 @@ class _SpendingSummary extends StatelessWidget {
                         child: Text(
                           formatMoney(total),
                           style: TextStyle(
-                            fontFamily: 'Tajawal',
+                            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
                             color: colors.accent,
@@ -635,7 +655,7 @@ class _SpendingSummary extends StatelessWidget {
                     Text(
                       currencyLabel,
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 14,
                         color: colors.textSecondary,
                       ),
@@ -667,7 +687,7 @@ class _SpendingSummary extends StatelessWidget {
                   Text(
                     'سجل المصاريف',
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: colors.textPrimary,
@@ -683,6 +703,7 @@ class _SpendingSummary extends StatelessWidget {
   }
 }
 
+// Category share of spending: stacked color bar plus a ranked list with %.
 class _ExpenseDistribution extends StatelessWidget {
   final _ReportData report;
 
@@ -690,7 +711,7 @@ class _ExpenseDistribution extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ReportColors.of(context);
+    final colors = AppPalette.of(context);
     return GlassContainer(
       colorType: GlassColorType.surface,
       borderRadius: 28,
@@ -705,7 +726,7 @@ class _ExpenseDistribution extends StatelessWidget {
               Text(
                 'توزيع المصروفات',
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: colors.textPrimary,
@@ -718,7 +739,7 @@ class _ExpenseDistribution extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                     color: colors.textSecondary,
@@ -761,6 +782,7 @@ class _ExpenseDistribution extends StatelessWidget {
   }
 }
 
+// Single horizontal bar whose segments are proportional to category totals.
 class _DistributionBar extends StatelessWidget {
   final List<_CategoryTotal> totals;
   final double total;
@@ -793,6 +815,7 @@ class _DistributionBar extends StatelessWidget {
   }
 }
 
+// Icon, name, percentage, and amount for one category in the distribution list.
 class _CategoryRow extends StatelessWidget {
   final _CategoryTotal item;
   final double total;
@@ -801,7 +824,7 @@ class _CategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ReportColors.of(context);
+    final colors = AppPalette.of(context);
     final category = categoryFor(item.category);
     final swatch = categoryChartColor(context, item.category);
     final percentage = total <= 0 ? 0 : item.amount / total * 100;
@@ -823,7 +846,7 @@ class _CategoryRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: colors.textPrimary,
@@ -833,7 +856,7 @@ class _CategoryRow extends StatelessWidget {
         Text(
           '${percentage.round()}%',
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
             fontSize: 12.5,
             fontWeight: FontWeight.w700,
             color: colors.textSecondary,
@@ -847,7 +870,7 @@ class _CategoryRow extends StatelessWidget {
             child: Text(
               '${formatMoney(item.amount)} $currencyLabel',
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: colors.accent,
@@ -860,6 +883,7 @@ class _CategoryRow extends StatelessWidget {
   }
 }
 
+// How this period's spending compares to the previous window of the same range.
 class _ImprovementCard extends StatelessWidget {
   final double currentTotal;
   final double previousTotal;
@@ -871,7 +895,7 @@ class _ImprovementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ReportColors.of(context);
+    final colors = AppPalette.of(context);
     final comparison = _ImprovementComparison.calculate(
       currentTotal: currentTotal,
       previousTotal: previousTotal,
@@ -900,7 +924,7 @@ class _ImprovementCard extends StatelessWidget {
                 Text(
                   'نسبة التحسن',
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: colors.textPrimary,
@@ -917,7 +941,7 @@ class _ImprovementCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                           fontSize: comparison.hasPercentage ? 22 : 12.5,
                           fontWeight: FontWeight.bold,
                           color: valueColor,
@@ -932,7 +956,7 @@ class _ImprovementCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 12,
                     color: colors.textSecondary,
                   ),
@@ -954,7 +978,7 @@ class _ImprovementCard extends StatelessWidget {
                 Text(
                   "بس اعمل الai",
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                     color: colors.textSecondary,
@@ -969,8 +993,10 @@ class _ImprovementCard extends StatelessWidget {
   }
 }
 
+// Whether spending fell, rose, or stayed flat vs the previous period.
 enum _ImprovementKind { positive, negative, neutral }
 
+// Percent change text and tone: spending down is positive, up is negative.
 class _ImprovementComparison {
   final _ImprovementKind kind;
   final String text;
@@ -1030,6 +1056,7 @@ class _ImprovementComparison {
   }
 }
 
+// Full expense or income ledger grouped by day, with undo actions per row.
 class TransactionHistoryScreen extends StatefulWidget {
   final bool isIncome;
 
@@ -1051,7 +1078,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ReportColors.of(context);
+    final colors = AppPalette.of(context);
     final isIncome = widget.isIncome;
     final title = isIncome ? 'سجل الدخل' : 'سجل المصاريف';
     final summaryLabel = isIncome ? 'كل الدخل' : 'كل المصاريف';
@@ -1105,7 +1132,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontFamily: 'Tajawal',
+                                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                                 fontSize: 13,
                                 color: colors.textSecondary,
                               ),
@@ -1114,7 +1141,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                               '${formatMoney(_sumExpenses(items))} '
                               '$currencyLabel',
                               style: TextStyle(
-                                fontFamily: 'Tajawal',
+                                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                                 fontSize: 21,
                                 fontWeight: FontWeight.bold,
                                 color: colors.accent,
@@ -1160,6 +1187,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   }
 }
 
+// Transactions that share the same calendar day for the history list.
 class _ExpenseDayGroup {
   final DateTime date;
   final List<WafferTransaction> expenses;
@@ -1167,8 +1195,9 @@ class _ExpenseDayGroup {
   const _ExpenseDayGroup(this.date, this.expenses);
 }
 
+// Confirms, deletes the expense, refunds balance, and undoes linked shopping purchases.
 Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async {
-  final colors = _ReportColors.of(context);
+  final colors = AppPalette.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) {
@@ -1179,7 +1208,7 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
           'التراجع عن المصروف',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
             fontWeight: FontWeight.bold,
             color: colors.textPrimary,
           ),
@@ -1188,7 +1217,7 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
           'سيُحذف هذا المصروف من السجل ويُعاد ${formatMoney(expense.amount)} ${currencyLabelFor(expense.currencyCode)} إلى رصيدك.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
             fontSize: 14,
             color: colors.textSecondary,
           ),
@@ -1198,14 +1227,14 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'إلغاء',
-              style: TextStyle(fontFamily: 'Tajawal', color: colors.textSecondary),
+              style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'], color: colors.textSecondary),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'تراجع',
-              style: TextStyle(fontFamily: 'Tajawal', color: colors.accent),
+              style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'], color: colors.accent),
             ),
           ),
         ],
@@ -1228,8 +1257,9 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
   showAppSnackBar(context, 'تم التراجع عن المصروف', success: true);
 }
 
+// Confirms, deletes the income entry, and subtracts it from the running balance.
 Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
-  final colors = _ReportColors.of(context);
+  final colors = AppPalette.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) {
@@ -1240,7 +1270,7 @@ Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
           'التراجع عن الدخل',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
             fontWeight: FontWeight.bold,
             color: colors.textPrimary,
           ),
@@ -1249,7 +1279,7 @@ Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
           'سيُحذف هذا الدخل من السجل ويُخصم ${formatMoney(income.amount)} ${currencyLabelFor(income.currencyCode)} من رصيدك.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
             fontSize: 14,
             color: colors.textSecondary,
           ),
@@ -1259,14 +1289,14 @@ Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'إلغاء',
-              style: TextStyle(fontFamily: 'Tajawal', color: colors.textSecondary),
+              style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'], color: colors.textSecondary),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'تراجع',
-              style: TextStyle(fontFamily: 'Tajawal', color: colors.accent),
+              style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'], color: colors.accent),
             ),
           ),
         ],
@@ -1287,6 +1317,7 @@ Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
   showAppSnackBar(context, 'تم التراجع عن الدخل', success: true);
 }
 
+// Date header plus a glass card listing that day's transactions.
 class _HistoryDayGroup extends StatelessWidget {
   final DateTime date;
   final List<WafferTransaction> expenses;
@@ -1300,7 +1331,7 @@ class _HistoryDayGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ReportColors.of(context);
+    final colors = AppPalette.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1309,7 +1340,7 @@ class _HistoryDayGroup extends StatelessWidget {
           child: Text(
             _historyDateLabel(date),
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: colors.textSecondary,
@@ -1344,6 +1375,7 @@ class _HistoryDayGroup extends StatelessWidget {
   }
 }
 
+// Single history row: category/note, timestamp, amount, optional undo.
 class _HistoryExpenseRow extends StatelessWidget {
   final WafferTransaction expense;
   final bool isIncome;
@@ -1357,7 +1389,7 @@ class _HistoryExpenseRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ReportColors.of(context);
+    final colors = AppPalette.of(context);
     final category = categoryFor(expense.category);
     final note = expense.note?.trim();
     final title = isIncome
@@ -1391,7 +1423,7 @@ class _HistoryExpenseRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: colors.textPrimary,
@@ -1404,7 +1436,7 @@ class _HistoryExpenseRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 12.5,
                     color: colors.textSecondary,
                   ),
@@ -1416,7 +1448,7 @@ class _HistoryExpenseRow extends StatelessWidget {
                 '${formatTime(expense.dateTime)}',
                 textDirection: TextDirection.ltr,
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 10.5,
                   color: colors.textSecondary.withValues(alpha: 0.85),
                 ),
@@ -1434,7 +1466,7 @@ class _HistoryExpenseRow extends StatelessWidget {
               child: Text(
                 '${formatMoney(expense.amount)} $currencyLabel',
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: colors.accent,
@@ -1461,6 +1493,7 @@ class _HistoryExpenseRow extends StatelessWidget {
   }
 }
 
+// Centered icon + message used when a chart or list has nothing to show.
 class _EmptyState extends StatelessWidget {
   final IconData icon;
   final String message;
@@ -1469,7 +1502,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ReportColors.of(context);
+    final colors = AppPalette.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1486,7 +1519,7 @@ class _EmptyState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 13,
                 color: colors.textPrimary.withValues(alpha: 0.55),
               ),
@@ -1498,37 +1531,7 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _ReportColors {
-  final Color background;
-  final Color surface;
-  final Color accent;
-  final Color textPrimary;
-  final Color textSecondary;
-
-  const _ReportColors({
-    required this.background,
-    required this.surface,
-    required this.accent,
-    required this.textPrimary,
-    required this.textSecondary,
-  });
-
-  factory _ReportColors.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return _ReportColors(
-      background: isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      surface: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-      accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-      textPrimary: isDark
-          ? AppColors.darkTextPrimary
-          : AppColors.lightTextPrimary,
-      textSecondary: isDark
-          ? AppColors.darkTextSecondary
-          : AppColors.lightTextSecondary,
-    );
-  }
-}
-
+// Builds the [start, end) window for a range at the given PageView offset (0 = current).
 _ReportPeriod _periodFor(_ReportRange range, int offset) {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
@@ -1581,6 +1584,7 @@ double _sumExpenses(List<WafferTransaction> expenses) {
   return expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
 }
 
+// Creates empty buckets for the range grain, then fills amounts from expenses.
 List<_ChartBucket> _buildChartBuckets(
   List<WafferTransaction> expenses,
   _ReportPeriod period,
@@ -1739,6 +1743,7 @@ String _historyDateLabel(DateTime date) {
   return '${date.day} ${_monthName(date.month)} ${date.year}';
 }
 
+// Round Y-axis step (1/2/5×10^n) so grid labels stay readable.
 double _niceInterval(double maxValue) {
   if (maxValue <= 3) return 1;
   final rough = maxValue / 3;

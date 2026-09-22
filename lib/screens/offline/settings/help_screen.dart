@@ -1,7 +1,10 @@
+// In-app FAQ grouped by topic (balance, expenses, savings, sync, etc.).
+
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 
+// Expandable help sections with Arabic Q&A copy.
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
 
@@ -223,7 +226,7 @@ class HelpScreen extends StatelessWidget {
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: textPrimary,
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
             ),
           ),
           const SizedBox(height: 5),
@@ -233,7 +236,7 @@ class HelpScreen extends StatelessWidget {
             Text(
               section.title,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: accent,
@@ -259,6 +262,7 @@ class HelpScreen extends StatelessWidget {
   }
 }
 
+// One expandable FAQ question/answer pair.
 class _FAQItem extends StatefulWidget {
   final String question;
   final String answer;
@@ -280,6 +284,7 @@ class _FAQItem extends StatefulWidget {
   State<_FAQItem> createState() => _FAQItemState();
 }
 
+// Holds expanded/collapsed state for one FAQ tile.
 class _FAQItemState extends State<_FAQItem> {
   bool _isExpanded = false;
 
@@ -322,7 +327,7 @@ class _FAQItemState extends State<_FAQItem> {
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: widget.textPrimary,
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
             ),
           ),
           children: [
@@ -334,7 +339,7 @@ class _FAQItemState extends State<_FAQItem> {
                   fontSize: 14,
                   height: 1.6,
                   color: widget.textSecondary,
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 ),
               ),
             ),

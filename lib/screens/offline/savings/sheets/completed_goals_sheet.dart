@@ -1,6 +1,8 @@
+// Lists finished savings goals with their completed amounts and dates.
+
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/savings_goal.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/models/savings_goal.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass.dart';
@@ -13,6 +15,7 @@ Future<void> showCompletedGoalsSheet(BuildContext context) {
   );
 }
 
+// Sheet body listing goals that have already hit their target.
 class _CompletedGoalsSheet extends StatefulWidget {
   const _CompletedGoalsSheet();
 
@@ -63,7 +66,7 @@ class _CompletedGoalsSheetState extends State<_CompletedGoalsSheet> {
                   'لا توجد أهداف محققة بعد',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 14,
                     color: textPrimary.withValues(alpha: 0.55),
                   ),
@@ -86,6 +89,7 @@ class _CompletedGoalsSheetState extends State<_CompletedGoalsSheet> {
   }
 }
 
+// One finished goal: name, amount reached, and completion date.
 class _CompletedGoalCard extends StatelessWidget {
   final SavingsGoal goal;
   final Color accent;
@@ -116,7 +120,7 @@ class _CompletedGoalCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: textPrimary,
@@ -126,7 +130,7 @@ class _CompletedGoalCard extends StatelessWidget {
           Text(
             'المستهدف: ${formatMoney(goal.targetAmount)} $currencyLabel',
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 13,
               color: textSecondary,
             ),
@@ -134,7 +138,7 @@ class _CompletedGoalCard extends StatelessWidget {
           Text(
             'المتجمّع: ${formatMoney(total)} $currencyLabel',
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 13.5,
               fontWeight: FontWeight.w700,
               color: accent,
@@ -144,7 +148,7 @@ class _CompletedGoalCard extends StatelessWidget {
           Text(
             'المدة: ${goal.duration.label}',
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 12.5,
               color: textSecondary,
             ),
@@ -153,7 +157,7 @@ class _CompletedGoalCard extends StatelessWidget {
             Text(
               'تاريخ الإنجاز: ${formatDate(completed)}',
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 12.5,
                 color: textSecondary,
               ),

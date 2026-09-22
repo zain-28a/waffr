@@ -1,7 +1,10 @@
+// Privacy policy style copy: what stays on-device vs what account fields are kept.
+
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 
+// Scrollable info sections about financial privacy and stored profile fields.
 class PrivacyInfoScreen extends StatelessWidget {
   const PrivacyInfoScreen({super.key});
 
@@ -180,7 +183,7 @@ class PrivacyInfoScreen extends StatelessWidget {
                           fontWeight:
                               FontWeight.w600,
                           color: textPrimary,
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                           height: 1.5,
                         ),
                       ),
@@ -209,7 +212,7 @@ class PrivacyInfoScreen extends StatelessWidget {
                           fontWeight:
                               FontWeight.w600,
                           color: textPrimary,
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                           height: 1.5,
                         ),
                       ),
@@ -227,6 +230,7 @@ class PrivacyInfoScreen extends StatelessWidget {
   }
 }
 
+// Icon + title + body paragraph for one privacy info block.
 class _InfoSection
     extends StatelessWidget {
   final IconData icon;
@@ -298,7 +302,7 @@ class _InfoSection
                     fontWeight:
                         FontWeight.bold,
                     color: textPrimary,
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
               ),
@@ -314,7 +318,7 @@ class _InfoSection
               fontSize: 14,
               height: 1.6,
               color: textSecondary,
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
             ),
           ),
         ],

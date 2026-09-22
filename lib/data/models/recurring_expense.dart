@@ -1,6 +1,8 @@
+// Recurring expense schedule: interval units, model, and prefs serialization.
+
 import 'dart:convert';
 
-import 'package:waffer/core/data/currency.dart';
+import 'package:waffer/data/models/currency.dart';
 
 enum RecurringUnit { day, week, month }
 
@@ -18,7 +20,7 @@ extension RecurringUnitLabel on RecurringUnit {
   };
 }
 
-/// مصروف متكرر يُخصم تلقائياً من الرصيد حسب الفترة المحددة.
+// Auto-deducted expense; [nextDueAt] drives catch-up in the store.
 class RecurringExpense {
   final String id;
   final double amount;
@@ -50,6 +52,7 @@ class RecurringExpense {
 
   DateTime get syncUpdatedAt => (updatedAt ?? createdAt).toUtc();
 
+  // Arabic "every N days/weeks/months" for notes and UI.
   String get intervalDescription {
     if (intervalCount <= 1) {
       return 'كل ${unit.label}';
@@ -100,6 +103,7 @@ class RecurringExpense {
 
   String encode() => jsonEncode(toJson());
 
+  // Prefs decode; rejects non-positive amount or interval.
   static RecurringExpense? decode(String raw) {
     try {
       final decoded = jsonDecode(raw);
@@ -144,6 +148,7 @@ class RecurringExpense {
     }
   }
 
+  // Advances [from] by count units; months clamp to the last valid day.
   static DateTime nextDueFrom(DateTime from, RecurringUnit unit, int count) {
     final safeCount = count < 1 ? 1 : count;
 

@@ -1,4 +1,6 @@
-import 'package:waffer/core/data/transaction.dart';
+// Week/month (and savings-range) windows used for income periods and reports.
+
+import 'package:waffer/data/models/transaction.dart';
 
 enum SavingsRange { week, month, threeMonths, sixMonths, year }
 
@@ -12,6 +14,7 @@ extension SavingsRangeLabel on SavingsRange {
       };
 }
 
+// Half-open [start, end) calendar slice plus helpers for keys and ranges.
 class CalendarPeriod {
   final DateTime start;
   final DateTime end;
@@ -26,6 +29,7 @@ class CalendarPeriod {
     return !now.isBefore(end);
   }
 
+  // Compact id: weekly `w:…`, monthly `m:…`, or start_end day stamps.
   String get key {
     if (end.difference(start).inDays == 7) {
       return weeklyKey(start);
@@ -36,7 +40,7 @@ class CalendarPeriod {
     return '${_isoDay(start)}_${_isoDay(end)}';
   }
 
-  /// الأسبوع يبدأ السبت، بنفس حساب ReportScreen.
+  // Weeks start Saturday, same rule as ReportScreen.
   static DateTime weekStart(DateTime date) {
     final day = DateTime(date.year, date.month, date.day);
     final daysFromSaturday = (day.weekday + 1) % 7;
@@ -63,6 +67,7 @@ class CalendarPeriod {
     };
   }
 
+  // Turns a stored `w:` / `m:` key back into a period, or null if malformed.
   static CalendarPeriod? parseKey(String key) {
     if (key.startsWith('w:')) {
       final date = DateTime.tryParse(key.substring(2));
@@ -116,7 +121,7 @@ class CalendarPeriod {
     };
   }
 
-  /// الفترات المكتملة بين [since] والآن، من الأقدم إلى الأحدث.
+  // Finished period keys from [since] up to (but not including) the current one.
   static List<String> completedKeysSince(
     RecurringFrequency frequency,
     DateTime since,
@@ -136,6 +141,7 @@ class CalendarPeriod {
     return keys;
   }
 
+  // Builds a savings-chart window; [offset] steps back by one range each time.
   static CalendarPeriod forRange(SavingsRange range, int offset, {DateTime? now}) {
     final moment = now ?? DateTime.now();
     final today = DateTime(moment.year, moment.month, moment.day);
@@ -165,6 +171,7 @@ class CalendarPeriod {
     return CalendarPeriod(start: start, end: end);
   }
 
+  // Arabic label for a chart period (day span, month name, or year).
   static String rangeLabel(SavingsRange range, CalendarPeriod period) {
     final lastDay = period.end.subtract(const Duration(days: 1));
     switch (range) {

@@ -1,6 +1,8 @@
+// Moves money from the operating balance into savings without a goal.
+
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
@@ -11,6 +13,7 @@ Future<void> showManualSaveSheet(BuildContext context) {
   );
 }
 
+// Amount form that transfers from balance into savings.
 class _ManualSaveSheet extends StatefulWidget {
   const _ManualSaveSheet();
 
@@ -44,6 +47,7 @@ class _ManualSaveSheetState extends State<_ManualSaveSheet> {
     super.dispose();
   }
 
+  // Debits balance and credits savings for the entered amount.
   Future<void> _save() async {
     if (!_isValid || _saving) return;
     setState(() => _saving = true);

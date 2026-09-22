@@ -1,21 +1,28 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/data/backup_service.dart';
-import 'package:waffer/core/data/notification_service.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/services/backup_service.dart';
+import 'package:waffer/data/services/notification_service.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_service.dart';
-import 'package:waffer/core/theme/app theme.dart';
+import 'package:waffer/core/theme/app_theme.dart';
 import 'package:waffer/screens/offline/applock/applockscreen.dart';
 import 'package:waffer/screens/offline/login/login_screen.dart';
 import 'package:waffer/screens/offline/theme_select_screen.dart';
 import 'package:waffer/screens/shell/app_shell.dart';
 import 'package:waffer/widgets/brand/waffer_logo.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
-void main() {
+/// App entry: theme, first-launch flow, and the signed-in shell.
+///
+/// Preferences are loaded once in [AppPrefs] before [runApp], so later
+/// screens read the cached handle instead of hitting disk on each build.
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppPrefs.warmUp();
 
   TransactionStore.instance.onHydrated =
       NotificationService.instance.seedIfNeeded;
@@ -27,6 +34,7 @@ void main() {
   runApp(const WafarApp());
 }
 
+/// Root widget. Holds the light/dark choice and waits until it is known.
 class WafarApp extends StatefulWidget {
   const WafarApp({super.key});
 
@@ -34,6 +42,7 @@ class WafarApp extends StatefulWidget {
   State<WafarApp> createState() => _WafarAppState();
 }
 
+/// Applies [WafarApp]'s theme notifier to [MaterialApp].
 class _WafarAppState extends State<WafarApp> {
   final ValueNotifier<ThemeMode> _themeMode =
       ValueNotifier<ThemeMode>(ThemeMode.system);
@@ -46,8 +55,9 @@ class _WafarAppState extends State<WafarApp> {
     _loadTheme();
   }
 
+  /// Reads the saved theme. System mode is the default until the user picks one.
   Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     _themeMode.value = _themeModeFromPrefs(prefs);
 
     setState(() {
@@ -55,12 +65,14 @@ class _WafarAppState extends State<WafarApp> {
     });
   }
 
+  /// Persists light or dark. System mode is not written, so the next launch
+  /// can follow the device again only when that key is absent.
   Future<void> _changeTheme(ThemeMode mode) async {
     _themeMode.value = mode;
 
     if (mode == ThemeMode.system) return;
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     await prefs.setBool(
       'dark_mode',
@@ -71,6 +83,7 @@ class _WafarAppState extends State<WafarApp> {
     unawaited(SyncDirty.mark(settings: true));
   }
 
+  /// Flips between the two explicit themes. Used by the settings toggle.
   Future<void> _toggleTheme() async {
     final newMode =
         _themeMode.value == ThemeMode.dark
@@ -99,7 +112,7 @@ class _WafarAppState extends State<WafarApp> {
       valueListenable: _themeMode,
       builder: (context, themeMode, child) {
         return MaterialApp(
-          title: 'waffer',
+          title: 'waffr',
           debugShowCheckedModeBanner: false,
 
           locale: const Locale('ar'),
@@ -127,6 +140,7 @@ class _WafarAppState extends State<WafarApp> {
   }
 }
 
+/// Chooses login, first-launch theme, app lock, or the main shell.
 class AppFlowController extends StatefulWidget {
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onThemeChanged;
@@ -146,6 +160,7 @@ class AppFlowController extends StatefulWidget {
       _AppFlowControllerState();
 }
 
+/// Gate state: login, theme pick, lock, then [AppShell].
 class _AppFlowControllerState
     extends State<AppFlowController> with WidgetsBindingObserver {
   bool? _authChoiceMade;
@@ -171,7 +186,6 @@ class _AppFlowControllerState
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      // App went to background
       if (_appLockEnabled == true && _isAuthenticated) {
         setState(() {
           _isAuthenticated = false;
@@ -180,8 +194,9 @@ class _AppFlowControllerState
     }
   }
 
+  /// Loads the flags that decide which gate the user sees.
   Future<void> _checkAppState() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     final firstLaunch =
         prefs.getBool('first_launch') ?? true;
@@ -189,7 +204,6 @@ class _AppFlowControllerState
     final appLockEnabled =
         prefs.getBool('app_lock') ?? false;
 
-    // التثبيتات القديمة تجاوزت الإعداد أصلاً، فلا تُعرض عليها شاشة الدخول.
     final authChoiceMade =
         prefs.getBool(BackupService.authChoiceKey) ?? !firstLaunch;
 
@@ -203,22 +217,21 @@ class _AppFlowControllerState
     });
   }
 
-  /// بعد اختيار المستخدم في شاشة الدخول.
-  ///
-  /// إذا استُعيدت نسخة احتياطية فقد تغيّرت المفاتيح المحفوظة،
-  /// لذا يُعاد قراءة المظهر وحالة التطبيق من جديد.
+  /// Login finished. Re-read theme and flags in case a restore changed them.
   Future<void> _onAuthChoiceCompleted() async {
     await _syncThemeFromPrefs();
     await _checkAppState();
     unawaited(SyncService.instance.syncNow());
   }
 
+  /// A Drive restore finished while we were open. Replay the login-completed path.
   void _onRemoteRestored() {
     unawaited(_onAuthChoiceCompleted());
   }
 
+  /// Applies a theme that arrived from a restore while the app is open.
   Future<void> _syncThemeFromPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     final mode = _themeModeFromPrefs(prefs);
 
     if (mode != widget.themeMode) {
@@ -226,10 +239,10 @@ class _AppFlowControllerState
     }
   }
 
-  /// بعد تسجيل الخروج: شاشة الدخول، مع بقاء البيانات المحلية.
+  /// Sign-out returns to login and leaves the local ledger in place.
   Future<void> returnToLogin() async {
     await AuthSession.instance.clearSession();
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setBool(BackupService.authChoiceKey, false);
     if (!mounted) return;
     setState(() {
@@ -238,8 +251,9 @@ class _AppFlowControllerState
     });
   }
 
+  /// First-launch theme screen is done; don't show it again.
   Future<void> _markFirstLaunchDone() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     await prefs.setBool(
       'first_launch',
@@ -255,6 +269,7 @@ class _AppFlowControllerState
     });
   }
 
+  /// Biometric lock succeeded for this foreground session.
   void _unlockApp() {
     if (!mounted) return;
 
@@ -263,15 +278,20 @@ class _AppFlowControllerState
     });
   }
 
-  Future<void> refreshAppLockState() async {
-    final prefs = await SharedPreferences.getInstance();
+  /// Settings changed the lock flag. Re-read it so the gate matches.
+  /// [sessionAuthenticated] keeps this foreground session open after the
+  /// user just confirmed device auth to turn the lock on.
+  Future<void> refreshAppLockState({bool sessionAuthenticated = false}) async {
+    final prefs = await AppPrefs.instance;
     final appLockEnabled = prefs.getBool('app_lock') ?? false;
 
     if (!mounted) return;
 
     setState(() {
       _appLockEnabled = appLockEnabled;
-      if (!appLockEnabled) {
+      if (sessionAuthenticated && appLockEnabled) {
+        _isAuthenticated = true;
+      } else if (!appLockEnabled) {
         _isAuthenticated = false;
       }
     });
@@ -285,7 +305,7 @@ class _AppFlowControllerState
       return const WafferSplash();
     }
 
-    // المستخدم لم يختر بعد بين الحساب ووضع الضيف
+    // User has not chosen an account or guest mode yet.
     if (_authChoiceMade == false) {
       return LoginScreen(
         onCompleted: _onAuthChoiceCompleted,
@@ -316,7 +336,7 @@ class _AppFlowControllerState
   }
 }
 
-/// قبل اختيار المستخدم: اتبع ثيم الجهاز. بعد الاختيار: فاتح أو غامق محفوظ.
+/// No saved choice yet: follow the device. After a choice: the stored light or dark theme.
 ThemeMode _themeModeFromPrefs(SharedPreferences prefs) {
   if (prefs.containsKey('dark_mode')) {
     return (prefs.getBool('dark_mode') ?? false)

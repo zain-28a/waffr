@@ -1,11 +1,15 @@
+// Builds Material ThemeData for light and dark modes from AppColors and fonts.
+
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
 
+// Central theme: BebasNeue with Tajawal fallback for Arabic.
 class AppTheme {
   AppTheme._();
 
-  static const String cairo = 'Tajawal';
-  static const String merriweather = 'bebas neue';
+  static const String arabic = 'Tajawal';
+  static const String english = 'BebasNeue';
+  static const List<String> fallback = [arabic];
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -13,7 +17,8 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.lightBackground,
       primaryColor: AppColors.lightAccent,
       cardColor: AppColors.lightSurface,
-      fontFamily: cairo,
+      fontFamily: english,
+      fontFamilyFallback: fallback,
       colorScheme: const ColorScheme.light(
         primary: AppColors.lightAccent,
         surface: AppColors.lightSurface,
@@ -36,7 +41,8 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.darkBackground,
       primaryColor: AppColors.darkAccent,
       cardColor: AppColors.darkSurface,
-      fontFamily: cairo,
+      fontFamily: english,
+      fontFamilyFallback: fallback,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.darkAccent,
         surface: AppColors.darkSurface,
@@ -63,7 +69,8 @@ class AppTheme {
       centerTitle: true,
       foregroundColor: foreground,
       titleTextStyle: TextStyle(
-        fontFamily: cairo,
+        fontFamily: english,
+        fontFamilyFallback: fallback,
         fontSize: 22,
         fontWeight: FontWeight.bold,
         color: foreground,
@@ -79,39 +86,55 @@ class AppTheme {
   }) {
     return TextTheme(
       displayLarge: TextStyle(
-        fontFamily: merriweather,
+        fontFamily: english,
+        fontFamilyFallback: fallback,
         fontSize: 40,
         fontWeight: FontWeight.bold,
-        fontStyle: FontStyle.italic,
+        
         color: accent,
       ),
       displayMedium: TextStyle(
-        fontFamily: merriweather,
+        fontFamily: english,
+        fontFamilyFallback: fallback,
         fontSize: 26,
         fontWeight: FontWeight.w700,
-        fontStyle: FontStyle.italic,
         height: 1,
         color: accent,
       ),
       headlineSmall: TextStyle(
-        fontFamily: cairo,
+        fontFamily: english,
+        fontFamilyFallback: fallback,
         fontSize: 22,
         fontWeight: FontWeight.bold,
         color: primary,
       ),
       titleLarge: TextStyle(
-        fontFamily: cairo,
+        fontFamily: english,
+        fontFamilyFallback: fallback,
         color: primary,
         fontWeight: FontWeight.bold,
       ),
       titleMedium: TextStyle(
-        fontFamily: cairo,
+        fontFamily: english,
+        fontFamilyFallback: fallback,
         color: primary,
         fontWeight: FontWeight.w600,
       ),
-      bodyLarge: TextStyle(fontFamily: cairo, color: primary),
-      bodyMedium: TextStyle(fontFamily: cairo, color: primary),
-      bodySmall: TextStyle(fontFamily: cairo, color: secondary),
+      bodyLarge: TextStyle(
+        fontFamily: english,
+        fontFamilyFallback: fallback,
+        color: primary,
+      ),
+      bodyMedium: TextStyle(
+        fontFamily: english,
+        fontFamilyFallback: fallback,
+        color: primary,
+      ),
+      bodySmall: TextStyle(
+        fontFamily: english,
+        fontFamilyFallback: fallback,
+        color: secondary,
+      ),
     );
   }
 }

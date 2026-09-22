@@ -1,7 +1,10 @@
+// Placeholder screen for future AI feature permission toggles.
+
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 
+// Empty state until AI permissions are shipped.
 class AIPermissionsScreen extends StatelessWidget {
   const AIPermissionsScreen({super.key});
 
@@ -47,7 +50,7 @@ class AIPermissionsScreen extends StatelessWidget {
                   'لا توجد أذونات حاليا',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: textPrimary,

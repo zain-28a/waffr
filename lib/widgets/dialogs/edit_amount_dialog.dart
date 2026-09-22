@@ -1,15 +1,16 @@
+// Alert dialog for editing a money amount (same validation as monthly income).
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/currency.dart';
+import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
-/// حوار تعديل مبلغ، بنفس التحقق المستخدم للدخل الشهري.
-/// يُرجعه الحوار عندما يزيل المستخدم المبلغ المضبوط بالكامل.
+/// Returned when the user clears a previously set amount (allowClear path).
 class AmountDialogCleared {
   final String currencyCode;
   const AmountDialogCleared(this.currencyCode);
 }
 
+/// Successful save: parsed amount plus the currency chosen in the dialog.
 class EditAmountResult {
   final double amount;
   final String currencyCode;
@@ -17,6 +18,7 @@ class EditAmountResult {
   const EditAmountResult(this.amount, this.currencyCode);
 }
 
+/// Amount + currency editor with optional clear action.
 class EditAmountDialog extends StatefulWidget {
   final String title;
   final double initialAmount;
@@ -63,6 +65,7 @@ class _EditAmountDialogState extends State<EditAmountDialog> {
     super.dispose();
   }
 
+  /// Validates and pops [EditAmountResult], or shows an inline error.
   void _submit() {
     final amount = parseAmount(_controller.text);
     if (!amount.isFinite || amount <= 0) {

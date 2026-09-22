@@ -1,3 +1,5 @@
+// Maps FastAPI auth HTTP errors into Arabic messages for login/register UI.
+
 String describeAuthError(int status, Object? body) {
   final detail = _authDetail(body);
   if (status == 401) {
@@ -19,6 +21,7 @@ String describeAuthError(int status, Object? body) {
   return 'تعذر الاتصال بالحساب. حاول مرة أخرى';
 }
 
+// Pull FastAPI's `detail` string (or first validation msg) from the JSON body.
 String _authDetail(Object? body) {
   if (body is! Map) return '';
   final detail = body['detail'];

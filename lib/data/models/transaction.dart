@@ -1,54 +1,45 @@
+// Money movement types and the WafferTransaction record stored as JSON in prefs.
+
 import 'dart:convert';
 
-import 'package:waffer/core/data/currency.dart';
+import 'package:waffer/data/models/currency.dart';
 
 enum TransactionType { income, expense, savingsIn, savingsOut }
 
-/// مدة الدخل المضافة: بدون مدة لا تُرحَّل تلقائياً إلى الادخار.
+// Income cadence: none means no automatic savings rollover for that entry.
 enum RecurringFrequency { none, weekly, monthly }
 
-/// سبب حركة الادخار، لتمييز التحويلات التلقائية عن اليدوية.
+// Why a savings transfer happened — auto leftover, goal plan, manual, or withdraw.
 enum SavingsTransferKind { periodLeftover, goalPeriodic, manual, withdraw }
 
-/// عملية واحدة كما تُخزَّن في SharedPreferences بصيغة JSON.
+// One ledger row: income, expense, or savings in/out, with optional period/goal links.
 class WafferTransaction {
   final String id;
   final TransactionType type;
   final double amount;
 
-  /// رمز ISO للعملة التي تنتمي إليها العملية. البيانات القديمة تُعدّ SYP.
   final String currencyCode;
 
-  /// للمصروف فقط.
   final String? category;
 
-  /// للمصروف فقط.
   final String? paymentMethod;
 
-  /// ملاحظة المصروف أو مصدر الدخل أو وصف حركة الادخار.
   final String? note;
 
-  /// معرّف اختياري للعملية في الميزة التي أنشأتها، لمنع الإنشاء المكرر.
   final String? sourceId;
 
   final DateTime dateTime;
 
-  /// للدخل: أسبوعي / شهري / بدون مدة.
   final RecurringFrequency frequency;
 
-  /// مفتاح الفترة التقويمية التي ينتمي إليها الدخل الدوري.
   final String? periodKey;
 
-  /// لحركات الادخار فقط.
   final SavingsTransferKind? transferKind;
 
-  /// الهدف المرتبط بحركة ادخار دورية، إن وُجد.
   final String? goalId;
 
-  /// الفترة التي سُوِّيت عند إنهاء المدة (لمنع التكرار).
   final String? processedPeriodKey;
 
-  /// وقت آخر تعديل محلي/سحابي. إن غاب يُستخدم [dateTime].
   final DateTime? updatedAt;
 
   const WafferTransaction({
@@ -119,6 +110,7 @@ class WafferTransaction {
 
   String encode() => jsonEncode(toJson());
 
+  // Prefs decode; rejects non-positive amounts. Accepts legacy currency_code.
   static WafferTransaction? decode(String raw) {
     try {
       final decoded = jsonDecode(raw);

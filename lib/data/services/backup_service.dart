@@ -3,18 +3,19 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/data/category_store.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/drive_backup_client.dart';
-import 'package:waffer/core/data/google_auth_service.dart';
-import 'package:waffer/core/data/notification_service.dart';
-import 'package:waffer/core/data/profile_photo.dart';
-import 'package:waffer/core/data/recurring_expense_store.dart';
-import 'package:waffer/core/data/shopping_list_store.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/stores/category_store.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/services/drive_backup_client.dart';
+import 'package:waffer/data/services/google_auth_service.dart';
+import 'package:waffer/data/services/notification_service.dart';
+import 'package:waffer/data/services/profile_photo.dart';
+import 'package:waffer/data/stores/recurring_expense_store.dart';
+import 'package:waffer/data/stores/shopping_list_store.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/sync/api_config.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
 /// نتيجة محاولة ربط Google Drive للنسخة الاحتياطية فقط.
 enum GoogleLinkResult {
@@ -178,7 +179,7 @@ class BackupService {
 
     _attachListeners();
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     if (!(prefs.getBool(linkedKey) ?? false)) {
       return;
@@ -379,7 +380,7 @@ class BackupService {
   /// يمسح البيانات المحلية القابلة للمزامنة قبل حساب آخر، دون المساس بجلسة Drive.
   /// يبقى اختيار المظهر الأول حتى لا تُعاد شاشة المظهر بعد اكتمال الإعداد.
   Future<void> replaceLocalDataForAccountSwitch() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     final firstLaunch = prefs.getBool('first_launch');
     final hasDarkMode = prefs.containsKey('dark_mode');
     final darkMode = prefs.getBool('dark_mode');
@@ -399,7 +400,7 @@ class BackupService {
   Future<void> continueAsGuest() async {
     await AuthSession.instance.clearSession();
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setBool(authChoiceKey, true);
   }
 
@@ -410,7 +411,7 @@ class BackupService {
 
     await GoogleAuthService.instance.signOut();
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     await prefs.setBool(linkedKey, false);
     await prefs.remove(linkedEmailKey);
@@ -446,7 +447,7 @@ class BackupService {
 
     _cachedFileId = null;
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     if (email != null && email.isNotEmpty) {
       await _removeAccount(prefs, email);
@@ -470,7 +471,7 @@ class BackupService {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setString('user_name', trimmed);
 
     final email = prefs.getString(linkedEmailKey);
@@ -488,7 +489,7 @@ class BackupService {
   }
 
   Future<List<LinkedGoogleAccount>> linkedAccounts() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     return _readAccounts(prefs);
   }
 
@@ -496,20 +497,20 @@ class BackupService {
     final live = GoogleAuthService.instance.photoUrl;
     if (live != null && live.isNotEmpty) return live;
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     return prefs.getString(linkedPhotoKey);
   }
 
   /// هل الجهاز مرتبط بحساب Google حالياً.
   Future<bool> isLinked() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     return prefs.getBool(linkedKey) ?? false;
   }
 
   /// بريد الحساب المرتبط، أو `null` في وضع الضيف.
   Future<String?> linkedEmail() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     return prefs.getString(linkedEmailKey);
   }
@@ -530,7 +531,7 @@ class BackupService {
     var success = false;
 
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await AppPrefs.instance;
 
       if (!(prefs.getBool(linkedKey) ?? false)) {
         return false;
@@ -633,7 +634,7 @@ class BackupService {
       }
     }
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     await prefs.setBool(restorePendingKey, false);
 
@@ -737,7 +738,7 @@ class BackupService {
     _restoring = true;
 
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await AppPrefs.instance;
 
       if (replaceExisting) {
         await _clearRestorablePrefs(prefs);
@@ -836,7 +837,7 @@ class BackupService {
   }
 
   Future<void> _clearRestorableData() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await _clearRestorablePrefs(prefs);
     await _reloadStores();
   }
@@ -852,7 +853,7 @@ class BackupService {
     String email, {
     required bool restorePending,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     final auth = GoogleAuthService.instance;
 
     await prefs.setBool(authChoiceKey, true);

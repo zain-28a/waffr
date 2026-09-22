@@ -1,11 +1,11 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/category_store.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/expense_categories.dart';
-import 'package:waffer/core/data/savings_goal.dart';
-import 'package:waffer/core/data/transaction.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/stores/category_store.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/models/expense_categories.dart';
+import 'package:waffer/data/models/savings_goal.dart';
+import 'package:waffer/data/models/transaction.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/offline/home/sheets/add_expense_sheet.dart';
@@ -14,6 +14,9 @@ import 'package:waffer/screens/offline/report/reportscreen.dart';
 import 'package:waffer/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
+
+// Offline home tab: balance, add actions, spending distribution, recent
+// expenses, and active savings goals — all from TransactionStore.
 
 const double kBalanceCardActionTop = 14;
 const double kBalanceCardActionEnd = 14;
@@ -27,6 +30,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+// Kept alive in the shell PageView so scroll position survives tab switches.
 class _HomeScreenState extends State<HomeScreen>
     with AutomaticKeepAliveClientMixin {
   final TransactionStore _store = TransactionStore.instance;
@@ -92,6 +96,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ],
               ),
               const SizedBox(height: 6),
+              // expensesByCategory is rolled up in memory from the store.
               _DistributionCard(
                 totals: _store.expensesByCategory(),
                 totalExpense: _store.totalExpense,
@@ -157,8 +162,9 @@ class _BalanceCardIconButton extends StatelessWidget {
   }
 }
 
-// ================= الرصيد =================
-
+// Current balance, remaining-ratio bar, and spend vs max. Vertical swipe
+// cycles currency when more than one is enabled. Corner actions open income
+// history and the shopping list.
 class _BalanceCard extends StatelessWidget {
   final double balance;
   final double spent;
@@ -232,7 +238,7 @@ class _BalanceCard extends StatelessWidget {
                         Text(
                           'الرصيد الحالي',
                           style: TextStyle(
-                            fontFamily: 'Tajawal',
+                            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                             fontSize: 13.5,
                             color: textSecondary,
                           ),
@@ -251,7 +257,7 @@ class _BalanceCard extends StatelessWidget {
                             child: Text(
                               formatMoney(balance),
                               style: TextStyle(
-                                fontFamily: 'Tajawal',
+                                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 36,
                                 fontWeight: FontWeight.bold,
                                 color: accent,
@@ -263,7 +269,7 @@ class _BalanceCard extends StatelessWidget {
                         Text(
                           currencyLabel,
                           style: TextStyle(
-                            fontFamily: 'Tajawal',
+                            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                             fontSize: 15,
                             color: textSecondary,
                           ),
@@ -276,7 +282,7 @@ class _BalanceCard extends StatelessWidget {
                       child: Text(
                         '${(ratio * 100).round()}%',
                         style: TextStyle(
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
                           color: textSecondary,
@@ -294,7 +300,7 @@ class _BalanceCard extends StatelessWidget {
                       'مصروف ${formatMoney(spent)} $currencyLabel '
                       'من ${formatMoney(maxBalance)} $currencyLabel',
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 12.5,
                         color: textSecondary,
                       ),
@@ -363,8 +369,6 @@ class _HorizontalProgress extends StatelessWidget {
   }
 }
 
-// ================= أزرار الإضافة =================
-
 class _ActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -401,7 +405,7 @@ class _ActionButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 14.5,
                 fontWeight: FontWeight.w700,
                 color: textPrimary,
@@ -414,8 +418,7 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// ================= توزيع المصروفات =================
-
+// Spending share by category: legend + donut.
 class _DistributionCard extends StatelessWidget {
   final List<({String category, double amount})> totals;
   final double totalExpense;
@@ -454,6 +457,10 @@ class _DistributionCard extends StatelessWidget {
   }
 }
 
+// Donut of spending shares. fl_chart paints this with its pie renderer, not
+// an app-owned CustomPainter. PieChartData uses value equality, so a parent
+// rebuild with the same slices does not mark the chart dirty. RepaintBoundary
+// keeps that layer off the rest of the dashboard.
 class _DistributionChart extends StatelessWidget {
   final List<({String category, double amount})> totals;
   final double totalExpense;
@@ -505,7 +512,7 @@ class _DistributionChart extends StatelessWidget {
               Text(
                 '$topShare%',
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -514,7 +521,7 @@ class _DistributionChart extends StatelessWidget {
               Text(
                 totals.first.category,
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontSize: 10.5,
                   color: textPrimary.withValues(alpha: 0.6),
                 ),
@@ -576,7 +583,7 @@ class _DistributionLegend extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: textPrimary,
@@ -586,7 +593,7 @@ class _DistributionLegend extends StatelessWidget {
               Text(
                 '$share%',
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: textSecondary,
@@ -600,8 +607,7 @@ class _DistributionLegend extends StatelessWidget {
   }
 }
 
-// ================= هدف التوفير =================
-
+// Active goals in a PageView — one goal per page; swipe to move between them.
 class _SavingGoalCard extends StatefulWidget {
   final bool compact;
   final List<SavingsGoal> goals;
@@ -642,6 +648,7 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
     super.dispose();
   }
 
+  // Keeps the pager on the same goal id when the goals list changes.
   void _syncVisibleGoal() {
     final goals = widget.goals;
     if (goals.isEmpty) {
@@ -703,7 +710,7 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
           'لا يوجد هدف حالياً',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
             fontSize: compact ? 13 : 15,
             fontWeight: FontWeight.w700,
             color: textSecondary,
@@ -799,7 +806,7 @@ class _SavingGoalPage extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontSize: compact ? 11 : 12.5,
                   fontWeight: FontWeight.w700,
                   color: textSecondary,
@@ -814,7 +821,7 @@ class _SavingGoalPage extends StatelessWidget {
           child: Text(
             '${formatMoney(saved)} / ${formatMoney(target)}',
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: compact ? 14 : 17,
               fontWeight: FontWeight.bold,
               color: textPrimary,
@@ -870,8 +877,7 @@ class _VerticalProgress extends StatelessWidget {
   }
 }
 
-// ================= آخر المصروفات =================
-
+// Last few expenses from the store (up to three rows).
 class _RecentExpensesCard extends StatelessWidget {
   final List<WafferTransaction> expenses;
   final bool compact;
@@ -941,7 +947,7 @@ class _ExpenseRow extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       textAlign: TextAlign.end,
       style: TextStyle(
-        fontFamily: 'Tajawal',
+        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
         fontSize: compact ? 11.5 : 14,
         fontWeight: FontWeight.bold,
         color: accent,
@@ -973,7 +979,7 @@ class _ExpenseRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontSize: compact ? 12.5 : 15.5,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -986,7 +992,7 @@ class _ExpenseRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: compact ? 10.5 : 12.5,
                     color: textSecondary,
                   ),
@@ -999,7 +1005,7 @@ class _ExpenseRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontSize: compact ? 9 : 11,
                   color: textSecondary.withValues(alpha: 0.8),
                 ),
@@ -1024,15 +1030,14 @@ class _ExpenseRow extends StatelessWidget {
   }
 }
 
-// ================= عناصر مشتركة =================
-
+// Shared glass card shell used by the dashboard sections.
 class _SectionCard extends StatelessWidget {
   final String title;
   final String? caption;
   final Widget child;
   final bool compact;
 
-  /// يوسّط المحتوى في المساحة المتبقية، ويُستخدم فقط داخل صف بارتفاع محدَّد.
+  // Centers [child] in the leftover height; used in fixed-height rows.
   final bool centerChild;
 
   const _SectionCard({
@@ -1069,7 +1074,7 @@ class _SectionCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: compact ? 14.5 : 16,
                 fontWeight: FontWeight.bold,
                 color: textPrimary,
@@ -1085,7 +1090,7 @@ class _SectionCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: compact ? 14.5 : 16,
                     fontWeight: FontWeight.bold,
                     color: textPrimary,
@@ -1098,7 +1103,7 @@ class _SectionCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                       fontSize: compact ? 10.5 : 11,
                       fontWeight: FontWeight.w500,
                       color: textSecondary,
@@ -1148,7 +1153,7 @@ class _EmptyState extends StatelessWidget {
             message,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: compact ? 12 : 13.5,
               color: textPrimary.withValues(alpha: 0.55),
             ),

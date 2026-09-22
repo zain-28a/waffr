@@ -1,7 +1,9 @@
+// Preview card and sheet to edit, pause, or delete automatic recurring expenses.
+
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/recurring_expense.dart';
-import 'package:waffer/core/data/recurring_expense_store.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/models/recurring_expense.dart';
+import 'package:waffer/data/stores/recurring_expense_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
@@ -17,6 +19,7 @@ Future<void> showRecurringExpensesSheet(BuildContext context) {
   );
 }
 
+// Compact teaser of upcoming recurring charges (also used from settings).
 class RecurringExpensesPreviewCard extends StatefulWidget {
   const RecurringExpensesPreviewCard({super.key});
 
@@ -75,7 +78,7 @@ class _RecurringExpensesPreviewCardState
                         Text(
                           'المصروفات المتكررة',
                           style: TextStyle(
-                            fontFamily: 'Tajawal',
+                            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: colors.textPrimary,
@@ -86,7 +89,7 @@ class _RecurringExpensesPreviewCardState
                               ? 'لا يوجد اشتراك أو مصروف متكرر'
                               : '${items.length} عناصر محفوظة',
                           style: TextStyle(
-                            fontFamily: 'Tajawal',
+                            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                             fontSize: 11.5,
                             color: colors.textSecondary,
                           ),
@@ -108,7 +111,7 @@ class _RecurringExpensesPreviewCardState
                       '+ ${items.length - preview.length} عناصر أخرى',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: colors.accent,
@@ -124,6 +127,7 @@ class _RecurringExpensesPreviewCardState
   }
 }
 
+// Full list of recurring expenses for the active currency.
 class RecurringExpensesSheet extends StatefulWidget {
   const RecurringExpensesSheet({super.key});
 
@@ -171,6 +175,7 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
     await _store.deleteExpense(item.id);
   }
 
+  // Opens amount editor and updates the recurring expense in the store.
   Future<void> _edit(RecurringExpense item) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
@@ -231,7 +236,7 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
                     Text(
                       'لا توجد مصروفات متكررة بعد',
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 14,
                         color: colors.textSecondary,
                       ),
@@ -257,6 +262,7 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
   }
 }
 
+// One line in the recurring-expenses preview card.
 class _PreviewItem extends StatelessWidget {
   final RecurringExpense item;
   final _RecurringColors colors;
@@ -285,7 +291,7 @@ class _PreviewItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 12.5,
                 color: item.enabled ? colors.textPrimary : colors.textSecondary,
               ),
@@ -294,7 +300,7 @@ class _PreviewItem extends StatelessWidget {
           Text(
             item.intervalDescription,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 11,
               color: colors.textSecondary,
             ),
@@ -305,6 +311,7 @@ class _PreviewItem extends StatelessWidget {
   }
 }
 
+// Row with amount edit and delete for one recurring expense.
 class _RecurringItemTile extends StatelessWidget {
   final RecurringExpense item;
   final _RecurringColors colors;
@@ -341,7 +348,7 @@ class _RecurringItemTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: colors.textPrimary,
@@ -351,7 +358,7 @@ class _RecurringItemTile extends StatelessWidget {
                     Text(
                       '${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)} · ${item.intervalDescription}',
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 11.5,
                         color: colors.textSecondary,
                       ),
@@ -379,6 +386,7 @@ class _RecurringItemTile extends StatelessWidget {
   }
 }
 
+// Local light/dark colors for recurring UI.
 class _RecurringColors {
   final Color accent;
   final Color textPrimary;

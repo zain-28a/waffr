@@ -1,15 +1,16 @@
+// App settings: account, income, currencies, theme, app lock, privacy, help, reset.
+
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/data/backup_service.dart';
-import 'package:waffer/core/data/category_store.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/notification_service.dart';
-import 'package:waffer/core/data/profile_photo.dart';
-import 'package:waffer/core/data/recurring_expense_store.dart';
-import 'package:waffer/core/data/shopping_list_store.dart';
-import 'package:waffer/core/data/transaction.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/services/backup_service.dart';
+import 'package:waffer/data/stores/category_store.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/services/notification_service.dart';
+import 'package:waffer/data/services/profile_photo.dart';
+import 'package:waffer/data/stores/recurring_expense_store.dart';
+import 'package:waffer/data/stores/shopping_list_store.dart';
+import 'package:waffer/data/models/transaction.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
@@ -22,11 +23,14 @@ import 'package:waffer/screens/offline/settings/help_screen.dart';
 import 'package:waffer/screens/offline/settings/privacy_security_screen.dart';
 import 'package:waffer/screens/offline/savings/sheets/recurring_expenses_sheet.dart';
 import 'package:waffer/screens/offline/settings/sheets/currencies_sheet.dart';
+import 'package:waffer/screens/offline/settings/sheets/monthly_income_sheet.dart';
 import 'package:waffer/widgets/brand/profile_avatar.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 import 'package:waffer/widgets/dialogs/edit_amount_dialog.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
+// Hub for account, appearance, security shortcuts, and destructive data reset.
 class SettingsScreen extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeNotifier;
   final VoidCallback onThemeChanged;
@@ -56,7 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _hasWeeklyIncome = false;
   double _monthlyIncome = 0;
   double _weeklyIncome = 0;
-  /// الدخل الأسبوعي يبقى في المنطق، لكنه مخفي مؤقتاً من خيارات المستخدم.
+  // Weekly income stays in the store; the settings tile is hidden for now.
   static const bool _weeklyIncomeChoiceEnabled = false;
 
   final LocalAuthentication _auth = LocalAuthentication();
@@ -85,8 +89,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // Pulls prefs, auth session, profile photo, and configured income into state.
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await TransactionStore.instance.ensureLoaded();
 
     final store = TransactionStore.instance;
@@ -115,11 +120,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  // Enables lock only after device auth succeeds; disable writes prefs immediately.
   Future<void> _toggleAppLock(bool value) async {
     if (_isAuthenticating) return;
 
     if (value) {
-      // Enabling app lock - authenticate immediately
       setState(() {
         _isAuthenticating = true;
       });
@@ -147,7 +152,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (!mounted) return;
 
         if (authenticated) {
-          final prefs = await SharedPreferences.getInstance();
+          final prefs = await AppPrefs.instance;
           await prefs.setBool('app_lock', true);
 
           BackupService.instance.scheduleBackup();
@@ -156,20 +161,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _appLock = true;
           });
 
-          // Mark as authenticated in the flow controller
-          if (widget.appFlowController != null) {
-            widget.appFlowController._isAuthenticated = true;
-            widget.appFlowController.refreshAppLockState();
-          }
+          widget.appFlowController?.refreshAppLockState(
+            sessionAuthenticated: true,
+          );
 
           if (mounted) {
             showAppSnackBar(context, 'تم تفعيل قفل التطبيق', success: true);
           }
         }
       } on LocalAuthException catch (_) {
-        // User cancelled
       } catch (_) {
-        // Other error
       } finally {
         if (mounted) {
           setState(() {
@@ -178,8 +179,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       }
     } else {
-      // Disabling app lock
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await AppPrefs.instance;
       await prefs.setBool('app_lock', false);
 
       BackupService.instance.scheduleBackup();
@@ -200,6 +200,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // Explains that Arabic is currently the only supported language.
   void _showLanguageInfo() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -256,7 +257,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 ),
               ),
 
@@ -270,7 +271,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(
                   fontSize: 15,
                   color: textSecondary,
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   height: 1.5,
                 ),
               ),
@@ -285,7 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   color: textSecondary,
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 ),
               ),
 
@@ -308,7 +309,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Text(
                     'حسناً',
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -323,6 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // Signed-in users open AccountScreen; guests go through LoginScreen first.
   Future<void> _openAccount() async {
     if (_loggedIn) {
       await Navigator.of(context).push(
@@ -355,21 +357,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _loadSettings();
   }
 
+  // Edit or clear preferred monthly/weekly income in a sheet, not a dialog.
   Future<void> _editIncome(RecurringFrequency frequency) async {
     final isMonthly = frequency == RecurringFrequency.monthly;
     final current = isMonthly ? _monthlyIncome : _weeklyIncome;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-
-    final result = await showDialog<Object>(
-      context: context,
-      builder: (context) => EditAmountDialog(
-        title: isMonthly ? 'الدخل الشهري' : 'الدخل الأسبوعي',
-        initialAmount: current,
-        accent: accent,
-        allowClear: isMonthly && current > 0,
-      ),
+    final result = await showMonthlyIncomeSheet(
+      context,
+      title: isMonthly ? 'الدخل الشهري' : 'الدخل الأسبوعي',
+      initialAmount: current,
+      allowClear: isMonthly && current > 0,
     );
 
     if (!mounted || result == null) return;
@@ -422,6 +419,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showAbout() {}
 
+  // Clears prefs, session, photo, and in-memory stores, then returns to first route.
   Future<void> _resetApp() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -461,7 +459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (confirm != true) return;
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     await prefs.clear();
     await AuthSession.instance.clearSession();
@@ -801,7 +799,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           Center(
             child: Text(
-              'waffer 2.5.0',
+              'waffr 2.6.0',
 
               style: TextStyle(
                 color: textSecondary.withValues(alpha: 0.6),
@@ -823,6 +821,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
+// Avatar + name/email card at the top of settings (or a sign-in prompt).
 class _ProfileCard extends StatelessWidget {
   final String name;
   final String email;
@@ -902,6 +901,7 @@ class _ProfileCard extends StatelessWidget {
   }
 }
 
+// Small uppercase section label above a group of tiles.
 class _SectionTitle extends StatelessWidget {
   final String title;
   final Color color;
@@ -926,6 +926,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+// Standard settings row: icon, title, subtitle, optional trailing control.
 class _SettingsTile extends StatelessWidget {
   final IconData icon;
 

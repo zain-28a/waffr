@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/widgets/button/ani_pri_button.dart';
 
+// First-launch light/dark picker before entering the app.
+
 class ThemeSelectScreen extends StatefulWidget {
   final void Function(ThemeMode mode) onThemeChanged;
   final VoidCallback onContinue;
@@ -63,7 +65,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                   color: textPrimary,
                   fontSize: 60,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 ),
                 child:Text.rich(
                   TextSpan(children:[

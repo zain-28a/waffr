@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/registration_profile.dart';
+import 'package:waffer/data/models/registration_profile.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/widgets/button/ani_pri_button.dart';
+
+// Collects name, birth date, gender, and address for RegistrationProfile.
 
 enum Gender { male, female }
 
@@ -146,7 +148,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 ),
               ),
               const SizedBox(height: 8),
@@ -290,7 +292,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
               AnimatedPrimaryButton(
                 text: 'متابعة',
                 style: const TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontWeight: FontWeight.bold,
                 ),
                 backgroundColor: _isFormValid ? accent : textSecondary,

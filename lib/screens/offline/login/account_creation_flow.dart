@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/registration_profile.dart';
+import 'package:waffer/data/models/registration_profile.dart';
 import 'package:waffer/screens/offline/login/register_screen.dart';
 import 'package:waffer/screens/offline/user_info/user_info_screen.dart';
 
-/// User information, then account credentials, on a single route.
+// Two-step signup on one route: profile (UserInfoScreen), then credentials.
+
 class AccountCreationFlow extends StatefulWidget {
   final Future<void> Function() onCompleted;
   final bool popOnSuccess;
@@ -27,6 +28,7 @@ class _AccountCreationFlowState extends State<AccountCreationFlow> {
     final profile = _profile;
 
     return PopScope(
+      // On step 1, system back returns to user info instead of leaving.
       canPop: _step == 0,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop || _step == 0) return;

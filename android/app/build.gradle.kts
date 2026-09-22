@@ -54,7 +54,7 @@ flutter {
 tasks.configureEach {
     if (name != "assembleRelease") return@configureEach
     doLast {
-        val named = "Waffer-${flutter.versionName}.apk"
+        val named = "Waffr-${flutter.versionName}.apk"
         val outputs = layout.buildDirectory.get().asFile
         val releaseApk = outputs.resolve("outputs/apk/release/app-release.apk")
         val flutterDir = outputs.resolve("outputs/flutter-apk")

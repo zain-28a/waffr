@@ -1,11 +1,13 @@
+// Converts app models to/from the JSON shapes expected by FastAPI /sync.
+
 import 'dart:convert';
 
-import 'package:waffer/core/data/app_notification.dart';
-import 'package:waffer/core/data/category_store.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/recurring_expense.dart';
-import 'package:waffer/core/data/savings_goal.dart';
-import 'package:waffer/core/data/transaction.dart';
+import 'package:waffer/data/models/app_notification.dart';
+import 'package:waffer/data/stores/category_store.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/models/recurring_expense.dart';
+import 'package:waffer/data/models/savings_goal.dart';
+import 'package:waffer/data/models/transaction.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_tombstones.dart';
 
@@ -18,6 +20,7 @@ double? parseMoney(Object? raw) {
   return double.tryParse(raw.toString());
 }
 
+// Wrap upserts + delete tombstones the way the /sync API expects per collection.
 Map<String, dynamic> collectionPayload({
   required List<Map<String, dynamic>> upserts,
   required List<SyncTombstone> deletes,

@@ -1,5 +1,7 @@
+// Full news list sheet opened from the online preview card.
+
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/news_article.dart';
+import 'package:waffer/data/models/news_article.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
@@ -15,6 +17,7 @@ Future<void> showNewsSheet(
   );
 }
 
+// Scrollable list of headlines with source and timestamp.
 class _NewsSheet extends StatelessWidget {
   final List<NewsArticle> articles;
 
@@ -48,7 +51,7 @@ class _NewsSheet extends StatelessWidget {
                     'لا توجد أخبار حالياً',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                       fontSize: 14,
                       color: textPrimary.withValues(alpha: 0.55),
                     ),
@@ -79,6 +82,7 @@ class _NewsSheet extends StatelessWidget {
   }
 }
 
+// Title, source, and published time for one article in the sheet.
 class _NewsArticleBlock extends StatelessWidget {
   final NewsArticle article;
   final Color textPrimary;
@@ -98,7 +102,7 @@ class _NewsArticleBlock extends StatelessWidget {
         Text(
           article.title,
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: textPrimary,
@@ -110,7 +114,7 @@ class _NewsArticleBlock extends StatelessWidget {
           Text(
             article.body,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 13.5,
               fontWeight: FontWeight.w400,
               color: textPrimary.withValues(alpha: 0.82),
@@ -122,7 +126,7 @@ class _NewsArticleBlock extends StatelessWidget {
         Text(
           '${article.source} · ${formatDate(article.publishedAt)} · ${formatTime(article.publishedAt)}',
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
             fontSize: 12,
             fontWeight: FontWeight.w500,
             color: textSecondary,

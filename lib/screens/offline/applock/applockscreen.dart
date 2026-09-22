@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:waffer/core/theme/app_color.dart';
 
+// Blocks the app until device auth (biometrics or PIN) succeeds.
+
 class LockScreen extends StatefulWidget {
   final VoidCallback onAuthenticated;
 
@@ -28,6 +30,7 @@ class _LockScreenState extends State<LockScreen> {
     });
   }
 
+  // Prompts local_auth; unsupported devices skip straight through.
   Future<void> _authenticate() async {
     if (_loading) return;
 
@@ -53,12 +56,12 @@ class _LockScreenState extends State<LockScreen> {
         widget.onAuthenticated();
       }
     } on LocalAuthException catch (_) {
-      // المستخدم ألغى البصمة أو فشلت المحاولة
+      // User cancelled or biometrics failed — stay locked.
     } catch (_) {
-      // أي خطأ آخر
+      // Unexpected auth error — stay locked.
     } finally {
       if (mounted) {
-        // نعطي Android لحظة حتى ينهي نافذة المصادقة
+        // Brief pause so Android can dismiss the system auth UI first.
         await Future.delayed(
           const Duration(milliseconds: 300),
         );
@@ -109,7 +112,7 @@ class _LockScreenState extends State<LockScreen> {
                 color: textPrimary,
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               ),
             ),
 
@@ -120,7 +123,7 @@ class _LockScreenState extends State<LockScreen> {
               style: TextStyle(
                 color: textPrimary.withValues(alpha: 0.6),
                 fontSize: 14,
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               ),
             ),
 
@@ -132,7 +135,7 @@ class _LockScreenState extends State<LockScreen> {
               label: const Text(
                 'فتح القفل',
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 ),
               ),
               style: ElevatedButton.styleFrom(

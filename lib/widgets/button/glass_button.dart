@@ -1,7 +1,12 @@
+// Tappable glass surface with a brief press-scale animation.
+// Visual chrome comes from GlassContainer (translucent fill, no BackdropFilter).
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
+/// Pressable [GlassContainer] that scales slightly on tap.
+///
+/// Shares the same translucent fill as cards — no extra blur pass — so buttons
+/// and glass surfaces stay consistent and cheap to paint.
 class GlassButton extends StatefulWidget {
   final VoidCallback onTap;
   final Widget child;
@@ -45,27 +50,8 @@ class _GlassButtonState extends State<GlassButton> {
     setState(() => _scale = 1.0);
   }
 
-  Color _resolveColor(bool isDark) {
-    switch (widget.colorType) {
-      case GlassColorType.accent:
-        return isDark ? AppColors.darkAccent : AppColors.lightAccent;
-      case GlassColorType.background:
-        return isDark ? AppColors.darkBackground : AppColors.lightBackground;
-      case GlassColorType.surface:
-        return isDark ? AppColors.darkSurface : AppColors.lightSurface;
-      case GlassColorType.textPrimary:
-        return isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-      case GlassColorType.textSecondary:
-        return isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color baseColor = _resolveColor(isDark);
-    final Color borderColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-
     return GestureDetector(
       onTap: widget.onTap,
       onTapDown: _onTapDown,
@@ -75,27 +61,14 @@ class _GlassButtonState extends State<GlassButton> {
         scale: _scale,
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeOut,
-        child: Container(
+        child: GlassContainer(
           width: widget.width,
           height: widget.height,
-          margin: widget.margin,
           padding: widget.padding,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: baseColor.withValues(alpha: widget.tintOpacity),
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            border: Border.all(
-              color: borderColor.withValues(alpha: 0.1),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+          margin: widget.margin,
+          borderRadius: widget.borderRadius,
+          colorType: widget.colorType,
+          tintOpacity: widget.tintOpacity,
           child: widget.child,
         ),
       ),

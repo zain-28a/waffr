@@ -1,6 +1,8 @@
+// Reorder, delete, or add active savings goals.
+
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/savings_goal.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/models/savings_goal.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/offline/savings/sheets/create_goal_sheet.dart';
@@ -14,6 +16,7 @@ Future<void> showManageGoalsSheet(BuildContext context) {
   );
 }
 
+// Sheet body with reorderable active goals and an add-goal button.
 class _ManageGoalsSheet extends StatefulWidget {
   const _ManageGoalsSheet();
 
@@ -30,6 +33,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
     _store.ensureLoaded();
   }
 
+  // Asks before permanently removing a goal from the store.
   Future<void> _confirmDelete(SavingsGoal goal) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
@@ -53,7 +57,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
             'حذف الهدف',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontWeight: FontWeight.bold,
               color: textPrimary,
             ),
@@ -61,21 +65,21 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
           content: const Text(
             'هل أنت متأكد من حذف هذا الهدف؟',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Tajawal', fontSize: 14),
+            style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], fontSize: 14),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
               child: Text(
                 'إلغاء',
-                style: TextStyle(fontFamily: 'Tajawal', color: textSecondary),
+                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: textSecondary),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
                 'حذف',
-                style: TextStyle(fontFamily: 'Tajawal', color: accent),
+                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: accent),
               ),
             ),
           ],
@@ -131,7 +135,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
                               'لا توجد أهداف حالياً',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontFamily: 'Tajawal',
+                                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 14,
                                 color: textPrimary.withValues(alpha: 0.55),
                               ),
@@ -195,7 +199,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
                             Text(
                               'إضافة هدف',
                               style: TextStyle(
-                                fontFamily: 'Tajawal',
+                                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -222,6 +226,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
   }
 }
 
+// Drag handle, progress summary, and delete for one goal in the manage list.
 class _ManageGoalRow extends StatelessWidget {
   final int index;
   final SavingsGoal goal;
@@ -274,7 +279,7 @@ class _ManageGoalRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: textPrimary,
@@ -297,7 +302,7 @@ class _ManageGoalRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     color: textSecondary,

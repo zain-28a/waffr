@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/data/backup_service.dart';
+import 'package:waffer/data/services/backup_service.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/screens/offline/login/account_creation_flow.dart';
 import 'package:waffer/screens/offline/login/auth_fields.dart';
-import 'package:waffer/widgets/brand/waffer_logo.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
-/// شاشة الدخول: بريد وكلمة مرور، أو المتابعة كضيف محلياً.
+// Sign-in with email/password, register, or continue as a local guest.
+
 class LoginScreen extends StatefulWidget {
   final Future<void> Function() onCompleted;
   final bool allowGuest;
@@ -50,6 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
         !_busy;
   }
 
+  // Auth, sync, then clear first-launch so theme select is not shown again.
   Future<void> _login() async {
     if (!_canSubmit) return;
 
@@ -70,8 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     await SyncService.instance.syncNow();
     if (!mounted) return;
-    // تسجيل الدخول لا يعيد شاشة اختيار المظهر. يُستخدم المظهر المحفوظ.
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     if (prefs.getBool('first_launch') ?? true) {
       await prefs.setBool('first_launch', false);
     }
@@ -127,7 +127,6 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 48),
-              Image.asset('assets/brand/waffer_logo.png', width: 150, height: 150),
               const SizedBox(height: 28),
               Text.rich(
                 TextSpan(
@@ -144,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: textPrimary,
                   fontSize: 34,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 ),
               ),
               const SizedBox(height: 10),
@@ -228,7 +227,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         'تسجيل الدخول',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Color.fromARGB(255, 255, 255, 255),
@@ -244,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: accent,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
               ),
@@ -257,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: textSecondary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     ),
                   ),
                 ),

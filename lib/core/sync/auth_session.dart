@@ -1,16 +1,19 @@
+// Auth session: JWT login/register against FastAPI /auth, plus last-sync stamp.
+
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/data/backup_service.dart';
-import 'package:waffer/core/data/registration_profile.dart';
+import 'package:waffer/data/services/backup_service.dart';
+import 'package:waffer/data/models/registration_profile.dart';
 import 'package:waffer/core/sync/api_config.dart';
 import 'package:waffer/core/sync/auth_errors.dart';
 import 'package:waffer/core/sync/profile_sync.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
 export 'package:waffer/core/sync/auth_errors.dart';
 
+// Simple success/failure wrapper for login and register UI.
 class AuthResult {
   final bool ok;
   final String message;
@@ -22,10 +25,9 @@ class AuthResult {
   const AuthResult.failure(this.message) : ok = false;
 }
 
-/// JWT session for the FastAPI `/auth` endpoints.
-///
-/// Ownership on the server always comes from the token. Guest mode has no
-/// token and never registers a hidden password.
+// Holds the Bearer token and account email. Server ownership always comes from
+// the token; guest mode has no token and never syncs. Switching accounts can
+// replace local data so one user's records do not bleed into another's.
 class AuthSession {
   AuthSession._();
 
@@ -48,16 +50,17 @@ class AuthSession {
     return value != null && value.isNotEmpty;
   }
 
-  /// Signed-in API email, or `null` in guest mode.
+  // Signed-in API email, or null in guest mode.
   Future<String?> email() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     final stored = prefs.getString(accountEmailKey)?.trim() ?? '';
     if (stored.contains('@')) return stored.toLowerCase();
     return null;
   }
 
+  // Email whose local financial data currently lives on this device.
   Future<String?> dataOwnerEmail() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     final stored = prefs.getString(dataOwnerKey)?.trim() ?? '';
     if (stored.contains('@')) return stored.toLowerCase();
     return null;
@@ -70,37 +73,36 @@ class AuthSession {
   }
 
   Future<DateTime?> lastSyncAt() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     return DateTime.tryParse(prefs.getString(lastSyncKey) ?? '')?.toUtc();
   }
 
   Future<void> saveLastSyncAt(DateTime value) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setString(lastSyncKey, value.toUtc().toIso8601String());
   }
 
   Future<void> clearToken() async {
     await _secure.delete(key: tokenKey);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.remove(tokenKey);
   }
 
-  /// Clears the API session. Local financial data and the data-owner stamp stay.
+  // Drop the API session; local financial data and data-owner stamp stay.
   Future<void> clearSession() async {
     await clearToken();
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.remove(lastSyncKey);
     await prefs.remove(accountEmailKey);
     await prefs.remove(legacyPasswordKey);
   }
 
   Future<void> clearDataOwner() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.remove(dataOwnerKey);
   }
 
-  /// Returns the stored JWT, or `null` when the user is a guest / token is dead.
-  /// Never auto-registers.
+  // Return a live JWT, or null for guests / dead tokens. Never auto-registers.
   Future<String?> ensureToken() async {
     final existing = await token();
     if (existing == null) return null;
@@ -111,7 +113,7 @@ class AuthSession {
     }
     final address = me['email']?.toString().trim() ?? '';
     if (address.contains('@')) {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await AppPrefs.instance;
       await prefs.setString(accountEmailKey, address.toLowerCase());
     }
     return existing;
@@ -145,6 +147,7 @@ class AuthSession {
     );
   }
 
+  // POST login or register, store the token, and bind the account locally.
   Future<AuthResult> _authenticate({
     required String path,
     required Map<String, dynamic> body,
@@ -200,6 +203,7 @@ class AuthSession {
     }
   }
 
+  // Attach token + email; wipe local data when adopting a different owner.
   Future<void> _bindAccount({
     required String email,
     required String token,
@@ -209,13 +213,13 @@ class AuthSession {
     final adopting = owner != email;
     if (owner != null && adopting) {
       await BackupService.instance.replaceLocalDataForAccountSwitch();
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await AppPrefs.instance;
       await prefs.remove(lastSyncKey);
     }
 
     await _storeToken(token);
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setString(accountEmailKey, email);
     await prefs.setString(dataOwnerKey, email);
     await prefs.setBool(BackupService.authChoiceKey, true);
@@ -257,8 +261,9 @@ class AuthSession {
     await _secure.write(key: tokenKey, value: value);
   }
 
+  // Move an old prefs-stored JWT into secure storage once.
   Future<void> _migrateLegacyToken() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     final legacy = prefs.getString(tokenKey)?.trim() ?? '';
     if (legacy.isEmpty) return;
     final current = (await _secure.read(key: tokenKey))?.trim() ?? '';
@@ -269,6 +274,7 @@ class AuthSession {
     await prefs.remove(legacyPasswordKey);
   }
 
+  // Validate the token with GET /auth/me and return the profile payload.
   Future<Map<String, dynamic>?> _fetchMe(String token) async {
     try {
       final base = await ApiConfig.baseUrl();

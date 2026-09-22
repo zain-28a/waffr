@@ -1,13 +1,17 @@
+// Custom expense categories: local prefs, sync merge, and lookup hook for charts.
+
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/data/expense_categories.dart';
+import 'package:waffer/data/models/expense_categories.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_merge.dart';
 import 'package:waffer/core/sync/sync_tombstones.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
+// One user-defined category with a chosen icon index.
 class CustomCategoryEntry {
   final String id;
   final String label;
@@ -69,6 +73,7 @@ class CustomCategoryEntry {
     );
   }
 
+  // Server payload → entry; null when label or client id is missing.
   static CustomCategoryEntry? fromSync(Map<String, dynamic> raw) {
     final label = raw['label']?.toString().trim() ?? '';
     final id = (raw['client_id'] ?? raw['id'])?.toString().trim() ?? '';
@@ -86,6 +91,7 @@ class CustomCategoryEntry {
   }
 }
 
+// Stable id for pre-v2 categories that only stored a label string.
 String _legacyCategoryId(String label) {
   var hash = 0;
   for (final unit in label.codeUnits) {
@@ -99,7 +105,7 @@ int _categorySeq = 0;
 String _newCategoryId() =>
     'cat_${DateTime.now().microsecondsSinceEpoch}_${_categorySeq++}';
 
-/// تصنيفات المصروف المخصصة، تُحفظ محلياً وتظهر في شبكة التصنيف.
+// Owns custom categories in prefs and registers them with customCategoryLookup.
 class CategoryStore extends ChangeNotifier {
   CategoryStore._() {
     customCategoryLookup = findCustom;
@@ -121,7 +127,7 @@ class CategoryStore extends ChangeNotifier {
 
   List<CustomCategoryEntry> get entries => List.unmodifiable(_entries);
 
-  /// التصنيفات القابلة للاختيار: المدمجة ثم المخصصة. «مخصص» ليس منها.
+  // Built-ins plus customs for pickers; excludes the "custom" action tile.
   List<ExpenseCategory> get selectableCategories => [
         ...expenseCategories,
         ...customCategories,
@@ -146,6 +152,7 @@ class CategoryStore extends ChangeNotifier {
     return 0;
   }
 
+  // Arabic validation error, or null if the name can be used.
   String? validateName(String rawName, {String? ignoring}) {
     final name = rawName.trim();
     if (name.isEmpty) return 'أدخل اسماً للتصنيف';
@@ -204,6 +211,7 @@ class CategoryStore extends ChangeNotifier {
     return name;
   }
 
+  // Removes the category and records a sync tombstone.
   Future<bool> removeCustom(String label) async {
     await ensureLoaded();
 
@@ -257,7 +265,7 @@ class CategoryStore extends ChangeNotifier {
   }
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     _entries
       ..clear()
       ..addAll(await _readEntries(prefs));
@@ -265,6 +273,7 @@ class CategoryStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Prefers v2 JSON; migrates the old string-list format when needed.
   Future<List<CustomCategoryEntry>> _readEntries(SharedPreferences prefs) async {
     final json = prefs.getString(itemsJsonKey);
     if (json != null && json.trim().isNotEmpty) {
@@ -315,7 +324,7 @@ class CategoryStore extends ChangeNotifier {
   }
 
   Future<void> _persist() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setString(
       itemsJsonKey,
       jsonEncode([for (final entry in _entries) entry.toJson()]),

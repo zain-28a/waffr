@@ -1,3 +1,5 @@
+// News items from the SANA feed API.
+
 class NewsArticle {
   final int? id;
   final String title;
@@ -15,6 +17,7 @@ class NewsArticle {
     this.url,
   });
 
+  // Builds from the API payload; skips rows missing title or publish time.
   static NewsArticle? fromApi(Map<String, dynamic> json) {
     final title = (json['title'] ?? '').toString().trim();
     final published = DateTime.tryParse((json['published_at'] ?? '').toString());

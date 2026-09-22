@@ -1,4 +1,6 @@
-/// Profile collected during account creation, before credentials exist.
+// Signup profile fields and validation before the account credentials step.
+
+// Demographics collected during registration, sent with the auth request.
 class RegistrationProfile {
   final String name;
   final DateTime birthDate;
@@ -16,6 +18,7 @@ class RegistrationProfile {
     this.street = '',
   });
 
+  // Flattened map for the signup API; omits empty street.
   Map<String, String> toAuthBody() {
     final address = street.trim();
     return {
@@ -29,7 +32,7 @@ class RegistrationProfile {
   }
 }
 
-/// Completed years from [birth] until [today].
+// Full years between birth and today (or [today] when testing).
 int ageInYears(DateTime birth, [DateTime? today]) {
   final now = today ?? DateTime.now();
   var age = now.year - birth.year;
@@ -40,6 +43,7 @@ int ageInYears(DateTime birth, [DateTime? today]) {
   return age;
 }
 
+// True when the chosen birth date is not in the future.
 bool isValidBirthDate(DateTime birth, [DateTime? today]) {
   final now = today ?? DateTime.now();
   final current = DateTime(now.year, now.month, now.day);
@@ -47,8 +51,7 @@ bool isValidBirthDate(DateTime birth, [DateTime? today]) {
   return !selected.isAfter(current);
 }
 
-/// Arabic validation for the account-creation profile step.
-/// Returns `null` when the profile can continue.
+// Arabic error for the profile form, or null when everything looks fine.
 String? registrationProfileError({
   required String name,
   required DateTime? birthDate,

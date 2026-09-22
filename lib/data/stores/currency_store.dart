@@ -1,80 +1,12 @@
+// Persists which currencies are enabled and which one is active in the UI.
+
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffer/data/models/currency.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
-/// الليرة السورية: العملة الإلزامية الافتراضية.
-const String defaultCurrencyCode = 'SYP';
+export 'package:waffer/data/models/currency.dart';
 
-/// عملة واحدة من القائمة المعرّفة مسبقاً.
-class CurrencyInfo {
-  final String code;
-  final String arabicName;
-  final String symbol;
-
-  const CurrencyInfo({
-    required this.code,
-    required this.arabicName,
-    required this.symbol,
-  });
-}
-
-/// الكتالوج الثابت: الليرة السورية + أكثر 20 عملة تداولاً.
-class Currencies {
-  Currencies._();
-
-  static const CurrencyInfo syp = CurrencyInfo(
-    code: defaultCurrencyCode,
-    arabicName: 'ليرة سورية',
-    symbol: 'ل.س',
-  );
-
-  static const List<CurrencyInfo> catalog = [
-    syp,
-    CurrencyInfo(code: 'USD', arabicName: 'دولار أمريكي', symbol: '\$'),
-    CurrencyInfo(code: 'EUR', arabicName: 'يورو', symbol: '€'),
-    CurrencyInfo(code: 'TRY', arabicName: 'ليرة تركية', symbol: '₺'),
-    CurrencyInfo(code: 'JOD', arabicName: 'دينار أردني', symbol: 'د.أ'),
-    CurrencyInfo(code: 'AED', arabicName: 'درهم إماراتي', symbol: 'د.إ'),
-    CurrencyInfo(code: 'SAR', arabicName: 'ريال سعودي', symbol: 'ر.س'),
-    CurrencyInfo(code: 'GBP', arabicName: 'جنيه إسترليني', symbol: '£'),
-    CurrencyInfo(code: 'EGP', arabicName: 'جنيه مصري', symbol: 'ج.م'),
-    CurrencyInfo(code: 'KWD', arabicName: 'دينار كويتي', symbol: 'د.ك'),
-    CurrencyInfo(code: 'QAR', arabicName: 'ريال قطري', symbol: 'ر.ق'),
-    CurrencyInfo(code: 'CAD', arabicName: 'دولار كندي', symbol: 'C\$'),
-    CurrencyInfo(code: 'AUD', arabicName: 'دولار أسترالي', symbol: 'A\$'),
-    CurrencyInfo(code: 'CHF', arabicName: 'فرنك سويسري', symbol: 'CHF'),
-    CurrencyInfo(code: 'SEK', arabicName: 'كرونة سويدية', symbol: 'kr'),
-    CurrencyInfo(code: 'NOK', arabicName: 'كرونة نرويجية', symbol: 'kr'),
-    CurrencyInfo(code: 'DKK', arabicName: 'كرونة دنماركية', symbol: 'kr'),
-    CurrencyInfo(code: 'RUB', arabicName: 'روبل روسي', symbol: '₽'),
-    CurrencyInfo(code: 'CNY', arabicName: 'يوان صيني', symbol: '¥'),
-    CurrencyInfo(code: 'JPY', arabicName: 'ين ياباني', symbol: '¥'),
-    CurrencyInfo(code: 'INR', arabicName: 'روبية هندية', symbol: '₹'),
-  ];
-
-  static final Map<String, CurrencyInfo> _byCode = {
-    for (final item in catalog) item.code: item,
-  };
-
-  static CurrencyInfo of(String code) {
-    return _byCode[normalize(code)] ??
-        CurrencyInfo(
-          code: normalize(code),
-          arabicName: normalize(code),
-          symbol: normalize(code),
-        );
-  }
-
-  static bool isKnown(String code) => _byCode.containsKey(normalize(code));
-
-  static String normalize(String? raw) {
-    final code = (raw ?? '').trim().toUpperCase();
-    return code.isEmpty ? defaultCurrencyCode : code;
-  }
-
-  static String symbolOf(String? code) => of(normalize(code)).symbol;
-}
-
-/// العملات المفعّلة والعملة النشطة. لا يحذف البيانات المالية أبداً.
+// Enabled list + active code. Removing a currency never deletes its ledger rows.
 class CurrencyStore extends ChangeNotifier {
   CurrencyStore._();
 
@@ -97,7 +29,7 @@ class CurrencyStore extends ChangeNotifier {
 
   String get activeSymbol => active.symbol;
 
-  /// العملات الظاهرة في دوّار الرصيد وفي منتقي المبلغ.
+  // Currencies shown in the balance carousel and amount pickers.
   List<CurrencyInfo> get enabledCurrencies {
     return [
       for (final code in _enabled) Currencies.of(code),
@@ -106,6 +38,7 @@ class CurrencyStore extends ChangeNotifier {
 
   List<String> get enabledCodes => List.unmodifiable(_enabled);
 
+  // Catalog entries not yet on the enabled list.
   List<CurrencyInfo> get availableToAdd {
     return [
       for (final item in Currencies.catalog)
@@ -117,6 +50,7 @@ class CurrencyStore extends ChangeNotifier {
 
   Future<void> ensureLoaded() => _loader ??= _load();
 
+  // Switches the active currency if it is already enabled.
   Future<void> setActive(String code) async {
     await ensureLoaded();
 
@@ -152,6 +86,7 @@ class CurrencyStore extends ChangeNotifier {
     await setActive(_enabled[previous]);
   }
 
+  // Adds a known non-SYP currency to the enabled list.
   Future<bool> addCurrency(String code) async {
     await ensureLoaded();
 
@@ -169,7 +104,7 @@ class CurrencyStore extends ChangeNotifier {
     return true;
   }
 
-  /// يُخرج العملة من القائمة النشطة دون حذف سجلاتها المالية.
+  // Drops a currency from the carousel without wiping its transactions.
   Future<bool> removeCurrency(String code) async {
     await ensureLoaded();
 
@@ -202,7 +137,7 @@ class CurrencyStore extends ChangeNotifier {
   }
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     final stored = prefs.getStringList(enabledKey) ?? const [];
 
     _enabled
@@ -225,12 +160,12 @@ class CurrencyStore extends ChangeNotifier {
   }
 
   Future<void> _persistEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setStringList(enabledKey, _enabled);
   }
 
   Future<void> _persistActive() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setString(activeKey, _activeCode);
   }
 }

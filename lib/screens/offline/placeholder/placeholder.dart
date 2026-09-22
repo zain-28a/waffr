@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+// Minimal keep-alive stub used where a real tab screen is not ready yet.
+
 class PlaceholderScreen extends StatefulWidget {
   final String label;
 

@@ -1,5 +1,8 @@
+// Live FX / gold quotes shown on the home exchange strip.
+
 enum ExchangeAsset { usd, eur, tryLira, gold }
 
+// One row: asset, labels for the chip/pair, and buy/sell against SYP.
 class ExchangeRate {
   final ExchangeAsset asset;
   final String chipLabel;
