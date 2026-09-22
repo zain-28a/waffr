@@ -18,6 +18,7 @@ class UserInfoScreen extends StatefulWidget {
 class _UserInfoScreenState extends State<UserInfoScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
 
   Gender? _selectedGender;
   DateTime? _birthDate;
@@ -32,6 +33,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   void dispose() {
     _emailController.dispose();
     _nameController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -40,6 +42,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
     final email = prefs.getString('user_email') ?? '';
     final name = prefs.getString('user_name') ?? '';
+    final address = _existingAddress(prefs);
     final gender = prefs.getString('user_gender');
     final birthdate = prefs.getString('user_birthdate');
 
@@ -48,6 +51,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     setState(() {
       _emailController.text = email;
       _nameController.text = name;
+      _addressController.text = address;
 
       if (gender == 'male') {
         _selectedGender = Gender.male;
@@ -94,10 +98,34 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
+  /// عنوان واحد. إن وُجدت حقول قديمة منفصلة تُجمع هنا مرة واحدة.
+  String _existingAddress(SharedPreferences prefs) {
+    final stored = prefs.getString('user_address')?.trim() ?? '';
+    if (stored.isNotEmpty) return stored;
+
+    return [
+      prefs.getString('user_country'),
+      prefs.getString('user_city'),
+      prefs.getString('user_street'),
+    ]
+        .map((part) => part?.trim() ?? '')
+        .where((part) => part.isNotEmpty)
+        .join('، ');
+  }
+
   Future<void> _saveAndContinue() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_email', _emailController.text.trim());
     await prefs.setString('user_name', _nameController.text.trim());
+    final address = _addressController.text.trim();
+    if (address.isEmpty) {
+      await prefs.remove('user_address');
+    } else {
+      await prefs.setString('user_address', address);
+    }
+    await prefs.remove('user_country');
+    await prefs.remove('user_city');
+    await prefs.remove('user_street');
     if (_selectedGender != null) {
       await prefs.setString('user_gender', _selectedGender == Gender.male ? 'male' : 'female');
     }
@@ -237,6 +265,23 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                       Icon(Icons.calendar_today_outlined, size: 20, color: accent),
                     ],
                   ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ===== العنوان (اختياري) =====
+              _FieldLabel(text: 'العنوان (اختياري)', color: textPrimary),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _addressController,
+                textAlign: TextAlign.right,
+                textInputAction: TextInputAction.done,
+                style: TextStyle(color: textPrimary, fontSize: 16),
+                decoration: _fieldDecoration(
+                  hint: 'البلد، المدينة، الشارع',
+                  fillColor: surface,
+                  textSecondary: textSecondary,
                 ),
               ),
 
