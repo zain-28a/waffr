@@ -64,11 +64,40 @@ void main() {
     var continued = false;
     await pumpScreen(tester, onContinue: () => continued = true);
 
+    await tester.ensureVisible(find.text('متابعة'));
     await tester.tap(find.text('متابعة'));
     await tester.pump();
 
     expect(continued, isTrue);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('user_address'), isNull);
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('saves country city street as one address', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'user_email': 'a@b.com',
+      'user_name': 'زين',
+      'user_birthdate': DateTime(2000, 1, 1).toIso8601String(),
+    });
+
+    var continued = false;
+    await pumpScreen(tester, onContinue: () => continued = true);
+
+    await tester.enterText(
+      find.byType(TextField).last,
+      'سوريا، دمشق، المزة',
+    );
+    await tester.ensureVisible(find.text('متابعة'));
+    await tester.tap(find.text('متابعة'));
+    await tester.pump();
+
+    expect(continued, isTrue);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('user_address'), 'سوريا، دمشق، المزة');
+    expect(prefs.getString('user_country'), isNull);
+    expect(prefs.getString('user_city'), isNull);
+    expect(prefs.getString('user_street'), isNull);
+    await tester.pump(const Duration(seconds: 2));
   });
 }
