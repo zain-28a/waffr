@@ -30,18 +30,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
   }
 
-  testWidgets('shows one optional address field instead of three', (tester) async {
+  testWidgets('shows required country and city with optional street', (tester) async {
     await pumpScreen(tester);
 
-    expect(find.text('العنوان (اختياري)'), findsOneWidget);
-    expect(find.text('البلد، المدينة، الشارع'), findsOneWidget);
-    expect(find.text('البلد'), findsNothing);
-    expect(find.text('المدينة'), findsNothing);
-    expect(find.text('الشارع'), findsNothing);
-    expect(find.byType(TextField), findsNWidgets(3));
+    expect(find.text('البلد'), findsOneWidget);
+    expect(find.text('المدينة'), findsOneWidget);
+    expect(find.text('الشارع (اختياري)'), findsOneWidget);
+    expect(find.text('العنوان (اختياري)'), findsNothing);
+    expect(find.byType(TextField), findsNWidgets(5));
   });
 
-  testWidgets('combines old country city street into one field', (tester) async {
+  testWidgets('loads split address fields from saved values', (tester) async {
     SharedPreferences.setMockInitialValues({
       'user_country': 'سوريا',
       'user_city': 'دمشق',
@@ -50,11 +49,15 @@ void main() {
 
     await pumpScreen(tester);
 
-    expect(tester.widget<TextField>(find.byType(TextField).last).controller?.text,
-        'سوريا، دمشق، المزة');
+    expect(tester.widget<TextField>(find.byType(TextField).at(2)).controller?.text,
+        'سوريا');
+    expect(tester.widget<TextField>(find.byType(TextField).at(3)).controller?.text,
+        'دمشق');
+    expect(tester.widget<TextField>(find.byType(TextField).at(4)).controller?.text,
+        'المزة');
   });
 
-  testWidgets('continue works without an address', (tester) async {
+  testWidgets('continue stays blocked without country or city', (tester) async {
     SharedPreferences.setMockInitialValues({
       'user_email': 'a@b.com',
       'user_name': 'زين',
@@ -68,13 +71,35 @@ void main() {
     await tester.tap(find.text('متابعة'));
     await tester.pump();
 
+    expect(continued, isFalse);
+  });
+
+  testWidgets('continue works with country and city only', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'user_email': 'a@b.com',
+      'user_name': 'زين',
+      'user_birthdate': DateTime(2000, 1, 1).toIso8601String(),
+    });
+
+    var continued = false;
+    await pumpScreen(tester, onContinue: () => continued = true);
+
+    await tester.enterText(find.byType(TextField).at(2), 'سوريا');
+    await tester.enterText(find.byType(TextField).at(3), 'دمشق');
+    await tester.ensureVisible(find.text('متابعة'));
+    await tester.tap(find.text('متابعة'));
+    await tester.pump();
+
     expect(continued, isTrue);
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('user_address'), isNull);
+    expect(prefs.getString('user_country'), 'سوريا');
+    expect(prefs.getString('user_city'), 'دمشق');
+    expect(prefs.getString('user_street'), isNull);
+    expect(prefs.getString('user_address'), 'سوريا، دمشق');
     await tester.pump(const Duration(seconds: 2));
   });
 
-  testWidgets('saves country city street as one address', (tester) async {
+  testWidgets('saves street when the user enters it', (tester) async {
     SharedPreferences.setMockInitialValues({
       'user_email': 'a@b.com',
       'user_name': 'زين',
@@ -84,20 +109,19 @@ void main() {
     var continued = false;
     await pumpScreen(tester, onContinue: () => continued = true);
 
-    await tester.enterText(
-      find.byType(TextField).last,
-      'سوريا، دمشق، المزة',
-    );
+    await tester.enterText(find.byType(TextField).at(2), 'سوريا');
+    await tester.enterText(find.byType(TextField).at(3), 'دمشق');
+    await tester.enterText(find.byType(TextField).at(4), 'المزة');
     await tester.ensureVisible(find.text('متابعة'));
     await tester.tap(find.text('متابعة'));
     await tester.pump();
 
     expect(continued, isTrue);
     final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('user_country'), 'سوريا');
+    expect(prefs.getString('user_city'), 'دمشق');
+    expect(prefs.getString('user_street'), 'المزة');
     expect(prefs.getString('user_address'), 'سوريا، دمشق، المزة');
-    expect(prefs.getString('user_country'), isNull);
-    expect(prefs.getString('user_city'), isNull);
-    expect(prefs.getString('user_street'), isNull);
     await tester.pump(const Duration(seconds: 2));
   });
 }

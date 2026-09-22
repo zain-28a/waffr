@@ -18,7 +18,9 @@ class UserInfoScreen extends StatefulWidget {
 class _UserInfoScreenState extends State<UserInfoScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _countryController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _streetController = TextEditingController();
 
   Gender? _selectedGender;
   DateTime? _birthDate;
@@ -33,7 +35,9 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   void dispose() {
     _emailController.dispose();
     _nameController.dispose();
-    _addressController.dispose();
+    _countryController.dispose();
+    _cityController.dispose();
+    _streetController.dispose();
     super.dispose();
   }
 
@@ -42,7 +46,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
     final email = prefs.getString('user_email') ?? '';
     final name = prefs.getString('user_name') ?? '';
-    final address = _existingAddress(prefs);
+    final address = _existingAddressParts(prefs);
     final gender = prefs.getString('user_gender');
     final birthdate = prefs.getString('user_birthdate');
 
@@ -51,7 +55,9 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     setState(() {
       _emailController.text = email;
       _nameController.text = name;
-      _addressController.text = address;
+      _countryController.text = address.country;
+      _cityController.text = address.city;
+      _streetController.text = address.street;
 
       if (gender == 'male') {
         _selectedGender = Gender.male;
@@ -69,8 +75,10 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     final emailValid = _emailController.text.trim().contains('@') &&
         _emailController.text.trim().contains('.');
     final nameValid = _nameController.text.trim().isNotEmpty;
+    final countryValid = _countryController.text.trim().isNotEmpty;
+    final cityValid = _cityController.text.trim().isNotEmpty;
     final birthValid = _birthDate != null;
-    return emailValid && nameValid && birthValid;
+    return emailValid && nameValid && countryValid && cityValid && birthValid;
   }
 
   Future<void> _pickBirthDate(Color accent) async {
@@ -98,34 +106,55 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  /// عنوان واحد. إن وُجدت حقول قديمة منفصلة تُجمع هنا مرة واحدة.
-  String _existingAddress(SharedPreferences prefs) {
-    final stored = prefs.getString('user_address')?.trim() ?? '';
-    if (stored.isNotEmpty) return stored;
+  ({String country, String city, String street}) _existingAddressParts(
+    SharedPreferences prefs,
+  ) {
+    final country = prefs.getString('user_country')?.trim() ?? '';
+    final city = prefs.getString('user_city')?.trim() ?? '';
+    final street = prefs.getString('user_street')?.trim() ?? '';
+    if (country.isNotEmpty || city.isNotEmpty || street.isNotEmpty) {
+      return (country: country, city: city, street: street);
+    }
 
-    return [
-      prefs.getString('user_country'),
-      prefs.getString('user_city'),
-      prefs.getString('user_street'),
-    ]
-        .map((part) => part?.trim() ?? '')
+    final parts = (prefs.getString('user_address') ?? '')
+        .split(RegExp(r'\s*[،,]\s*'))
+        .map((part) => part.trim())
         .where((part) => part.isNotEmpty)
-        .join('، ');
+        .toList();
+
+    return (
+      country: parts.isNotEmpty ? parts[0] : '',
+      city: parts.length > 1 ? parts[1] : '',
+      street: parts.length > 2 ? parts.sublist(2).join('، ') : '',
+    );
+  }
+
+  String _combinedAddress(String country, String city, String street) {
+    return [
+      country,
+      city,
+      if (street.isNotEmpty) street,
+    ].join('، ');
   }
 
   Future<void> _saveAndContinue() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_email', _emailController.text.trim());
     await prefs.setString('user_name', _nameController.text.trim());
-    final address = _addressController.text.trim();
-    if (address.isEmpty) {
-      await prefs.remove('user_address');
+    final country = _countryController.text.trim();
+    final city = _cityController.text.trim();
+    final street = _streetController.text.trim();
+    await prefs.setString('user_country', country);
+    await prefs.setString('user_city', city);
+    if (street.isEmpty) {
+      await prefs.remove('user_street');
     } else {
-      await prefs.setString('user_address', address);
+      await prefs.setString('user_street', street);
     }
-    await prefs.remove('user_country');
-    await prefs.remove('user_city');
-    await prefs.remove('user_street');
+    await prefs.setString(
+      'user_address',
+      _combinedAddress(country, city, street),
+    );
     if (_selectedGender != null) {
       await prefs.setString('user_gender', _selectedGender == Gender.male ? 'male' : 'female');
     }
@@ -270,16 +299,52 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
-              // ===== العنوان (اختياري) =====
-              _FieldLabel(text: 'العنوان (اختياري)', color: textPrimary),
+              // ===== البلد =====
+              _FieldLabel(text: 'البلد', color: textPrimary),
               const SizedBox(height: 8),
               TextField(
-                controller: _addressController,
+                controller: _countryController,
+                textAlign: TextAlign.right,
+                textInputAction: TextInputAction.next,
+                onChanged: (_) => setState(() {}),
+                style: TextStyle(color: textPrimary, fontSize: 16),
+                decoration: _fieldDecoration(
+                  hint: 'سوريا',
+                  fillColor: surface,
+                  textSecondary: textSecondary,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ===== المدينة =====
+              _FieldLabel(text: 'المدينة', color: textPrimary),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _cityController,
+                textAlign: TextAlign.right,
+                textInputAction: TextInputAction.next,
+                onChanged: (_) => setState(() {}),
+                style: TextStyle(color: textPrimary, fontSize: 16),
+                decoration: _fieldDecoration(
+                  hint: 'دمشق',
+                  fillColor: surface,
+                  textSecondary: textSecondary,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ===== الشارع (اختياري) =====
+              _FieldLabel(text: 'الشارع (اختياري)', color: textPrimary),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _streetController,
                 textAlign: TextAlign.right,
                 textInputAction: TextInputAction.done,
                 style: TextStyle(color: textPrimary, fontSize: 16),
                 decoration: _fieldDecoration(
-                  hint: 'البلد، المدينة، الشارع',
+                  hint: 'اسم الشارع',
                   fillColor: surface,
                   textSecondary: textSecondary,
                 ),
