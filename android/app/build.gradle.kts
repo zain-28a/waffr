@@ -1,4 +1,3 @@
-import com.android.build.api.dsl.ApplicationExtension
 import java.io.File
 
 plugins {
@@ -7,7 +6,7 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-configure<ApplicationExtension> {
+android {
     namespace = "com.example.waffer"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion

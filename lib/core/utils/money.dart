@@ -1,6 +1,13 @@
 import 'package:intl/intl.dart';
+import 'package:waffer/core/data/currency.dart';
 
-const String currencyLabel = 'ل.س';
+/// رمز الليرة السورية الثابت (أسعار الصرف في تبويب أونلاين).
+const String sypCurrencyLabel = 'ل.س';
+
+/// وحدة العملة النشطة في الواجهة المالية.
+String get currencyLabel => CurrencyStore.instance.activeSymbol;
+
+String currencyLabelFor(String? code) => Currencies.symbolOf(code);
 
 final NumberFormat _moneyFormat = NumberFormat('#,##0', 'en');
 

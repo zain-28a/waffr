@@ -3,6 +3,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/backup_service.dart';
 import 'package:waffer/core/data/category_store.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/profile_photo.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
@@ -20,6 +21,7 @@ import 'package:waffer/screens/offline/settings/ai_permissions_screen.dart';
 import 'package:waffer/screens/offline/settings/help_screen.dart';
 import 'package:waffer/screens/offline/settings/privacy_security_screen.dart';
 import 'package:waffer/screens/offline/savings/sheets/recurring_expenses_sheet.dart';
+import 'package:waffer/screens/offline/settings/sheets/currencies_sheet.dart';
 import 'package:waffer/widgets/brand/profile_avatar.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
@@ -375,21 +377,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (result is AmountDialogCleared) {
       final cleared = await TransactionStore.instance.clearPreferredIncomeAmount(
         frequency: frequency,
+        currencyCode: result.currencyCode,
       );
       if (!mounted) return;
       if (!cleared) {
         showAppSnackBar(context, 'تعذر إزالة الدخل. حاول مرة أخرى.');
         return;
       }
-      setState(() {
-        if (isMonthly) {
-          _monthlyIncome = 0;
-          _hasMonthlyIncome = false;
-        } else {
-          _weeklyIncome = 0;
-          _hasWeeklyIncome = false;
-        }
-      });
+      await _loadSettings();
+      if (!mounted) return;
       showAppSnackBar(
         context,
         isMonthly ? 'تمت إزالة الدخل الشهري' : 'تمت إزالة الدخل الأسبوعي',
@@ -398,12 +394,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    if (result is! double) return;
-    final amount = result;
+    if (result is! EditAmountResult) return;
+    final amount = result.amount;
 
     final saved = await TransactionStore.instance.setPreferredIncomeAmount(
       frequency: frequency,
       amount: amount,
+      currencyCode: result.currencyCode,
     );
 
     if (!mounted) return;
@@ -413,15 +410,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    setState(() {
-      if (isMonthly) {
-        _monthlyIncome = amount;
-        _hasMonthlyIncome = true;
-      } else {
-        _weeklyIncome = amount;
-        _hasWeeklyIncome = true;
-      }
-    });
+    await _loadSettings();
+    if (!mounted) return;
 
     showAppSnackBar(
       context,
@@ -479,6 +469,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await ProfilePhoto.clear();
 
     TransactionStore.instance.resetCache();
+    CurrencyStore.instance.resetCache();
     NotificationService.instance.resetCache();
     ShoppingListStore.instance.resetCache();
     RecurringExpenseStore.instance.resetCache();
@@ -586,6 +577,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => _editIncome(RecurringFrequency.weekly),
             ),
           ],
+
+          const SizedBox(height: 12),
+          _SettingsTile(
+            icon: Icons.currency_exchange_rounded,
+            title: 'العملات',
+            subtitle: 'إضافة عملة أو اختيار العملة النشطة',
+            accent: accent,
+            surface: surface,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
+            onTap: () => showCurrenciesSheet(context),
+          ),
 
           const SizedBox(height: 12),
           _SettingsTile(
@@ -798,7 +801,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           Center(
             child: Text(
-              'Waffer 2.4.0',
+              'waffer 2.5.0',
 
               style: TextStyle(
                 color: textSecondary.withValues(alpha: 0.6),

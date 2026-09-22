@@ -6,6 +6,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:waffer/core/data/category_store.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/data/shopping_list_store.dart';
@@ -326,8 +327,15 @@ class SyncService with WidgetsBindingObserver {
     return {
       'notifications_muted': NotificationService.instance.isMuted,
       'notifications_enabled': !NotificationService.instance.isMuted,
-      'monthly_income_amount': store.monthlyIncomeOverride,
-      'weekly_income_amount': store.weeklyIncomeOverride,
+      'monthly_income_amount': store.monthlyIncomeOverrideFor(
+        defaultCurrencyCode,
+      ),
+      'weekly_income_amount': store.weeklyIncomeOverrideFor(
+        defaultCurrencyCode,
+      ),
+      'income_overrides_by_currency': store.incomeOverridesByCurrencyPayload,
+      'enabled_currencies': CurrencyStore.instance.enabledCodes,
+      'active_currency': CurrencyStore.instance.activeCode,
       'processed_period_keys': store.processedPeriodTokens.toList(),
       ...await ProfileSync.fields(),
       'updated_at': toSyncIso(await SyncDirty.settingsUpdatedAt()),

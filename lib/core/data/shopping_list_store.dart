@@ -176,6 +176,7 @@ class ShoppingListStore extends ChangeNotifier {
     required String itemId,
     required double amount,
     required String category,
+    String? currencyCode,
   }) async {
     if (amount <= 0) return false;
 
@@ -193,6 +194,7 @@ class ShoppingListStore extends ChangeNotifier {
       paymentMethod: paymentMethods.first,
       note: item.name,
       sourceId: 'shopping:$itemId',
+      currencyCode: currencyCode,
     );
 
     if (expense == null) return false;

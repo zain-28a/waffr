@@ -127,9 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 48),
-              const Center(
-                child: WafferLogo(size: 72),
-              ),
+              Image.asset('assets/brand/waffer_logo.png', width: 150, height: 150),
               const SizedBox(height: 28),
               Text.rich(
                 TextSpan(

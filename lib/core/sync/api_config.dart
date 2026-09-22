@@ -9,7 +9,7 @@ class ApiConfig {
   static const String overrideKey = 'waffer_api_base_url';
 
   /// USB debugging: `adb reverse tcp:8000 tcp:8000` then this reaches the PC.
-  static const String defaultBaseUrl = 'http://10.164.73.4:8001';
+  static const String defaultBaseUrl = 'http://192.168.95.2:8001';
 
   static Future<String> baseUrl() async {
     final prefs = await SharedPreferences.getInstance();

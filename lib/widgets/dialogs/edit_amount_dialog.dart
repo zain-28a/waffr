@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
 /// حوار تعديل مبلغ، بنفس التحقق المستخدم للدخل الشهري.
 /// يُرجعه الحوار عندما يزيل المستخدم المبلغ المضبوط بالكامل.
 class AmountDialogCleared {
-  const AmountDialogCleared();
+  final String currencyCode;
+  const AmountDialogCleared(this.currencyCode);
 }
 
-const amountDialogCleared = AmountDialogCleared();
+class EditAmountResult {
+  final double amount;
+  final String currencyCode;
+
+  const EditAmountResult(this.amount, this.currencyCode);
+}
 
 class EditAmountDialog extends StatefulWidget {
   final String title;
   final double initialAmount;
   final Color accent;
   final bool allowClear;
+  final String? currencyCode;
 
   const EditAmountDialog({
     super.key,
@@ -22,6 +30,7 @@ class EditAmountDialog extends StatefulWidget {
     required this.initialAmount,
     required this.accent,
     this.allowClear = false,
+    this.currencyCode,
   });
 
   @override
@@ -32,11 +41,15 @@ class _EditAmountDialogState extends State<EditAmountDialog> {
   static const double _maxAmount = 999999999;
 
   late final TextEditingController _controller;
+  late String _currencyCode;
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    _currencyCode = Currencies.normalize(
+      widget.currencyCode ?? CurrencyStore.instance.activeCode,
+    );
     _controller = TextEditingController(
       text: widget.initialAmount > 0 && widget.initialAmount.isFinite
           ? formatMoney(widget.initialAmount)
@@ -60,27 +73,41 @@ class _EditAmountDialogState extends State<EditAmountDialog> {
       setState(() => _error = 'المبلغ أكبر من الحد المسموح');
       return;
     }
-    Navigator.of(context).pop(amount);
+    Navigator.of(context).pop(EditAmountResult(amount, _currencyCode));
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(widget.title),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        keyboardType: TextInputType.number,
-        inputFormatters: [ThousandsInputFormatter()],
-        textAlign: TextAlign.center,
-        onChanged: (_) {
-          if (_error != null) setState(() => _error = null);
-        },
-        onSubmitted: (_) => _submit(),
-        decoration: InputDecoration(
-          hintText: 'المبلغ',
-          errorText: _error,
-        ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: [ThousandsInputFormatter()],
+            textAlign: TextAlign.center,
+            onChanged: (_) {
+              if (_error != null) setState(() => _error = null);
+            },
+            onSubmitted: (_) => _submit(),
+            decoration: InputDecoration(
+              hintText: 'المبلغ',
+              errorText: _error,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: SheetCurrencySelector(
+              currencyCode: _currencyCode,
+              onChanged: (code) => setState(() => _currencyCode = code),
+              dense: true,
+            ),
+          ),
+        ],
       ),
       actions: [
         TextButton(
@@ -89,7 +116,8 @@ class _EditAmountDialogState extends State<EditAmountDialog> {
         ),
         if (widget.allowClear)
           TextButton(
-            onPressed: () => Navigator.of(context).pop(amountDialogCleared),
+            onPressed: () =>
+                Navigator.of(context).pop(AmountDialogCleared(_currencyCode)),
             child: Text('إزالة الدخل', style: TextStyle(color: widget.accent)),
           ),
         TextButton(

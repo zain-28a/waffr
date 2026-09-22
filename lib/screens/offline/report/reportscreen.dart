@@ -1185,7 +1185,7 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
           ),
         ),
         content: Text(
-          'سيُحذف هذا المصروف من السجل ويُعاد ${formatMoney(expense.amount)} $currencyLabel إلى رصيدك.',
+          'سيُحذف هذا المصروف من السجل ويُعاد ${formatMoney(expense.amount)} ${currencyLabelFor(expense.currencyCode)} إلى رصيدك.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Tajawal',
@@ -1246,7 +1246,7 @@ Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
           ),
         ),
         content: Text(
-          'سيُحذف هذا الدخل من السجل ويُخصم ${formatMoney(income.amount)} $currencyLabel من رصيدك.',
+          'سيُحذف هذا الدخل من السجل ويُخصم ${formatMoney(income.amount)} ${currencyLabelFor(income.currencyCode)} من رصيدك.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Tajawal',
