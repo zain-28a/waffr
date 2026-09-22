@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/registration_profile.dart';
+import 'package:waffer/data/models/registration_profile.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
@@ -8,6 +8,8 @@ import 'package:waffer/screens/offline/login/auth_fields.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
+
+// Credential step of signup: email, password, confirm — uses [profile] from user info.
 
 class RegisterScreen extends StatefulWidget {
   final RegistrationProfile profile;
@@ -88,6 +90,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  // Prefer the flow's onBack (step 0) over popping the whole route.
   void _leaveCredentials() {
     if (_busy) return;
     final back = widget.onBack;
@@ -226,7 +229,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         'إنشاء الحساب',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Color.fromARGB(255, 255, 255, 255),
@@ -242,7 +245,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     color: accent,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
               ),

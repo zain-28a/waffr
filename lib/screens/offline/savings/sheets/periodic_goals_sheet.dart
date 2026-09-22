@@ -1,13 +1,16 @@
+// Create or inspect an automatic % of-income savings plan over a fixed duration.
+
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/savings_goal.dart';
-import 'package:waffer/core/data/transaction.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/models/savings_goal.dart';
+import 'package:waffer/data/models/transaction.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 import 'package:waffer/widgets/sheets/monthly_income_required_sheet.dart';
 
+// Requires monthly income; opens create UI or details for the active plan.
 Future<void> showPeriodicGoalsSheet(BuildContext context) async {
   await TransactionStore.instance.ensureLoaded();
   if (!context.mounted) return;
@@ -29,6 +32,7 @@ Future<void> showPeriodicGoalsSheet(BuildContext context) async {
   );
 }
 
+// Percent + duration picker, then a confirm preview before applying the plan.
 class _PeriodicGoalsSheet extends StatefulWidget {
   const _PeriodicGoalsSheet();
 
@@ -71,6 +75,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
     });
   }
 
+  // Writes the periodic plan into the store and closes on success.
   Future<void> _confirm() async {
     if (!_isMeaningful || _saving) return;
     setState(() => _saving = true);
@@ -131,7 +136,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
             'أضف دخلاً شهرياً أولاً لاقتراح خطط مناسبة.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 14,
               color: textSecondary,
             ),
@@ -150,7 +155,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
         '${formatMoney(_income)} $currencyLabel',
         textAlign: TextAlign.center,
         style: TextStyle(
-          fontFamily: 'Tajawal',
+          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
           fontSize: 22,
           fontWeight: FontWeight.bold,
           color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
@@ -237,6 +242,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
   }
 }
 
+// Label/value row used in the plan preview.
 class _PreviewRow extends StatelessWidget {
   final String label;
   final String value;
@@ -262,7 +268,7 @@ class _PreviewRow extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 13.5,
                 color: textSecondary,
               ),
@@ -273,7 +279,7 @@ class _PreviewRow extends StatelessWidget {
               value,
               textAlign: TextAlign.end,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: emphasize ? 16 : 14,
                 fontWeight: FontWeight.bold,
                 color: textPrimary,
@@ -286,6 +292,7 @@ class _PreviewRow extends StatelessWidget {
   }
 }
 
+// Read-only view of the active periodic plan with an option to cancel it.
 class _PeriodicPlanDetailsSheet extends StatefulWidget {
   final SavingsGoal goal;
 
@@ -325,7 +332,7 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
             'حذف الخطة',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontWeight: FontWeight.bold,
               color: textPrimary,
             ),
@@ -333,21 +340,21 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
           content: const Text(
             'هل أنت متأكد من حذف هذه الخطة الدورية؟',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Tajawal', fontSize: 14),
+            style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], fontSize: 14),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
               child: Text(
                 'إلغاء',
-                style: TextStyle(fontFamily: 'Tajawal', color: textSecondary),
+                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: textSecondary),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
                 'حذف',
-                style: TextStyle(fontFamily: 'Tajawal', color: accent),
+                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: accent),
               ),
             ),
           ],
@@ -453,7 +460,7 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
                   Text(
                     'حذف الخطة',
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
                       color: textPrimary,

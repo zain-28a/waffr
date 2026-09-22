@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/transaction.dart';
-import 'package:waffer/core/data/transaction_store.dart';
-import 'package:waffer/core/data/currency.dart';
+import 'package:waffer/data/models/transaction.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
+import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
-/// نافذة "إضافة دخل" الزجاجية.
+// Glass bottom sheet for logging income (amount, frequency, leftover balance).
+
 Future<void> showAddIncomeSheet(BuildContext context) {
   return showGlassSheet<void>(
     context: context,
@@ -25,7 +26,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
   static const String _freqNone = 'بدون مدة';
   static const String _freqWeekly = 'أسبوعي';
   static const String _freqMonthly = 'شهري';
-  /// الدخل الأسبوعي يبقى مدعوماً في المنطق، لكنه مخفي مؤقتاً من خيارات المستخدم.
+  // Weekly income still works in the store; the chip is hidden for now.
   static const bool _weeklyIncomeChoiceEnabled = false;
   static const List<String> _frequencyOptions = [
     if (_weeklyIncomeChoiceEnabled) _freqWeekly,
@@ -92,6 +93,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
     Navigator.of(context).maybePop();
   }
 
+  // Explains what happens to leftover balance when a new income period starts.
   void _showBalanceInfo() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
@@ -113,7 +115,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
             'الرصيد الحالي',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontWeight: FontWeight.bold,
               color: textPrimary,
             ),
@@ -122,7 +124,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
             'يُظهر هذا القسم الرصيد المتبقي لديك من الفترة السابقة. اختر ما تريد فعله به: نقله إلى التوفير، أو إبقاءه ضمن رصيدك الجديد.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 14,
               height: 1.6,
               color: textSecondary,
@@ -133,7 +135,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'حسناً',
-                style: TextStyle(fontFamily: 'Tajawal', color: accent),
+                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: accent),
               ),
             ),
           ],

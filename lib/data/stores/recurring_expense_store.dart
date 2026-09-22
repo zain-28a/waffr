@@ -1,18 +1,20 @@
+// Recurring expenses: CRUD, sync, and due-date catch-up that posts real expenses.
+
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/data/app_notification.dart';
-import 'package:waffer/core/data/notification_service.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/recurring_expense.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/models/app_notification.dart';
+import 'package:waffer/data/services/notification_service.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/models/recurring_expense.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_mapper.dart';
 import 'package:waffer/core/sync/sync_merge.dart';
 import 'package:waffer/core/sync/sync_tombstones.dart';
 import 'package:waffer/core/utils/money.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
-/// مخزن المصروفات المتكررة. يُفحص عند فتح التطبيق وفي كل استئناف.
+// Schedules checked on launch/resume; posts expenses when nextDueAt is past.
 class RecurringExpenseStore extends ChangeNotifier {
   RecurringExpenseStore._();
 
@@ -41,6 +43,7 @@ class RecurringExpenseStore extends ChangeNotifier {
 
   Future<void> ensureLoaded() => _loader ??= _load();
 
+  // Requires configured monthly income for that currency before scheduling.
   Future<void> addExpense({
     required double amount,
     required String category,
@@ -131,7 +134,7 @@ class RecurringExpenseStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// يخصم المستحق إن وُجد رصيد كافٍ. إن لم يكفِ الرصيد يُحظر الخصم ويُنبَّه المستخدم.
+  // Deducts due items when balance allows; otherwise notifies and stops catch-up.
   Future<void> processDue() async {
     await ensureLoaded();
     await TransactionStore.instance.ensureLoaded();
@@ -253,7 +256,7 @@ class RecurringExpenseStore extends ChangeNotifier {
   }
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     final stored = prefs.getStringList(itemsKey) ?? const [];
 
     _items
@@ -269,7 +272,7 @@ class RecurringExpenseStore extends ChangeNotifier {
   }
 
   Future<void> _persist() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setStringList(
       itemsKey,
       _items.map((item) => item.encode()).toList(),

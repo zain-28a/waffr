@@ -1,8 +1,15 @@
+// Translucent "glass" card surface. Uses a tinted fill only — no BackdropFilter —
+// so scrolling stays smooth; glass is a translucent color, not a live blur.
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart'; // عدل المسار حسب مكان الملف عندك
+import 'package:waffer/core/theme/app_palette.dart';
 
+/// Which palette token tints the glass fill.
 enum GlassColorType { accent, background, surface, textPrimary, textSecondary }
 
+/// Rounded translucent card with a light border and soft shadow.
+///
+/// Intentionally skips [BackdropFilter]: blurring whatever sits behind every
+/// card caused scroll jank. The look comes from a translucent palette fill.
 class GlassContainer extends StatelessWidget {
   final Widget child;
   final double? width;
@@ -11,10 +18,9 @@ class GlassContainer extends StatelessWidget {
   final EdgeInsetsGeometry margin;
   final double borderRadius;
 
-  /// يتجاوز [borderRadius] عند الحاجة لزوايا غير متساوية (مثل النوافذ السفلية).
+  /// Uneven corners when a circular [borderRadius] is not enough (e.g. sheets).
   final BorderRadius? radius;
 
-  final double blurSigma;
   final GlassColorType colorType;
   final double tintOpacity;
 
@@ -27,31 +33,31 @@ class GlassContainer extends StatelessWidget {
     this.margin = EdgeInsets.zero,
     this.borderRadius = 20,
     this.radius,
-    this.blurSigma = 00,
     this.colorType = GlassColorType.accent,
     this.tintOpacity = 0.8,
   });
 
-  Color _resolveColor(bool isDark) {
+  /// Maps [colorType] to the matching token on the active palette.
+  Color _resolveColor(AppPalette palette) {
     switch (colorType) {
       case GlassColorType.accent:
-        return isDark ? AppColors.darkAccent : AppColors.lightAccent;
+        return palette.accent;
       case GlassColorType.background:
-        return isDark ? AppColors.darkBackground : AppColors.lightBackground;
+        return palette.background;
       case GlassColorType.surface:
-        return isDark ? AppColors.darkSurface : AppColors.lightSurface;
+        return palette.surface;
       case GlassColorType.textPrimary:
-        return isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+        return palette.textPrimary;
       case GlassColorType.textSecondary:
-        return isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+        return palette.textSecondary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color baseColor = _resolveColor(isDark);
-    final Color borderColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final palette = AppPalette.of(context);
+    final Color baseColor = _resolveColor(palette);
+    final Color borderColor = palette.textPrimary;
     final BorderRadius shape = radius ?? BorderRadius.circular(borderRadius);
 
     return Container(

@@ -1,15 +1,18 @@
+// Local shopping list; purchase completion creates expenses via TransactionStore.
+
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/data/expense_categories.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/models/expense_categories.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_mapper.dart';
 import 'package:waffer/core/sync/sync_merge.dart';
 import 'package:waffer/core/sync/sync_tombstones.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
+// One list row; [expenseId] links a purchased item to its ledger expense.
 class ShoppingItem {
   final String id;
   final String name;
@@ -122,10 +125,8 @@ class ShoppingItem {
   }
 }
 
-/// مخزن قائمة المشتريات المحلية.
-///
-/// إنشاء المصروف نفسه يبقى من مسؤولية [TransactionStore] حتى ينعكس
-/// تلقائياً على الرصيد والسجل وبقية شاشات التطبيق.
+// Shopping list in prefs. Expenses are created through TransactionStore
+// so balance and history stay consistent.
 class ShoppingListStore extends ChangeNotifier {
   ShoppingListStore._();
 
@@ -172,6 +173,7 @@ class ShoppingListStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Marks purchased and posts an expense tagged with shopping:itemId.
   Future<bool> completePurchase({
     required String itemId,
     required double amount,
@@ -215,6 +217,7 @@ class ShoppingListStore extends ChangeNotifier {
     return true;
   }
 
+  // Clears purchase state when the linked expense is undone.
   Future<void> revertPurchaseForExpense(String expenseId) async {
     await ensureLoaded();
 
@@ -259,7 +262,7 @@ class ShoppingListStore extends ChangeNotifier {
   }
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     final stored = prefs.getStringList(itemsKey) ?? const [];
 
     _items
@@ -272,7 +275,7 @@ class ShoppingListStore extends ChangeNotifier {
   }
 
   Future<void> _persist() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setStringList(
       itemsKey,
       _items.map((item) => item.encode()).toList(),

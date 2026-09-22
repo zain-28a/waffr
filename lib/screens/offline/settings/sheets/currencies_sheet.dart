@@ -1,5 +1,7 @@
+// Pick the active currency or add/hide additional currencies.
+
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/currency.dart';
+import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
@@ -10,6 +12,7 @@ Future<void> showCurrenciesSheet(BuildContext context) {
   );
 }
 
+// Currencies list UI driven by CurrencyStore.
 class _CurrenciesSheet extends StatefulWidget {
   const _CurrenciesSheet();
 
@@ -19,7 +22,6 @@ class _CurrenciesSheet extends StatefulWidget {
 
 class _CurrenciesSheetState extends State<_CurrenciesSheet> {
   final CurrencyStore _store = CurrencyStore.instance;
-  bool _adding = false;
 
   @override
   void initState() {
@@ -27,12 +29,7 @@ class _CurrenciesSheetState extends State<_CurrenciesSheet> {
     _store.ensureLoaded();
   }
 
-  Future<void> _add(CurrencyInfo item) async {
-    final added = await _store.addCurrency(item.code);
-    if (!added || !mounted) return;
-    setState(() => _adding = false);
-  }
-
+  // Hides a non-default currency from the picker; its ledger stays intact.
   Future<void> _remove(CurrencyInfo item) async {
     if (item.code == defaultCurrencyCode) return;
 
@@ -106,69 +103,9 @@ class _CurrenciesSheetState extends State<_CurrenciesSheet> {
             const SizedBox(height: 8),
             if (available.isNotEmpty)
               SheetSaveButton(
-                label: _adding ? 'اختر العملة' : 'إضافة عملة',
-                onTap: () => setState(() => _adding = !_adding),
+                label: 'إضافة عملة',
+                onTap: () => showAddCurrencySheet(context),
               ),
-            SheetExpand(
-              visible: _adding && available.isNotEmpty,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Column(
-                  children: [
-                    for (final item in available) ...[
-                      Material(
-                        color: sheetFieldColor(context),
-                        borderRadius: BorderRadius.circular(16),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () => _add(item),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 42,
-                                  child: Text(
-                                    item.symbol,
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
-                                      color: accent,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    '${item.arabicName} · ${item.code}',
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.add_rounded,
-                                  color: accent,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ],
-                ),
-              ),
-            ),
           ],
         );
       },
@@ -176,6 +113,107 @@ class _CurrenciesSheetState extends State<_CurrenciesSheet> {
   }
 }
 
+/// Picker stacked on the currencies sheet. Choosing one adds it and closes.
+Future<void> showAddCurrencySheet(BuildContext context) {
+  return showGlassSheet<void>(
+    context: context,
+    builder: (context) => const _AddCurrencySheet(),
+  );
+}
+
+class _AddCurrencySheet extends StatelessWidget {
+  const _AddCurrencySheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final store = CurrencyStore.instance;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+
+    return AnimatedBuilder(
+      animation: store,
+      builder: (context, _) {
+        final available = store.availableToAdd;
+        return GlassSheetBody(
+          children: [
+            const GlassSheetHeader(
+              title: 'إضافة عملة',
+              subtitle: 'اختر عملة لتظهر في قائمة المبالغ.',
+            ),
+            const SizedBox(height: 16),
+            if (available.isEmpty)
+              Text(
+                'كل العملات المتاحة مضافة.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontSize: 14,
+                  color: textPrimary,
+                ),
+              )
+            else
+              for (final item in available) ...[
+                Material(
+                  color: sheetFieldColor(context),
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () async {
+                      final added = await store.addCurrency(item.code);
+                      if (!added || !context.mounted) return;
+                      Navigator.of(context).maybePop();
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 42,
+                            child: Text(
+                              item.symbol,
+                              style: TextStyle(
+                                fontFamily: 'BebasNeue',
+                                fontFamilyFallback: ['Tajawal'],
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: accent,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${item.arabicName} · ${item.code}',
+                              style: TextStyle(
+                                fontFamily: 'BebasNeue',
+                                fontFamilyFallback: ['Tajawal'],
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: textPrimary,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.add_rounded, color: accent, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+// One enabled currency with active highlight and optional hide action.
 class _CurrencyTile extends StatelessWidget {
   final CurrencyInfo item;
   final bool active;
@@ -220,7 +258,7 @@ class _CurrencyTile extends StatelessWidget {
                 child: Text(
                   item.symbol,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     color: accent,
@@ -235,7 +273,7 @@ class _CurrencyTile extends StatelessWidget {
                     Text(
                       item.arabicName,
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
                         color: textPrimary,
@@ -244,7 +282,7 @@ class _CurrencyTile extends StatelessWidget {
                     Text(
                       active ? '${item.code} · نشطة' : item.code,
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 12,
                         color: active ? accent : textSecondary,
                       ),

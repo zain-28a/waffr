@@ -1,14 +1,20 @@
+// Shared bottom-sheet toolkit: open a glass sheet, lay out its body, and reuse
+// the same field / chrome helpers so new sheets look and behave the same.
+//
+// The modal barrier is a flat dim ([kSheetBarrierColor]), not a BackdropFilter
+// blur — live blur behind the sheet was too expensive. The sheet itself is a
+// translucent GlassContainer fill, same performance choice as glass cards.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:waffer/core/data/currency.dart';
+import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
-/// Dim used in place of the old BackdropFilter overlay.
+/// Modal barrier tint. Dims the page behind the sheet without blurring it.
 const Color kSheetBarrierColor = Color.fromARGB(114, 0, 0, 0);
 
-/// نافذة سفلية زجاجية تُضبّب الشاشة التي تحتها.
+/// Opens a transparent modal bottom sheet wrapped in [_GlassSheetShell].
 Future<T?> showGlassSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -27,6 +33,7 @@ Future<T?> showGlassSheet<T>({
   );
 }
 
+/// Positions the sheet above the keyboard and optionally pins its height.
 class _GlassSheetShell extends StatelessWidget {
   final WidgetBuilder builder;
   final double? heightFactor;
@@ -59,7 +66,7 @@ class _GlassSheetShell extends StatelessWidget {
   }
 }
 
-/// هيكل ثابت الارتفاع: الترويسة ثابتة والمحتوى يتمرّر داخل الشيت.
+/// Fixed-height layout: pinned header, scrollable [body] below.
 class GlassSheetFixedBody extends StatelessWidget {
   final Widget header;
   final Widget body;
@@ -97,7 +104,7 @@ class GlassSheetFixedBody extends StatelessWidget {
   }
 }
 
-/// الهيكل الزجاجي للنافذة: زوايا علوية كبيرة ومحتوى قابل للتمرير.
+/// Default sheet shell: large top corners and a single scrollable column.
 class GlassSheetBody extends StatelessWidget {
   final List<Widget> children;
   final EdgeInsetsGeometry padding;
@@ -135,6 +142,7 @@ class GlassSheetBody extends StatelessWidget {
   }
 }
 
+/// Drag handle, title, subtitle, close, and optional next control.
 class GlassSheetHeader extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -177,7 +185,7 @@ class GlassSheetHeader extends StatelessWidget {
                     title,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: accent,
@@ -188,7 +196,7 @@ class GlassSheetHeader extends StatelessWidget {
                     subtitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                       fontSize: 13,
                       color: textSecondary,
                     ),
@@ -218,6 +226,7 @@ class GlassSheetHeader extends StatelessWidget {
   }
 }
 
+/// Round icon button used in sheet headers (close / next).
 class SheetCircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -255,7 +264,7 @@ class SheetCircleButton extends StatelessWidget {
   }
 }
 
-/// عنوان صغير فوق الحقول، مع كلمة "اختياري" عند الحاجة.
+/// Small label above a field; can mark the field optional and host a trailing action.
 class SheetFieldLabel extends StatelessWidget {
   final String text;
   final bool optional;
@@ -283,7 +292,7 @@ class SheetFieldLabel extends StatelessWidget {
           Text(
             text,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
               color: textSecondary,
@@ -296,7 +305,7 @@ class SheetFieldLabel extends StatelessWidget {
               child: Text(
                 ' (اختياري)',
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontSize: 11,
                   color: textSecondary.withValues(alpha: 0.6),
                 ),
@@ -312,19 +321,30 @@ class SheetFieldLabel extends StatelessWidget {
   }
 }
 
-/// حقل المبلغ الكبير مع وحدة العملة والحد الأقصى.
-class SheetAmountField extends StatelessWidget {
+/// Which inline menu under the amount row is open.
+enum _AmountMenu { none, currency, multiplier }
+
+/// Large centered amount entry with currency selector and optional helper text.
+/// New money sheets should reuse this instead of rolling a custom amount row.
+///
+/// Currency and the × multiplier open a scrollable list over the sheet,
+/// narrower than the sheet, dropping down from the control that was tapped.
+class SheetAmountField extends StatefulWidget {
   final String label;
   final TextEditingController controller;
   final String? helper;
   final ValueChanged<String>? onChanged;
 
-  /// يحل محل الفراغ المقابل لـ «ل.س» على الجهة اليمنى.
+  /// Optional widget in the left slot when there is no [onMultiplierChanged].
   final Widget? leading;
 
-  /// العملة المعروضة بجانب المبلغ. الافتراضي هو عملة الشاشة الرئيسية.
+  /// Displayed currency; defaults to the home-screen active currency.
   final String? currencyCode;
   final ValueChanged<String>? onCurrencyChanged;
+
+  /// When set, the left slot is ×1–×10 and opens the same downward list.
+  final int? multiplier;
+  final ValueChanged<int>? onMultiplierChanged;
 
   const SheetAmountField({
     super.key,
@@ -335,7 +355,152 @@ class SheetAmountField extends StatelessWidget {
     this.leading,
     this.currencyCode,
     this.onCurrencyChanged,
+    this.multiplier,
+    this.onMultiplierChanged,
   });
+
+  @override
+  State<SheetAmountField> createState() => _SheetAmountFieldState();
+}
+
+class _SheetAmountFieldState extends State<SheetAmountField> {
+  static const List<int> _multipliers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+  final GlobalKey _currencyKey = GlobalKey();
+  final GlobalKey _multiplierKey = GlobalKey();
+
+  _AmountMenu _menu = _AmountMenu.none;
+  OverlayEntry? _entry;
+
+  String get _code {
+    return Currencies.normalize(
+      widget.currencyCode ?? CurrencyStore.instance.activeCode,
+    );
+  }
+
+  @override
+  void dispose() {
+    _removeEntry();
+    super.dispose();
+  }
+
+  void _removeEntry() {
+    _entry?.remove();
+    _entry = null;
+  }
+
+  void _close() {
+    _removeEntry();
+    if (_menu == _AmountMenu.none || !mounted) return;
+    setState(() => _menu = _AmountMenu.none);
+  }
+
+  void _toggle(_AmountMenu menu) {
+    if (_menu == menu) {
+      _close();
+      return;
+    }
+    _removeEntry();
+    setState(() => _menu = menu);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _menu == menu) _showMenu(menu);
+    });
+  }
+
+  /// Drops a scrollable list over the sheet, narrower than the sheet itself.
+  void _showMenu(_AmountMenu menu) {
+    final anchorKey = menu == _AmountMenu.currency ? _currencyKey : _multiplierKey;
+    final anchor = anchorKey.currentContext?.findRenderObject() as RenderBox?;
+    if (anchor == null || !anchor.hasSize) return;
+
+    final origin = anchor.localToGlobal(Offset.zero);
+    final anchorSize = anchor.size;
+    final screen = MediaQuery.sizeOf(context);
+    final menuWidth = (screen.width * 0.62).clamp(180.0, 260.0);
+    final alignToEnd = menu == _AmountMenu.multiplier;
+    var left = alignToEnd
+        ? origin.dx + anchorSize.width - menuWidth
+        : origin.dx;
+    left = left.clamp(16.0, screen.width - menuWidth - 16);
+    final top = origin.dy + anchorSize.height + 6;
+    final maxHeight = (screen.height - top - 16).clamp(120.0, 220.0);
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+
+    final tiles = menu == _AmountMenu.currency
+        ? [
+            for (final item in CurrencyStore.instance.enabledCurrencies)
+              _AmountMenuTile(
+                title: item.arabicName,
+                leading: item.symbol,
+                selected: item.code == _code,
+                accent: accent,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                onTap: () {
+                  widget.onCurrencyChanged?.call(item.code);
+                  _close();
+                },
+              ),
+          ]
+        : [
+            for (final value in _multipliers)
+              _AmountMenuTile(
+                title: '×$value',
+                selected: value == (widget.multiplier ?? 1),
+                accent: accent,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                onTap: () {
+                  widget.onMultiplierChanged?.call(value);
+                  _close();
+                },
+              ),
+          ];
+
+    _entry = OverlayEntry(
+      builder: (overlayContext) {
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _close,
+                behavior: HitTestBehavior.translucent,
+                child: const SizedBox.expand(),
+              ),
+            ),
+            Positioned(
+              left: left,
+              top: top,
+              width: menuWidth,
+              child: Material(
+                color: surface,
+                elevation: 10,
+                borderRadius: BorderRadius.circular(16),
+                clipBehavior: Clip.antiAlias,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: maxHeight),
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    children: tiles,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    Overlay.of(context).insert(_entry!);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -346,40 +511,57 @@ class SheetAmountField extends StatelessWidget {
     final textSecondary =
         isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
-      decoration: BoxDecoration(
-        color: sheetFieldColor(context),
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Tajawal',
-              fontSize: 13,
-              color: textSecondary,
-            ),
+    return ListenableBuilder(
+      listenable: CurrencyStore.instance,
+      builder: (context, _) {
+        final options = CurrencyStore.instance.enabledCurrencies;
+        final selectable =
+            widget.onCurrencyChanged != null && options.length > 1;
+        final showMultiplier = widget.onMultiplierChanged != null;
+        final symbol = Currencies.symbolOf(_code);
+
+        return Container(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+          decoration: BoxDecoration(
+            color: sheetFieldColor(context),
+            borderRadius: BorderRadius.circular(22),
           ),
-          const SizedBox(height: 4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          child: Column(
             children: [
-              SizedBox(
-                width: 46,
-                child: leading,
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontSize: 13,
+                  color: textSecondary,
+                ),
               ),
+              const SizedBox(height: 4),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    key: _multiplierKey,
+                    width: 46,
+                    child: showMultiplier
+                        ? _AmountSlotButton(
+                            label: '×${widget.multiplier ?? 1}',
+                            color: textSecondary,
+                            open: _menu == _AmountMenu.multiplier,
+                            onTap: () => _toggle(_AmountMenu.multiplier),
+                          )
+                        : widget.leading,
+                  ),
               Expanded(
                 child: TextField(
-                  controller: controller,
-                  onChanged: onChanged,
+                  controller: widget.controller,
+                  onChanged: widget.onChanged,
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
                   inputFormatters: [ThousandsInputFormatter()],
                   cursorColor: textPrimary,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 34,
                     fontWeight: FontWeight.bold,
                     color: textPrimary,
@@ -389,7 +571,7 @@ class SheetAmountField extends StatelessWidget {
                     border: InputBorder.none,
                     hintText: '0',
                     hintStyle: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                       fontSize: 34,
                       fontWeight: FontWeight.bold,
                       color: textSecondary.withValues(alpha: 0.55),
@@ -397,30 +579,177 @@ class SheetAmountField extends StatelessWidget {
                   ),
                 ),
               ),
-              SheetCurrencySelector(
-                currencyCode: currencyCode,
-                onChanged: onCurrencyChanged,
+              KeyedSubtree(
+                key: _currencyKey,
+                child: _AmountSlotButton(
+                  label: symbol,
+                  color: textSecondary,
+                  open: selectable && _menu == _AmountMenu.currency,
+                  showChevron: selectable,
+                  onTap: selectable
+                      ? () => _toggle(_AmountMenu.currency)
+                      : null,
+                ),
               ),
             ],
           ),
-          if (helper != null) ...[
+          if (widget.helper != null) ...[
             const SizedBox(height: 2),
             Text(
-              helper!,
+              widget.helper!,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 11.5,
                 color: textSecondary.withValues(alpha: 0.75),
               ),
             ),
           ],
-        ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Symbol or ×N control. Chevron means a list will open under the row.
+class _AmountSlotButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool open;
+  final bool showChevron;
+  final VoidCallback? onTap;
+
+  const _AmountSlotButton({
+    required this.label,
+    required this.color,
+    this.open = false,
+    this.showChevron = true,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+            if (showChevron)
+              Icon(
+                open
+                    ? Icons.arrow_drop_up_rounded
+                    : Icons.arrow_drop_down_rounded,
+                size: 18,
+                color: color,
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// منتقي عملة مضغوط بجانب حقل المبلغ. إن وُجدت عملة واحدة يبقى المظهر كما كان.
+/// Scrollable list that grows downward from the amount row, capped so the
+/// sheet does not dump every choice on screen at once.
+class _AmountMenuList extends StatelessWidget {
+  final List<Widget> children;
+
+  const _AmountMenuList({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 180),
+        child: ListView(
+          shrinkWrap: true,
+          primary: false,
+          padding: EdgeInsets.zero,
+          children: children,
+        ),
+      ),
+    );
+  }
+}
+
+class _AmountMenuTile extends StatelessWidget {
+  final String title;
+  final String? leading;
+  final bool selected;
+  final Color accent;
+  final Color textPrimary;
+  final Color textSecondary;
+  final VoidCallback onTap;
+
+  const _AmountMenuTile({
+    required this.title,
+    required this.selected,
+    required this.accent,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.onTap,
+    this.leading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? accent : textPrimary;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+        child: Row(
+          children: [
+            if (leading != null) ...[
+              SizedBox(
+                width: 42,
+                child: Text(
+                  leading!,
+                  style: TextStyle(
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? accent : textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact currency control beside an amount; stays static when only one currency is enabled.
 class SheetCurrencySelector extends StatefulWidget {
   final String? currencyCode;
   final ValueChanged<String>? onChanged;
@@ -438,18 +767,7 @@ class SheetCurrencySelector extends StatefulWidget {
 }
 
 class _SheetCurrencySelectorState extends State<SheetCurrencySelector> {
-  OverlayEntry? _entry;
-
-  @override
-  void dispose() {
-    _removeEntry();
-    super.dispose();
-  }
-
-  void _removeEntry() {
-    _entry?.remove();
-    _entry = null;
-  }
+  bool _open = false;
 
   String get _code {
     return Currencies.normalize(
@@ -457,120 +775,11 @@ class _SheetCurrencySelectorState extends State<SheetCurrencySelector> {
     );
   }
 
+  /// Opens the currency list under the symbol. One currency stays a label.
   void _toggle() {
     final options = CurrencyStore.instance.enabledCurrencies;
-    if (widget.onChanged == null || options.length < 2) {
-      return;
-    }
-
-    if (_entry != null) {
-      _removeEntry();
-      return;
-    }
-
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
-    final origin = box.localToGlobal(Offset.zero);
-    final size = box.size;
-    final screen = MediaQuery.sizeOf(context);
-    const menuWidth = 196.0;
-    final left = (origin.dx + size.width - menuWidth)
-        .clamp(12.0, screen.width - menuWidth - 12);
-    final top = origin.dy > 180
-        ? origin.dy - (options.length * 44.0).clamp(88.0, 220.0) - 8
-        : origin.dy + size.height + 6;
-
-    _entry = OverlayEntry(
-      builder: (overlayContext) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-        final textPrimary =
-            isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-        final textSecondary =
-            isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-        final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _removeEntry,
-                behavior: HitTestBehavior.opaque,
-                child: const SizedBox.expand(),
-              ),
-            ),
-            Positioned(
-              left: left,
-              top: top,
-              width: menuWidth,
-              child: Material(
-                color: surface,
-                elevation: 8,
-                borderRadius: BorderRadius.circular(16),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 260),
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    shrinkWrap: true,
-                    children: [
-                      for (final item in options)
-                        InkWell(
-                          onTap: () {
-                            widget.onChanged?.call(item.code);
-                            _removeEntry();
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 36,
-                                  child: Text(
-                                    item.symbol,
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w800,
-                                      color: item.code == _code
-                                          ? accent
-                                          : textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    item.arabicName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: item.code == _code
-                                          ? accent
-                                          : textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    Overlay.of(context).insert(_entry!);
+    if (widget.onChanged == null || options.length < 2) return;
+    setState(() => _open = !_open);
   }
 
   @override
@@ -579,22 +788,22 @@ class _SheetCurrencySelectorState extends State<SheetCurrencySelector> {
       listenable: CurrencyStore.instance,
       builder: (context, _) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final textPrimary =
+            isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
         final textSecondary =
             isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-        final selectable = widget.onChanged != null &&
-            CurrencyStore.instance.enabledCurrencies.length > 1;
+        final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+        final options = CurrencyStore.instance.enabledCurrencies;
+        final selectable = widget.onChanged != null && options.length > 1;
         final symbol = Currencies.symbolOf(_code);
 
-        return GestureDetector(
-          onTap: selectable ? _toggle : null,
-          behavior: HitTestBehavior.opaque,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minWidth: widget.dense ? 42 : 46,
-              maxWidth: selectable ? 72 : 54,
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            GestureDetector(
+              onTap: selectable ? _toggle : null,
+              behavior: HitTestBehavior.opaque,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -602,7 +811,7 @@ class _SheetCurrencySelectorState extends State<SheetCurrencySelector> {
                     symbol,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                       fontSize: widget.dense ? 14 : 16,
                       fontWeight: FontWeight.w600,
                       color: textSecondary,
@@ -610,21 +819,41 @@ class _SheetCurrencySelectorState extends State<SheetCurrencySelector> {
                   ),
                   if (selectable)
                     Icon(
-                      Icons.arrow_drop_down_rounded,
+                      _open
+                          ? Icons.arrow_drop_up_rounded
+                          : Icons.arrow_drop_down_rounded,
                       size: widget.dense ? 16 : 18,
                       color: textSecondary,
                     ),
                 ],
               ),
             ),
-          ),
+            if (_open)
+              _AmountMenuList(
+                children: [
+                  for (final item in options)
+                    _AmountMenuTile(
+                      title: item.arabicName,
+                      leading: item.symbol,
+                      selected: item.code == _code,
+                      accent: accent,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      onTap: () {
+                        widget.onChanged?.call(item.code);
+                        setState(() => _open = false);
+                      },
+                    ),
+                ],
+              ),
+          ],
         );
       },
     );
   }
 }
 
-/// حقل نصي اختياري بنفس مظهر حقول النافذة.
+/// Optional single-line text field styled like other sheet inputs.
 class SheetTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
@@ -661,7 +890,7 @@ class SheetTextField extends StatelessWidget {
       textAlign: TextAlign.right,
       cursorColor: textPrimary,
       style: TextStyle(
-        fontFamily: 'Tajawal',
+        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
         fontSize: 15,
         color: enabled ? textPrimary : textSecondary.withValues(alpha: 0.55),
       ),
@@ -670,7 +899,7 @@ class SheetTextField extends StatelessWidget {
         fillColor: sheetFieldColor(context),
         hintText: hint,
         hintStyle: TextStyle(
-          fontFamily: 'Tajawal',
+          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
           fontSize: 14,
           color: textSecondary.withValues(alpha: 0.7),
         ),
@@ -692,7 +921,7 @@ class SheetTextField extends StatelessWidget {
   }
 }
 
-/// صف خيارات بنفس أسلوب طرق الدفع في نافذة المصروف.
+/// Segmented choice row (same pattern as expense payment-method chips).
 class SheetChoiceChips extends StatelessWidget {
   final List<String> options;
   final String selected;
@@ -764,7 +993,7 @@ class SheetChoiceChips extends StatelessWidget {
                               duration: const Duration(milliseconds: 220),
                               curve: Curves.easeOut,
                               style: TextStyle(
-                                fontFamily: 'Tajawal',
+                                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 height: 1.1,
@@ -791,7 +1020,7 @@ class SheetChoiceChips extends StatelessWidget {
   }
 }
 
-/// يظهر أو يخفي محتوى الشيت مع تمدد وبهتان هادئ.
+/// Softly expands or collapses optional sheet content.
 class SheetExpand extends StatelessWidget {
   final bool visible;
   final Widget child;
@@ -831,7 +1060,7 @@ class SheetExpand extends StatelessWidget {
   }
 }
 
-/// تبديل محتوى الشيت عند تغيير الخيار، مع بهتان خفيف.
+/// Cross-fades sheet content when the active option changes.
 class SheetSwap extends StatelessWidget {
   final Object switchKey;
   final Widget child;
@@ -863,7 +1092,7 @@ class SheetSwap extends StatelessWidget {
   }
 }
 
-/// زر الحفظ الكبير أسفل النافذة.
+/// Full-width primary save / confirm button at the bottom of a sheet.
 class SheetSaveButton extends StatelessWidget {
   final String label;
   final bool enabled;
@@ -898,7 +1127,7 @@ class SheetSaveButton extends StatelessWidget {
               Text(
                 label,
                 style: const TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -914,7 +1143,7 @@ class SheetSaveButton extends StatelessWidget {
   }
 }
 
-/// لون الحقول داخل النافذة: خلفية التطبيق مع لمسة من اللون الأساسي.
+/// Shared fill for sheet inputs: app background blended with a touch of accent.
 Color sheetFieldColor(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -924,7 +1153,7 @@ Color sheetFieldColor(BuildContext context) {
   return Color.alphaBlend(accent.withValues(alpha: isDark ? 0.10 : 0.07), base);
 }
 
-/// يعرض المبلغ بفواصل الآلاف أثناء الكتابة، بحد أقصى 9 أرقام.
+/// Formats amount text with thousand separators while typing (max 9 digits).
 class ThousandsInputFormatter extends TextInputFormatter {
   static const int maxDigits = 9;
 
@@ -949,7 +1178,7 @@ class ThousandsInputFormatter extends TextInputFormatter {
   }
 }
 
-/// يقرأ المبلغ المكتوب بعد إزالة الفواصل.
+/// Parses a formatted amount string after stripping commas.
 double parseAmount(String text) {
   return double.tryParse(text.replaceAll(',', '').trim()) ?? 0;
 }

@@ -1,7 +1,10 @@
+// Last-write-wins merge of remote upserts/deletes into an in-memory local list.
+
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_tombstones.dart';
 
-/// Last-write-wins merge against the in-memory local list.
+// Apply server deletes then upserts. A local tombstone that is newer than an
+// incoming upsert wins, so an offline delete is not resurrected by an old row.
 bool mergeRemoteRecords<T>({
   required List<T> items,
   required List<T> upserts,

@@ -1,3 +1,6 @@
+// Orchestrates cloud sync: push local changes to FastAPI /sync and merge
+// the server's reply back into on-device stores without wiping offline data.
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -5,12 +8,12 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
-import 'package:waffer/core/data/category_store.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/notification_service.dart';
-import 'package:waffer/core/data/recurring_expense_store.dart';
-import 'package:waffer/core/data/shopping_list_store.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/stores/category_store.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/services/notification_service.dart';
+import 'package:waffer/data/stores/recurring_expense_store.dart';
+import 'package:waffer/data/stores/shopping_list_store.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/sync/api_config.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
@@ -23,6 +26,7 @@ import 'package:waffer/core/sync/sync_tombstones.dart';
 
 enum SyncStatus { success, offline, noAccount, failed, skipped }
 
+// Outcome of one sync attempt, including a user-facing Arabic message.
 class SyncResult {
   final SyncStatus status;
   final String userMessage;
@@ -32,10 +36,9 @@ class SyncResult {
   bool get ok => status == SyncStatus.success || status == SyncStatus.skipped;
 }
 
-/// Pushes local SharedPreferences data to FastAPI and merges server changes.
-///
-/// Local storage stays the offline source of truth. A failed request never
-/// overwrites or deletes local records.
+// Singleton that pushes dirty local SharedPreferences data and pulls remote
+// upserts/deletes. Local storage stays the offline source of truth; a failed
+// HTTP call never overwrites or deletes local records.
 class SyncService with WidgetsBindingObserver {
   SyncService._();
 
@@ -56,12 +59,14 @@ class SyncService with WidgetsBindingObserver {
 
   final ValueNotifier<bool> isSyncing = ValueNotifier<bool>(false);
 
+  // Wire dirty/lifecycle/connectivity listeners, load tombstones, then sync.
   Future<void> initialize() async {
     _attachListeners();
     await SyncTombstones.instance.ensureLoaded();
     await syncNow();
   }
 
+  // Debounce rapid local edits so we batch them into one network round-trip.
   void scheduleSync() {
     if (_applying) return;
     _debounceTimer?.cancel();
@@ -70,6 +75,8 @@ class SyncService with WidgetsBindingObserver {
     });
   }
 
+  // Run push+pull now: require a logged-in session, flush pending photo work,
+  // optionally skip a clean pull, POST /sync, then merge the response.
   Future<SyncResult> syncNow({bool force = false}) async {
     _debounceTimer?.cancel();
 
@@ -220,6 +227,8 @@ class SyncService with WidgetsBindingObserver {
     return total;
   }
 
+  // Build the push body: changed rows since lastSync (or everything when
+  // sendAll), plus delete tombstones so offline removals reach the server.
   Future<Map<String, dynamic>> _buildRequest({
     required DateTime? lastSync,
     required bool sendAll,
@@ -322,6 +331,7 @@ class SyncService with WidgetsBindingObserver {
     };
   }
 
+  // Snapshot prefs-backed settings (income, currencies, profile) for push.
   Future<Map<String, dynamic>> _settingsPayload() async {
     final store = TransactionStore.instance;
     return {
@@ -347,6 +357,8 @@ class SyncService with WidgetsBindingObserver {
     return newerOrEqual(updatedAt, lastSync);
   }
 
+  // Pull path: apply remote upserts/deletes into each store, then drop
+  // tombstones the server has acknowledged. Suppresses dirty marks while applying.
   Future<bool> _applyResponse(Map<String, dynamic> body) async {
     try {
       _applying = true;
@@ -431,6 +443,7 @@ class SyncService with WidgetsBindingObserver {
     return null;
   }
 
+  // After a successful pull, remove local delete logs that the server echoed.
   Future<void> _clearAcknowledgedTombstones(Map<String, dynamic> body) async {
     Future<void> clear(String key, SyncCollection collection) async {
       final sent = SyncTombstones.instance.of(collection).map((e) => e.clientId);
@@ -456,6 +469,7 @@ class SyncService with WidgetsBindingObserver {
     }
   }
 
+  // Subscribe to dirty marks, app resume, and reconnect-to-online events.
   void _attachListeners() {
     if (_listenersAttached) return;
     _listenersAttached = true;
@@ -464,6 +478,7 @@ class SyncService with WidgetsBindingObserver {
     unawaited(_listenForConnectivity());
   }
 
+  // When the device comes back online, flush whatever is still dirty.
   Future<void> _listenForConnectivity() async {
     final connectivity = Connectivity();
     try {

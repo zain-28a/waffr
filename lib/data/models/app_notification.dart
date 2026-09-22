@@ -1,6 +1,8 @@
+// In-app notification model, types, priorities, and prefs serialization.
+
 import 'dart:convert';
 
-/// تصنيف الحدث الذي أنتج الإشعار.
+// What happened that produced the notification.
 enum NotificationType {
   balanceWarning,
   highSpending,
@@ -12,10 +14,10 @@ enum NotificationType {
   recurringExpenseBlocked,
 }
 
-/// وزن بصري خفيف، بدون ألوان جديدة.
+// Light visual weight for list styling (no extra theme colors).
 enum NotificationPriority { warning, important, success, savings, info }
 
-/// حدود مركزية لكل أنواع الإشعارات المعتمدة على نسب.
+// Shared percent / size cutoffs for generators across the app.
 class NotificationThresholds {
   static const List<int> remainingPercents = [30, 20, 10];
   static const List<int> spendingPercents = [50, 70, 80, 90];
@@ -24,7 +26,7 @@ class NotificationThresholds {
   static const int minExpensesForLarge = 4;
 }
 
-/// إشعار واحد كما يُحفظ في SharedPreferences.
+// One notification as stored in SharedPreferences.
 class AppNotification {
   final String id;
   final NotificationType type;
@@ -98,6 +100,7 @@ class AppNotification {
 
   String encode() => jsonEncode(toJson());
 
+  // Prefs decode; requires non-empty title and eventKey.
   static AppNotification? decode(String raw) {
     try {
       final decoded = jsonDecode(raw);

@@ -1,8 +1,11 @@
+// Tombstones: local delete log so offline removals can reach the server later.
+
 import 'dart:convert';
 
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
+// Which synced collection a delete belongs to.
 enum SyncCollection {
   transactions,
   savingsGoals,
@@ -14,6 +17,7 @@ enum SyncCollection {
   expenseCategories,
 }
 
+// One deleted client_id plus when it was removed on this device.
 class SyncTombstone {
   final String clientId;
   final DateTime deletedAt;
@@ -41,7 +45,8 @@ class SyncTombstone {
   }
 }
 
-/// Local delete log so offline removals can reach the server later.
+// Persists deletes until SyncService pushes them and the server acknowledges
+// them. Without this, an offline delete would never leave the device.
 class SyncTombstones {
   SyncTombstones._();
 
@@ -58,6 +63,7 @@ class SyncTombstones {
 
   Future<void> ensureLoaded() => _loader ??= _load();
 
+  // Record a single offline delete for the next push.
   Future<void> add(SyncCollection collection, String clientId) async {
     await ensureLoaded();
     final id = clientId.trim();
@@ -92,6 +98,7 @@ class SyncTombstones {
     return _items[collection]?[clientId];
   }
 
+  // Drop tombstones after the server has seen those deletes.
   Future<void> remove(SyncCollection collection, Iterable<String> ids) async {
     await ensureLoaded();
     var changed = false;
@@ -111,7 +118,7 @@ class SyncTombstones {
   }
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     final raw = prefs.getString(_key);
     if (raw != null && raw.isNotEmpty) {
       try {
@@ -134,7 +141,7 @@ class SyncTombstones {
 
   Future<void> _persist() async {
     if (!_loaded) return;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await prefs.setString(
       _key,
       jsonEncode({

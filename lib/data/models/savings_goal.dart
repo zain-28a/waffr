@@ -1,9 +1,11 @@
+// Savings goal model, duration presets, and JSON encode/decode for prefs.
+
 import 'dart:convert';
 
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/transaction.dart';
+import 'package:waffer/data/models/currency.dart';
+import 'package:waffer/data/models/transaction.dart';
 
-/// مدة الهدف كما يختارها المستخدم في النافذة.
+// How long the user picked for the goal in the create dialog.
 enum GoalDurationPreset { week, month, threeMonths, sixMonths, year }
 
 extension GoalDurationPresetLabel on GoalDurationPreset {
@@ -15,6 +17,7 @@ extension GoalDurationPresetLabel on GoalDurationPreset {
     GoalDurationPreset.year => 'سنة',
   };
 
+  // Maps a raw cycle count back to the closest preset for the UI.
   static GoalDurationPreset fromCount(
     int count, {
     RecurringFrequency frequency = RecurringFrequency.monthly,
@@ -32,7 +35,7 @@ extension GoalDurationPresetLabel on GoalDurationPreset {
     return GoalDurationPreset.year;
   }
 
-  /// عدد دورات الاقتطاع حسب تردد الدخل.
+  // Deduction cycles for this preset given weekly vs monthly income.
   int cycleCount(RecurringFrequency frequency) {
     return switch (this) {
       GoalDurationPreset.week => frequency == RecurringFrequency.weekly ? 1 : 1,
@@ -48,9 +51,8 @@ extension GoalDurationPresetLabel on GoalDurationPreset {
   }
 }
 
-/// هدف ادخار واحد. التقدّم يُحتسب فقط من التحويلات بعد [createdAt].
-///
-/// [priority] يحدد ترتيب العرض: 0 = أعلى أولوية.
+// One savings goal. Progress only counts transfers after [createdAt];
+// lower [priority] sorts first in the list.
 class SavingsGoal {
   final String id;
   final String name;
@@ -88,6 +90,7 @@ class SavingsGoal {
 
   DateTime get syncUpdatedAt => (updatedAt ?? createdAt).toUtc();
 
+  // Prefer an explicit durationCount; otherwise derive from the preset.
   int cyclesFor(RecurringFrequency frequency) {
     if (durationCount != null && durationCount! > 0) return durationCount!;
     return duration.cycleCount(frequency);
@@ -95,6 +98,7 @@ class SavingsGoal {
 
   bool get isCompleted => completedAt != null;
 
+  // Copies fields; set [touch] to bump updatedAt for sync.
   SavingsGoal copyWith({
     DateTime? completedAt,
     double? completedAmount,
@@ -147,6 +151,7 @@ class SavingsGoal {
 
   String encode() => jsonEncode(toJson());
 
+  // Parses prefs JSON; returns null if name/target are missing or invalid.
   static SavingsGoal? decode(String raw) {
     try {
       final decoded = jsonDecode(raw);

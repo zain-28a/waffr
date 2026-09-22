@@ -1,10 +1,12 @@
-import 'package:intl/intl.dart';
-import 'package:waffer/core/data/currency.dart';
+// Money and date/time formatting helpers for the financial UI.
 
-/// رمز الليرة السورية الثابت (أسعار الصرف في تبويب أونلاين).
+import 'package:intl/intl.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+
+// Fixed Syrian pound label used where rates are shown online.
 const String sypCurrencyLabel = 'ل.س';
 
-/// وحدة العملة النشطة في الواجهة المالية.
+// Symbol for the currently active currency in the UI.
 String get currencyLabel => CurrencyStore.instance.activeSymbol;
 
 String currencyLabelFor(String? code) => Currencies.symbolOf(code);
@@ -13,8 +15,7 @@ final NumberFormat _moneyFormat = NumberFormat('#,##0', 'en');
 
 String formatMoney(num value) => _moneyFormat.format(value.round());
 
-/// تُكتب التواريخ والأوقات يدوياً بأرقام لاتينية، فلا تحتاج بيانات المواقع
-/// الخاصة بـ DateFormat.
+// Manual DD/MM/YYYY with Latin digits so DateFormat locale data is not required.
 String formatDate(DateTime date) {
   final local = date.toLocal();
   return '${_twoDigits(local.day)}/${_twoDigits(local.month)}/${local.year}';

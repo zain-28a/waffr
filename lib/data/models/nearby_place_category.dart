@@ -1,6 +1,9 @@
+// Place types for "near me" map searches, plus the launcher that opens Google Maps.
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// One chip on the nearby screen: Arabic label, Maps query, and icon.
 class NearbyPlaceCategory {
   final String label;
   final String mapsQuery;
@@ -36,6 +39,7 @@ const List<NearbyPlaceCategory> nearbyPlaceCategories = [
   ),
 ];
 
+// Opens Maps with "near me" for the category; falls back to geo: if the https URL won't launch.
 Future<bool> openNearbyPlaceSearch(NearbyPlaceCategory category) async {
   final encoded = Uri.encodeComponent('${category.mapsQuery} بالقرب مني');
   final maps = Uri.parse(

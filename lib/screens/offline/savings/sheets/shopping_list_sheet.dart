@@ -1,10 +1,13 @@
+// Shopping list preview card plus sheets to add items and record purchases as expenses.
+
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/expense_categories.dart';
-import 'package:waffer/core/data/shopping_list_store.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/models/expense_categories.dart';
+import 'package:waffer/data/stores/shopping_list_store.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
+import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
@@ -17,6 +20,7 @@ Future<void> showShoppingListSheet(BuildContext context) {
   );
 }
 
+// Compact teaser on the savings screen; opens the full shopping list sheet.
 class ShoppingListPreviewCard extends StatefulWidget {
   const ShoppingListPreviewCard({super.key});
 
@@ -73,7 +77,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                         Text(
                           'قائمة المشتريات',
                           style: TextStyle(
-                            fontFamily: 'Tajawal',
+                            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: colors.textPrimary,
@@ -84,7 +88,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                               ? 'أضف ما تحتاج إلى شرائه'
                               : '${_store.items.length} عناصر محفوظة',
                           style: TextStyle(
-                            fontFamily: 'Tajawal',
+                            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                             fontSize: 11.5,
                             color: colors.textSecondary,
                           ),
@@ -106,7 +110,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                       '+ ${_store.items.length - preview.length} عناصر أخرى',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: colors.accent,
@@ -122,6 +126,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
   }
 }
 
+// One preview line under the shopping list teaser.
 class _PreviewItem extends StatelessWidget {
   final ShoppingItem item;
   final _ShoppingColors colors;
@@ -150,7 +155,7 @@ class _PreviewItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 12.5,
                 color: item.isPurchased
                     ? colors.textSecondary
@@ -167,6 +172,7 @@ class _PreviewItem extends StatelessWidget {
   }
 }
 
+// Full list: add items, mark purchases, or clear everything.
 class _ShoppingListSheet extends StatefulWidget {
   const _ShoppingListSheet();
 
@@ -204,6 +210,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
     setState(() => _adding = false);
   }
 
+  // Confirms then wipes all shopping items (recorded expenses stay).
   Future<void> _clearList() async {
     if (_store.items.isEmpty) return;
 
@@ -220,7 +227,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
             'إفراغ قائمة المشتريات',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontWeight: FontWeight.bold,
               color: colors.textPrimary,
             ),
@@ -229,7 +236,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
             'سيتم حذف كل العناصر من القائمة. المصروفات المسجّلة لن تتأثر.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 14,
               color: colors.textSecondary,
             ),
@@ -240,7 +247,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
               child: Text(
                 'إلغاء',
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   color: colors.textSecondary,
                 ),
               ),
@@ -250,7 +257,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
               child: Text(
                 'إفراغ',
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   color: colors.accent,
                 ),
               ),
@@ -266,6 +273,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
     showAppSnackBar(context, 'تم إفراغ قائمة المشتريات', success: true);
   }
 
+  // Opens the purchase sheet for an unpurchased item.
   Future<void> _purchase(ShoppingItem item) async {
     if (item.isPurchased) return;
     await showPurchaseShoppingItemSheet(context, item);
@@ -338,7 +346,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
                     Text(
                       'قائمة المشتريات فارغة',
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                         fontSize: 14,
                         color: colors.textSecondary,
                       ),
@@ -359,7 +367,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
                   label: Text(
                     'إفراغ القائمة',
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: colors.textSecondary,
@@ -384,6 +392,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
   }
 }
 
+// Checkbox row; tap opens the purchase sheet when not yet bought.
 class _ShoppingItemTile extends StatelessWidget {
   final ShoppingItem item;
   final _ShoppingColors colors;
@@ -422,7 +431,7 @@ class _ShoppingItemTile extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: item.isPurchased
@@ -438,7 +447,7 @@ class _ShoppingItemTile extends StatelessWidget {
               Text(
                 item.isPurchased ? 'تم الشراء' : 'تسجيل الشراء',
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontSize: 10.5,
                   color: item.isPurchased
                       ? colors.textSecondary
@@ -453,6 +462,7 @@ class _ShoppingItemTile extends StatelessWidget {
   }
 }
 
+// Records an expense for a shopping item and marks it purchased.
 Future<void> showPurchaseShoppingItemSheet(
   BuildContext context,
   ShoppingItem item,
@@ -463,6 +473,7 @@ Future<void> showPurchaseShoppingItemSheet(
   );
 }
 
+// Amount + category form that posts an expense and marks the item bought.
 class _PurchaseShoppingItemSheet extends StatefulWidget {
   final ShoppingItem item;
 
@@ -483,12 +494,19 @@ class _PurchaseShoppingItemSheetState
 
   double get _amount => parseAmount(_amountController.text);
 
-  bool get _isValid => _amount > 0 && _amount <= 999999999;
+  bool get _exceedsBalance =>
+      _amount > TransactionStore.instance.balanceFor(_currencyCode);
+
+  bool get _isValid =>
+      _amount > 0 && _amount <= 999999999 && !_exceedsBalance;
 
   @override
   void initState() {
     super.initState();
     _currencyCode = CurrencyStore.instance.activeCode;
+    TransactionStore.instance.ensureLoaded().then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -497,6 +515,7 @@ class _PurchaseShoppingItemSheetState
     super.dispose();
   }
 
+  // Posts the expense via ShoppingListStore and closes on success.
   Future<void> _save() async {
     if (!_isValid || _saving) return;
     setState(() => _saving = true);
@@ -543,6 +562,9 @@ class _PurchaseShoppingItemSheetState
         SheetAmountField(
           label: 'السعر',
           controller: _amountController,
+          helper: _exceedsBalance
+              ? 'أكبر من الرصيد المتاح ${formatMoney(TransactionStore.instance.balanceFor(_currencyCode))} ${currencyLabelFor(_currencyCode)}'
+              : null,
           currencyCode: _currencyCode,
           onCurrencyChanged: (code) => setState(() => _currencyCode = code),
           onChanged: (_) => setState(() {}),
@@ -564,6 +586,7 @@ class _PurchaseShoppingItemSheetState
   }
 }
 
+// Local light/dark colors for shopping UI.
 class _ShoppingColors {
   final Color accent;
   final Color surface;

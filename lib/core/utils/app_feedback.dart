@@ -1,9 +1,12 @@
+// Floating snackbars for success and error feedback using AppColors.
+
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
 
 const String insufficientBalanceMessage =
     'المبلغ أكبر من رصيدك الحالي، لا يمكن إتمام العملية.';
 
+// Show a branded snackbar; success uses the accent background.
 void showAppSnackBar(
   BuildContext context,
   String message, {
@@ -44,7 +47,7 @@ void showAppSnackBar(
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 height: 1.35,

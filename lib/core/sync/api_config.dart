@@ -1,18 +1,19 @@
-import 'package:shared_preferences/shared_preferences.dart';
+// Resolves the FastAPI base URL for sync and auth HTTP calls.
 
-/// Base URL for the FastAPI backend.
-///
-/// Override with the `waffer_api_base_url` preference if needed.
+import 'package:waffer/core/prefs/app_prefs.dart';
+
+// Default backend host, overridable via a SharedPreferences key for debug.
 class ApiConfig {
   ApiConfig._();
 
   static const String overrideKey = 'waffer_api_base_url';
 
-  /// USB debugging: `adb reverse tcp:8000 tcp:8000` then this reaches the PC.
+  // Dev default; with USB debugging, adb reverse can map this to the PC.
   static const String defaultBaseUrl = 'http://192.168.95.2:8001';
 
+  // Prefer the prefs override when set; strip a trailing slash for path joins.
   static Future<String> baseUrl() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     final override = prefs.getString(overrideKey)?.trim() ?? '';
     if (override.isEmpty) return defaultBaseUrl;
     return override.endsWith('/')

@@ -1,12 +1,15 @@
+// Privacy hub: account data, cloud sync, app lock, and local reset detail pages.
+
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:waffer/core/data/local_data_reset.dart';
+import 'package:waffer/data/services/local_data_reset.dart';
 import 'package:waffer/core/security/app_lock.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 
+// Entry list that opens deeper privacy/security detail pages.
 class PrivacySecurityScreen extends StatefulWidget {
   final dynamic appFlowController;
 
@@ -192,6 +195,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
   }
 }
 
+// Explains what account fields are stored and how financial data stays private.
 class _AccountDataDetailPage extends StatelessWidget {
   const _AccountDataDetailPage();
 
@@ -234,6 +238,7 @@ class _AccountDataDetailPage extends StatelessWidget {
   }
 }
 
+// Cloud sync status and how backups relate to a signed-in account.
 class _CloudSyncDetailPage extends StatelessWidget {
   final bool loggedIn;
 
@@ -294,6 +299,7 @@ class _CloudSyncDetailPage extends StatelessWidget {
   }
 }
 
+// Lists which local datasets participate in sync.
 class _SyncedDataDetailPage extends StatelessWidget {
   const _SyncedDataDetailPage();
 
@@ -357,6 +363,7 @@ class _SyncedDataDetailPage extends StatelessWidget {
   }
 }
 
+// Toggle device app lock with biometric/passcode confirmation.
 class _AppLockDetailPage extends StatefulWidget {
   final dynamic appFlowController;
   final LocalAuthentication auth;
@@ -382,6 +389,7 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
     _enabled = widget.initiallyEnabled;
   }
 
+  // Enables after device auth; disables by clearing AppLock prefs.
   Future<void> _toggle(bool value) async {
     if (_busy) return;
 
@@ -391,11 +399,9 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
       enabled: value,
       auth: widget.auth,
       onEnabled: () {
-        final controller = widget.appFlowController;
-        if (controller != null) {
-          controller._isAuthenticated = true;
-          controller.refreshAppLockState();
-        }
+        widget.appFlowController?.refreshAppLockState(
+          sessionAuthenticated: true,
+        );
       },
       onDisabled: () {
         widget.appFlowController?.refreshAppLockState();
@@ -481,6 +487,7 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
   }
 }
 
+// Wipe local app data while keeping the user on a clean slate.
 class _LocalResetDetailPage extends StatelessWidget {
   const _LocalResetDetailPage();
 
@@ -567,7 +574,7 @@ class _LocalResetDetailPage extends StatelessWidget {
             child: const Text(
               'إعادة ضبط هذا الجهاز',
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -578,6 +585,7 @@ class _LocalResetDetailPage extends StatelessWidget {
   }
 }
 
+// Shared scaffold for privacy detail pages (header + scroll body).
 class _PrivacyDetailScaffold extends StatelessWidget {
   final String title;
   final _PrivacyColors colors;
@@ -615,6 +623,7 @@ class _PrivacyDetailScaffold extends StatelessWidget {
   }
 }
 
+// Light/dark color snapshot for privacy screens.
 class _PrivacyColors {
   final Color background;
   final Color surface;
@@ -644,6 +653,7 @@ class _PrivacyColors {
   }
 }
 
+// Section heading above a settings group.
 class _SectionLabel extends StatelessWidget {
   final String title;
   final Color color;
@@ -660,13 +670,14 @@ class _SectionLabel extends StatelessWidget {
           color: color,
           fontSize: 14,
           fontWeight: FontWeight.bold,
-          fontFamily: 'Tajawal',
+          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
         ),
       ),
     );
   }
 }
 
+// Card wrapping one or more privacy settings rows.
 class _SettingsGroup extends StatelessWidget {
   final Color surface;
   final List<Widget> children;
@@ -689,6 +700,7 @@ class _SettingsGroup extends StatelessWidget {
   }
 }
 
+// Tappable privacy settings row with optional trailing widget.
 class _SettingsRow extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -741,7 +753,7 @@ class _SettingsRow extends StatelessWidget {
                         color: colors.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                       ),
                     ),
                   ),
@@ -780,6 +792,7 @@ class _SettingsRow extends StatelessWidget {
   }
 }
 
+// Small pill showing on/off or similar status text.
 class _StatusChip extends StatelessWidget {
   final String label;
   final bool emphasized;
@@ -807,13 +820,14 @@ class _StatusChip extends StatelessWidget {
           color: color,
           fontSize: 11.5,
           fontWeight: FontWeight.w700,
-          fontFamily: 'Tajawal',
+          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
         ),
       ),
     );
   }
 }
 
+// Banner summarizing the current privacy/security status.
 class _StatusBanner extends StatelessWidget {
   final _PrivacyColors colors;
   final bool emphasized;
@@ -859,7 +873,7 @@ class _StatusBanner extends StatelessWidget {
                     color: colors.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -869,7 +883,7 @@ class _StatusBanner extends StatelessWidget {
                     color: colors.textSecondary,
                     fontSize: 12.5,
                     height: 1.45,
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
               ],
@@ -881,6 +895,7 @@ class _StatusBanner extends StatelessWidget {
   }
 }
 
+// Intro icon + title block at the top of a detail page.
 class _DetailLead extends StatelessWidget {
   final IconData icon;
   final _PrivacyColors colors;
@@ -917,7 +932,7 @@ class _DetailLead extends StatelessWidget {
                 fontSize: 14.5,
                 height: 1.55,
                 fontWeight: FontWeight.w600,
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               ),
             ),
           ),
@@ -927,6 +942,7 @@ class _DetailLead extends StatelessWidget {
   }
 }
 
+// Grouped list of informational lines.
 class _InfoGroup extends StatelessWidget {
   final _PrivacyColors colors;
   final List<Widget> children;
@@ -949,6 +965,7 @@ class _InfoGroup extends StatelessWidget {
   }
 }
 
+// Single bullet-style info line inside an _InfoGroup.
 class _InfoLine extends StatelessWidget {
   final String label;
   final bool showDivider;
@@ -976,7 +993,7 @@ class _InfoLine extends StatelessWidget {
                     color: colors.textPrimary,
                     fontSize: 13.5,
                     height: 1.45,
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
               ),
@@ -995,6 +1012,7 @@ class _InfoLine extends StatelessWidget {
   }
 }
 
+// Muted footnote under a detail section.
 class _NoteText extends StatelessWidget {
   final _PrivacyColors colors;
   final String text;
@@ -1012,7 +1030,7 @@ class _NoteText extends StatelessWidget {
         color: colors.textSecondary,
         fontSize: 13.5,
         height: 1.55,
-        fontFamily: 'Tajawal',
+        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
       ),
     );
   }

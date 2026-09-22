@@ -1,5 +1,7 @@
+// Full-width primary CTA with a short press-scale feedback.
 import 'package:flutter/material.dart';
 
+/// Solid accent button that scales slightly while pressed.
 class AnimatedPrimaryButton extends StatefulWidget {
   final String text;
   final VoidCallback onPressed;
@@ -57,7 +59,7 @@ class _AnimatedPrimaryButtonState extends State<AnimatedPrimaryButton> {
               color: widget.textColor,
               fontSize: 17,
               fontWeight: FontWeight.bold,
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
             ),
           ),
         ),

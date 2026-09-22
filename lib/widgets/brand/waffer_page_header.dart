@@ -1,8 +1,9 @@
+// Shared top app bar for the shell and settings-style screens.
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
 
-/// Shared top bar for the app shell and settings-style screens.
+/// Fixed-height page header with optional scroll-elevation shadow.
 class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
   static const double height = 68;
 
@@ -51,6 +52,7 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
+/// Gradient bar chrome, shadow, and title/leading layout.
 class _HeaderChrome extends StatelessWidget {
   final Widget title;
   final Widget? leading;

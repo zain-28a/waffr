@@ -1,0 +1,119 @@
+// Glass sheet for the monthly (or weekly) income amount, same shell as other sheets.
+
+import 'package:flutter/material.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/utils/money.dart';
+import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffer/widgets/dialogs/edit_amount_dialog.dart';
+
+/// Opens the income editor as a sheet. Pops [EditAmountResult] or [AmountDialogCleared].
+Future<Object?> showMonthlyIncomeSheet(
+  BuildContext context, {
+  required String title,
+  required double initialAmount,
+  required bool allowClear,
+}) {
+  return showGlassSheet<Object>(
+    context: context,
+    builder: (context) => _MonthlyIncomeSheet(
+      title: title,
+      initialAmount: initialAmount,
+      allowClear: allowClear,
+    ),
+  );
+}
+
+class _MonthlyIncomeSheet extends StatefulWidget {
+  final String title;
+  final double initialAmount;
+  final bool allowClear;
+
+  const _MonthlyIncomeSheet({
+    required this.title,
+    required this.initialAmount,
+    required this.allowClear,
+  });
+
+  @override
+  State<_MonthlyIncomeSheet> createState() => _MonthlyIncomeSheetState();
+}
+
+class _MonthlyIncomeSheetState extends State<_MonthlyIncomeSheet> {
+  static const double _maxAmount = 999999999;
+
+  late final TextEditingController _controller;
+  late String _currencyCode;
+
+  double get _amount => parseAmount(_controller.text);
+
+  bool get _isValid => _amount > 0 && _amount <= _maxAmount;
+
+  @override
+  void initState() {
+    super.initState();
+    _currencyCode = CurrencyStore.instance.activeCode;
+    _controller = TextEditingController(
+      text: widget.initialAmount > 0 && widget.initialAmount.isFinite
+          ? formatMoney(widget.initialAmount)
+          : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (!_isValid) return;
+    Navigator.of(context).pop(EditAmountResult(_amount, _currencyCode));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSheetBody(
+      children: [
+        GlassSheetHeader(
+          title: widget.title,
+          subtitle: 'يُستخدم لخطط الادخار والمصروفات المتكررة.',
+          onNext: _isValid ? _save : null,
+        ),
+        const SizedBox(height: 18),
+        SheetAmountField(
+          label: 'المبلغ',
+          controller: _controller,
+          currencyCode: _currencyCode,
+          onCurrencyChanged: (code) => setState(() => _currencyCode = code),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 22),
+        SheetSaveButton(
+          label: 'حفظ',
+          enabled: _isValid,
+          onTap: _save,
+        ),
+        if (widget.allowClear) ...[
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(
+              AmountDialogCleared(_currencyCode),
+            ),
+            child: Text(
+              'إزالة الدخل',
+              style: TextStyle(
+                fontFamily: 'BebasNeue',
+                fontFamilyFallback: ['Tajawal'],
+                fontSize: 15,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.darkAccent
+                    : AppColors.lightAccent,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}

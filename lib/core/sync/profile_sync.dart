@@ -1,8 +1,10 @@
-import 'package:shared_preferences/shared_preferences.dart';
+// Profile fields in prefs that travel with /sync settings (name, address, theme).
+
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
-/// Profile fields stored in prefs and synced through `/sync` settings.
+// Reads and writes the on-device user profile used during login and sync push.
 class ProfileSync {
   ProfileSync._();
 
@@ -15,8 +17,9 @@ class ProfileSync {
     'street': 'user_street',
   };
 
+  // Build the settings fragment sent on push.
   static Future<Map<String, dynamic>> fields() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     return {
       'display_name': prefs.getString('user_name'),
       'gender': prefs.getString('user_gender'),
@@ -29,10 +32,9 @@ class ProfileSync {
     };
   }
 
-  /// Replaces the on-device profile with [profile] from the signed-in account.
-  /// Missing values are removed so a previous account cannot remain visible.
+  // Replace local profile with the signed-in account so a prior user cannot linger.
   static Future<void> adoptAccount(Map<String, dynamic> profile) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     for (final entry in _accountKeys.entries) {
       if (!profile.containsKey(entry.key)) continue;
       final raw = profile[entry.key]?.toString().trim() ?? '';
@@ -45,9 +47,9 @@ class ProfileSync {
     await SyncDirty.mark(settings: true);
   }
 
-  /// Fills empty local fields from the signed-in account without replacing edits.
+  // Fill empty local fields from the account without overwriting user edits.
   static Future<void> fillMissing(Map<String, dynamic> profile) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     for (final entry in _accountKeys.entries) {
       final raw = profile[entry.key]?.toString().trim() ?? '';
       if (raw.isEmpty) continue;
@@ -58,12 +60,13 @@ class ProfileSync {
     }
   }
 
+  // Apply remote settings when the server copy is newer than local settings.
   static Future<void> apply(Map<String, dynamic> settings) async {
     final remoteUpdated = parseSyncDate(settings['updated_at']);
     final localUpdated = await SyncDirty.settingsUpdatedAt();
     if (!newerOrEqual(remoteUpdated, localUpdated)) return;
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     final name = settings['display_name']?.toString().trim() ?? '';
     if (name.isNotEmpty) {

@@ -1,7 +1,9 @@
+// Circular profile photo with optional camera badge when tappable.
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+/// Avatar from a local photo path, or a person icon placeholder.
 class ProfileAvatar extends StatelessWidget {
   final String? photoPath;
   final Color accent;

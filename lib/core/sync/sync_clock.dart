@@ -1,9 +1,9 @@
-/// UTC helpers for last-write-wins comparisons.
-///
-/// User events use [deviceNow]. [syncNow] is only for sync metadata.
+// UTC clock helpers for last-write-wins sync comparisons and ISO timestamps.
+
+// Sync metadata timestamps (updated_at, deleted_at, server_time).
 DateTime syncNow() => DateTime.now().toUtc();
 
-/// The device's current local time. This does not wait for a network clock.
+// Device-local "now" for user-facing event times; does not wait on the network.
 DateTime deviceNow() => DateTime.now();
 
 DateTime? parseSyncDate(Object? raw) {
@@ -13,12 +13,12 @@ DateTime? parseSyncDate(Object? raw) {
 
 DateTime parseSyncDateOrNow(Object? raw) => parseSyncDate(raw) ?? syncNow();
 
-/// Event time in the device zone. Missing values stay missing so sync
-/// cannot invent "now" when a record is received later.
+// Event time in the device zone. Missing values stay missing so sync
+// cannot invent "now" when a record arrives later.
 DateTime? parseEventLocal(Object? raw) => parseSyncDate(raw)?.toLocal();
 
-/// Keeps the earlier instant. A later server receive time must not replace
-/// the moment the action was recorded on the device.
+// Keep the earlier instant so a later server receive time cannot replace
+// when the action was actually recorded on the device.
 DateTime earlierDeviceEventTime(DateTime current, DateTime incoming) {
   if (incoming.toUtc().isAfter(current.toUtc())) {
     return current.toLocal();
@@ -26,6 +26,7 @@ DateTime earlierDeviceEventTime(DateTime current, DateTime incoming) {
   return incoming.toLocal();
 }
 
+// True when [incoming] should win over [current] (equal counts as newer).
 bool newerOrEqual(DateTime? incoming, DateTime? current) {
   if (incoming == null) return current == null;
   if (current == null) return true;

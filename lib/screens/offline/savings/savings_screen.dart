@@ -1,8 +1,11 @@
+// Savings hub: period net-saved card, total balance, active goals, and entry
+// points that open create / manual save / withdraw / shopping / recurring sheets.
+
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/calendar_period.dart';
-import 'package:waffer/core/data/savings_goal.dart';
-import 'package:waffer/core/data/transaction_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/data/models/calendar_period.dart';
+import 'package:waffer/data/models/savings_goal.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
+import 'package:waffer/core/theme/app_palette.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/offline/savings/sheets/completed_goals_sheet.dart';
 import 'package:waffer/screens/offline/savings/sheets/create_goal_sheet.dart';
@@ -15,6 +18,7 @@ import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
+// Range chips + swipeable period card, total savings, goal progress, and sheet launches.
 class SavingsScreen extends StatefulWidget {
   const SavingsScreen({super.key});
 
@@ -47,6 +51,7 @@ class _SavingsScreenState extends State<SavingsScreen>
     super.dispose();
   }
 
+  // New range jumps the period pager back to the current window.
   void _selectRange(SavingsRange range) {
     if (_range == range) return;
 
@@ -141,7 +146,6 @@ class _SavingsScreenState extends State<SavingsScreen>
 
               const SizedBox(height: 12),
 
-              // إجمالي الادخار + أزرار التحكم
               _SplitActionRow(
                 leading: _TotalSavingsCard(total: _store.savingsBalance),
                 first: _ActionButton(
@@ -187,6 +191,7 @@ class _SavingsScreenState extends State<SavingsScreen>
   }
 }
 
+// One PageView page: net saved in that window vs the previous period.
 class _PeriodSavingsCard extends StatelessWidget {
   final SavingsRange range;
   final CalendarPeriod period;
@@ -210,7 +215,7 @@ class _PeriodSavingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _SavingsColors.of(context);
+    final colors = AppPalette.of(context);
 
     final comparison = _SavingsComparison.calculate(
       current: amount,
@@ -240,7 +245,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                     Text(
                       'المبلغ الموفر',
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 12,
                         color: colors.textSecondary,
                       ),
@@ -256,7 +261,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: colors.textPrimary,
@@ -282,7 +287,7 @@ class _PeriodSavingsCard extends StatelessWidget {
               'لا يوجد توفير في هذه الفترة',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 13,
                 color: colors.textPrimary.withValues(alpha: 0.55),
               ),
@@ -299,7 +304,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                     child: Text(
                       formatMoney(amount),
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
                         color: colors.accent,
@@ -311,7 +316,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                 Text(
                   currencyLabel,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 13,
                     color: colors.textSecondary,
                   ),
@@ -323,7 +328,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                   Text(
                     comparison.text,
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: comparison.color,
@@ -338,6 +343,7 @@ class _PeriodSavingsCard extends StatelessWidget {
   }
 }
 
+// Percent delta badge when the previous period had savings to compare against.
 class _SavingsComparison {
   final IconData icon;
   final Color color;
@@ -352,7 +358,7 @@ class _SavingsComparison {
   static _SavingsComparison? calculate({
     required double current,
     required double previous,
-    required _SavingsColors colors,
+    required AppPalette colors,
   }) {
     if (previous <= 0) return null;
 
@@ -374,6 +380,7 @@ class _SavingsComparison {
   }
 }
 
+// Chevrons that step the savings period PageView.
 class _PeriodArrow extends StatelessWidget {
   final IconData icon;
   final String tooltip;
@@ -389,7 +396,7 @@ class _PeriodArrow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _SavingsColors.of(context);
+    final colors = AppPalette.of(context);
 
     return IconButton(
       onPressed: enabled ? onTap : null,
@@ -407,6 +414,7 @@ class _PeriodArrow extends StatelessWidget {
   }
 }
 
+// Total savings card beside the manual-save and withdraw action buttons.
 class _SplitActionRow extends StatelessWidget {
   final Widget leading;
   final Widget first;
@@ -425,12 +433,10 @@ class _SplitActionRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // الكرت الرئيسي — على اليمين بسبب RTL
           Expanded(flex: 72, child: leading),
 
           const SizedBox(width: 10),
 
-          // الزرين — على اليسار بسبب RTL
           Expanded(
             flex: 28,
             child: Column(
@@ -447,6 +453,7 @@ class _SplitActionRow extends StatelessWidget {
   }
 }
 
+// Active goals list (or empty create CTA); tap opens manage goals sheet.
 class _ActiveGoalsPanel extends StatelessWidget {
   final List<SavingsGoal> goals;
   final TransactionStore store;
@@ -462,7 +469,7 @@ class _ActiveGoalsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _SavingsColors.of(context);
+    final colors = AppPalette.of(context);
 
     final ordered = List<SavingsGoal>.from(goals)
       ..sort((a, b) => a.priority.compareTo(b.priority));
@@ -487,7 +494,7 @@ class _ActiveGoalsPanel extends StatelessWidget {
                 "لايوجد اهداف محددة حاليا",
                 textAlign: TextAlign.start,
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: colors.textSecondary,
@@ -550,8 +557,9 @@ class _ActiveGoalsPanel extends StatelessWidget {
   }
 }
 
+// Title row for the goals panel.
 class _SavingsGoalsHeader extends StatelessWidget {
-  final _SavingsColors colors;
+  final AppPalette colors;
   final int count;
 
   const _SavingsGoalsHeader({
@@ -586,7 +594,7 @@ class _SavingsGoalsHeader extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: colors.textPrimary,
@@ -602,6 +610,7 @@ class _SavingsGoalsHeader extends StatelessWidget {
   }
 }
 
+// Opens the periodic plan sheet and the completed-goals sheet.
 class _PlanButtonsRow extends StatelessWidget {
   final String periodicLabel;
   final bool periodicActive;
@@ -647,6 +656,7 @@ class _PlanButtonsRow extends StatelessWidget {
   }
 }
 
+// Lifetime savings balance shown beside the action buttons.
 class _TotalSavingsCard extends StatelessWidget {
   final double total;
 
@@ -654,7 +664,7 @@ class _TotalSavingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _SavingsColors.of(context);
+    final colors = AppPalette.of(context);
 
     return GlassContainer(
       colorType: GlassColorType.surface,
@@ -686,7 +696,7 @@ class _TotalSavingsCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: colors.textSecondary,
@@ -702,7 +712,7 @@ class _TotalSavingsCard extends StatelessWidget {
             Text(
               'لا توجد مبالغ موفرة بعد',
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: colors.textSecondary.withValues(alpha: 0.65),
@@ -719,7 +729,7 @@ class _TotalSavingsCard extends StatelessWidget {
                     child: Text(
                       formatMoney(total),
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 27,
                         fontWeight: FontWeight.bold,
                         color: colors.accent,
@@ -733,7 +743,7 @@ class _TotalSavingsCard extends StatelessWidget {
                   child: Text(
                     currencyLabel,
                     style: TextStyle(
-                      fontFamily: 'Tajawal',
+                      fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: colors.textSecondary,
@@ -752,7 +762,7 @@ class _TotalSavingsCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
               fontSize: 10.5,
               color: colors.textSecondary,
             ),
@@ -763,6 +773,7 @@ class _TotalSavingsCard extends StatelessWidget {
   }
 }
 
+// Compact glass button used for save/withdraw and plan shortcuts.
 class _ActionButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -776,7 +787,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _SavingsColors.of(context);
+    final colors = AppPalette.of(context);
 
     return GlassButton(
       onTap: onTap,
@@ -798,7 +809,7 @@ class _ActionButton extends StatelessWidget {
                 maxLines: 1,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
                   color: colors.textPrimary,
@@ -812,6 +823,7 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
+// Empty-state CTA that opens the create-goal sheet.
 class _CreateGoalCard extends StatelessWidget {
   final VoidCallback onCreate;
 
@@ -819,8 +831,6 @@ class _CreateGoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _SavingsColors.of(context);
-
     return GlassButton(
       onTap: onCreate,
       colorType: GlassColorType.accent, tintOpacity: 9, 
@@ -832,7 +842,7 @@ class _CreateGoalCard extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
             fontSize: 13.5,
             fontWeight: FontWeight.bold,
             color: Color.fromARGB(255, 255, 255, 255),
@@ -843,6 +853,7 @@ class _CreateGoalCard extends StatelessWidget {
   }
 }
 
+// Name, progress bar, and saved/target amounts for one active goal.
 class _GoalProgressCard extends StatelessWidget {
   final SavingsGoal goal;
   final double saved;
@@ -854,7 +865,7 @@ class _GoalProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _SavingsColors.of(context);
+    final colors = AppPalette.of(context);
 
     final ratio = goal.targetAmount <= 0
         ? 0.0
@@ -868,7 +879,7 @@ class _GoalProgressCard extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
             fontSize: 14.5,
             fontWeight: FontWeight.bold,
             color: colors.textPrimary,
@@ -894,7 +905,7 @@ class _GoalProgressCard extends StatelessWidget {
             Text(
               '${(ratio * 100).round()}%',
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
                 color: colors.textSecondary,
@@ -910,7 +921,7 @@ class _GoalProgressCard extends StatelessWidget {
           child: Text(
             '${formatMoney(saved)} / ${formatMoney(goal.targetAmount)}',
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: colors.textPrimary,
@@ -924,7 +935,7 @@ class _GoalProgressCard extends StatelessWidget {
           currencyLabel,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
             fontSize: 11,
             color: colors.textSecondary,
           ),
@@ -934,6 +945,7 @@ class _GoalProgressCard extends StatelessWidget {
   }
 }
 
+// Rounded track with a fractionally filled accent bar.
 class _HorizontalProgress extends StatelessWidget {
   final double ratio;
   final double height;
@@ -956,10 +968,8 @@ class _HorizontalProgress extends StatelessWidget {
         height: height,
         child: Stack(
           children: [
-            // خلفية البار
             Positioned.fill(child: ColoredBox(color: trackColor)),
 
-            // نسبة التقدم
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: FractionallySizedBox(
@@ -978,35 +988,6 @@ class _HorizontalProgress extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SavingsColors {
-  final Color surface;
-  final Color accent;
-  final Color textPrimary;
-  final Color textSecondary;
-
-  const _SavingsColors({
-    required this.surface,
-    required this.accent,
-    required this.textPrimary,
-    required this.textSecondary,
-  });
-
-  factory _SavingsColors.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return _SavingsColors(
-      surface: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-      accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-      textPrimary: isDark
-          ? AppColors.darkTextPrimary
-          : AppColors.lightTextPrimary,
-      textSecondary: isDark
-          ? AppColors.darkTextSecondary
-          : AppColors.lightTextSecondary,
     );
   }
 }

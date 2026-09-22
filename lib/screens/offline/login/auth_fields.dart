@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+// Shared field chrome for login and register screens.
+
 InputDecoration authFieldDecoration({
   required String hint,
   required Color fillColor,

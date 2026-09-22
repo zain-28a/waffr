@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:waffer/core/data/category_store.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/expense_categories.dart';
-import 'package:waffer/core/data/recurring_expense.dart';
-import 'package:waffer/core/data/recurring_expense_store.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/stores/category_store.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/models/expense_categories.dart';
+import 'package:waffer/data/models/recurring_expense.dart';
+import 'package:waffer/data/stores/recurring_expense_store.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 import 'package:waffer/widgets/sheets/monthly_income_required_sheet.dart';
 
-/// نافذة "إضافة مصروف" الزجاجية.
+// Glass bottom sheet for one-off or recurring expenses, plus category picks.
+
 Future<void> showAddExpenseSheet(BuildContext context) {
   return showGlassSheet<void>(
     context: context,
@@ -36,6 +37,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
 
   bool _saving = false;
   bool _recurring = false;
+  // Multiplies the entered amount (×1–×10) before saving.
   int _multiplier = 1;
   late String _currencyCode;
   RecurringUnit _recurringUnit = RecurringUnit.month;
@@ -51,13 +53,30 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
 
   double get _amount => _enteredAmount * _multiplier;
 
+  String? get _amountHelper {
+    final symbol = currencyLabelFor(_currencyCode);
+    if (_exceedsBalance) {
+      final available = TransactionStore.instance.balanceFor(_currencyCode);
+      return 'أكبر من الرصيد المتاح ${formatMoney(available)} $symbol';
+    }
+    if (_multiplier == 1) return null;
+    return 'الإجمالي ${formatMoney(_amount)} $symbol';
+  }
+
   int get _intervalCount {
     final value = int.tryParse(_intervalController.text.trim()) ?? 0;
     return value;
   }
 
+  // One-off expenses cannot exceed the balance in that currency. Recurring
+  // bills are saved for later, so they are not blocked here.
+  bool get _exceedsBalance {
+    if (_recurring || _amount <= 0) return false;
+    return _amount > TransactionStore.instance.balanceFor(_currencyCode);
+  }
+
   bool get _isValid {
-    if (_amount <= 0 || _amount > _maxAmount) return false;
+    if (_amount <= 0 || _amount > _maxAmount || _exceedsBalance) return false;
     if (!_recurring) return true;
     return _intervalCount > 0 && _intervalCount <= 99;
   }
@@ -66,6 +85,9 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   void initState() {
     super.initState();
     _currencyCode = CurrencyStore.instance.activeCode;
+    TransactionStore.instance.ensureLoaded().then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -76,6 +98,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     super.dispose();
   }
 
+  // One-off goes to TransactionStore; recurring needs monthly income first.
   Future<void> _save() async {
     if (!_isValid || _saving) return;
 
@@ -144,15 +167,11 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         SheetAmountField(
           label: 'المبلغ',
           controller: _amountController,
-          helper: _multiplier == 1
-              ? null
-              : 'الإجمالي ${formatMoney(_amount)} ${currencyLabelFor(_currencyCode)}',
+          helper: _amountHelper,
           currencyCode: _currencyCode,
           onCurrencyChanged: (code) => setState(() => _currencyCode = code),
-          leading: _AmountMultiplierControl(
-            value: _multiplier,
-            onChanged: (value) => setState(() => _multiplier = value),
-          ),
+          multiplier: _multiplier,
+          onMultiplierChanged: (value) => setState(() => _multiplier = value),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 10),
@@ -240,184 +259,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   }
 }
 
-class _AmountMultiplierControl extends StatefulWidget {
-  final int value;
-  final ValueChanged<int> onChanged;
-
-  const _AmountMultiplierControl({
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  State<_AmountMultiplierControl> createState() =>
-      _AmountMultiplierControlState();
-}
-
-class _AmountMultiplierControlState extends State<_AmountMultiplierControl> {
-  static const List<int> _values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-  OverlayEntry? _entry;
-
-  @override
-  void dispose() {
-    _removeEntry();
-    super.dispose();
-  }
-
-  void _removeEntry() {
-    _entry?.remove();
-    _entry = null;
-  }
-
-  void _toggle() {
-    if (_entry != null) {
-      _removeEntry();
-      return;
-    }
-
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
-    final origin = box.localToGlobal(Offset.zero);
-    final size = box.size;
-    final screen = MediaQuery.sizeOf(context);
-
-    _entry = OverlayEntry(
-      builder: (overlayContext) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-        final textPrimary = isDark
-            ? AppColors.darkTextPrimary
-            : AppColors.lightTextPrimary;
-        final textSecondary = isDark
-            ? AppColors.darkTextSecondary
-            : AppColors.lightTextSecondary;
-        final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-        const cardWidth = 220.0;
-        final left = (origin.dx + size.width - cardWidth)
-            .clamp(12.0, screen.width - cardWidth - 12);
-        final top = origin.dy > 120 ? origin.dy - 108 : origin.dy + size.height + 6;
-
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _removeEntry,
-                behavior: HitTestBehavior.opaque,
-                child: const SizedBox.expand(),
-              ),
-            ),
-            Positioned(
-              left: left,
-              top: top,
-              width: cardWidth,
-              child: Material(
-                color: surface,
-                elevation: 8,
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final value in _values)
-                        _MultiplierOption(
-                          label: '×$value',
-                          selected: value == widget.value,
-                          accent: accent,
-                          textPrimary: textPrimary,
-                          textSecondary: textSecondary,
-                          onTap: () {
-                            widget.onChanged(value);
-                            _removeEntry();
-                          },
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    Overlay.of(context).insert(_entry!);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-
-    return GestureDetector(
-      onTap: _toggle,
-      behavior: HitTestBehavior.opaque,
-      child: Text(
-        '×${widget.value}',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontFamily: 'Tajawal',
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: textSecondary,
-        ),
-      ),
-    );
-  }
-}
-
-class _MultiplierOption extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final Color accent;
-  final Color textPrimary;
-  final Color textSecondary;
-  final VoidCallback onTap;
-
-  const _MultiplierOption({
-    required this.label,
-    required this.selected,
-    required this.accent,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? accent.withValues(alpha: 0.16) : textPrimary.withValues(alpha: 0.04),
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-          child: SizedBox(
-          width: 36,
-          height: 32,
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: selected ? accent : textSecondary,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+// Built-in + custom categories; long-press custom tiles for edit/delete.
 class ExpenseCategoryGrid extends StatefulWidget {
   final String selected;
   final ValueChanged<String> onSelected;
@@ -470,6 +312,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
     );
   }
 
+  // Context menu for custom categories only (edit / delete).
   Future<void> _showActions(
     BuildContext tileContext,
     ExpenseCategory category,
@@ -508,7 +351,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
               const SizedBox(width: 8),
               Text(
                 'تعديل',
-                style: TextStyle(fontFamily: 'Tajawal', color: textPrimary),
+                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: textPrimary),
               ),
             ],
           ),
@@ -524,7 +367,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
               Text(
                 'حذف',
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   color: Color(0xFFD3544D),
                 ),
               ),
@@ -627,6 +470,7 @@ class _CustomCategoryDraft {
   });
 }
 
+// Name + icon picker used when creating or renaming a custom category.
 class _CustomCategoryNameDialog extends StatefulWidget {
   final String title;
   final String submitLabel;
@@ -707,7 +551,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
                 widget.title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: accent,
@@ -741,7 +585,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
                 child: Text(
                   'الشعار',
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: textPrimary,
@@ -775,7 +619,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
                       onPressed: () => Navigator.of(context).pop(),
                       child: const Text(
                         'إلغاء',
-                        style: TextStyle(fontFamily: 'Tajawal'),
+                        style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal']),
                       ),
                     ),
                   ),
@@ -785,7 +629,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
                       child: Text(
                         widget.submitLabel,
                         style: TextStyle(
-                          fontFamily: 'Tajawal',
+                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                           fontWeight: FontWeight.w800,
                           color: accent,
                         ),
@@ -905,7 +749,7 @@ class _CategoryTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 10.5,
                 fontWeight: FontWeight.w600,
                 color: foreground,

@@ -1,3 +1,5 @@
+// Built-in expense categories, custom-icon palette, and label → category lookup.
+
 import 'package:flutter/material.dart';
 
 class ExpenseCategory {
@@ -12,8 +14,7 @@ class ExpenseCategory {
   });
 }
 
-/// ترتيب التصنيفات كما يظهر في شبكة "إضافة مصروف".
-/// لوحة زيتون وكريم مترابطة مع ثيم وفر.
+// Grid order for "add expense"; olive/cream palette matches the Waffer theme.
 const List<ExpenseCategory> expenseCategories = [
   ExpenseCategory(
     label: 'طعام',
@@ -68,7 +69,7 @@ const ExpenseCategory fallbackCategory = ExpenseCategory(
 
 const List<String> paymentMethods = ['نقداً', 'بطاقة'];
 
-/// شعارات عملية لتصنيفات المصروف اليومية.
+// Icons users can pick when creating a custom category.
 const List<IconData> customCategoryIconChoices = [
   Icons.restaurant_outlined,
   Icons.lunch_dining_outlined,
@@ -120,7 +121,7 @@ const List<Color> _customCategoryColors = [
   Color(0xFF7A8B5B),
 ];
 
-/// يربطه CategoryStore حتى تظهر الشعارات المحفوظة في الرسوم والتقارير.
+// Wired by CategoryStore so charts/reports resolve saved custom icons.
 ExpenseCategory? Function(String label)? customCategoryLookup;
 
 int clampCustomIconIndex(int index) {
@@ -128,6 +129,7 @@ int clampCustomIconIndex(int index) {
   return index.clamp(0, customCategoryIconChoices.length - 1).toInt();
 }
 
+// Builds a custom category with a stable color from the label hash.
 ExpenseCategory customCategoryNamed(String label, {int? iconIndex}) {
   final colorIndex = label.hashCode.abs();
   final resolvedIcon = iconIndex == null
@@ -141,6 +143,7 @@ ExpenseCategory customCategoryNamed(String label, {int? iconIndex}) {
   );
 }
 
+// Built-in first, then custom lookup, otherwise a hashed custom row.
 ExpenseCategory categoryFor(String? label) {
   if (label == null || label.isEmpty) return fallbackCategory;
 
@@ -156,6 +159,7 @@ ExpenseCategory categoryFor(String? label) {
   return customCategoryNamed(label);
 }
 
+// Slightly lightens category colors in dark mode for chart readability.
 Color categoryChartColor(BuildContext context, String? label) {
   final base = categoryFor(label).color;
   if (Theme.of(context).brightness != Brightness.dark) {

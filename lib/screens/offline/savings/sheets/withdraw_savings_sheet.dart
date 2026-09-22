@@ -1,6 +1,8 @@
+// Moves money from savings back into the operating balance.
+
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
@@ -11,6 +13,7 @@ Future<void> showWithdrawSavingsSheet(BuildContext context) {
   );
 }
 
+// Amount form that transfers from savings back to balance.
 class _WithdrawSavingsSheet extends StatefulWidget {
   const _WithdrawSavingsSheet();
 
@@ -44,6 +47,7 @@ class _WithdrawSavingsSheetState extends State<_WithdrawSavingsSheet> {
     super.dispose();
   }
 
+  // Credits balance and debits savings for the entered amount.
   Future<void> _save() async {
     if (!_isValid || _saving) return;
     setState(() => _saving = true);

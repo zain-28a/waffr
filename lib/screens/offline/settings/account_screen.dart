@@ -1,15 +1,18 @@
+// Signed-in profile: name, photo, and sign-out.
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/data/backup_service.dart';
-import 'package:waffer/core/data/profile_photo.dart';
+import 'package:waffer/data/services/backup_service.dart';
+import 'package:waffer/data/services/profile_photo.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/profile_photo_sync.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/widgets/brand/profile_avatar.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
+// Edit display name and photo, or sign out of the synced account.
 class AccountScreen extends StatefulWidget {
   final Future<void> Function()? onSignedOut;
 
@@ -40,7 +43,7 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     final email = await AuthSession.instance.email() ?? '';
     final photoPath = await ProfilePhoto.path();
 
@@ -53,6 +56,7 @@ class _AccountScreenState extends State<AccountScreen> {
     });
   }
 
+  // Picks from gallery/camera, then uploads the new photo to sync.
   Future<void> _pickPhoto(ImageSource source) async {
     Navigator.of(context).pop();
     final path = await ProfilePhoto.pick(source: source);
@@ -69,6 +73,7 @@ class _AccountScreenState extends State<AccountScreen> {
     await ProfilePhotoSync.deleteRemote();
   }
 
+  // Camera / gallery / remove options for the avatar.
   Future<void> _showPhotoOptions() async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
@@ -106,7 +111,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     color: textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -114,7 +119,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   leading: Icon(Icons.photo_library_outlined, color: accent),
                   title: Text(
                     'اختيار من المعرض',
-                    style: TextStyle(color: textPrimary, fontFamily: 'Tajawal'),
+                    style: TextStyle(color: textPrimary, fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal']),
                   ),
                   onTap: () => _pickPhoto(ImageSource.gallery),
                 ),
@@ -122,7 +127,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   leading: Icon(Icons.photo_camera_outlined, color: accent),
                   title: Text(
                     'التقاط صورة',
-                    style: TextStyle(color: textPrimary, fontFamily: 'Tajawal'),
+                    style: TextStyle(color: textPrimary, fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal']),
                   ),
                   onTap: () => _pickPhoto(ImageSource.camera),
                 ),
@@ -133,7 +138,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       'إزالة الصورة',
                       style: TextStyle(
                         color: textPrimary,
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                       ),
                     ),
                     onTap: _removePhoto,
@@ -146,6 +151,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  // Writes the display name through BackupService and shows a snackbar.
   Future<void> _saveName() async {
     final name = _nameController.text.trim();
     if (name.isEmpty || _savingName) return;
@@ -157,6 +163,7 @@ class _AccountScreenState extends State<AccountScreen> {
     showAppSnackBar(context, 'تم حفظ الاسم', success: true);
   }
 
+  // Confirms, clears the session, then runs the host's onSignedOut callback.
   Future<void> _signOut() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -277,7 +284,7 @@ class _AccountScreenState extends State<AccountScreen> {
               onPressed: _showPhotoOptions,
               child: Text(
                 _photoPath == null ? 'إضافة صورة' : 'تغيير الصورة',
-                style: TextStyle(color: accent, fontFamily: 'Tajawal'),
+                style: TextStyle(color: accent, fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal']),
               ),
             ),
           ),
@@ -317,7 +324,7 @@ class _AccountScreenState extends State<AccountScreen> {
               onPressed: _savingName ? null : _saveName,
               child: Text(
                 _savingName ? 'جارٍ الحفظ...' : 'حفظ الاسم',
-                style: TextStyle(color: accent, fontFamily: 'Tajawal'),
+                style: TextStyle(color: accent, fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal']),
               ),
             ),
           ),
@@ -374,6 +381,7 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 }
 
+// Icon + label row used for photo options and other account actions.
 class _ActionTile extends StatelessWidget {
   final IconData icon;
   final String title;

@@ -1,8 +1,9 @@
+// Brand mark asset and the splash screen that shows it while startup resolves.
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
 
-/// Official Waffer mark. The main wallet square is centered; the flap
-/// and clasp sit outside that square. Edges stay transparent.
+/// Official Waffer mark. The wallet square is centered; flap and clasp sit
+/// outside that square. Edges stay transparent.
 class WafferLogo extends StatelessWidget {
   static const assetPath = 'assets/brand/waffer_logo.png';
 
@@ -26,8 +27,7 @@ class WafferLogo extends StatelessWidget {
   }
 }
 
-/// Shown while the app is resolving theme and auth state.
-/// Uses the same background as the rest of the app.
+/// Shown while theme and auth settle; matches the app background color.
 class WafferSplash extends StatelessWidget {
   final bool followPlatformBrightness;
 

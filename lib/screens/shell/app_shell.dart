@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:waffer/core/data/category_store.dart';
-import 'package:waffer/core/data/notification_service.dart';
-import 'package:waffer/core/data/recurring_expense_store.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
+import 'package:waffer/data/stores/category_store.dart';
+import 'package:waffer/data/services/notification_service.dart';
+import 'package:waffer/data/stores/recurring_expense_store.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/screens/offline/home/dashboard.dart';
 import 'package:waffer/screens/offline/notifications/notifications_screen.dart';
@@ -14,6 +15,8 @@ import 'package:waffer/screens/offline/savings/savings_screen.dart';
 import 'package:waffer/screens/offline/settings/settings_screen.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 
+// Bottom navigation shell. Five tabs: home, report, savings, online,
+// notifications. Settings is a pushed route from the header, not a tab.
 class AppShell extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeNotifier;
   final VoidCallback onThemeChanged;
@@ -34,20 +37,34 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   final ValueNotifier<int> _tabIndex = ValueNotifier<int>(0);
   final PageController _pageController = PageController();
 
-  /// Tap target while the page animation is in flight; selection waits for it.
+  // Target page while animateToPage is in flight; stops the bar highlight
+  // from flickering mid-animation.
   int? _animatingToPage;
 
   Timer? _dueTimer;
 
   static const int _tabCount = 5;
 
-  static const List<Widget> _tabPages = [
-    HomeScreen(),
-    ReportScreen(),
-    SavingsScreen(),
-    OnlineScreen(),
-    NotificationsScreen(),
-  ];
+  // Lazy tab cache: _tabAt builds a page on first visit and reuses it.
+  // Each tab uses AutomaticKeepAliveClientMixin so scroll position survives
+  // after the first visit; unopened tabs are never built.
+  final List<Widget?> _builtTabs = List<Widget?>.filled(_tabCount, null);
+
+  // Creates the page for [index] once, then returns the cached widget.
+  Widget _tabAt(int index) {
+    final existing = _builtTabs[index];
+    if (existing != null) return existing;
+
+    final Widget page = switch (index) {
+      0 => const HomeScreen(),
+      1 => const ReportScreen(),
+      2 => const SavingsScreen(),
+      3 => const OnlineScreen(),
+      _ => const NotificationsScreen(),
+    };
+    _builtTabs[index] = page;
+    return page;
+  }
 
   @override
   void initState() {
@@ -66,6 +83,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     }
   }
 
+  // Due periods, recurring expenses, and notification evaluation.
   Future<void> _syncFinancialEvents() async {
     final notifications = NotificationService.instance;
     await notifications.ensureLoaded();
@@ -77,6 +95,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     await notifications.evaluate();
   }
 
+  // Animates the pager; highlight updates wait until the animation settles.
   void _onTabTapped(int index) {
     if (index == _tabIndex.value && _animatingToPage == null) return;
     if (_animatingToPage == index) return;
@@ -101,6 +120,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         });
   }
 
+  // Swipe settled (or ignored while a conflicting tap animation is in flight).
   void _onPageChanged(int index) {
     if (_animatingToPage != null && index != _animatingToPage) {
       return;
@@ -156,17 +176,23 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               title: Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
-                  'Waffer',
-                  style: Theme.of(context).textTheme.displayLarge,
+                  'waffr',
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ),
             ),
             Expanded(
+              // Only the visible page is built: zero viewport cache and no
+              // implicit neighbor scrolling. Pages come from _tabAt.
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: _tabCount,
+                allowImplicitScrolling: false,
+                scrollCacheExtent: const ScrollCacheExtent.viewport(0),
                 onPageChanged: _onPageChanged,
-                itemBuilder: (context, index) => _tabPages[index],
+                itemBuilder: (context, index) => _tabAt(index),
               ),
             ),
             _BottomNavBar(
@@ -181,6 +207,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   }
 }
 
+// Icon row under the PageView; selected item grows via AnimatedScale.
 class _BottomNavBar extends StatelessWidget {
   final ValueNotifier<int> tabIndex;
   final int tabCount;
@@ -263,6 +290,7 @@ class _BottomNavBar extends StatelessWidget {
   }
 }
 
+// Bell with an unread dot driven by NotificationService.unreadCount.
 class _NotificationsTabIcon extends StatelessWidget {
   final bool selected;
   final Color accent;

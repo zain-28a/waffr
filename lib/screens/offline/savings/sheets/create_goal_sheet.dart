@@ -1,9 +1,11 @@
+// Bottom sheet to create a named savings goal with percent, fixed, or custom funding.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/savings_goal.dart';
-import 'package:waffer/core/data/transaction.dart';
-import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/models/savings_goal.dart';
+import 'package:waffer/data/models/transaction.dart';
+import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
@@ -16,6 +18,7 @@ Future<void> showCreateGoalSheet(BuildContext context) {
   );
 }
 
+// Form sheet: name, target, and contribution method for a new goal.
 class _CreateGoalSheet extends StatefulWidget {
   const _CreateGoalSheet();
 
@@ -23,6 +26,7 @@ class _CreateGoalSheet extends StatefulWidget {
   State<_CreateGoalSheet> createState() => _CreateGoalSheetState();
 }
 
+// How each income period contributes toward the goal target.
 enum _ContributionType { percent, fixed, custom }
 
 class _CreateGoalSheetState extends State<_CreateGoalSheet> {
@@ -156,6 +160,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
     setState(() {});
   }
 
+  // Blocks percent/fixed funding until monthly income is configured.
   void _switchMethod(_ContributionType type) {
     if (_type == type) {
       return;
@@ -180,6 +185,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
     });
   }
 
+  // Persists the goal with contribution rules derived from the selected method.
   Future<void> _save() async {
     if (!_isValid || _saving) {
       return;
@@ -280,7 +286,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
         Text(
           'نوع الخطة',
           style: TextStyle(
-            fontFamily: 'Tajawal',
+            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: colors.textPrimary,
@@ -359,7 +365,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                   '${currencyLabelFor(_currencyCode)} / $_periodSingular',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 12,
                     color: colors.textSecondary,
                   ),
@@ -383,7 +389,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                           child: Text(
                             currencyLabelFor(_currencyCode),
                             style: TextStyle(
-                              fontFamily: 'Tajawal',
+                              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: colors.textPrimary,
@@ -400,7 +406,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                   '$_periodSingular.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 12,
                     color: colors.textSecondary,
                   ),
@@ -410,7 +416,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                   'الادخار هنا ليس تلقائيا. انقل بنفسك من رصيدك إلى الهدف متى شئت عبر «ادخار مبلغ».',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Tajawal',
+                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                     fontSize: 12,
                     height: 1.5,
                     color: colors.textSecondary,
@@ -448,6 +454,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
   }
 }
 
+// Selectable funding method tile (percent / fixed / custom).
 class _MethodButton extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -492,7 +499,7 @@ class _MethodButton extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 style: TextStyle(
-                  fontFamily: 'Tajawal',
+                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: selected ? colors.accent : colors.textPrimary,
@@ -503,7 +510,7 @@ class _MethodButton extends StatelessWidget {
             Text(
               subtitle,
               style: TextStyle(
-                fontFamily: 'Tajawal',
+                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
                 fontSize: 10.5,
                 color: colors.textSecondary,
               ),
@@ -515,6 +522,7 @@ class _MethodButton extends StatelessWidget {
   }
 }
 
+// Shows periods needed and expected total before the user confirms.
 class _GoalPreview extends StatelessWidget {
   final double target;
   final double periodAmount;
@@ -559,7 +567,7 @@ class _GoalPreview extends StatelessWidget {
           Text(
             'معاينة الخطة',
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: colors.textSecondary,
@@ -573,7 +581,7 @@ class _GoalPreview extends StatelessWidget {
             '${currencyLabelFor(currencyCode)} / $periodSingular',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: colors.accent,
@@ -586,7 +594,7 @@ class _GoalPreview extends StatelessWidget {
             'المدة المتوقعة: $durationText',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 12,
               color: colors.textPrimary,
             ),
@@ -599,7 +607,7 @@ class _GoalPreview extends StatelessWidget {
             '${formatMoney(expected)} ${currencyLabelFor(currencyCode)}',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 11.5,
               color: colors.textSecondary,
             ),
@@ -611,7 +619,7 @@ class _GoalPreview extends StatelessWidget {
             'الهدف: ${formatMoney(target)} ${currencyLabelFor(currencyCode)}',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Tajawal',
+              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
               fontSize: 11,
               color: colors.textSecondary,
             ),
@@ -622,6 +630,7 @@ class _GoalPreview extends StatelessWidget {
   }
 }
 
+// Local light/dark color snapshot for this sheet.
 class _GoalColors {
   final Color textPrimary;
   final Color textSecondary;

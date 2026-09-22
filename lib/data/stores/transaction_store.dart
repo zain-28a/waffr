@@ -1,23 +1,22 @@
+// Sole source of truth for transactions, operating balance, and savings goals.
+
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/data/calendar_period.dart';
-import 'package:waffer/core/data/currency.dart';
-import 'package:waffer/core/data/savings_goal.dart';
-import 'package:waffer/core/data/transaction.dart';
+import 'package:waffer/data/models/calendar_period.dart';
+import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/models/savings_goal.dart';
+import 'package:waffer/data/models/transaction.dart';
 import 'package:waffer/core/sync/profile_sync.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_mapper.dart';
 import 'package:waffer/core/sync/sync_merge.dart';
 import 'package:waffer/core/sync/sync_tombstones.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 
-/// المصدر الوحيد لبيانات العمليات والرصيد والادخار.
-///
-/// العمليات محفوظة كقائمة JSON في SharedPreferences،
-/// والرصيد التشغيلي يُحتسب منها دائماً:
-/// الدخل − المصروف − صافي الادخار.
+// Ledger in prefs as JSON. Operating balance is always income − expense − net savings.
 class TransactionStore extends ChangeNotifier {
   TransactionStore._();
 
@@ -35,8 +34,7 @@ class TransactionStore extends ChangeNotifier {
   static const String incomeOverridesByCurrencyKey =
       'income_overrides_by_currency';
 
-  /// التنسيق القديم:
-  /// `amount|description|isoDate`.
+  // Pre-JSON expense rows: amount|description|isoDate.
   static const String legacyExpensesKey = 'expenses';
 
   final List<WafferTransaction> _transactions = [];
@@ -51,8 +49,7 @@ class TransactionStore extends ChangeNotifier {
   final Map<String, double> _monthlyIncomeByCurrency = {};
   final Map<String, double> _weeklyIncomeByCurrency = {};
 
-  /// بعد قراءة البيانات المحفوظة وقبل معالجة
-  /// الفترات المستحقة.
+  // Hook after prefs hydrate, before due-period processing.
   Future<void> Function()? onHydrated;
 
   bool get isLoaded => _loaded;
@@ -83,7 +80,7 @@ class TransactionStore extends ChangeNotifier {
     }
   }
 
-  /// من الأحدث إلى الأقدم.
+  // Newest first.
   List<WafferTransaction> get transactions => List.unmodifiable(_transactions);
 
   List<WafferTransaction> get expenses => expensesFor(_activeCode);
@@ -120,7 +117,7 @@ class TransactionStore extends ChangeNotifier {
 
   List<SavingsGoal> get goals => List.unmodifiable(_goals);
 
-  /// الأهداف غير المكتملة حسب الأولوية (0 = الأعلى).
+  // Incomplete goals for the active currency, priority order (0 = top).
   List<SavingsGoal> get activeGoals => activeGoalsFor(_activeCode);
 
   List<SavingsGoal> activeGoalsFor(String currencyCode) {
@@ -133,13 +130,12 @@ class TransactionStore extends ChangeNotifier {
   List<SavingsGoal> get _allActiveGoals =>
       _goals.where((goal) => !goal.isCompleted).toList(growable: false);
 
-  /// أعلى هدف أولوية غير مكتمل.
   SavingsGoal? get activeGoal {
     final current = activeGoals;
     return current.isEmpty ? null : current.first;
   }
 
-  /// أول هدف نشط بخصم دوري، حسب الأولوية.
+  // Highest-priority active goal that has a periodic deduction plan.
   SavingsGoal? get activePeriodicGoal {
     for (final goal in activeGoals) {
       if (goal.isPeriodic) return goal;
@@ -182,7 +178,7 @@ class TransactionStore extends ChangeNotifier {
   double totalSavingsOutFor(String currencyCode) =>
       _totalOf(TransactionType.savingsOut, currencyCode);
 
-  /// المال الموجود حالياً في قسم الادخار.
+  // Cash currently parked in savings (in − out, floored at 0).
   double get savingsBalance => savingsBalanceFor(_activeCode);
 
   double savingsBalanceFor(String currencyCode) {
@@ -192,8 +188,7 @@ class TransactionStore extends ChangeNotifier {
     return value < 0 ? 0 : value;
   }
 
-  /// الرصيد التشغيلي المتاح للصرف.
-  /// لا يشمل المدخرات.
+  // Spendable operating balance; excludes money already moved to savings.
   double get balance => balanceFor(_activeCode);
 
   double balanceFor(String currencyCode) {
@@ -202,7 +197,7 @@ class TransactionStore extends ChangeNotifier {
         savingsBalanceFor(currencyCode);
   }
 
-  /// هل يمكن خصم [amount] دون أن يصبح الرصيد سالباً.
+  // True when [amount] fits without going negative.
   bool canDeduct(double amount, {String? currencyCode}) {
     final code = Currencies.normalize(currencyCode ?? _activeCode);
     return amount > 0 && amount <= balanceFor(code);
@@ -221,7 +216,7 @@ class TransactionStore extends ChangeNotifier {
     );
   }
 
-  /// الدخل الشهري الذي ضبطه المستخدم من الإعدادات، مستقلاً عن سجل العمليات.
+  // Settings override only — independent of whether income rows exist.
   bool get hasConfiguredMonthlyIncome =>
       hasConfiguredMonthlyIncomeFor(_activeCode);
 
@@ -254,13 +249,11 @@ class TransactionStore extends ChangeNotifier {
 
   bool get hasRecurringIncome => hasMonthlyIncome || hasWeeklyIncome;
 
-  /// أقصى رصيد وصل إليه المستخدم.
-  /// أي مجموع كل الدخل المسجل.
+  // Peak balance ≈ total recorded income for that currency.
   double get maxBalance => maxBalanceFor(_activeCode);
 
   double maxBalanceFor(String currencyCode) => totalIncomeFor(currencyCode);
 
-  /// نسبة ما تبقى من الرصيد التشغيلي.
   double get remainingRatio => remainingRatioFor(_activeCode);
 
   double remainingRatioFor(String currencyCode) {
@@ -273,8 +266,7 @@ class TransactionStore extends ChangeNotifier {
     return (balanceFor(currencyCode) / max).clamp(0.0, 1.0);
   }
 
-  /// مجموع المصروف لكل تصنيف،
-  /// من الأكبر إلى الأصغر.
+  // Expense totals by category, largest first.
   List<({String category, double amount})> expensesByCategory({
     String? currencyCode,
   }) {
@@ -296,8 +288,7 @@ class TransactionStore extends ChangeNotifier {
     return entries;
   }
 
-  /// صافي الادخار داخل فترة [start, end):
-  /// ما دخل الادخار ناقص ما سُحب.
+  // Net savings inside [start, end): in minus out, floored at 0.
   double savingsNetDuring(
     DateTime start,
     DateTime end, {
@@ -329,13 +320,9 @@ class TransactionStore extends ChangeNotifier {
     return net < 0 ? 0 : net;
   }
 
-  /// المبلغ المدّخر حالياً لهذا الهدف.
   double currentSaved(SavingsGoal goal) => goalProgress(goal);
 
-  /// تقدّم الهدف:
-  /// التحويلات الموسومة بـ [SavingsGoal.id]،
-  /// بالإضافة إلى التحويلات القديمة بلا وسم — تُنسب للهدف
-  /// الذي كان نشطاً وقت إنشائها حتى لا يُفقد تقدّم المستخدم الحالي.
+  // Progress from tagged transfers plus legacy untagged ones attributed by date.
   double goalProgress(SavingsGoal goal) {
     if (goal.isCompleted) {
       return goal.completedAmount ?? goal.targetAmount;
@@ -375,7 +362,7 @@ class TransactionStore extends ChangeNotifier {
     return (goalProgress(goal) / goal.targetAmount).clamp(0.0, 1.0);
   }
 
-  /// دخل الفترة الحالية أو السابقة حسب التردد.
+  // Income used for plans: settings override, else current/previous period, else calendar sum.
   double referenceIncome(
     RecurringFrequency frequency, {
     String? currencyCode,
@@ -417,13 +404,7 @@ class TransactionStore extends ChangeNotifier {
     return _incomeInCalendar(frequency, now, code);
   }
 
-  /// يحدد نوع دخل المستخدم من آخر دخل دوري سجله.
-  ///
-  /// إذا كان آخر راتب Weekly:
-  /// الخطة تصبح Weekly.
-  ///
-  /// إذا كان آخر راتب Monthly:
-  /// الخطة تصبح Monthly.
+  // Weekly vs monthly plan cadence from the latest recurring income row.
   RecurringFrequency preferredIncomeFrequencyFor(String currencyCode) {
     WafferTransaction? latestRecurringIncome;
 
@@ -519,12 +500,12 @@ class TransactionStore extends ChangeNotifier {
       _setOverride(frequency, amount, code);
     }
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await _persistAll(prefs);
     notifyListeners();
   }
 
-  /// يحدّث رقم الدخل الدوري المستخدم في الخطط دون تغيير الرصيد.
+  // Updates the planned income figure without posting a new balance-changing row.
   Future<bool> setPreferredIncomeAmount({
     required RecurringFrequency frequency,
     required double amount,
@@ -546,21 +527,20 @@ class TransactionStore extends ChangeNotifier {
     await SyncDirty.mark(settings: true);
     final goalsChanged = _syncPeriodicGoalAmounts(frequency, amount, code);
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await _persistIncomeOverrides(prefs);
     if (goalsChanged) {
       await _persistGoals(prefs);
     }
 
-    // After the income dialog closes, let the current frame finish
-    // before waking Home/Report/Savings (charts + keep-alive tabs).
+    // Yield so Home/Report/Savings keep-alive tabs settle after the dialog closes.
     await Future<void>.delayed(Duration.zero);
     notifyListeners();
 
     return true;
   }
 
-  /// يلغي الدخل الشهري أو الأسبوعي المضبوط من الإعدادات دون حذف السجل.
+  // Clears the settings override without deleting historical income rows.
   Future<bool> clearPreferredIncomeAmount({
     required RecurringFrequency frequency,
     String? currencyCode,
@@ -575,13 +555,14 @@ class TransactionStore extends ChangeNotifier {
     _clearOverride(frequency, Currencies.normalize(currencyCode ?? _activeCode));
     await SyncDirty.mark(settings: true);
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await _persistIncomeOverrides(prefs);
     await Future<void>.delayed(Duration.zero);
     notifyListeners();
     return true;
   }
 
+  // Recomputes allocateAmount on percent-based periodic goals for this income.
   bool _syncPeriodicGoalAmounts(
     RecurringFrequency frequency,
     double income,
@@ -610,7 +591,7 @@ class TransactionStore extends ChangeNotifier {
     return changed;
   }
 
-  /// يرجع العملية عند النجاح، أو `null` إذا كان المبلغ أكبر من الرصيد.
+  // Returns the expense on success, or null when amount exceeds balance.
   Future<WafferTransaction?> addExpense({
     required double amount,
     required String category,
@@ -666,7 +647,7 @@ class TransactionStore extends ChangeNotifier {
     }
   }
 
-  /// يحذف المصروف من السجل فيعود مبلغه إلى الرصيد.
+  // Removes an expense so its amount returns to the operating balance.
   Future<bool> undoExpense(String id) async {
     await ensureLoaded();
 
@@ -678,13 +659,13 @@ class TransactionStore extends ChangeNotifier {
     _transactions.removeAt(index);
     await SyncTombstones.instance.add(SyncCollection.transactions, id);
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await _persist(prefs);
     notifyListeners();
     return true;
   }
 
-  /// يحذف الدخل من السجل فيُخصم مبلغه من الرصيد.
+  // Removes an income row and drops that amount from the balance.
   Future<bool> undoIncome(String id) async {
     await ensureLoaded();
 
@@ -696,13 +677,13 @@ class TransactionStore extends ChangeNotifier {
     _transactions.removeAt(index);
     await SyncTombstones.instance.add(SyncCollection.transactions, id);
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await _persist(prefs);
     notifyListeners();
     return true;
   }
 
-  /// ادخار يدوي من الرصيد التشغيلي.
+  // Manual move from operating balance into savings (tags top active goal).
   Future<bool> saveManually(double amount, {String? currencyCode}) async {
     await ensureLoaded();
 
@@ -731,7 +712,7 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
-  /// سحب جزء أو كل المدخرات.
+  // Moves money from savings back to operating balance.
   Future<bool> withdrawFromSavings(double amount, {String? currencyCode}) async {
     await ensureLoaded();
 
@@ -755,9 +736,7 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
-  /// إنشاء هدف ادخار.
-  ///
-  /// الهدف الجديد يُضاف في نهاية القائمة (أقل أولوية).
+  // Appends a new goal at the end of the list (lowest priority).
   Future<bool> createGoal({
     required String name,
     required double targetAmount,
@@ -815,7 +794,7 @@ class TransactionStore extends ChangeNotifier {
 
     _reindexPriorities();
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     await _persistGoals(prefs);
 
@@ -824,7 +803,7 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
-  /// إنشاء / تعديل خطة دورية من شاشة الخطط الدورية.
+  // Creates or updates the top active periodic plan from the plans screen.
   Future<bool> applyPeriodicPlan({
     required double percent,
     required GoalDurationPreset duration,
@@ -889,7 +868,7 @@ class TransactionStore extends ChangeNotifier {
 
     _reindexPriorities();
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     await _persistGoals(prefs);
 
@@ -898,8 +877,7 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
-  /// حذف هدف بعد تأكيد المستخدم.
-  /// المدخرات نفسها تبقى في الرصيد؛ يُحذف سجل الهدف فقط.
+  // Deletes the goal record only; savings cash stays in the savings balance.
   Future<bool> deleteGoal(String id) async {
     await ensureLoaded();
 
@@ -913,7 +891,7 @@ class TransactionStore extends ChangeNotifier {
     await SyncTombstones.instance.add(SyncCollection.savingsGoals, id);
     _reindexPriorities();
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     await _persistGoals(prefs);
 
@@ -922,8 +900,7 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
-  /// إعادة ترتيب الأهداف النشطة.
-  /// [newIndex] هو الموقع النهائي بعد إزالة العنصر.
+  // Reorders active goals; [newIndex] is the final slot after removal.
   Future<void> reorderActiveGoals(int oldIndex, int newIndex) async {
     await ensureLoaded();
 
@@ -959,7 +936,7 @@ class TransactionStore extends ChangeNotifier {
 
     _reindexPriorities();
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     await _persistGoals(prefs);
 
@@ -1055,12 +1032,12 @@ class TransactionStore extends ChangeNotifier {
 
     _sort();
     _completeGoalIfNeeded();
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
     await _persistAll(prefs);
     notifyListeners();
   }
 
-  /// إعادة تحميل البيانات من SharedPreferences.
+  // Drops in-memory state so the next ensureLoaded re-reads prefs.
   void resetCache() {
     _transactions.clear();
     _goals.clear();
@@ -1108,7 +1085,7 @@ class TransactionStore extends ChangeNotifier {
   Future<void> processDuePeriods() async {
     await ensureLoaded();
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     final changed = await _processDuePeriods(prefs);
 
@@ -1131,7 +1108,7 @@ class TransactionStore extends ChangeNotifier {
     _completeGoalIfNeeded();
 
     if (persist) {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await AppPrefs.instance;
 
       await _persistAll(prefs);
     }
@@ -1148,7 +1125,7 @@ class TransactionStore extends ChangeNotifier {
       CurrencyStore.instance.addListener(notifyListeners);
     }
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await AppPrefs.instance;
 
     final stored = prefs.getStringList(transactionsKey);
 
@@ -1233,6 +1210,7 @@ class TransactionStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Periodic goal deductions plus leftover savings for completed income periods.
   Future<bool> _processDuePeriods(SharedPreferences prefs) async {
     if (_processingPeriods) {
       return false;
@@ -1306,10 +1284,6 @@ class TransactionStore extends ChangeNotifier {
         }
       }
 
-      // ==========================================
-      // معالجة المتبقي من الفترات
-      // ==========================================
-
       final leftoverKeys = <(RecurringFrequency, String, String)>{};
 
       for (final income in _transactions) {
@@ -1361,6 +1335,7 @@ class TransactionStore extends ChangeNotifier {
     }
   }
 
+  // Percent monthly plans wait until configured monthly income exists.
   bool _percentPlanNeedsIncome(SavingsGoal goal) {
     if (goal.deductFrequency != RecurringFrequency.monthly) return false;
     final percent = goal.allocatePercent;
@@ -1402,6 +1377,7 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
+  // Moves leftover period income into savings after expenses and goal deductions.
   bool _transferLeftover(
     RecurringFrequency frequency,
     String periodKey,
@@ -1526,8 +1502,7 @@ class TransactionStore extends ChangeNotifier {
     return _legacyGoalIdFor(item.dateTime) == goal.id;
   }
 
-  /// التحويلات القديمة بلا [WafferTransaction.goalId] تُنسب للهدف
-  /// الأقدم الذي كان لا يزال غير مكتمل وقت التحويل.
+  // Untagged old transfers attach to the oldest goal still open at that time.
   String? _legacyGoalIdFor(DateTime at) {
     SavingsGoal? best;
 
@@ -1566,8 +1541,7 @@ class TransactionStore extends ChangeNotifier {
     }
   }
 
-  /// يرتّب القائمة حسب [SavingsGoal.priority] مع الحفاظ على ترتيب
-  /// التخزين عند تساوي القيمة (هدف قديم بلا حقل أولوية).
+  // Sorts by priority, keeping storage order when priority values tie.
   bool _normalizeGoalPriorities() {
     if (_goals.isEmpty) {
       return false;
@@ -1722,6 +1696,7 @@ class TransactionStore extends ChangeNotifier {
     }
   }
 
+  // Keeps the earlier local event time when merging a remote duplicate id.
   WafferTransaction _preserveEventTime(WafferTransaction incoming) {
     for (final local in _transactions) {
       if (local.id != incoming.id) continue;
