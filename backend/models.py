@@ -1,6 +1,7 @@
+from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,6 +21,17 @@ class User(TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # Account profile. Nullable so existing users keep working.
+    # gender/birthdate are also mirrored on UserSettings for the current sync path.
+    gender: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    birthdate: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    country: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    city: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    street: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    photo_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     transactions: Mapped[list["Transaction"]] = relationship(
         back_populates="user",
@@ -42,6 +54,10 @@ class User(TimestampMixin, Base):
         cascade="all, delete-orphan",
     )
     notifications: Mapped[list["Notification"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    expense_categories: Mapped[list["ExpenseCategory"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
@@ -108,6 +124,9 @@ class UserSettings(TimestampMixin, Base):
         default=list,
         nullable=False,
     )
+    gender: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    birthdate: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    dark_mode: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     user: Mapped[User] = relationship(back_populates="settings")
 

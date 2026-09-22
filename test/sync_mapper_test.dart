@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffer/core/data/app_notification.dart';
+import 'package:waffer/core/data/category_store.dart';
 import 'package:waffer/core/data/recurring_expense.dart';
 import 'package:waffer/core/data/savings_goal.dart';
 import 'package:waffer/core/data/transaction.dart';
@@ -137,5 +138,21 @@ void main() {
     expect(newerOrEqual(stamp, stamp), isTrue);
     expect(newerOrEqual(stamp.add(const Duration(seconds: 1)), stamp), isTrue);
     expect(newerOrEqual(stamp, stamp.add(const Duration(seconds: 1))), isFalse);
+  });
+
+  test('custom categories round-trip client ids and icons', () {
+    final entry = CustomCategoryEntry(
+      id: 'cat_1',
+      label: 'قهوة',
+      iconIndex: 2,
+      updatedAt: DateTime.utc(2026, 3, 1),
+    );
+    final payload = categoryToSync(entry);
+    expect(payload['client_id'], 'cat_1');
+    expect(payload['icon_index'], 2);
+    final restored = categoryFromSync(payload);
+    expect(restored?.id, 'cat_1');
+    expect(restored?.label, 'قهوة');
+    expect(restored?.iconIndex, 2);
   });
 }

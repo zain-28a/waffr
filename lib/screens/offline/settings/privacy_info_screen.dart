@@ -97,7 +97,7 @@ class PrivacyInfoScreen extends StatelessWidget {
             icon: Icons.storage_rounded,
             title: 'تخزين البيانات',
             description:
-                'بياناتك المالية تُحفظ محلياً على جهازك. إذا ربطت حساب Google، تُحفظ نسخة احتياطية في مجلد تطبيقك الخاص على Drive لاستعادتها عند الحاجة، دون أن نستخدمها لمتابعة نشاطك المالي.',
+                'بياناتك المالية تُحفظ محلياً على جهازك. تسجيل الدخول يتم بالبريد وكلمة المرور، والمزامنة بين الأجهزة تتم عبر حساب وفّر.',
             accent: accent,
             surface: surface,
             textPrimary: textPrimary,

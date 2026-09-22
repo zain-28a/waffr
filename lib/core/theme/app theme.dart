@@ -5,7 +5,7 @@ class AppTheme {
   AppTheme._();
 
   static const String cairo = 'Tajawal';
-  static const String merriweather = 'Merriweather';
+  static const String merriweather = 'bebas neue';
 
   static ThemeData get lightTheme {
     return ThemeData(

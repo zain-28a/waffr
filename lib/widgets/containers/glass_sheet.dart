@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass.dart';
@@ -318,12 +319,22 @@ class SheetAmountField extends StatelessWidget {
   final String? helper;
   final ValueChanged<String>? onChanged;
 
+  /// يحل محل الفراغ المقابل لـ «ل.س» على الجهة اليمنى.
+  final Widget? leading;
+
+  /// العملة المعروضة بجانب المبلغ. الافتراضي هو عملة الشاشة الرئيسية.
+  final String? currencyCode;
+  final ValueChanged<String>? onCurrencyChanged;
+
   const SheetAmountField({
     super.key,
     required this.label,
     required this.controller,
     this.helper,
     this.onChanged,
+    this.leading,
+    this.currencyCode,
+    this.onCurrencyChanged,
   });
 
   @override
@@ -355,7 +366,10 @@ class SheetAmountField extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(width: 46),
+              SizedBox(
+                width: 46,
+                child: leading,
+              ),
               Expanded(
                 child: TextField(
                   controller: controller,
@@ -383,18 +397,9 @@ class SheetAmountField extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(
-                width: 46,
-                child: Text(
-                  currencyLabel,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: textSecondary,
-                  ),
-                ),
+              SheetCurrencySelector(
+                currencyCode: currencyCode,
+                onChanged: onCurrencyChanged,
               ),
             ],
           ),
@@ -411,6 +416,210 @@ class SheetAmountField extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// منتقي عملة مضغوط بجانب حقل المبلغ. إن وُجدت عملة واحدة يبقى المظهر كما كان.
+class SheetCurrencySelector extends StatefulWidget {
+  final String? currencyCode;
+  final ValueChanged<String>? onChanged;
+  final bool dense;
+
+  const SheetCurrencySelector({
+    super.key,
+    this.currencyCode,
+    this.onChanged,
+    this.dense = false,
+  });
+
+  @override
+  State<SheetCurrencySelector> createState() => _SheetCurrencySelectorState();
+}
+
+class _SheetCurrencySelectorState extends State<SheetCurrencySelector> {
+  OverlayEntry? _entry;
+
+  @override
+  void dispose() {
+    _removeEntry();
+    super.dispose();
+  }
+
+  void _removeEntry() {
+    _entry?.remove();
+    _entry = null;
+  }
+
+  String get _code {
+    return Currencies.normalize(
+      widget.currencyCode ?? CurrencyStore.instance.activeCode,
+    );
+  }
+
+  void _toggle() {
+    final options = CurrencyStore.instance.enabledCurrencies;
+    if (widget.onChanged == null || options.length < 2) {
+      return;
+    }
+
+    if (_entry != null) {
+      _removeEntry();
+      return;
+    }
+
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final origin = box.localToGlobal(Offset.zero);
+    final size = box.size;
+    final screen = MediaQuery.sizeOf(context);
+    const menuWidth = 196.0;
+    final left = (origin.dx + size.width - menuWidth)
+        .clamp(12.0, screen.width - menuWidth - 12);
+    final top = origin.dy > 180
+        ? origin.dy - (options.length * 44.0).clamp(88.0, 220.0) - 8
+        : origin.dy + size.height + 6;
+
+    _entry = OverlayEntry(
+      builder: (overlayContext) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+        final textPrimary =
+            isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+        final textSecondary =
+            isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+        final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _removeEntry,
+                behavior: HitTestBehavior.opaque,
+                child: const SizedBox.expand(),
+              ),
+            ),
+            Positioned(
+              left: left,
+              top: top,
+              width: menuWidth,
+              child: Material(
+                color: surface,
+                elevation: 8,
+                borderRadius: BorderRadius.circular(16),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 260),
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    shrinkWrap: true,
+                    children: [
+                      for (final item in options)
+                        InkWell(
+                          onTap: () {
+                            widget.onChanged?.call(item.code);
+                            _removeEntry();
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 36,
+                                  child: Text(
+                                    item.symbol,
+                                    style: TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: item.code == _code
+                                          ? accent
+                                          : textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    item.arabicName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: item.code == _code
+                                          ? accent
+                                          : textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    Overlay.of(context).insert(_entry!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: CurrencyStore.instance,
+      builder: (context, _) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final textSecondary =
+            isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+        final selectable = widget.onChanged != null &&
+            CurrencyStore.instance.enabledCurrencies.length > 1;
+        final symbol = Currencies.symbolOf(_code);
+
+        return GestureDetector(
+          onTap: selectable ? _toggle : null,
+          behavior: HitTestBehavior.opaque,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: widget.dense ? 42 : 46,
+              maxWidth: selectable ? 72 : 54,
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    symbol,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: widget.dense ? 14 : 16,
+                      fontWeight: FontWeight.w600,
+                      color: textSecondary,
+                    ),
+                  ),
+                  if (selectable)
+                    Icon(
+                      Icons.arrow_drop_down_rounded,
+                      size: widget.dense ? 16 : 18,
+                      color: textSecondary,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

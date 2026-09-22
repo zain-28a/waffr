@@ -4,13 +4,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/backup_service.dart';
 import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/core/sync/auth_session.dart';
+import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_service.dart';
 import 'package:waffer/core/theme/app theme.dart';
 import 'package:waffer/screens/offline/applock/applockscreen.dart';
 import 'package:waffer/screens/offline/login/login_screen.dart';
-import 'package:waffer/screens/offline/user_info/user_info_screen.dart';
 import 'package:waffer/screens/offline/theme_select_screen.dart';
 import 'package:waffer/screens/shell/app_shell.dart';
+import 'package:waffer/widgets/brand/waffer_logo.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +20,7 @@ void main() {
   TransactionStore.instance.onHydrated =
       NotificationService.instance.seedIfNeeded;
 
-  // مزامنة انتهازية مع Drive. لا تحجب الإقلاع ولا تُظهر أخطاء.
+  // Drive backup is currently disabled. Harmless no-op until re-enabled.
   unawaited(BackupService.instance.initialize());
   unawaited(SyncService.instance.initialize());
 
@@ -66,6 +68,7 @@ class _WafarAppState extends State<WafarApp> {
     );
 
     BackupService.instance.scheduleBackup();
+    unawaited(SyncDirty.mark(settings: true));
   }
 
   Future<void> _toggleTheme() async {
@@ -88,9 +91,7 @@ class _WafarAppState extends State<WafarApp> {
     if (!_themeLoaded) {
       return const MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: SizedBox.shrink(),
-        ),
+        home: WafferSplash(followPlatformBrightness: true),
       );
     }
 
@@ -98,7 +99,7 @@ class _WafarAppState extends State<WafarApp> {
       valueListenable: _themeMode,
       builder: (context, themeMode, child) {
         return MaterialApp(
-          title: 'Waffer 2.4.0',
+          title: 'waffer',
           debugShowCheckedModeBanner: false,
 
           locale: const Locale('ar'),
@@ -149,7 +150,6 @@ class _AppFlowControllerState
     extends State<AppFlowController> with WidgetsBindingObserver {
   bool? _authChoiceMade;
   bool? _isFirstLaunch;
-  bool? _userInfoCompleted;
   bool? _appLockEnabled;
   bool _isAuthenticated = false;
 
@@ -186,9 +186,6 @@ class _AppFlowControllerState
     final firstLaunch =
         prefs.getBool('first_launch') ?? true;
 
-    final userInfoCompleted =
-        prefs.getBool('user_info_completed') ?? false;
-
     final appLockEnabled =
         prefs.getBool('app_lock') ?? false;
 
@@ -201,7 +198,6 @@ class _AppFlowControllerState
     setState(() {
       _authChoiceMade = authChoiceMade;
       _isFirstLaunch = firstLaunch;
-      _userInfoCompleted = userInfoCompleted;
       _appLockEnabled = appLockEnabled;
       _isAuthenticated = false;
     });
@@ -230,21 +226,15 @@ class _AppFlowControllerState
     }
   }
 
-  Future<void> _markUserInfoCompleted() async {
+  /// بعد تسجيل الخروج: شاشة الدخول، مع بقاء البيانات المحلية.
+  Future<void> returnToLogin() async {
+    await AuthSession.instance.clearSession();
     final prefs = await SharedPreferences.getInstance();
-
-    await prefs.setBool(
-      'user_info_completed',
-      true,
-    );
-
-    BackupService.instance.scheduleBackup();
-    unawaited(SyncService.instance.syncNow());
-
+    await prefs.setBool(BackupService.authChoiceKey, false);
     if (!mounted) return;
-
     setState(() {
-      _userInfoCompleted = true;
+      _authChoiceMade = false;
+      _isAuthenticated = false;
     });
   }
 
@@ -291,48 +281,23 @@ class _AppFlowControllerState
   Widget build(BuildContext context) {
     if (_authChoiceMade == null ||
         _isFirstLaunch == null ||
-        _userInfoCompleted == null ||
         _appLockEnabled == null) {
-      return const Scaffold(
-        body: SizedBox.shrink(),
-      );
+      return const WafferSplash();
     }
 
-    // المستخدم لم يختر بعد بين حساب Google ووضع الضيف
+    // المستخدم لم يختر بعد بين الحساب ووضع الضيف
     if (_authChoiceMade == false) {
       return LoginScreen(
         onCompleted: _onAuthChoiceCompleted,
       );
     }
 
-    // المستخدم لم يدخل معلوماته
-    if (_userInfoCompleted == false) {
-      return UserInfoScreen(
-        onContinue: () async {
-          await _markUserInfoCompleted();
-        },
-      );
-    }
-
-    
     if (_isFirstLaunch == true) {
       return ThemeSelectScreen(
         onThemeChanged: widget.onThemeChanged,
 
-        onContinue: () async {
-          await _markFirstLaunchDone();
-
-          if (!mounted) return;
-
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => AppShell(
-                themeNotifier: widget.themeNotifier,
-                onThemeChanged: widget.onToggleTheme,
-                appFlowController: this,
-              ),
-            ),
-          );
+        onContinue: () {
+          unawaited(_markFirstLaunchDone());
         },
       );
     }

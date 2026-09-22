@@ -11,6 +11,7 @@ enum SyncCollection {
   shoppingItems,
   recurringExpenses,
   notifications,
+  expenseCategories,
 }
 
 class SyncTombstone {

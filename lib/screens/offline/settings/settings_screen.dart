@@ -3,11 +3,14 @@ import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/backup_service.dart';
 import 'package:waffer/core/data/category_store.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/notification_service.dart';
+import 'package:waffer/core/data/profile_photo.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/data/shopping_list_store.dart';
 import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
+import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
@@ -16,8 +19,10 @@ import 'package:waffer/screens/offline/login/login_screen.dart';
 import 'package:waffer/screens/offline/settings/account_screen.dart';
 import 'package:waffer/screens/offline/settings/ai_permissions_screen.dart';
 import 'package:waffer/screens/offline/settings/help_screen.dart';
-import 'package:waffer/screens/offline/settings/privacy_info_screen.dart';
+import 'package:waffer/screens/offline/settings/privacy_security_screen.dart';
 import 'package:waffer/screens/offline/savings/sheets/recurring_expenses_sheet.dart';
+import 'package:waffer/screens/offline/settings/sheets/currencies_sheet.dart';
+import 'package:waffer/widgets/brand/profile_avatar.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 import 'package:waffer/widgets/dialogs/edit_amount_dialog.dart';
@@ -44,10 +49,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _userName = '';
   String _userEmail = '';
-  String? _googlePhotoUrl;
+  bool _loggedIn = false;
+  String? _photoPath;
 
-  bool _googleLinked = false;
-  String _googleEmail = '';
   bool _hasMonthlyIncome = false;
   bool _hasWeeklyIncome = false;
   double _monthlyIncome = 0;
@@ -86,51 +90,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await TransactionStore.instance.ensureLoaded();
 
     final store = TransactionStore.instance;
-    final linkedEmail = prefs.getString(BackupService.linkedEmailKey) ?? '';
-    final accounts = await BackupService.instance.linkedAccounts();
-
-    LinkedGoogleAccount? current;
-    for (final account in accounts) {
-      if (account.email == linkedEmail) {
-        current = account;
-        break;
-      }
-    }
+    final accountEmail = await AuthSession.instance.email() ?? '';
+    final loggedIn = await AuthSession.instance.isLoggedIn();
+    final photoPath = await ProfilePhoto.path();
 
     if (!mounted) return;
 
     setState(() {
       _appLock = prefs.getBool('app_lock') ?? false;
 
-      _googleLinked = prefs.getBool(BackupService.linkedKey) ?? false;
+      _loggedIn = loggedIn;
+      _photoPath = photoPath;
 
-      _googleEmail = linkedEmail;
+      _userName = prefs.getString('user_name') ?? '';
 
-      _googlePhotoUrl = prefs.getString(BackupService.linkedPhotoKey) ??
-          current?.photoUrl;
-
-      _userName = current?.displayName ?? prefs.getString('user_name') ?? '';
-
-      _userEmail = _googleLinked
-          ? _googleEmail
+      _userEmail = loggedIn
+          ? accountEmail
           : (prefs.getString('user_email') ?? '');
 
-      _hasMonthlyIncome = store.hasMonthlyIncome;
+      _hasMonthlyIncome = store.hasConfiguredMonthlyIncome;
       _hasWeeklyIncome = store.hasWeeklyIncome;
-      _monthlyIncome = store.referenceIncome(RecurringFrequency.monthly);
+      _monthlyIncome = store.configuredMonthlyIncome ?? 0;
       _weeklyIncome = store.referenceIncome(RecurringFrequency.weekly);
     });
-  }
-
-  Future<void> _syncNow() async {
-    showAppSnackBar(context, 'جاري المزامنة...');
-    final result = await SyncService.instance.syncNow(force: true);
-    if (!mounted) return;
-    showAppSnackBar(
-      context,
-      result.userMessage,
-      success: result.status == SyncStatus.success,
-    );
   }
 
   Future<void> _toggleAppLock(bool value) async {
@@ -342,10 +324,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _openAccount() async {
-    if (_googleLinked) {
+    if (_loggedIn) {
       await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const AccountScreen()),
+        MaterialPageRoute(
+          builder: (_) => AccountScreen(
+            onSignedOut: () async {
+              await widget.appFlowController?.returnToLogin();
+            },
+          ),
+        ),
       );
+      if (!mounted) return;
       await _loadSettings();
       return;
     }
@@ -353,13 +342,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => LoginScreen(
+          allowGuest: false,
+          popOnSuccess: true,
           onCompleted: () async {
-            Navigator.of(context).pop();
+            await SyncService.instance.syncNow();
           },
         ),
       ),
     );
 
+    if (!mounted) return;
     await _loadSettings();
   }
 
@@ -370,20 +362,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
-    final amount = await showDialog<double>(
+    final result = await showDialog<Object>(
       context: context,
       builder: (context) => EditAmountDialog(
         title: isMonthly ? 'الدخل الشهري' : 'الدخل الأسبوعي',
         initialAmount: current,
         accent: accent,
+        allowClear: isMonthly && current > 0,
       ),
     );
 
-    if (!mounted || amount == null) return;
+    if (!mounted || result == null) return;
+
+    if (result is AmountDialogCleared) {
+      final cleared = await TransactionStore.instance.clearPreferredIncomeAmount(
+        frequency: frequency,
+        currencyCode: result.currencyCode,
+      );
+      if (!mounted) return;
+      if (!cleared) {
+        showAppSnackBar(context, 'تعذر إزالة الدخل. حاول مرة أخرى.');
+        return;
+      }
+      await _loadSettings();
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        isMonthly ? 'تمت إزالة الدخل الشهري' : 'تمت إزالة الدخل الأسبوعي',
+        success: true,
+      );
+      return;
+    }
+
+    if (result is! EditAmountResult) return;
+    final amount = result.amount;
 
     final saved = await TransactionStore.instance.setPreferredIncomeAmount(
       frequency: frequency,
       amount: amount,
+      currencyCode: result.currencyCode,
     );
 
     if (!mounted) return;
@@ -393,15 +410,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    setState(() {
-      if (isMonthly) {
-        _monthlyIncome = amount;
-        _hasMonthlyIncome = true;
-      } else {
-        _weeklyIncome = amount;
-        _hasWeeklyIncome = true;
-      }
-    });
+    await _loadSettings();
+    if (!mounted) return;
 
     showAppSnackBar(
       context,
@@ -454,8 +464,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
 
     await prefs.clear();
+    await AuthSession.instance.clearSession();
+    await AuthSession.instance.clearDataOwner();
+    await ProfilePhoto.clear();
 
     TransactionStore.instance.resetCache();
+    CurrencyStore.instance.resetCache();
     NotificationService.instance.resetCache();
     ShoppingListStore.instance.resetCache();
     RecurringExpenseStore.instance.resetCache();
@@ -521,34 +535,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
           GestureDetector(
             onTap: _openAccount,
             child: _ProfileCard(
-              name: _googleLinked
-                  ? (_userName.isEmpty ? 'حساب Google' : _userName)
+              name: _loggedIn
+                  ? (_userName.isEmpty ? 'حساب وفّر' : _userName)
                   : 'لا يوجد حساب',
-              email: _googleLinked
+              email: _loggedIn
                   ? _userEmail
                   : 'اضغط لتسجيل الدخول أو إنشاء حساب',
-              photoUrl: _googleLinked ? _googlePhotoUrl : null,
+              photoPath: _photoPath,
               accent: accent,
               surface: surface,
               textPrimary: textPrimary,
               textSecondary: textSecondary,
-              placeholder: !_googleLinked,
+              placeholder: !_loggedIn,
             ),
           ),
 
-          if (_hasMonthlyIncome) ...[
-            const SizedBox(height: 12),
-            _SettingsTile(
-              icon: Icons.payments_outlined,
-              title: 'الدخل الشهري',
-              subtitle: '${formatMoney(_monthlyIncome)} $currencyLabel',
-              accent: accent,
-              surface: surface,
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
-              onTap: () => _editIncome(RecurringFrequency.monthly),
-            ),
-          ],
+          const SizedBox(height: 12),
+          _SettingsTile(
+            icon: Icons.payments_outlined,
+            title: 'الدخل الشهري',
+            subtitle: _hasMonthlyIncome
+                ? '${formatMoney(_monthlyIncome)} $currencyLabel'
+                : 'لم يُحدَّد بعد',
+            accent: accent,
+            surface: surface,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
+            onTap: () => _editIncome(RecurringFrequency.monthly),
+          ),
 
           if (_weeklyIncomeChoiceEnabled && _hasWeeklyIncome) ...[
             const SizedBox(height: 12),
@@ -566,6 +580,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 12),
           _SettingsTile(
+            icon: Icons.currency_exchange_rounded,
+            title: 'العملات',
+            subtitle: 'إضافة عملة أو اختيار العملة النشطة',
+            accent: accent,
+            surface: surface,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
+            onTap: () => showCurrenciesSheet(context),
+          ),
+
+          const SizedBox(height: 12),
+          _SettingsTile(
             icon: Icons.event_repeat_rounded,
             title: 'المصروفات المتكررة',
             subtitle: 'تعديل المبلغ أو إيقاف الخصم التلقائي',
@@ -574,18 +600,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             textPrimary: textPrimary,
             textSecondary: textSecondary,
             onTap: () => showRecurringExpensesSheet(context),
-          ),
-
-          const SizedBox(height: 12),
-          _SettingsTile(
-            icon: Icons.cloud_sync_outlined,
-            title: 'مزامنة السحابة',
-            subtitle: 'رفع البيانات المحلية وجلب تغييرات الحساب',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-            onTap: _syncNow,
           ),
 
           const SizedBox(height: 25),
@@ -693,9 +707,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SettingsTile(
             icon: Icons.privacy_tip_outlined,
 
-            title: 'الخصوصية والبيانات',
+            title: 'الخصوصية والأمان',
 
-            subtitle: 'كيف يتم حماية بياناتك',
+            subtitle: 'البيانات والمزامنة وحماية الجهاز',
 
             accent: accent,
             surface: surface,
@@ -704,10 +718,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             textSecondary: textSecondary,
 
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PrivacyInfoScreen()),
+            onTap: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => PrivacySecurityScreen(
+                    appFlowController: widget.appFlowController,
+                  ),
+                ),
               );
+              await _loadSettings();
             },
           ),
 
@@ -756,7 +775,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 25),
 
-          if (!_googleLinked) ...[
+          if (!_loggedIn) ...[
             _SectionTitle(title: 'البيانات', color: textSecondary),
 
             _SettingsTile(
@@ -782,7 +801,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           Center(
             child: Text(
-              'Waffer 2.4.0',
+              'waffer 2.5.0',
 
               style: TextStyle(
                 color: textSecondary.withValues(alpha: 0.6),
@@ -807,7 +826,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 class _ProfileCard extends StatelessWidget {
   final String name;
   final String email;
-  final String? photoUrl;
+  final String? photoPath;
   final bool placeholder;
 
   final Color accent;
@@ -823,7 +842,7 @@ class _ProfileCard extends StatelessWidget {
     required this.surface,
     required this.textPrimary,
     required this.textSecondary,
-    this.photoUrl,
+    this.photoPath,
     this.placeholder = false,
   });
 
@@ -840,24 +859,11 @@ class _ProfileCard extends StatelessWidget {
 
       child: Row(
         children: [
-          CircleAvatar(
+          ProfileAvatar(
+            photoPath: photoPath,
+            accent: accent,
             radius: 27,
-
-            backgroundColor: accent.withValues(alpha: 0.15),
-
-            backgroundImage: photoUrl != null && photoUrl!.isNotEmpty
-                ? NetworkImage(photoUrl!)
-                : null,
-
-            child: photoUrl == null || photoUrl!.isEmpty
-                ? Icon(
-                    placeholder
-                        ? Icons.person_off_outlined
-                        : Icons.person_outline_rounded,
-                    color: accent,
-                    size: 30,
-                  )
-                : null,
+            placeholder: placeholder,
           ),
 
           const SizedBox(width: 15),

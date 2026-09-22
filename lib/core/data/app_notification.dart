@@ -123,8 +123,9 @@ class AppNotification {
         title: title,
         message: message,
         createdAt:
-            DateTime.tryParse(decoded['createdAt']?.toString() ?? '') ??
-                DateTime.now(),
+            (DateTime.tryParse(decoded['createdAt']?.toString() ?? '') ??
+                    DateTime.now())
+                .toLocal(),
         isRead: decoded['isRead'] == true,
         eventKey: eventKey,
         relatedId: _text(decoded['relatedId']),

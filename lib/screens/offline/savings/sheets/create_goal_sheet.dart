@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/savings_goal.dart';
 import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffer/widgets/sheets/monthly_income_required_sheet.dart';
 
 Future<void> showCreateGoalSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -33,6 +35,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
   bool _saving = false;
   late _ContributionType _type;
+  late String _currencyCode;
 
   static const double _maxAmount = 999999999;
 
@@ -40,9 +43,15 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
   double get _fixedAmount => parseAmount(_fixedAmountController.text);
 
-  RecurringFrequency get _frequency => _store.preferredIncomeFrequency;
+  RecurringFrequency get _frequency =>
+      _store.preferredIncomeFrequencyFor(_currencyCode);
 
-  double get _income => _store.referenceIncome(_frequency);
+  double get _income {
+    if (_frequency == RecurringFrequency.monthly) {
+      return _store.configuredMonthlyIncomeFor(_currencyCode) ?? 0;
+    }
+    return _store.referenceIncome(_frequency, currencyCode: _currencyCode);
+  }
 
   bool get _isCustom => _type == _ContributionType.custom;
 
@@ -102,7 +111,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
     }
 
     if (_type == _ContributionType.fixed) {
-      return _fixedAmount > 0;
+      return _fixedAmount > 0 && _fixedAmount <= _maxAmount;
     }
 
     return _percent > 0;
@@ -119,8 +128,9 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
   @override
   void initState() {
     super.initState();
+    _currencyCode = CurrencyStore.instance.activeCode;
 
-    _type = _store.hasRecurringIncome
+    _type = _income > 0
         ? _ContributionType.percent
         : _ContributionType.custom;
 
@@ -128,7 +138,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
       if (!mounted) return;
 
       setState(() {
-        if (!_store.hasRecurringIncome) {
+        if (_income <= 0) {
           _type = _ContributionType.custom;
         }
       });
@@ -148,6 +158,14 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
   void _switchMethod(_ContributionType type) {
     if (_type == type) {
+      return;
+    }
+
+    if (type != _ContributionType.custom && _income <= 0) {
+      showMonthlyIncomeRequiredSheet(
+        context,
+        requirement: MonthlyIncomeRequirement.plan,
+      );
       return;
     }
 
@@ -191,6 +209,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
       deductFrequency: _isCustom ? RecurringFrequency.none : _frequency,
       isPeriodic: !_isCustom,
       durationCount: periods,
+      currencyCode: _currencyCode,
     );
 
     if (!mounted) return;
@@ -251,6 +270,8 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
         SheetAmountField(
           label: 'المبلغ المستهدف',
           controller: _targetController,
+          currencyCode: _currencyCode,
+          onCurrencyChanged: (code) => setState(() => _currencyCode = code),
           onChanged: (_) => setState(() {}),
         ),
 
@@ -335,7 +356,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                 Text(
                   'الدخل المرجعي: '
                   '${formatMoney(_income)} '
-                  '$currencyLabel / $_periodSingular',
+                  '${currencyLabelFor(_currencyCode)} / $_periodSingular',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Tajawal',
@@ -345,25 +366,32 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                 ),
               ] else if (_type == _ContributionType.fixed) ...[
                 const SheetFieldLabel(text: 'مبلغ الادخار لكل شهر'),
-                
                 Stack(
                   children: [
                     SheetTextField(
-                      controller: _percentController,
-                      hint: 'مثال: 100',
+                      controller: _fixedAmountController,
+                      hint: 'مثال: 100000',
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(3),
-                      ],
-                    ),Row(mainAxisAlignment: MainAxisAlignment.end,
+                      inputFormatters: [ThousandsInputFormatter()],
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(left: 25,top: 18),
-                          child: Text("ل.س",style: TextStyle(fontFamily: 'Tajawal',fontSize: 15,fontWeight: FontWeight.w700,color: colors.textPrimary),),
+                          padding: const EdgeInsets.only(left: 25, top: 18),
+                          child: Text(
+                            currencyLabelFor(_currencyCode),
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: colors.textPrimary,
+                            ),
+                          ),
                         ),
                       ],
-                    )
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -402,6 +430,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
               periods: _requiredPeriods,
               expected: _expectedAmount,
               frequency: _frequency,
+              currencyCode: _currencyCode,
               colors: colors,
             ),
           ),
@@ -492,6 +521,7 @@ class _GoalPreview extends StatelessWidget {
   final int periods;
   final double expected;
   final RecurringFrequency frequency;
+  final String currencyCode;
   final _GoalColors colors;
 
   const _GoalPreview({
@@ -500,6 +530,7 @@ class _GoalPreview extends StatelessWidget {
     required this.periods,
     required this.expected,
     required this.frequency,
+    required this.currencyCode,
     required this.colors,
   });
 
@@ -539,7 +570,7 @@ class _GoalPreview extends StatelessWidget {
 
           Text(
             '${formatMoney(periodAmount)} '
-            '$currencyLabel / $periodSingular',
+            '${currencyLabelFor(currencyCode)} / $periodSingular',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Tajawal',
@@ -565,7 +596,7 @@ class _GoalPreview extends StatelessWidget {
 
           Text(
             'المجموع المتوقع: '
-            '${formatMoney(expected)} $currencyLabel',
+            '${formatMoney(expected)} ${currencyLabelFor(currencyCode)}',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Tajawal',
@@ -577,7 +608,7 @@ class _GoalPreview extends StatelessWidget {
           const SizedBox(height: 3),
 
           Text(
-            'الهدف: ${formatMoney(target)} $currencyLabel',
+            'الهدف: ${formatMoney(target)} ${currencyLabelFor(currencyCode)}',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Tajawal',

@@ -67,13 +67,14 @@ class ShoppingItem {
   static ShoppingItem? fromSync(Map<String, dynamic> raw) {
     final id = raw['client_id']?.toString().trim() ?? '';
     final name = raw['name']?.toString().trim() ?? '';
-    if (id.isEmpty || name.isEmpty) return null;
+    final createdAt = parseEventLocal(raw['created_at'] ?? raw['createdAt']);
+    if (id.isEmpty || name.isEmpty || createdAt == null) return null;
     return ShoppingItem(
       id: id,
       name: name,
-      createdAt: parseSyncDateOrNow(raw['created_at'] ?? raw['createdAt']),
+      createdAt: createdAt,
       isPurchased: raw['is_purchased'] == true || raw['isPurchased'] == true,
-      purchasedAt: parseSyncDate(raw['purchased_at'] ?? raw['purchasedAt']),
+      purchasedAt: parseEventLocal(raw['purchased_at'] ?? raw['purchasedAt']),
       expenseId: (raw['expense_client_id'] ?? raw['expenseId'])?.toString(),
       updatedAt: parseSyncDate(raw['updated_at'] ?? raw['updatedAt']),
     );
@@ -107,11 +108,11 @@ class ShoppingItem {
       return ShoppingItem(
         id: id,
         name: name,
-        createdAt: createdAt,
+        createdAt: createdAt.toLocal(),
         isPurchased: decoded['isPurchased'] == true,
         purchasedAt: DateTime.tryParse(
           decoded['purchasedAt']?.toString() ?? '',
-        ),
+        )?.toLocal(),
         expenseId: decoded['expenseId']?.toString(),
         updatedAt: DateTime.tryParse(decoded['updatedAt']?.toString() ?? ''),
       );
@@ -151,7 +152,7 @@ class ShoppingListStore extends ChangeNotifier {
 
     _items.insert(
       0,
-      ShoppingItem(id: _newId(), name: trimmed, createdAt: DateTime.now()),
+      ShoppingItem(id: _newId(), name: trimmed, createdAt: deviceNow()),
     );
 
     await _persist();
@@ -175,6 +176,7 @@ class ShoppingListStore extends ChangeNotifier {
     required String itemId,
     required double amount,
     required String category,
+    String? currencyCode,
   }) async {
     if (amount <= 0) return false;
 
@@ -192,6 +194,7 @@ class ShoppingListStore extends ChangeNotifier {
       paymentMethod: paymentMethods.first,
       note: item.name,
       sourceId: 'shopping:$itemId',
+      currencyCode: currencyCode,
     );
 
     if (expense == null) return false;
@@ -202,7 +205,7 @@ class ShoppingListStore extends ChangeNotifier {
     final latest = _items[latestIndex];
     _items[latestIndex] = latest.copyWith(
       isPurchased: true,
-      purchasedAt: DateTime.now(),
+      purchasedAt: deviceNow(),
       expenseId: expense.id,
     );
 

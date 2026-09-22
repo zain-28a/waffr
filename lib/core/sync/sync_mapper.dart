@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:waffer/core/data/app_notification.dart';
+import 'package:waffer/core/data/category_store.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/recurring_expense.dart';
 import 'package:waffer/core/data/savings_goal.dart';
 import 'package:waffer/core/data/transaction.dart';
@@ -38,6 +40,7 @@ Map<String, dynamic> transactionToSync(WafferTransaction item) {
     'occurred_at': toSyncIso(item.dateTime),
     'frequency': item.frequency.name,
     'period_key': item.periodKey,
+    'currency_code': item.currencyCode,
     'updated_at': toSyncIso(item.syncUpdatedAt),
   };
 }
@@ -52,6 +55,7 @@ Map<String, dynamic> transferToSync(WafferTransaction item) {
     'note': item.note,
     'occurred_at': toSyncIso(item.dateTime),
     'processed_period_key': item.processedPeriodKey,
+    'currency_code': item.currencyCode,
     'updated_at': toSyncIso(item.syncUpdatedAt),
   };
 }
@@ -72,6 +76,7 @@ Map<String, dynamic> goalToSync(SavingsGoal item) {
     'completed_at': item.completedAt == null ? null : toSyncIso(item.completedAt),
     'completed_amount': item.completedAmount?.toString(),
     'created_at': toSyncIso(item.createdAt),
+    'currency_code': item.currencyCode,
     'updated_at': toSyncIso(item.syncUpdatedAt),
   };
 }
@@ -96,6 +101,7 @@ Map<String, dynamic> recurringToSync(RecurringExpense item) {
     'next_due_at': toSyncIso(item.nextDueAt),
     'enabled': item.enabled,
     'created_at': toSyncIso(item.createdAt),
+    'currency_code': item.currencyCode,
     'updated_at': toSyncIso(item.syncUpdatedAt),
   };
 }
@@ -115,6 +121,15 @@ Map<String, dynamic> notificationToSync(AppNotification item) {
   };
 }
 
+Map<String, dynamic> categoryToSync(CustomCategoryEntry item) {
+  return {
+    'client_id': item.id,
+    'label': item.label,
+    'icon_index': item.iconIndex,
+    'updated_at': toSyncIso(item.syncUpdatedAt),
+  };
+}
+
 WafferTransaction? transactionFromSync(Map<String, dynamic> raw) {
   final amount = parseMoney(raw['amount']);
   if (amount == null || amount <= 0) return null;
@@ -125,6 +140,8 @@ WafferTransaction? transactionFromSync(Map<String, dynamic> raw) {
   final type = typeRaw == 'income'
       ? TransactionType.income
       : TransactionType.expense;
+  final occurred = parseEventLocal(raw['occurred_at'] ?? raw['dateTime']);
+  if (occurred == null) return null;
 
   return WafferTransaction(
     id: id,
@@ -134,7 +151,10 @@ WafferTransaction? transactionFromSync(Map<String, dynamic> raw) {
     paymentMethod: _text(raw['payment_method'] ?? raw['paymentMethod']),
     note: _text(raw['note']),
     sourceId: _text(raw['source_id'] ?? raw['sourceId']),
-    dateTime: parseSyncDateOrNow(raw['occurred_at'] ?? raw['dateTime']),
+    dateTime: occurred,
+    currencyCode: Currencies.normalize(
+      _text(raw['currency_code']) ?? _text(raw['currencyCode']),
+    ),
     frequency: WafferTransaction.frequencyFrom(
       raw['frequency']?.toString(),
     ),
@@ -153,13 +173,18 @@ WafferTransaction? transferFromSync(Map<String, dynamic> raw) {
   final kind = WafferTransaction.transferKindFrom(raw['kind']?.toString());
   final outgoing = direction == 'to_balance' ||
       kind == SavingsTransferKind.withdraw;
+  final occurred = parseEventLocal(raw['occurred_at'] ?? raw['dateTime']);
+  if (occurred == null) return null;
 
   return WafferTransaction(
     id: id,
     type: outgoing ? TransactionType.savingsOut : TransactionType.savingsIn,
     amount: amount,
     note: _text(raw['note']),
-    dateTime: parseSyncDateOrNow(raw['occurred_at'] ?? raw['dateTime']),
+    dateTime: occurred,
+    currencyCode: Currencies.normalize(
+      _text(raw['currency_code']) ?? _text(raw['currencyCode']),
+    ),
     transferKind: kind ??
         (outgoing
             ? SavingsTransferKind.withdraw
@@ -178,6 +203,7 @@ SavingsGoal? goalFromSync(Map<String, dynamic> raw) {
       'id': raw['client_id'] ?? raw['id'],
       'name': raw['name'],
       'targetAmount': parseMoney(raw['target_amount'] ?? raw['targetAmount']),
+      'currencyCode': raw['currency_code'] ?? raw['currencyCode'],
       'createdAt': raw['created_at'] ?? raw['createdAt'],
       'completedAt': raw['completed_at'] ?? raw['completedAt'],
       'completedAmount':
@@ -202,6 +228,7 @@ RecurringExpense? recurringFromSync(Map<String, dynamic> raw) {
     jsonEncode({
       'id': raw['client_id'] ?? raw['id'],
       'amount': parseMoney(raw['amount']),
+      'currencyCode': raw['currency_code'] ?? raw['currencyCode'],
       'category': raw['category'],
       'paymentMethod': raw['payment_method'] ?? raw['paymentMethod'],
       'note': raw['note'],
@@ -230,6 +257,10 @@ AppNotification? notificationFromSync(Map<String, dynamic> raw) {
       'updatedAt': raw['updated_at'] ?? raw['updatedAt'],
     }),
   );
+}
+
+CustomCategoryEntry? categoryFromSync(Map<String, dynamic> raw) {
+  return CustomCategoryEntry.fromSync(raw);
 }
 
 List<Map<String, dynamic>> asMapList(Object? raw) {
