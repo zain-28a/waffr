@@ -401,9 +401,9 @@ class NotificationService extends ChangeNotifier {
         type: NotificationType.savingsTransferred,
         title: 'تم تحويل مبلغ إلى الادخار',
         message: kind == SavingsTransferKind.goalPeriodic
-            ? 'تم تحويل ${formatMoney(item.amount)} $currencyLabel إلى الادخار'
+            ? 'تم تحويل ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)} إلى الادخار'
                 '${goalName == null ? '' : ' · $goalName'}'
-            : 'تم تحويل ${formatMoney(item.amount)} $currencyLabel إلى الادخار'
+            : 'تم تحويل ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)} إلى الادخار'
                 '${periodLabel == null ? '' : ' · الفترة $periodLabel'}',
         eventKey: 'savingsTransfer:${item.id}',
         relatedId: item.id,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/savings_goal.dart';
 import 'package:waffer/core/data/transaction.dart';
 import 'package:waffer/core/data/transaction_store.dart';
@@ -34,6 +35,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
   bool _saving = false;
   late _ContributionType _type;
+  late String _currencyCode;
 
   static const double _maxAmount = 999999999;
 
@@ -41,13 +43,14 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
   double get _fixedAmount => parseAmount(_fixedAmountController.text);
 
-  RecurringFrequency get _frequency => _store.preferredIncomeFrequency;
+  RecurringFrequency get _frequency =>
+      _store.preferredIncomeFrequencyFor(_currencyCode);
 
   double get _income {
     if (_frequency == RecurringFrequency.monthly) {
-      return _store.configuredMonthlyIncome ?? 0;
+      return _store.configuredMonthlyIncomeFor(_currencyCode) ?? 0;
     }
-    return _store.referenceIncome(_frequency);
+    return _store.referenceIncome(_frequency, currencyCode: _currencyCode);
   }
 
   bool get _isCustom => _type == _ContributionType.custom;
@@ -125,6 +128,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
   @override
   void initState() {
     super.initState();
+    _currencyCode = CurrencyStore.instance.activeCode;
 
     _type = _income > 0
         ? _ContributionType.percent
@@ -205,6 +209,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
       deductFrequency: _isCustom ? RecurringFrequency.none : _frequency,
       isPeriodic: !_isCustom,
       durationCount: periods,
+      currencyCode: _currencyCode,
     );
 
     if (!mounted) return;
@@ -265,6 +270,8 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
         SheetAmountField(
           label: 'المبلغ المستهدف',
           controller: _targetController,
+          currencyCode: _currencyCode,
+          onCurrencyChanged: (code) => setState(() => _currencyCode = code),
           onChanged: (_) => setState(() {}),
         ),
 
@@ -349,7 +356,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                 Text(
                   'الدخل المرجعي: '
                   '${formatMoney(_income)} '
-                  '$currencyLabel / $_periodSingular',
+                  '${currencyLabelFor(_currencyCode)} / $_periodSingular',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Tajawal',
@@ -374,7 +381,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                         Padding(
                           padding: const EdgeInsets.only(left: 25, top: 18),
                           child: Text(
-                            'ل.س',
+                            currencyLabelFor(_currencyCode),
                             style: TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 15,
@@ -423,6 +430,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
               periods: _requiredPeriods,
               expected: _expectedAmount,
               frequency: _frequency,
+              currencyCode: _currencyCode,
               colors: colors,
             ),
           ),
@@ -513,6 +521,7 @@ class _GoalPreview extends StatelessWidget {
   final int periods;
   final double expected;
   final RecurringFrequency frequency;
+  final String currencyCode;
   final _GoalColors colors;
 
   const _GoalPreview({
@@ -521,6 +530,7 @@ class _GoalPreview extends StatelessWidget {
     required this.periods,
     required this.expected,
     required this.frequency,
+    required this.currencyCode,
     required this.colors,
   });
 
@@ -560,7 +570,7 @@ class _GoalPreview extends StatelessWidget {
 
           Text(
             '${formatMoney(periodAmount)} '
-            '$currencyLabel / $periodSingular',
+            '${currencyLabelFor(currencyCode)} / $periodSingular',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Tajawal',
@@ -586,7 +596,7 @@ class _GoalPreview extends StatelessWidget {
 
           Text(
             'المجموع المتوقع: '
-            '${formatMoney(expected)} $currencyLabel',
+            '${formatMoney(expected)} ${currencyLabelFor(currencyCode)}',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Tajawal',
@@ -598,7 +608,7 @@ class _GoalPreview extends StatelessWidget {
           const SizedBox(height: 3),
 
           Text(
-            'الهدف: ${formatMoney(target)} $currencyLabel',
+            'الهدف: ${formatMoney(target)} ${currencyLabelFor(currencyCode)}',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Tajawal',

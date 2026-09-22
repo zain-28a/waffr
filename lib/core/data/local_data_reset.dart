@@ -4,6 +4,7 @@ import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/profile_photo.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/data/shopping_list_store.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 
@@ -20,6 +21,7 @@ class LocalDataReset {
     await ProfilePhoto.clear();
 
     TransactionStore.instance.resetCache();
+    CurrencyStore.instance.resetCache();
     NotificationService.instance.resetCache();
     ShoppingListStore.instance.resetCache();
     RecurringExpenseStore.instance.resetCache();

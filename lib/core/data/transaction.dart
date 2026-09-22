@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:waffer/core/data/currency.dart';
+
 enum TransactionType { income, expense, savingsIn, savingsOut }
 
 /// مدة الدخل المضافة: بدون مدة لا تُرحَّل تلقائياً إلى الادخار.
@@ -13,6 +15,9 @@ class WafferTransaction {
   final String id;
   final TransactionType type;
   final double amount;
+
+  /// رمز ISO للعملة التي تنتمي إليها العملية. البيانات القديمة تُعدّ SYP.
+  final String currencyCode;
 
   /// للمصروف فقط.
   final String? category;
@@ -50,6 +55,7 @@ class WafferTransaction {
     required this.id,
     required this.type,
     required this.amount,
+    this.currencyCode = defaultCurrencyCode,
     required this.dateTime,
     this.category,
     this.paymentMethod,
@@ -65,11 +71,12 @@ class WafferTransaction {
 
   DateTime get syncUpdatedAt => (updatedAt ?? dateTime).toUtc();
 
-  WafferTransaction copyWith({DateTime? dateTime}) {
+  WafferTransaction copyWith({DateTime? dateTime, String? currencyCode}) {
     return WafferTransaction(
       id: id,
       type: type,
       amount: amount,
+      currencyCode: currencyCode ?? this.currencyCode,
       dateTime: dateTime ?? this.dateTime,
       category: category,
       paymentMethod: paymentMethod,
@@ -96,6 +103,7 @@ class WafferTransaction {
     'id': id,
     'type': type.name,
     'amount': amount,
+    'currencyCode': currencyCode,
     'category': category,
     'paymentMethod': paymentMethod,
     'note': note,
@@ -123,6 +131,9 @@ class WafferTransaction {
         id: _text(decoded['id']) ?? newId(),
         type: _parseType(_text(decoded['type'])),
         amount: amount,
+        currencyCode: Currencies.normalize(
+          _text(decoded['currencyCode']) ?? _text(decoded['currency_code']),
+        ),
         category: _text(decoded['category']),
         paymentMethod: _text(decoded['paymentMethod']),
         note: _text(decoded['note']),

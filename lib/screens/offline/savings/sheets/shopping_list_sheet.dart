@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/expense_categories.dart';
 import 'package:waffer/core/data/shopping_list_store.dart';
 import 'package:waffer/core/data/transaction_store.dart';
@@ -478,10 +479,17 @@ class _PurchaseShoppingItemSheetState
 
   String _category = expenseCategories.first.label;
   bool _saving = false;
+  late String _currencyCode;
 
   double get _amount => parseAmount(_amountController.text);
 
   bool get _isValid => _amount > 0 && _amount <= 999999999;
+
+  @override
+  void initState() {
+    super.initState();
+    _currencyCode = CurrencyStore.instance.activeCode;
+  }
 
   @override
   void dispose() {
@@ -498,6 +506,7 @@ class _PurchaseShoppingItemSheetState
         itemId: widget.item.id,
         amount: _amount,
         category: _category,
+        currencyCode: _currencyCode,
       );
 
       if (!mounted) return;
@@ -513,7 +522,7 @@ class _PurchaseShoppingItemSheetState
     if (!mounted) return;
     setState(() => _saving = false);
 
-    if (_amount > TransactionStore.instance.balance) {
+    if (_amount > TransactionStore.instance.balanceFor(_currencyCode)) {
       showInsufficientBalanceMessage(context);
       return;
     }
@@ -534,6 +543,8 @@ class _PurchaseShoppingItemSheetState
         SheetAmountField(
           label: 'السعر',
           controller: _amountController,
+          currencyCode: _currencyCode,
+          onCurrencyChanged: (code) => setState(() => _currencyCode = code),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 18),

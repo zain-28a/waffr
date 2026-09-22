@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:waffer/core/data/category_store.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/expense_categories.dart';
 import 'package:waffer/core/data/recurring_expense.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
@@ -36,6 +37,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   bool _saving = false;
   bool _recurring = false;
   int _multiplier = 1;
+  late String _currencyCode;
   RecurringUnit _recurringUnit = RecurringUnit.month;
   final TextEditingController _intervalController = TextEditingController(
     text: '1',
@@ -61,6 +63,12 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _currencyCode = CurrencyStore.instance.activeCode;
+  }
+
+  @override
   void dispose() {
     _amountController.dispose();
     _noteController.dispose();
@@ -77,7 +85,9 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
 
     if (_recurring) {
       await TransactionStore.instance.ensureLoaded();
-      if (!TransactionStore.instance.hasConfiguredMonthlyIncome) {
+      if (!TransactionStore.instance.hasConfiguredMonthlyIncomeFor(
+        _currencyCode,
+      )) {
         if (!mounted) return;
         setState(() => _saving = false);
         await showMonthlyIncomeRequiredSheet(
@@ -93,6 +103,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         unit: _recurringUnit,
         intervalCount: _intervalCount,
         note: note.isEmpty ? null : note,
+        currencyCode: _currencyCode,
       );
 
       if (!mounted) return;
@@ -105,6 +116,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
       category: _category,
       paymentMethod: _paymentMethod,
       note: note.isEmpty ? null : note,
+      currencyCode: _currencyCode,
     );
 
     if (!mounted) return;
@@ -134,7 +146,9 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
           controller: _amountController,
           helper: _multiplier == 1
               ? null
-              : 'الإجمالي ${formatMoney(_amount)} $currencyLabel',
+              : 'الإجمالي ${formatMoney(_amount)} ${currencyLabelFor(_currencyCode)}',
+          currencyCode: _currencyCode,
+          onCurrencyChanged: (code) => setState(() => _currencyCode = code),
           leading: _AmountMultiplierControl(
             value: _multiplier,
             onChanged: (value) => setState(() => _multiplier = value),
@@ -151,7 +165,9 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
             if (recurring) {
               await TransactionStore.instance.ensureLoaded();
               if (!context.mounted) return;
-              if (!TransactionStore.instance.hasConfiguredMonthlyIncome) {
+              if (!TransactionStore.instance.hasConfiguredMonthlyIncomeFor(
+                _currencyCode,
+              )) {
                 await showMonthlyIncomeRequiredSheet(
                   context,
                   requirement: MonthlyIncomeRequirement.expense,

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:waffer/core/data/currency.dart';
+
 enum RecurringUnit { day, week, month }
 
 extension RecurringUnitLabel on RecurringUnit {
@@ -20,6 +22,7 @@ extension RecurringUnitLabel on RecurringUnit {
 class RecurringExpense {
   final String id;
   final double amount;
+  final String currencyCode;
   final String category;
   final String paymentMethod;
   final String? note;
@@ -33,6 +36,7 @@ class RecurringExpense {
   const RecurringExpense({
     required this.id,
     required this.amount,
+    this.currencyCode = defaultCurrencyCode,
     required this.category,
     required this.paymentMethod,
     required this.unit,
@@ -56,6 +60,7 @@ class RecurringExpense {
 
   RecurringExpense copyWith({
     double? amount,
+    String? currencyCode,
     DateTime? nextDueAt,
     bool? enabled,
     DateTime? updatedAt,
@@ -64,6 +69,7 @@ class RecurringExpense {
     return RecurringExpense(
       id: id,
       amount: amount ?? this.amount,
+      currencyCode: currencyCode ?? this.currencyCode,
       category: category,
       paymentMethod: paymentMethod,
       note: note,
@@ -80,6 +86,7 @@ class RecurringExpense {
   Map<String, dynamic> toJson() => {
     'id': id,
     'amount': amount,
+    'currencyCode': currencyCode,
     'category': category,
     'paymentMethod': paymentMethod,
     'note': note,
@@ -118,6 +125,10 @@ class RecurringExpense {
       return RecurringExpense(
         id: id,
         amount: amount,
+        currencyCode: Currencies.normalize(
+          decoded['currencyCode']?.toString() ??
+              decoded['currency_code']?.toString(),
+        ),
         category: category,
         paymentMethod: decoded['paymentMethod']?.toString() ?? '',
         note: _text(decoded['note']),

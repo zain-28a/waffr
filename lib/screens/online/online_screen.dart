@@ -584,7 +584,7 @@ class _RateValue extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            currencyLabel,
+            sypCurrencyLabel,
             style: TextStyle(
               fontFamily: 'Tajawal',
               fontSize: 12,

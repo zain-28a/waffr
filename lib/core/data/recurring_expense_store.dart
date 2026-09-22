@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/app_notification.dart';
 import 'package:waffer/core/data/notification_service.dart';
+import 'package:waffer/core/data/currency.dart';
 import 'package:waffer/core/data/recurring_expense.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
@@ -31,6 +32,13 @@ class RecurringExpenseStore extends ChangeNotifier {
 
   List<RecurringExpense> get items => List.unmodifiable(_items);
 
+  List<RecurringExpense> itemsFor(String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
+    return _items
+        .where((item) => item.currencyCode == code)
+        .toList(growable: false);
+  }
+
   Future<void> ensureLoaded() => _loader ??= _load();
 
   Future<void> addExpense({
@@ -40,12 +48,18 @@ class RecurringExpenseStore extends ChangeNotifier {
     required RecurringUnit unit,
     required int intervalCount,
     String? note,
+    String? currencyCode,
   }) async {
     if (amount <= 0 || intervalCount <= 0) return;
 
     await ensureLoaded();
     await TransactionStore.instance.ensureLoaded();
-    if (!TransactionStore.instance.hasConfiguredMonthlyIncome) return;
+    final code = Currencies.normalize(
+      currencyCode ?? CurrencyStore.instance.activeCode,
+    );
+    if (!TransactionStore.instance.hasConfiguredMonthlyIncomeFor(code)) {
+      return;
+    }
 
     final now = deviceNow();
 
@@ -54,6 +68,7 @@ class RecurringExpenseStore extends ChangeNotifier {
       RecurringExpense(
         id: RecurringExpense.newId(),
         amount: amount,
+        currencyCode: code,
         category: category,
         paymentMethod: paymentMethod,
         note: note,
@@ -70,7 +85,11 @@ class RecurringExpenseStore extends ChangeNotifier {
 
   static const double _maxAmount = 999999999;
 
-  Future<bool> updateAmount(String id, double amount) async {
+  Future<bool> updateAmount(
+    String id,
+    double amount, {
+    String? currencyCode,
+  }) async {
     if (!amount.isFinite || amount <= 0 || amount > _maxAmount) {
       return false;
     }
@@ -80,7 +99,10 @@ class RecurringExpenseStore extends ChangeNotifier {
     final index = _items.indexWhere((item) => item.id == id);
     if (index < 0) return false;
 
-    _items[index] = _items[index].copyWith(amount: amount);
+    _items[index] = _items[index].copyWith(
+      amount: amount,
+      currencyCode: currencyCode,
+    );
     await _persist();
     notifyListeners();
     return true;
@@ -120,12 +142,15 @@ class RecurringExpenseStore extends ChangeNotifier {
     try {
       final now = deviceNow();
       var changed = false;
-      final incomeReady = TransactionStore.instance.hasConfiguredMonthlyIncome;
 
       for (var i = 0; i < _items.length; i++) {
         var item = _items[i];
         if (!item.enabled) continue;
-        if (!incomeReady) continue;
+        if (!TransactionStore.instance.hasConfiguredMonthlyIncomeFor(
+          item.currencyCode,
+        )) {
+          continue;
+        }
 
         var catchUps = 0;
 
@@ -133,12 +158,12 @@ class RecurringExpenseStore extends ChangeNotifier {
           catchUps++;
 
           final store = TransactionStore.instance;
-          if (!store.canDeduct(item.amount)) {
+          if (!store.canDeduct(item.amount, currencyCode: item.currencyCode)) {
             await NotificationService.instance.add(
               type: NotificationType.recurringExpenseBlocked,
               title: 'تعذر خصم المصروف المتكرر',
               message:
-                  'رصيدك لا يكفي لخصم ${formatMoney(item.amount)} $currencyLabel'
+                  'رصيدك لا يكفي لخصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}'
                   ' (${item.note ?? item.category}).',
               eventKey:
                   'recurringBlocked:${item.id}:${item.nextDueAt.toIso8601String()}',
@@ -157,6 +182,7 @@ class RecurringExpenseStore extends ChangeNotifier {
             note: item.note ?? item.intervalDescription,
             sourceId: sourceId,
             occurredAt: item.nextDueAt.toLocal(),
+            currencyCode: item.currencyCode,
           );
 
           if (added == null) {
@@ -164,7 +190,7 @@ class RecurringExpenseStore extends ChangeNotifier {
               type: NotificationType.recurringExpenseBlocked,
               title: 'تعذر خصم المصروف المتكرر',
               message:
-                  'رصيدك لا يكفي لخصم ${formatMoney(item.amount)} $currencyLabel'
+                  'رصيدك لا يكفي لخصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}'
                   ' (${item.note ?? item.category}).',
               eventKey:
                   'recurringBlocked:${item.id}:${item.nextDueAt.toIso8601String()}',
@@ -236,6 +262,9 @@ class RecurringExpenseStore extends ChangeNotifier {
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     _loaded = true;
+    if (stored.any((raw) => !raw.contains('currencyCode'))) {
+      await _persist();
+    }
     notifyListeners();
   }
 
