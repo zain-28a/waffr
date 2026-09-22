@@ -14,6 +14,11 @@ void main() {
     WidgetTester tester, {
     VoidCallback? onContinue,
   }) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('ar'),
@@ -86,6 +91,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).at(2), 'سوريا');
     await tester.enterText(find.byType(TextField).at(3), 'دمشق');
+    await tester.pump();
     await tester.ensureVisible(find.text('متابعة'));
     await tester.tap(find.text('متابعة'));
     await tester.pump();
@@ -112,6 +118,7 @@ void main() {
     await tester.enterText(find.byType(TextField).at(2), 'سوريا');
     await tester.enterText(find.byType(TextField).at(3), 'دمشق');
     await tester.enterText(find.byType(TextField).at(4), 'المزة');
+    await tester.pump();
     await tester.ensureVisible(find.text('متابعة'));
     await tester.tap(find.text('متابعة'));
     await tester.pump();
