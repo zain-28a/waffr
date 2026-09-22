@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
+import 'package:waffer/core/data/category_store.dart';
 import 'package:waffer/core/data/notification_service.dart';
 import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/data/shopping_list_store.dart';
@@ -13,6 +15,9 @@ import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_mapper.dart';
+import 'package:waffer/core/sync/sync_pull_policy.dart';
+import 'package:waffer/core/sync/profile_photo_sync.dart';
+import 'package:waffer/core/sync/profile_sync.dart';
 import 'package:waffer/core/sync/sync_tombstones.dart';
 
 enum SyncStatus { success, offline, noAccount, failed, skipped }
@@ -30,19 +35,23 @@ class SyncResult {
 ///
 /// Local storage stays the offline source of truth. A failed request never
 /// overwrites or deletes local records.
-class SyncService {
+class SyncService with WidgetsBindingObserver {
   SyncService._();
 
   static final SyncService instance = SyncService._();
 
   static const Duration _debounce = Duration(seconds: 3);
   static const Duration _timeout = Duration(seconds: 25);
+  static const Duration _minPullInterval = Duration(seconds: 20);
 
   Timer? _debounceTimer;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   bool _syncing = false;
   bool _pending = false;
   bool _listenersAttached = false;
   bool _applying = false;
+  bool _wasOnline = true;
+  DateTime? _lastNetworkAttemptAt;
 
   final ValueNotifier<bool> isSyncing = ValueNotifier<bool>(false);
 
@@ -72,25 +81,33 @@ class SyncService {
     isSyncing.value = true;
 
     try {
-      final email = await AuthSession.instance.email();
-      if (email == null) {
+      if (!await AuthSession.instance.isLoggedIn()) {
         return const SyncResult(
           SyncStatus.noAccount,
-          'أضف بريداً إلكترونياً لتفعيل المزامنة',
+          'وضع الضيف محلي فقط. سجّل الدخول للمزامنة',
         );
       }
 
+      await ProfilePhotoSync.flush();
+
       final dirty = await SyncDirty.isDirty();
       final lastSync = await AuthSession.instance.lastSyncAt();
-      if (!force && !dirty && lastSync != null && _tombstoneCount() == 0) {
+      if (shouldSkipCleanPull(
+        force: force,
+        dirty: dirty,
+        tombstoneCount: _tombstoneCount(),
+        lastAttemptAt: _lastNetworkAttemptAt,
+        now: DateTime.now(),
+        minInterval: _minPullInterval,
+      )) {
         return const SyncResult(SyncStatus.success, 'البيانات محدّثة');
       }
 
       var token = await AuthSession.instance.ensureToken();
       if (token == null) {
         return const SyncResult(
-          SyncStatus.offline,
-          'لا يوجد اتصال. تم حفظ التغييرات محلياً',
+          SyncStatus.noAccount,
+          'انتهت الجلسة. سجّل الدخول للمزامنة',
         );
       }
 
@@ -125,32 +142,14 @@ class SyncService {
         );
       }
 
+      _lastNetworkAttemptAt = DateTime.now();
+
       if (response.statusCode == 401) {
-        await AuthSession.instance.clearToken();
-        token = await AuthSession.instance.ensureToken();
-        if (token == null) {
-          return const SyncResult(
-            SyncStatus.failed,
-            'تعذر تسجيل الدخول للمزامنة',
-          );
-        }
-        try {
-          response = await http
-              .post(
-                Uri.parse('$base/sync'),
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': 'Bearer $token',
-                },
-                body: jsonEncode(payload),
-              )
-              .timeout(_timeout);
-        } catch (_) {
-          return const SyncResult(
-            SyncStatus.offline,
-            'لا يوجد اتصال. تم حفظ التغييرات محلياً',
-          );
-        }
+        await AuthSession.instance.clearSession();
+        return const SyncResult(
+          SyncStatus.failed,
+          'انتهت الجلسة. سجّل الدخول مجدداً',
+        );
       }
 
       if (response.statusCode != 200) {
@@ -184,6 +183,12 @@ class SyncService {
           'تعذر دمج البيانات. بقيت النسخة المحلية',
         );
       }
+
+      await ProfilePhotoSync.applyFromSettings(
+        body['settings'] is Map
+            ? Map<String, dynamic>.from(body['settings'] as Map)
+            : null,
+      );
 
       final DateTime serverTime = parseSyncDateOrNow(
         body['server_time']?.toString(),
@@ -223,6 +228,7 @@ class SyncService {
       ShoppingListStore.instance.ensureLoaded(),
       RecurringExpenseStore.instance.ensureLoaded(),
       NotificationService.instance.ensureLoaded(),
+      CategoryStore.instance.ensureLoaded(),
       SyncTombstones.instance.ensureLoaded(),
     ]);
 
@@ -266,6 +272,12 @@ class SyncService {
           notificationToSync(item),
     ];
 
+    final categories = [
+      for (final item in CategoryStore.instance.entries)
+        if (_shouldSend(item.syncUpdatedAt, lastSync, sendAll))
+          categoryToSync(item),
+    ];
+
     final settingsUpdated = await SyncDirty.settingsUpdatedAt();
     final includeSettings = sendAll ||
         lastSync == null ||
@@ -301,6 +313,10 @@ class SyncService {
         upserts: notifications,
         deletes: SyncTombstones.instance.of(SyncCollection.notifications),
       ),
+      'expense_categories': collectionPayload(
+        upserts: categories,
+        deletes: SyncTombstones.instance.of(SyncCollection.expenseCategories),
+      ),
       'settings': includeSettings ? await _settingsPayload() : null,
     };
   }
@@ -310,10 +326,10 @@ class SyncService {
     return {
       'notifications_muted': NotificationService.instance.isMuted,
       'notifications_enabled': !NotificationService.instance.isMuted,
-      'ai_data_enabled': null,
       'monthly_income_amount': store.monthlyIncomeOverride,
       'weekly_income_amount': store.weeklyIncomeOverride,
       'processed_period_keys': store.processedPeriodTokens.toList(),
+      ...await ProfileSync.fields(),
       'updated_at': toSyncIso(await SyncDirty.settingsUpdatedAt()),
     };
   }
@@ -346,6 +362,13 @@ class SyncService {
         settings: body['settings'] is Map
             ? Map<String, dynamic>.from(body['settings'] as Map)
             : null,
+      );
+
+      await CategoryStore.instance.applyRemoteSync(
+        upserts: asMapList(_collection(body, 'expense_categories')['upserts']),
+        deletes: tombstonesFromSync(
+          _collection(body, 'expense_categories')['deletes'],
+        ),
       );
 
       await ShoppingListStore.instance.applyRemoteSync(
@@ -415,11 +438,43 @@ class SyncService {
     await clear('shopping_items', SyncCollection.shoppingItems);
     await clear('recurring_expenses', SyncCollection.recurringExpenses);
     await clear('notifications', SyncCollection.notifications);
+    await clear('expense_categories', SyncCollection.expenseCategories);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(syncNow());
+    }
   }
 
   void _attachListeners() {
     if (_listenersAttached) return;
     _listenersAttached = true;
     SyncDirty.addListener(scheduleSync);
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_listenForConnectivity());
+  }
+
+  Future<void> _listenForConnectivity() async {
+    final connectivity = Connectivity();
+    try {
+      _wasOnline = _isOnline(await connectivity.checkConnectivity());
+    } catch (_) {
+      _wasOnline = false;
+    }
+
+    _connectivitySub ??= connectivity.onConnectivityChanged.listen((results) {
+      final online = _isOnline(results);
+      final cameOnline = online && !_wasOnline;
+      _wasOnline = online;
+      if (cameOnline) {
+        unawaited(syncNow());
+      }
+    });
+  }
+
+  static bool _isOnline(List<ConnectivityResult> results) {
+    return results.any((result) => result != ConnectivityResult.none);
   }
 }

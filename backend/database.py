@@ -92,6 +92,8 @@ def _ensure_schema_updates() -> None:
 
     with engine.begin() as connection:
         _ensure_user_timestamp_columns(connection, inspector, tables)
+        _ensure_user_photo_column(connection, inspector, tables)
+        _ensure_user_profile_columns(connection, inspector, tables)
         _ensure_transaction_columns(connection, inspector, tables)
         _ensure_goal_columns(connection, inspector, tables)
         _ensure_transfer_columns(connection, inspector, tables)
@@ -134,6 +136,28 @@ def _ensure_user_timestamp_columns(connection, inspector, tables: set[str]) -> N
         "updated_at",
         "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()",
     )
+
+
+def _ensure_user_photo_column(connection, inspector, tables: set[str]) -> None:
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "users",
+        "photo_updated_at",
+        "photo_updated_at TIMESTAMPTZ",
+    )
+
+
+def _ensure_user_profile_columns(connection, inspector, tables: set[str]) -> None:
+    for name, ddl in (
+        ("gender", "gender VARCHAR(20)"),
+        ("birthdate", "birthdate VARCHAR(40)"),
+        ("country", "country VARCHAR(80)"),
+        ("city", "city VARCHAR(80)"),
+        ("street", "street VARCHAR(160)"),
+    ):
+        _add_column(connection, inspector, tables, "users", name, ddl)
 
 
 def _ensure_transaction_columns(connection, inspector, tables: set[str]) -> None:
@@ -417,6 +441,7 @@ def _ensure_soft_delete_columns(connection, inspector, tables: set[str]) -> None
         "shopping_items",
         "recurring_expenses",
         "notifications",
+        "expense_categories",
     ):
         _add_column(
             connection,
@@ -502,4 +527,28 @@ def _ensure_settings_columns(connection, inspector, tables: set[str]) -> None:
         "user_settings",
         "processed_period_keys",
         "processed_period_keys JSONB NOT NULL DEFAULT '[]'::jsonb",
+    )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "user_settings",
+        "gender",
+        "gender VARCHAR(20)",
+    )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "user_settings",
+        "birthdate",
+        "birthdate VARCHAR(40)",
+    )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "user_settings",
+        "dark_mode",
+        "dark_mode BOOLEAN",
     )

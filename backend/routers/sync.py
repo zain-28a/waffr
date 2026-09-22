@@ -16,10 +16,13 @@ from crud_utils import (
     utc_now,
 )
 from database import get_db
+from category_model import ExpenseCategory
 from goal_model import SavingsGoal, SavingsTransfer
 from models import Notification, User, UserSettings
+import profile_photo as stored_photo
 from shopping_model import ShoppingItem, ShoppingList
 from sync_schemas import (
+    CategorySyncIn,
     GoalSyncIn,
     NotificationSyncIn,
     RecurringSyncIn,
@@ -98,8 +101,19 @@ def _settings_row(db: Session, user: User) -> tuple[UserSettings, bool]:
     return row, True
 
 
+def _keep_event_time(current: datetime | None, incoming: datetime | None) -> datetime:
+    """Keep the client's event time. Server receipt time is not a substitute."""
+    parsed = as_utc(incoming)
+    if parsed is not None:
+        return parsed
+    if current is not None:
+        return current
+    return utc_now()
+
+
 def _apply_settings(
     row: UserSettings,
+    user: User,
     data: SettingsSyncIn,
     *,
     created: bool = False,
@@ -125,12 +139,30 @@ def _apply_settings(
         "notify_goal_reached",
         "notify_recurring_expense",
         "ai_data_enabled",
-        "monthly_income_amount",
-        "weekly_income_amount",
+        "dark_mode",
     ):
         value = getattr(data, field)
         if value is not None:
             setattr(row, field, value)
+    for field in ("gender", "birthdate"):
+        value = getattr(data, field)
+        if value is None:
+            continue
+        cleaned = value.strip() or None
+        setattr(row, field, cleaned)
+        setattr(user, field, cleaned)
+    for field in ("country", "city", "street"):
+        value = getattr(data, field)
+        if value is None:
+            continue
+        setattr(user, field, value.strip() or None)
+    # Null is meaningful: the user removed the configured income.
+    for field in ("monthly_income_amount", "weekly_income_amount"):
+        if field in data.model_fields_set:
+            setattr(row, field, getattr(data, field))
+    if data.display_name is not None:
+        name = data.display_name.strip()
+        user.name = name or None
     keys = set(row.processed_period_keys or [])
     keys.update(data.processed_period_keys or [])
     row.processed_period_keys = sorted(keys)
@@ -138,7 +170,7 @@ def _apply_settings(
         row.updated_at = incoming
 
 
-def _settings_out(row: UserSettings) -> SettingsSyncOut:
+def _settings_out(row: UserSettings, user: User) -> SettingsSyncOut:
     return SettingsSyncOut(
         notifications_enabled=row.notifications_enabled,
         notifications_muted=not row.notifications_enabled,
@@ -150,6 +182,15 @@ def _settings_out(row: UserSettings) -> SettingsSyncOut:
         monthly_income_amount=row.monthly_income_amount,
         weekly_income_amount=row.weekly_income_amount,
         processed_period_keys=list(row.processed_period_keys or []),
+        display_name=user.name,
+        gender=user.gender or row.gender,
+        birthdate=user.birthdate or row.birthdate,
+        country=user.country,
+        city=user.city,
+        street=user.street,
+        dark_mode=row.dark_mode,
+        has_photo=stored_photo.has_photo(user.id),
+        photo_updated_at=user.photo_updated_at,
         updated_at=row.updated_at,
     )
 
@@ -169,7 +210,7 @@ def _apply_transaction(db: Session, user_id: int, data: TransactionSyncIn) -> No
     row.payment_method = empty_to_none(data.payment_method)
     row.note = empty_to_none(data.note)
     row.source_id = empty_to_none(data.source_id)
-    row.occurred_at = as_utc_or_now(data.occurred_at)
+    row.occurred_at = _keep_event_time(row.occurred_at, data.occurred_at)
     row.frequency = frequency
     row.period_key = empty_to_none(data.period_key)
     row.is_recurring = is_recurring
@@ -222,7 +263,7 @@ def _apply_transfer(db: Session, user_id: int, data: TransferSyncIn) -> None:
     row.direction = direction_from_kind(data.kind, data.direction)
     row.kind = data.kind
     row.note = empty_to_none(data.note)
-    row.occurred_at = as_utc_or_now(data.occurred_at)
+    row.occurred_at = _keep_event_time(row.occurred_at, data.occurred_at)
     row.processed_period_key = empty_to_none(data.processed_period_key)
     row.deleted_at = None
     row.updated_at = incoming
@@ -289,6 +330,20 @@ def _apply_recurring(db: Session, user_id: int, data: RecurringSyncIn) -> None:
     row.is_active = data.enabled
     if data.created_at is not None:
         row.created_at = as_utc_or_now(data.created_at)
+    row.deleted_at = None
+    row.updated_at = incoming
+
+
+def _apply_category(db: Session, user_id: int, data: CategorySyncIn) -> None:
+    row = _get_by_client(db, ExpenseCategory, user_id, data.client_id)
+    incoming = as_utc_or_now(data.updated_at or data.created_at)
+    if row is None:
+        row = ExpenseCategory(user_id=user_id, client_id=data.client_id)
+        db.add(row)
+    elif not _newer_or_equal(incoming, row.updated_at):
+        return
+    row.label = data.label.strip()
+    row.icon_index = max(0, data.icon_index)
     row.deleted_at = None
     row.updated_at = incoming
 
@@ -363,18 +418,26 @@ def sync_changes(
             _apply_recurring(db, user_id, item)
         for item in _parse_many(NotificationSyncIn, payload.notifications.upserts):
             _apply_notification(db, user_id, item)
+        for item in _parse_many(CategorySyncIn, payload.expense_categories.upserts):
+            _apply_category(db, user_id, item)
 
         _apply_deletes(db, ShoppingItem, user_id, payload.shopping_items.deletes)
         _apply_deletes(db, SavingsTransfer, user_id, payload.savings_transfers.deletes)
         _apply_deletes(db, Transaction, user_id, payload.transactions.deletes)
         _apply_deletes(db, RecurringExpense, user_id, payload.recurring_expenses.deletes)
         _apply_deletes(db, Notification, user_id, payload.notifications.deletes)
+        _apply_deletes(db, ExpenseCategory, user_id, payload.expense_categories.deletes)
         _apply_deletes(db, SavingsGoal, user_id, payload.savings_goals.deletes)
         _apply_deletes(db, ShoppingList, user_id, payload.shopping_lists.deletes)
 
         settings, settings_created = _settings_row(db, current_user)
         if payload.settings is not None:
-            _apply_settings(settings, payload.settings, created=settings_created)
+            _apply_settings(
+                settings,
+                current_user,
+                payload.settings,
+                created=settings_created,
+            )
 
         db.flush()
         server_time = utc_now()
@@ -505,7 +568,17 @@ def sync_changes(
                     "updated_at": row.updated_at,
                 },
             ),
-            settings=_settings_out(settings),
+            expense_categories=dump_changed(
+                ExpenseCategory,
+                lambda row: {
+                    "client_id": row.client_id,
+                    "label": row.label,
+                    "icon_index": row.icon_index,
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                },
+            ),
+            settings=_settings_out(settings, current_user),
         )
         db.commit()
         return response

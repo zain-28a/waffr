@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/backup_service.dart';
+import 'package:waffer/core/data/profile_photo.dart';
+import 'package:waffer/core/sync/auth_session.dart';
+import 'package:waffer/core/sync/profile_photo_sync.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
+import 'package:waffer/widgets/brand/profile_avatar.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 
 class AccountScreen extends StatefulWidget {
-  const AccountScreen({super.key});
+  final Future<void> Function()? onSignedOut;
+
+  const AccountScreen({super.key, this.onSignedOut});
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
@@ -15,8 +23,7 @@ class _AccountScreenState extends State<AccountScreen> {
   final TextEditingController _nameController = TextEditingController();
 
   String _email = '';
-  String? _photoUrl;
-  List<LinkedGoogleAccount> _accounts = [];
+  String? _photoPath;
   bool _busy = false;
   bool _savingName = false;
 
@@ -33,27 +40,110 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _load() async {
-    final backup = BackupService.instance;
-    final email = await backup.linkedEmail() ?? '';
-    final photo = await backup.linkedPhotoUrl();
-    final accounts = await backup.linkedAccounts();
-
-    LinkedGoogleAccount? current;
-    for (final account in accounts) {
-      if (account.email == email) {
-        current = account;
-        break;
-      }
-    }
+    final prefs = await SharedPreferences.getInstance();
+    final email = await AuthSession.instance.email() ?? '';
+    final photoPath = await ProfilePhoto.path();
 
     if (!mounted) return;
 
     setState(() {
       _email = email;
-      _photoUrl = photo ?? current?.photoUrl;
-      _accounts = accounts;
-      _nameController.text = current?.displayName ?? '';
+      _photoPath = photoPath;
+      _nameController.text = prefs.getString('user_name') ?? '';
     });
+  }
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    Navigator.of(context).pop();
+    final path = await ProfilePhoto.pick(source: source);
+    if (!mounted) return;
+    setState(() => _photoPath = path);
+    await ProfilePhotoSync.uploadCurrent();
+  }
+
+  Future<void> _removePhoto() async {
+    Navigator.of(context).pop();
+    await ProfilePhoto.clear(rememberDelete: true);
+    if (!mounted) return;
+    setState(() => _photoPath = null);
+    await ProfilePhotoSync.deleteRemote();
+  }
+
+  Future<void> _showPhotoOptions() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 10, 8, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: textSecondary.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'صورة الملف الشخصي',
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Tajawal',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: Icon(Icons.photo_library_outlined, color: accent),
+                  title: Text(
+                    'اختيار من المعرض',
+                    style: TextStyle(color: textPrimary, fontFamily: 'Tajawal'),
+                  ),
+                  onTap: () => _pickPhoto(ImageSource.gallery),
+                ),
+                ListTile(
+                  leading: Icon(Icons.photo_camera_outlined, color: accent),
+                  title: Text(
+                    'التقاط صورة',
+                    style: TextStyle(color: textPrimary, fontFamily: 'Tajawal'),
+                  ),
+                  onTap: () => _pickPhoto(ImageSource.camera),
+                ),
+                if (_photoPath != null)
+                  ListTile(
+                    leading: Icon(Icons.delete_outline_rounded, color: accent),
+                    title: Text(
+                      'إزالة الصورة',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontFamily: 'Tajawal',
+                      ),
+                    ),
+                    onTap: _removePhoto,
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _saveName() async {
@@ -75,7 +165,7 @@ class _AccountScreenState extends State<AccountScreen> {
         return AlertDialog(
           title: const Text('تسجيل الخروج'),
           content: const Text(
-            'سيتم فصل الحساب عن هذا الجهاز فقط. بياناتك المحلية والنسخة الاحتياطية في Drive لن تُحذف.',
+            'سيتم تسجيل الخروج من حسابك على هذا الجهاز. تبقى بياناتك محفوظة هنا، وتعود إلى شاشة الدخول حيث يمكنك المتابعة كضيف أو تسجيل الدخول بحساب آخر.',
           ),
           actions: [
             TextButton(
@@ -99,9 +189,14 @@ class _AccountScreenState extends State<AccountScreen> {
     if (confirm != true) return;
 
     setState(() => _busy = true);
-    await BackupService.instance.signOut();
+    final signedOut = widget.onSignedOut;
+    if (signedOut != null) {
+      await signedOut();
+    } else {
+      await AuthSession.instance.clearSession();
+    }
     if (!mounted) return;
-    Navigator.of(context).pop();
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Future<void> _deleteAccount() async {
@@ -141,36 +236,6 @@ class _AccountScreenState extends State<AccountScreen> {
     Navigator.of(context).pop();
   }
 
-  Future<void> _addOrSwitch() async {
-    if (_busy) return;
-
-    setState(() => _busy = true);
-
-    final result = await BackupService.instance.addOrSwitchAccount();
-
-    if (!mounted) return;
-
-    if (result == GoogleLinkResult.failed) {
-      setState(() => _busy = false);
-      showAppSnackBar(
-        context,
-        'تعذر تبديل الحساب. تحقق من الاتصال وحاول مرة أخرى.',
-      );
-      return;
-    }
-
-    await _load();
-    if (!mounted) return;
-    setState(() => _busy = false);
-    showAppSnackBar(
-      context,
-      result == GoogleLinkResult.restored
-          ? 'تم استعادة بيانات الحساب'
-          : 'تم ربط الحساب',
-      success: true,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -199,15 +264,21 @@ class _AccountScreenState extends State<AccountScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           Center(
-            child: CircleAvatar(
-              radius: 36,
-              backgroundColor: accent.withValues(alpha: 0.15),
-              backgroundImage: _photoUrl != null && _photoUrl!.isNotEmpty
-                  ? NetworkImage(_photoUrl!)
-                  : null,
-              child: _photoUrl == null || _photoUrl!.isEmpty
-                  ? Icon(Icons.person_outline_rounded, color: accent, size: 34)
-                  : null,
+            child: ProfileAvatar(
+              photoPath: _photoPath,
+              accent: accent,
+              radius: 42,
+              onTap: _showPhotoOptions,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton(
+              onPressed: _showPhotoOptions,
+              child: Text(
+                _photoPath == null ? 'إضافة صورة' : 'تغيير الصورة',
+                style: TextStyle(color: accent, fontFamily: 'Tajawal'),
+              ),
             ),
           ),
           const SizedBox(height: 18),
@@ -273,53 +344,11 @@ class _AccountScreenState extends State<AccountScreen> {
               style: TextStyle(color: textSecondary, fontSize: 15),
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'لا يمكن تعديل البريد أو الصورة، فهما من حساب Google.',
-            style: TextStyle(color: textSecondary, fontSize: 12, height: 1.4),
-          ),
-          if (_accounts.length > 1) ...[
-            const SizedBox(height: 25),
-            Text(
-              'تبديل الحساب',
-              style: TextStyle(
-                color: textSecondary,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-            for (final account in _accounts)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _AccountTile(
-                  account: account,
-                  selected: account.email == _email,
-                  surface: surface,
-                  accent: accent,
-                  textPrimary: textPrimary,
-                  textSecondary: textSecondary,
-                  onTap: account.email == _email || _busy ? null : _addOrSwitch,
-                ),
-              ),
-          ],
           const SizedBox(height: 25),
-          _ActionTile(
-            icon: Icons.person_add_alt_1_outlined,
-            title: 'إضافة حساب',
-            subtitle: 'ربط حساب Google آخر والتبديل إليه',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-            busy: _busy,
-            onTap: _addOrSwitch,
-          ),
-          const SizedBox(height: 12),
           _ActionTile(
             icon: Icons.logout_rounded,
             title: 'تسجيل الخروج',
-            subtitle: 'البقاء على الجهاز بوضع الضيف',
+            subtitle: 'العودة إلى شاشة الدخول، والبيانات تبقى على الجهاز',
             accent: accent,
             surface: surface,
             textPrimary: textPrimary,
@@ -340,79 +369,6 @@ class _AccountScreenState extends State<AccountScreen> {
             onTap: _deleteAccount,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _AccountTile extends StatelessWidget {
-  final LinkedGoogleAccount account;
-  final bool selected;
-  final Color surface;
-  final Color accent;
-  final Color textPrimary;
-  final Color textSecondary;
-  final VoidCallback? onTap;
-
-  const _AccountTile({
-    required this.account,
-    required this.selected,
-    required this.surface,
-    required this.accent,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: surface,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: accent.withValues(alpha: 0.12),
-                backgroundImage:
-                    account.photoUrl != null && account.photoUrl!.isNotEmpty
-                    ? NetworkImage(account.photoUrl!)
-                    : null,
-                child: account.photoUrl == null || account.photoUrl!.isEmpty
-                    ? Icon(Icons.person_outline_rounded, color: accent, size: 18)
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      account.displayName,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                    ),
-                    Text(
-                      account.email,
-                      textDirection: TextDirection.ltr,
-                      style: TextStyle(color: textSecondary, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              if (selected)
-                Icon(Icons.check_rounded, color: accent, size: 20),
-            ],
-          ),
-        ),
       ),
     );
   }

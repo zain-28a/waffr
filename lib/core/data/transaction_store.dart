@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/calendar_period.dart';
 import 'package:waffer/core/data/savings_goal.dart';
 import 'package:waffer/core/data/transaction.dart';
+import 'package:waffer/core/sync/profile_sync.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_mapper.dart';
@@ -132,6 +133,15 @@ class TransactionStore extends ChangeNotifier {
     return incomes.any((item) => item.frequency == RecurringFrequency.monthly);
   }
 
+  /// الدخل الشهري الذي ضبطه المستخدم من الإعدادات، مستقلاً عن سجل العمليات.
+  bool get hasConfiguredMonthlyIncome {
+    final amount = _monthlyIncomeOverride;
+    return amount != null && amount > 0;
+  }
+
+  double? get configuredMonthlyIncome =>
+      hasConfiguredMonthlyIncome ? _monthlyIncomeOverride : null;
+
   bool get hasWeeklyIncome {
     if (_weeklyIncomeOverride != null && _weeklyIncomeOverride! > 0) {
       return true;
@@ -256,10 +266,10 @@ class TransactionStore extends ChangeNotifier {
     }
 
     if (frequency == RecurringFrequency.none) {
-      return _incomeInCalendar(RecurringFrequency.monthly, DateTime.now());
+      return _incomeInCalendar(RecurringFrequency.monthly, deviceNow());
     }
 
-    final now = DateTime.now();
+    final now = deviceNow();
 
     final currentKey = CalendarPeriod.keyFor(frequency, now);
 
@@ -308,11 +318,11 @@ class TransactionStore extends ChangeNotifier {
       return latestRecurringIncome.frequency;
     }
 
-    final weekly = _incomeInCalendar(RecurringFrequency.weekly, DateTime.now());
+    final weekly = _incomeInCalendar(RecurringFrequency.weekly, deviceNow());
 
     final monthly = _incomeInCalendar(
       RecurringFrequency.monthly,
-      DateTime.now(),
+      deviceNow(),
     );
 
     if (weekly > 0 && monthly <= 0) {
@@ -341,7 +351,7 @@ class TransactionStore extends ChangeNotifier {
           type: TransactionType.savingsIn,
           amount: currentBalance,
           note: 'نقل الرصيد الحالي إلى التوفير',
-          dateTime: DateTime.now(),
+          dateTime: deviceNow(),
           transferKind: SavingsTransferKind.manual,
           goalId: activeGoal?.id,
         ),
@@ -350,7 +360,7 @@ class TransactionStore extends ChangeNotifier {
       );
     }
 
-    final now = DateTime.now();
+    final now = deviceNow();
 
     await _add(
       WafferTransaction(
@@ -412,6 +422,27 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
+  /// يلغي الدخل الشهري أو الأسبوعي المضبوط من الإعدادات دون حذف السجل.
+  Future<bool> clearPreferredIncomeAmount({
+    required RecurringFrequency frequency,
+  }) async {
+    await ensureLoaded();
+
+    if (frequency != RecurringFrequency.monthly &&
+        frequency != RecurringFrequency.weekly) {
+      return false;
+    }
+
+    _clearOverride(frequency);
+    await SyncDirty.mark(settings: true);
+
+    final prefs = await SharedPreferences.getInstance();
+    await _persistIncomeOverrides(prefs);
+    await Future<void>.delayed(Duration.zero);
+    notifyListeners();
+    return true;
+  }
+
   bool _syncPeriodicGoalAmounts(RecurringFrequency frequency, double income) {
     var changed = false;
 
@@ -441,12 +472,9 @@ class TransactionStore extends ChangeNotifier {
     required String paymentMethod,
     String? note,
     String? sourceId,
+    DateTime? occurredAt,
   }) async {
     await ensureLoaded();
-
-    if (!canDeduct(amount)) {
-      return null;
-    }
 
     if (sourceId != null) {
       for (final expense in expenses) {
@@ -461,12 +489,17 @@ class TransactionStore extends ChangeNotifier {
       }
     }
 
+    if (!canDeduct(amount)) {
+      return null;
+    }
+
     final future = _createExpense(
       amount: amount,
       category: category,
       paymentMethod: paymentMethod,
       note: note,
       sourceId: sourceId,
+      occurredAt: occurredAt,
     );
 
     if (sourceId == null) {
@@ -502,6 +535,24 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
+  /// يحذف الدخل من السجل فيُخصم مبلغه من الرصيد.
+  Future<bool> undoIncome(String id) async {
+    await ensureLoaded();
+
+    final index = _transactions.indexWhere(
+      (item) => item.id == id && item.isIncome,
+    );
+    if (index < 0) return false;
+
+    _transactions.removeAt(index);
+    await SyncTombstones.instance.add(SyncCollection.transactions, id);
+
+    final prefs = await SharedPreferences.getInstance();
+    await _persist(prefs);
+    notifyListeners();
+    return true;
+  }
+
   /// ادخار يدوي من الرصيد التشغيلي.
   Future<bool> saveManually(double amount) async {
     await ensureLoaded();
@@ -516,7 +567,7 @@ class TransactionStore extends ChangeNotifier {
         type: TransactionType.savingsIn,
         amount: amount,
         note: 'ادخار يدوي',
-        dateTime: DateTime.now(),
+        dateTime: deviceNow(),
         transferKind: SavingsTransferKind.manual,
         goalId: activeGoal?.id,
       ),
@@ -539,7 +590,7 @@ class TransactionStore extends ChangeNotifier {
         type: TransactionType.savingsOut,
         amount: amount,
         note: 'سحب إلى الرصيد',
-        dateTime: DateTime.now(),
+        dateTime: deviceNow(),
         transferKind: SavingsTransferKind.withdraw,
       ),
     );
@@ -582,7 +633,7 @@ class TransactionStore extends ChangeNotifier {
       }
     }
 
-    final now = DateTime.now();
+    final now = deviceNow();
 
     _goals.add(
       SavingsGoal(
@@ -659,7 +710,7 @@ class TransactionStore extends ChangeNotifier {
           id: SavingsGoal.newId(),
           name: 'ادخار ${percent.round()}٪',
           targetAmount: target,
-          createdAt: DateTime.now(),
+          createdAt: deviceNow(),
           duration: duration,
           allocatePercent: percent,
           allocateAmount: perPeriod,
@@ -761,7 +812,8 @@ class TransactionStore extends ChangeNotifier {
       items: _transactions,
       upserts: [
         for (final raw in transactions)
-          if (transactionFromSync(raw) != null) transactionFromSync(raw)!,
+          if (transactionFromSync(raw) != null)
+            _preserveEventTime(transactionFromSync(raw)!),
       ],
       deletes: transactionDeletes,
       collection: SyncCollection.transactions,
@@ -773,7 +825,8 @@ class TransactionStore extends ChangeNotifier {
       items: _transactions,
       upserts: [
         for (final raw in transfers)
-          if (transferFromSync(raw) != null) transferFromSync(raw)!,
+          if (transferFromSync(raw) != null)
+            _preserveEventTime(transferFromSync(raw)!),
       ],
       deletes: transferDeletes,
       collection: SyncCollection.savingsTransfers,
@@ -814,6 +867,7 @@ class TransactionStore extends ChangeNotifier {
           await SyncDirty.setSettingsUpdatedAt(remoteUpdated);
         }
         changed = true;
+        await ProfileSync.apply(settings);
       }
     }
 
@@ -847,6 +901,7 @@ class TransactionStore extends ChangeNotifier {
     required String paymentMethod,
     String? note,
     String? sourceId,
+    DateTime? occurredAt,
   }) async {
     if (!canDeduct(amount)) {
       return null;
@@ -860,7 +915,7 @@ class TransactionStore extends ChangeNotifier {
       paymentMethod: paymentMethod,
       note: note,
       sourceId: sourceId,
-      dateTime: DateTime.now(),
+      dateTime: (occurredAt ?? deviceNow()).toLocal(),
     );
 
     await _add(transaction);
@@ -983,7 +1038,7 @@ class TransactionStore extends ChangeNotifier {
     try {
       var changed = false;
 
-      final now = DateTime.now();
+      final now = deviceNow();
 
       final periodicIds = [
         for (final goal in activeGoals)
@@ -998,6 +1053,10 @@ class TransactionStore extends ChangeNotifier {
         final initialGoal = _goalById(goalId);
 
         if (initialGoal == null || initialGoal.isCompleted) {
+          continue;
+        }
+
+        if (_percentPlanNeedsIncome(initialGoal)) {
           continue;
         }
 
@@ -1093,6 +1152,13 @@ class TransactionStore extends ChangeNotifier {
     }
   }
 
+  bool _percentPlanNeedsIncome(SavingsGoal goal) {
+    if (goal.deductFrequency != RecurringFrequency.monthly) return false;
+    final percent = goal.allocatePercent;
+    if (percent == null || percent <= 0) return false;
+    return !hasConfiguredMonthlyIncome;
+  }
+
   bool _deductGoalForPeriod(SavingsGoal goal, String periodKey) {
     if (goal.isCompleted) {
       return true;
@@ -1114,7 +1180,7 @@ class TransactionStore extends ChangeNotifier {
         type: TransactionType.savingsIn,
         amount: amount,
         note: 'ادخار دوري: ${goal.name}',
-        dateTime: DateTime.now(),
+        dateTime: deviceNow(),
         transferKind: SavingsTransferKind.goalPeriodic,
         goalId: goal.id,
         processedPeriodKey: periodKey,
@@ -1176,7 +1242,7 @@ class TransactionStore extends ChangeNotifier {
         note: frequency == RecurringFrequency.weekly
             ? 'توفير نهاية الأسبوع'
             : 'توفير نهاية الشهر',
-        dateTime: DateTime.now(),
+        dateTime: deviceNow(),
         transferKind: SavingsTransferKind.periodLeftover,
         goalId: activeGoal?.id,
         processedPeriodKey: periodKey,
@@ -1205,7 +1271,7 @@ class TransactionStore extends ChangeNotifier {
       }
 
       _goals[index] = goal.copyWith(
-        completedAt: DateTime.now(),
+        completedAt: deviceNow(),
         completedAmount: progress > goal.targetAmount
             ? progress
             : goal.targetAmount,
@@ -1405,6 +1471,24 @@ class TransactionStore extends ChangeNotifier {
     }
   }
 
+  WafferTransaction _preserveEventTime(WafferTransaction incoming) {
+    for (final local in _transactions) {
+      if (local.id != incoming.id) continue;
+      return incoming.copyWith(
+        dateTime: earlierDeviceEventTime(local.dateTime, incoming.dateTime),
+      );
+    }
+    return incoming;
+  }
+
+  void _clearOverride(RecurringFrequency frequency) {
+    if (frequency == RecurringFrequency.monthly) {
+      _monthlyIncomeOverride = null;
+    } else if (frequency == RecurringFrequency.weekly) {
+      _weeklyIncomeOverride = null;
+    }
+  }
+
   double? _overrideFor(RecurringFrequency frequency) {
     return switch (frequency) {
       RecurringFrequency.monthly => _monthlyIncomeOverride,
@@ -1457,7 +1541,7 @@ class TransactionStore extends ChangeNotifier {
           amount: amount,
           category: 'أخرى',
           note: note,
-          dateTime: date ?? DateTime.now(),
+          dateTime: (date ?? deviceNow()).toLocal(),
         ),
       );
     }

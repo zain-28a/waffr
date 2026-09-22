@@ -32,6 +32,7 @@ def empty_payload(last_sync_at=None, **overrides):
         "shopping_items": collection(),
         "recurring_expenses": collection(),
         "notifications": collection(),
+        "expense_categories": collection(),
         "settings": None,
     }
     body.update(overrides)
@@ -119,6 +120,7 @@ def main() -> int:
     item_id = f"sh_{uuid4().hex[:10]}"
     rec_id = f"r{uuid4().hex[:10]}"
     note_id = f"n{uuid4().hex[:10]}"
+    cat_id = f"cat_{uuid4().hex[:10]}"
     now = stamp()
 
     status, first_body = request(
@@ -219,10 +221,23 @@ def main() -> int:
                     }
                 ]
             ),
+            expense_categories=collection(
+                [
+                    {
+                        "client_id": cat_id,
+                        "label": "قهوة",
+                        "icon_index": 2,
+                        "updated_at": now,
+                    }
+                ]
+            ),
             settings={
                 "notifications_muted": True,
                 "monthly_income_amount": "800.00",
                 "processed_period_keys": ["leftover:m:2026-01"],
+                "display_name": "Sync Tester",
+                "gender": "male",
+                "dark_mode": True,
                 "updated_at": now,
             },
         ),
@@ -242,7 +257,12 @@ def main() -> int:
     check(item_id in client_ids(first_body["shopping_items"]["upserts"]), "shopping item returned")
     check(rec_id in client_ids(first_body["recurring_expenses"]["upserts"]), "recurring returned")
     check(note_id in client_ids(first_body["notifications"]["upserts"]), "notification returned")
+    check(cat_id in client_ids(first_body["expense_categories"]["upserts"]), "category returned")
     check(first_body["settings"]["notifications_muted"] is True, "muted setting stored")
+    check(first_body["settings"]["display_name"] == "Sync Tester", "display name stored")
+    check(first_body["settings"]["gender"] == "male", "gender stored")
+    check(first_body["settings"]["dark_mode"] is True, "dark mode stored")
+    check(first_body["settings"]["has_photo"] is False, "no photo by default")
     check(
         "leftover:m:2026-01" in first_body["settings"]["processed_period_keys"],
         "processed period keys stored",

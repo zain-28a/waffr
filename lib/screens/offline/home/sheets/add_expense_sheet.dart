@@ -7,7 +7,9 @@ import 'package:waffer/core/data/recurring_expense_store.dart';
 import 'package:waffer/core/data/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
+import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffer/widgets/sheets/monthly_income_required_sheet.dart';
 
 /// نافذة "إضافة مصروف" الزجاجية.
 Future<void> showAddExpenseSheet(BuildContext context) {
@@ -33,6 +35,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
 
   bool _saving = false;
   bool _recurring = false;
+  int _multiplier = 1;
   RecurringUnit _recurringUnit = RecurringUnit.month;
   final TextEditingController _intervalController = TextEditingController(
     text: '1',
@@ -42,7 +45,9 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   static const String _onceLabel = 'مرة واحدة';
   static const String _recurringLabel = 'مصروف متكرر';
 
-  double get _amount => parseAmount(_amountController.text);
+  double get _enteredAmount => parseAmount(_amountController.text);
+
+  double get _amount => _enteredAmount * _multiplier;
 
   int get _intervalCount {
     final value = int.tryParse(_intervalController.text.trim()) ?? 0;
@@ -71,6 +76,16 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     final note = _noteController.text.trim();
 
     if (_recurring) {
+      await TransactionStore.instance.ensureLoaded();
+      if (!TransactionStore.instance.hasConfiguredMonthlyIncome) {
+        if (!mounted) return;
+        setState(() => _saving = false);
+        await showMonthlyIncomeRequiredSheet(
+          context,
+          requirement: MonthlyIncomeRequirement.expense,
+        );
+        return;
+      }
       await RecurringExpenseStore.instance.addExpense(
         amount: _amount,
         category: _category,
@@ -117,6 +132,13 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         SheetAmountField(
           label: 'المبلغ',
           controller: _amountController,
+          helper: _multiplier == 1
+              ? null
+              : 'الإجمالي ${formatMoney(_amount)} $currencyLabel',
+          leading: _AmountMultiplierControl(
+            value: _multiplier,
+            onChanged: (value) => setState(() => _multiplier = value),
+          ),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 10),
@@ -124,8 +146,21 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         SheetChoiceChips(
           options: const [_onceLabel, _recurringLabel],
           selected: _recurring ? _recurringLabel : _onceLabel,
-          onSelected: (value) {
-            setState(() => _recurring = value == _recurringLabel);
+          onSelected: (value) async {
+            final recurring = value == _recurringLabel;
+            if (recurring) {
+              await TransactionStore.instance.ensureLoaded();
+              if (!context.mounted) return;
+              if (!TransactionStore.instance.hasConfiguredMonthlyIncome) {
+                await showMonthlyIncomeRequiredSheet(
+                  context,
+                  requirement: MonthlyIncomeRequirement.expense,
+                );
+                return;
+              }
+            }
+            if (!mounted) return;
+            setState(() => _recurring = recurring);
           },
         ),
         SheetExpand(
@@ -185,6 +220,184 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
           onTap: _save,
         ),
       ],
+    );
+  }
+}
+
+class _AmountMultiplierControl extends StatefulWidget {
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  const _AmountMultiplierControl({
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  State<_AmountMultiplierControl> createState() =>
+      _AmountMultiplierControlState();
+}
+
+class _AmountMultiplierControlState extends State<_AmountMultiplierControl> {
+  static const List<int> _values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+  OverlayEntry? _entry;
+
+  @override
+  void dispose() {
+    _removeEntry();
+    super.dispose();
+  }
+
+  void _removeEntry() {
+    _entry?.remove();
+    _entry = null;
+  }
+
+  void _toggle() {
+    if (_entry != null) {
+      _removeEntry();
+      return;
+    }
+
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final origin = box.localToGlobal(Offset.zero);
+    final size = box.size;
+    final screen = MediaQuery.sizeOf(context);
+
+    _entry = OverlayEntry(
+      builder: (overlayContext) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+        final textPrimary = isDark
+            ? AppColors.darkTextPrimary
+            : AppColors.lightTextPrimary;
+        final textSecondary = isDark
+            ? AppColors.darkTextSecondary
+            : AppColors.lightTextSecondary;
+        final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+        const cardWidth = 220.0;
+        final left = (origin.dx + size.width - cardWidth)
+            .clamp(12.0, screen.width - cardWidth - 12);
+        final top = origin.dy > 120 ? origin.dy - 108 : origin.dy + size.height + 6;
+
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _removeEntry,
+                behavior: HitTestBehavior.opaque,
+                child: const SizedBox.expand(),
+              ),
+            ),
+            Positioned(
+              left: left,
+              top: top,
+              width: cardWidth,
+              child: Material(
+                color: surface,
+                elevation: 8,
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final value in _values)
+                        _MultiplierOption(
+                          label: '×$value',
+                          selected: value == widget.value,
+                          accent: accent,
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
+                          onTap: () {
+                            widget.onChanged(value);
+                            _removeEntry();
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    Overlay.of(context).insert(_entry!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
+    return GestureDetector(
+      onTap: _toggle,
+      behavior: HitTestBehavior.opaque,
+      child: Text(
+        '×${widget.value}',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontFamily: 'Tajawal',
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: textSecondary,
+        ),
+      ),
+    );
+  }
+}
+
+class _MultiplierOption extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final Color accent;
+  final Color textPrimary;
+  final Color textSecondary;
+  final VoidCallback onTap;
+
+  const _MultiplierOption({
+    required this.label,
+    required this.selected,
+    required this.accent,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? accent.withValues(alpha: 0.16) : textPrimary.withValues(alpha: 0.04),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+          child: SizedBox(
+          width: 36,
+          height: 32,
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? accent : textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

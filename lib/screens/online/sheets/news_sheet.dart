@@ -105,17 +105,19 @@ class _NewsArticleBlock extends StatelessWidget {
             height: 1.45,
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          article.body,
-          style: TextStyle(
-            fontFamily: 'Tajawal',
-            fontSize: 13.5,
-            fontWeight: FontWeight.w400,
-            color: textPrimary.withValues(alpha: 0.82),
-            height: 1.65,
+        if (article.body.trim().isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            article.body,
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 13.5,
+              fontWeight: FontWeight.w400,
+              color: textPrimary.withValues(alpha: 0.82),
+              height: 1.65,
+            ),
           ),
-        ),
+        ],
         const SizedBox(height: 10),
         Text(
           '${article.source} · ${formatDate(article.publishedAt)} · ${formatTime(article.publishedAt)}',

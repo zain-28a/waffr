@@ -1,78 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/data/backup_service.dart';
+import 'package:waffer/core/data/registration_profile.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/widgets/button/ani_pri_button.dart';
 
 enum Gender { male, female }
 
 class UserInfoScreen extends StatefulWidget {
-  final VoidCallback onContinue;
+  final ValueChanged<RegistrationProfile> onContinue;
+  final VoidCallback? onBack;
 
-  const UserInfoScreen({super.key, required this.onContinue});
+  const UserInfoScreen({
+    super.key,
+    required this.onContinue,
+    this.onBack,
+  });
 
   @override
   State<UserInfoScreen> createState() => _UserInfoScreenState();
 }
 
 class _UserInfoScreenState extends State<UserInfoScreen> {
-  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _countryController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _streetController = TextEditingController();
 
   Gender? _selectedGender;
   DateTime? _birthDate;
 
   @override
-  void initState() {
-    super.initState();
-    _loadExistingData();
-  }
-
-  @override
   void dispose() {
-    _emailController.dispose();
     _nameController.dispose();
+    _countryController.dispose();
+    _cityController.dispose();
+    _streetController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadExistingData() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final email = prefs.getString('user_email') ?? '';
-    final name = prefs.getString('user_name') ?? '';
-    final gender = prefs.getString('user_gender');
-    final birthdate = prefs.getString('user_birthdate');
-
-    if (!mounted) return;
-
-    setState(() {
-      _emailController.text = email;
-      _nameController.text = name;
-
-      if (gender == 'male') {
-        _selectedGender = Gender.male;
-      } else if (gender == 'female') {
-        _selectedGender = Gender.female;
-      }
-
-      if (birthdate != null) {
-        _birthDate = DateTime.tryParse(birthdate);
-      }
-    });
+  String? get _genderValue {
+    if (_selectedGender == Gender.male) return 'male';
+    if (_selectedGender == Gender.female) return 'female';
+    return null;
   }
 
   bool get _isFormValid {
-    final emailValid = _emailController.text.trim().contains('@') &&
-        _emailController.text.trim().contains('.');
-    final nameValid = _nameController.text.trim().isNotEmpty;
-    final birthValid = _birthDate != null;
-    return emailValid && nameValid && birthValid;
+    return registrationProfileError(
+          name: _nameController.text,
+          birthDate: _birthDate,
+          gender: _genderValue,
+          country: _countryController.text,
+          city: _cityController.text,
+          street: _streetController.text,
+        ) ==
+        null;
   }
 
   Future<void> _pickBirthDate(Color accent) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime(2000, 1, 1),
+      initialDate: _birthDate ?? DateTime(2000, 1, 1),
       firstDate: DateTime(1930),
       lastDate: DateTime.now(),
       builder: (context, child) {
@@ -94,19 +81,34 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  Future<void> _saveAndContinue() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_email', _emailController.text.trim());
-    await prefs.setString('user_name', _nameController.text.trim());
-    if (_selectedGender != null) {
-      await prefs.setString('user_gender', _selectedGender == Gender.male ? 'male' : 'female');
+  void _continue() {
+    final error = registrationProfileError(
+      name: _nameController.text,
+      birthDate: _birthDate,
+      gender: _genderValue,
+      country: _countryController.text,
+      city: _cityController.text,
+      street: _streetController.text,
+    );
+    if (error != null) {
+      showAppSnackBar(context, error);
+      return;
     }
-    if (_birthDate != null) {
-      await prefs.setString('user_birthdate', _birthDate!.toIso8601String());
-    }
-    BackupService.instance.scheduleBackup();
 
-    widget.onContinue();
+    final birthDate = _birthDate;
+    final gender = _genderValue;
+    if (birthDate == null || gender == null) return;
+
+    widget.onContinue(
+      RegistrationProfile(
+        name: _nameController.text.trim(),
+        birthDate: birthDate,
+        gender: gender,
+        country: _countryController.text.trim(),
+        city: _cityController.text.trim(),
+        street: _streetController.text.trim(),
+      ),
+    );
   }
 
   @override
@@ -126,7 +128,16 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 40),
+              if (widget.onBack != null)
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: IconButton(
+                    icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
+                    onPressed: widget.onBack,
+                  ),
+                )
+              else
+                const SizedBox(height: 40),
 
               Text(
                 "الملف الشخصي",
@@ -147,25 +158,6 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 48),
 
-              // ===== الإيميل =====
-              _FieldLabel(text: 'البريد الإلكتروني :', color: textPrimary),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                textDirection: TextDirection.ltr,
-                onChanged: (_) => setState(() {}),
-                style: TextStyle(color: textPrimary, fontSize: 16),
-                decoration: _fieldDecoration(
-                  hint: 'example@gmail.com',
-                  fillColor: surface,
-                  textSecondary: textSecondary,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // ===== الاسم =====
               _FieldLabel(text: 'الاسم', color: textPrimary),
               const SizedBox(height: 8),
               TextField(
@@ -182,8 +174,42 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
-              // ===== الجنس (اختياري) =====
-              _FieldLabel(text: 'الجنس (اختياري)', color: textPrimary),
+              _FieldLabel(text: 'تاريخ الميلاد', color: textPrimary),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => _pickBirthDate(accent),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: surface,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _birthDate != null ? _formatDate(_birthDate!) : "...",
+                        style: TextStyle(
+                          color: _birthDate != null ? textPrimary : textSecondary,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Icon(Icons.calendar_today_outlined, size: 20, color: accent),
+                    ],
+                  ),
+                ),
+              ),
+              if (_birthDate != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'العمر ${ageInYears(_birthDate!)} سنة',
+                  style: TextStyle(color: textSecondary, fontSize: 13),
+                ),
+              ],
+
+              const SizedBox(height: 24),
+
+              _FieldLabel(text: 'الجنس', color: textPrimary),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -213,30 +239,49 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
-              // ===== تاريخ الميلاد =====
-              _FieldLabel(text: 'تاريخ الميلاد', color: textPrimary),
+              _FieldLabel(text: 'الدولة', color: textPrimary),
               const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => _pickBirthDate(accent),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: surface,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _birthDate != null ? _formatDate(_birthDate!) : "...",
-                        style: TextStyle(
-                          color: _birthDate != null ? textPrimary : textSecondary,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Icon(Icons.calendar_today_outlined, size: 20, color: accent),
-                    ],
-                  ),
+              TextField(
+                controller: _countryController,
+                textAlign: TextAlign.right,
+                onChanged: (_) => setState(() {}),
+                style: TextStyle(color: textPrimary, fontSize: 16),
+                decoration: _fieldDecoration(
+                  hint: 'سوريا',
+                  fillColor: surface,
+                  textSecondary: textSecondary,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              _FieldLabel(text: 'المدينة', color: textPrimary),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _cityController,
+                textAlign: TextAlign.right,
+                onChanged: (_) => setState(() {}),
+                style: TextStyle(color: textPrimary, fontSize: 16),
+                decoration: _fieldDecoration(
+                  hint: 'اللاذقية',
+                  fillColor: surface,
+                  textSecondary: textSecondary,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              _FieldLabel(text: 'الشارع (اختياري)', color: textPrimary),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _streetController,
+                textAlign: TextAlign.right,
+                onChanged: (_) => setState(() {}),
+                style: TextStyle(color: textPrimary, fontSize: 16),
+                decoration: _fieldDecoration(
+                  hint: 'العنوان',
+                  fillColor: surface,
+                  textSecondary: textSecondary,
                 ),
               ),
 
@@ -250,7 +295,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                 ),
                 backgroundColor: _isFormValid ? accent : textSecondary,
                 textColor: surface,
-                onPressed: _isFormValid ? _saveAndContinue : () {},
+                onPressed: _continue,
               ),
 
               const SizedBox(height: 20),

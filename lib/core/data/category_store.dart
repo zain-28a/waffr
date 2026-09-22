@@ -3,36 +3,101 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/core/data/expense_categories.dart';
+import 'package:waffer/core/sync/sync_clock.dart';
+import 'package:waffer/core/sync/sync_dirty.dart';
+import 'package:waffer/core/sync/sync_merge.dart';
+import 'package:waffer/core/sync/sync_tombstones.dart';
 
 class CustomCategoryEntry {
+  final String id;
   final String label;
   final int iconIndex;
+  final DateTime? updatedAt;
 
   const CustomCategoryEntry({
+    required this.id,
     required this.label,
     required this.iconIndex,
+    this.updatedAt,
   });
+
+  DateTime get syncUpdatedAt => (updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0)).toUtc();
 
   ExpenseCategory toCategory() =>
       customCategoryNamed(label, iconIndex: iconIndex);
 
+  CustomCategoryEntry copyWith({
+    String? label,
+    int? iconIndex,
+    DateTime? updatedAt,
+  }) {
+    return CustomCategoryEntry(
+      id: id,
+      label: label ?? this.label,
+      iconIndex: iconIndex ?? this.iconIndex,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
+        'id': id,
         'label': label,
         'icon': iconIndex,
+        'updatedAt': toSyncIso(syncUpdatedAt),
+      };
+
+  Map<String, dynamic> toSyncJson() => {
+        'client_id': id,
+        'label': label,
+        'icon_index': iconIndex,
+        'updated_at': toSyncIso(syncUpdatedAt),
       };
 
   factory CustomCategoryEntry.fromJson(Map<String, dynamic> json) {
     final label = (json['label'] as String? ?? '').trim();
-    final icon = json['icon'];
+    final icon = json['icon'] ?? json['icon_index'] ?? json['iconIndex'];
+    final iconIndex = icon is int
+        ? icon
+        : int.tryParse(icon?.toString() ?? '') ?? 0;
+    final rawId = (json['id'] ?? json['client_id'])?.toString().trim() ?? '';
+    return CustomCategoryEntry(
+      id: rawId.isEmpty ? _legacyCategoryId(label) : rawId,
+      label: label,
+      iconIndex: clampCustomIconIndex(iconIndex),
+      updatedAt: parseSyncDate(json['updatedAt'] ?? json['updated_at']) ??
+          syncNow(),
+    );
+  }
+
+  static CustomCategoryEntry? fromSync(Map<String, dynamic> raw) {
+    final label = raw['label']?.toString().trim() ?? '';
+    final id = (raw['client_id'] ?? raw['id'])?.toString().trim() ?? '';
+    if (label.isEmpty || id.isEmpty) return null;
+    final icon = raw['icon_index'] ?? raw['iconIndex'] ?? raw['icon'];
     final iconIndex = icon is int
         ? icon
         : int.tryParse(icon?.toString() ?? '') ?? 0;
     return CustomCategoryEntry(
+      id: id,
       label: label,
       iconIndex: clampCustomIconIndex(iconIndex),
+      updatedAt: parseSyncDate(raw['updated_at'] ?? raw['updatedAt']),
     );
   }
 }
+
+String _legacyCategoryId(String label) {
+  var hash = 0;
+  for (final unit in label.codeUnits) {
+    hash = (hash * 31 + unit) & 0x7fffffff;
+  }
+  return 'cat_$hash';
+}
+
+int _categorySeq = 0;
+
+String _newCategoryId() =>
+    'cat_${DateTime.now().microsecondsSinceEpoch}_${_categorySeq++}';
 
 /// تصنيفات المصروف المخصصة، تُحفظ محلياً وتظهر في شبكة التصنيف.
 class CategoryStore extends ChangeNotifier {
@@ -53,6 +118,8 @@ class CategoryStore extends ChangeNotifier {
 
   List<ExpenseCategory> get customCategories =>
       [for (final entry in _entries) entry.toCategory()];
+
+  List<CustomCategoryEntry> get entries => List.unmodifiable(_entries);
 
   /// التصنيفات القابلة للاختيار: المدمجة ثم المخصصة. «مخصص» ليس منها.
   List<ExpenseCategory> get selectableCategories => [
@@ -102,8 +169,10 @@ class CategoryStore extends ChangeNotifier {
     final name = rawName.trim();
     _entries.add(
       CustomCategoryEntry(
+        id: _newCategoryId(),
         label: name,
         iconIndex: clampCustomIconIndex(iconIndex),
+        updatedAt: syncNow(),
       ),
     );
     await _persist();
@@ -125,9 +194,10 @@ class CategoryStore extends ChangeNotifier {
     if (error != null) return null;
 
     final name = rawName.trim();
-    _entries[index] = CustomCategoryEntry(
+    _entries[index] = _entries[index].copyWith(
       label: name,
       iconIndex: clampCustomIconIndex(iconIndex ?? _entries[index].iconIndex),
+      updatedAt: syncNow(),
     );
     await _persist();
     notifyListeners();
@@ -138,12 +208,45 @@ class CategoryStore extends ChangeNotifier {
     await ensureLoaded();
 
     final before = _entries.length;
-    _entries.removeWhere((entry) => entry.label == label);
-    if (_entries.length == before) return false;
+    CustomCategoryEntry? removed;
+    _entries.removeWhere((entry) {
+      if (entry.label != label) return false;
+      removed = entry;
+      return true;
+    });
+    if (_entries.length == before || removed == null) return false;
 
+    await SyncTombstones.instance.add(
+      SyncCollection.expenseCategories,
+      removed!.id,
+    );
     await _persist();
     notifyListeners();
     return true;
+  }
+
+  Future<void> applyRemoteSync({
+    required List<Map<String, dynamic>> upserts,
+    required List<SyncTombstone> deletes,
+  }) async {
+    await ensureLoaded();
+
+    final changed = mergeRemoteRecords<CustomCategoryEntry>(
+      items: _entries,
+      upserts: [
+        for (final raw in upserts)
+          if (CustomCategoryEntry.fromSync(raw) != null)
+            CustomCategoryEntry.fromSync(raw)!,
+      ],
+      deletes: deletes,
+      collection: SyncCollection.expenseCategories,
+      idOf: (item) => item.id,
+      updatedOf: (item) => item.syncUpdatedAt,
+    );
+
+    if (!changed) return;
+    await _persist();
+    notifyListeners();
   }
 
   void resetCache() {
@@ -165,7 +268,14 @@ class CategoryStore extends ChangeNotifier {
   Future<List<CustomCategoryEntry>> _readEntries(SharedPreferences prefs) async {
     final json = prefs.getString(itemsJsonKey);
     if (json != null && json.trim().isNotEmpty) {
-      return _parseJson(json);
+      final parsed = _parseJson(json);
+      if (parsed.isNotEmpty && !json.contains('"id"')) {
+        _entries
+          ..clear()
+          ..addAll(parsed);
+        await _persist();
+      }
+      return parsed;
     }
 
     final legacy = prefs.getStringList(itemsKey) ?? const [];
@@ -173,8 +283,10 @@ class CategoryStore extends ChangeNotifier {
       for (final raw in legacy)
         if (raw.trim().isNotEmpty)
           CustomCategoryEntry(
+            id: _legacyCategoryId(raw.trim()),
             label: raw.trim(),
             iconIndex: raw.hashCode.abs() % customCategoryIconChoices.length,
+            updatedAt: syncNow(),
           ),
     ];
     if (migrated.isNotEmpty) {
@@ -208,5 +320,6 @@ class CategoryStore extends ChangeNotifier {
       itemsJsonKey,
       jsonEncode([for (final entry in _entries) entry.toJson()]),
     );
+    await SyncDirty.mark();
   }
 }

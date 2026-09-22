@@ -39,8 +39,12 @@ dependencies:
   shared_preferences: ^2.2.3
   local_auth: ^3.0.2
   google_sign_in: ^7.2.0
+  flutter_secure_storage: ^9.2.4
   http: ^1.6.0
+  connectivity_plus: ^6.1.4
   url_launcher: ^6.3.2
+  image_picker: ^1.1.2
+  path_provider: ^2.1.5
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -62,6 +66,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/brand/waffer_logo.png
 
   fonts:
     - family: Tajawal
