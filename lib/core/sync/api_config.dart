@@ -9,7 +9,7 @@ class ApiConfig {
   static const String overrideKey = 'waffer_api_base_url';
 
   // Dev default; with USB debugging, adb reverse can map this to the PC.
-  static const String defaultBaseUrl = 'http://192.168.95.2:8001';
+  static const String defaultBaseUrl = 'http://10.194.25.4:8001';
 
   // Prefer the prefs override when set; strip a trailing slash for path joins.
   static Future<String> baseUrl() async {

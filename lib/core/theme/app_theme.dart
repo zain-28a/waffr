@@ -3,12 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:waffer/core/theme/app_color.dart';
 
-// Central theme: BebasNeue with Tajawal fallback for Arabic.
+// Central theme: Outfit (mixed-case Latin) with Tajawal fallback for Arabic.
 class AppTheme {
   AppTheme._();
 
   static const String arabic = 'Tajawal';
-  static const String english = 'BebasNeue';
+  static const String english = 'Outfit';
   static const List<String> fallback = [arabic];
 
   static ThemeData get lightTheme {
@@ -28,6 +28,7 @@ class AppTheme {
         secondary: AppColors.lightTextSecondary,
         accent: AppColors.lightAccent,
       ),
+      pageTransitionsTheme: _pageTransitions,
       appBarTheme: _appBarTheme(
         background: AppColors.lightSurface,
         foreground: AppColors.lightTextPrimary,
@@ -52,12 +53,23 @@ class AppTheme {
         secondary: AppColors.darkTextSecondary,
         accent: AppColors.darkAccent,
       ),
+      pageTransitionsTheme: _pageTransitions,
       appBarTheme: _appBarTheme(
         background: AppColors.darkSurface,
         foreground: AppColors.darkTextPrimary,
       ),
     );
   }
+
+  static const PageTransitionsTheme _pageTransitions = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: ZoomPageTransitionsBuilder(),
+      TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
+      TargetPlatform.macOS: ZoomPageTransitionsBuilder(),
+      TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+      TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+    },
+  );
 
   static AppBarTheme _appBarTheme({
     required Color background,

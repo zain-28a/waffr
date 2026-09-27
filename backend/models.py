@@ -1,7 +1,15 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -127,6 +135,9 @@ class UserSettings(TimestampMixin, Base):
     gender: Mapped[str | None] = mapped_column(String(20), nullable=True)
     birthdate: Mapped[str | None] = mapped_column(String(40), nullable=True)
     dark_mode: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    usage_started_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    streak_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    streak_last_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
     user: Mapped[User] = relationship(back_populates="settings")
 

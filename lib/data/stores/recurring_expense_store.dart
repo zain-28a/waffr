@@ -156,6 +156,7 @@ class RecurringExpenseStore extends ChangeNotifier {
         }
 
         var catchUps = 0;
+        DateTime? postedDue;
 
         while (!item.nextDueAt.isAfter(now) && catchUps < _maxCatchUp) {
           catchUps++;
@@ -177,6 +178,7 @@ class RecurringExpenseStore extends ChangeNotifier {
 
           final sourceId =
               'recurring:${item.id}:${item.nextDueAt.millisecondsSinceEpoch}';
+          final dueAt = item.nextDueAt;
 
           final added = await store.addExpense(
             amount: item.amount,
@@ -184,7 +186,7 @@ class RecurringExpenseStore extends ChangeNotifier {
             paymentMethod: item.paymentMethod,
             note: item.note ?? item.intervalDescription,
             sourceId: sourceId,
-            occurredAt: item.nextDueAt.toLocal(),
+            occurredAt: dueAt.toLocal(),
             currencyCode: item.currencyCode,
           );
 
@@ -196,21 +198,34 @@ class RecurringExpenseStore extends ChangeNotifier {
                   'رصيدك لا يكفي لخصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}'
                   ' (${item.note ?? item.category}).',
               eventKey:
-                  'recurringBlocked:${item.id}:${item.nextDueAt.toIso8601String()}',
+                  'recurringBlocked:${item.id}:${dueAt.toIso8601String()}',
               relatedId: item.id,
             );
             break;
           }
 
+          postedDue = dueAt;
           item = item.copyWith(
             nextDueAt: RecurringExpense.nextDueFrom(
-              item.nextDueAt,
+              dueAt,
               item.unit,
               item.intervalCount,
             ),
           );
           _items[i] = item;
           changed = true;
+        }
+
+        if (postedDue != null) {
+          await NotificationService.instance.add(
+            type: NotificationType.recurringExpenseApplied,
+            title: 'تم خصم مصروف متكرر',
+            message:
+                'خُصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}'
+                ' (${item.note ?? item.category}).',
+            eventKey: 'recurringApplied:${item.id}:${postedDue.toIso8601String()}',
+            relatedId: item.id,
+          );
         }
       }
 

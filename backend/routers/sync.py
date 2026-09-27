@@ -163,6 +163,12 @@ def _apply_settings(
     if data.display_name is not None:
         name = data.display_name.strip()
         user.name = name or None
+    if data.usage_started_at is not None:
+        row.usage_started_at = data.usage_started_at.strip() or None
+    if data.streak_count is not None:
+        row.streak_count = data.streak_count
+    if data.streak_last_date is not None:
+        row.streak_last_date = data.streak_last_date.strip() or None
     keys = set(row.processed_period_keys or [])
     keys.update(data.processed_period_keys or [])
     row.processed_period_keys = sorted(keys)
@@ -189,6 +195,9 @@ def _settings_out(row: UserSettings, user: User) -> SettingsSyncOut:
         city=user.city,
         street=user.street,
         dark_mode=row.dark_mode,
+        usage_started_at=row.usage_started_at,
+        streak_count=row.streak_count,
+        streak_last_date=row.streak_last_date,
         has_photo=stored_photo.has_photo(user.id),
         photo_updated_at=user.photo_updated_at,
         updated_at=row.updated_at,

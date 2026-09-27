@@ -111,7 +111,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     color: textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -119,7 +119,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   leading: Icon(Icons.photo_library_outlined, color: accent),
                   title: Text(
                     'اختيار من المعرض',
-                    style: TextStyle(color: textPrimary, fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal']),
+                    style: TextStyle(color: textPrimary, fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
                   ),
                   onTap: () => _pickPhoto(ImageSource.gallery),
                 ),
@@ -127,7 +127,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   leading: Icon(Icons.photo_camera_outlined, color: accent),
                   title: Text(
                     'التقاط صورة',
-                    style: TextStyle(color: textPrimary, fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal']),
+                    style: TextStyle(color: textPrimary, fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
                   ),
                   onTap: () => _pickPhoto(ImageSource.camera),
                 ),
@@ -138,7 +138,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       'إزالة الصورة',
                       style: TextStyle(
                         color: textPrimary,
-                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                       ),
                     ),
                     onTap: _removePhoto,
@@ -284,7 +284,7 @@ class _AccountScreenState extends State<AccountScreen> {
               onPressed: _showPhotoOptions,
               child: Text(
                 _photoPath == null ? 'إضافة صورة' : 'تغيير الصورة',
-                style: TextStyle(color: accent, fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal']),
+                style: TextStyle(color: accent, fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
               ),
             ),
           ),
@@ -324,7 +324,7 @@ class _AccountScreenState extends State<AccountScreen> {
               onPressed: _savingName ? null : _saveName,
               child: Text(
                 _savingName ? 'جارٍ الحفظ...' : 'حفظ الاسم',
-                style: TextStyle(color: accent, fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal']),
+                style: TextStyle(color: accent, fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
               ),
             ),
           ),

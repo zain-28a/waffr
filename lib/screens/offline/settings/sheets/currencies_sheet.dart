@@ -148,7 +148,7 @@ class _AddCurrencySheet extends StatelessWidget {
                 'كل العملات المتاحة مضافة.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   fontSize: 14,
                   color: textPrimary,
                 ),
@@ -177,7 +177,7 @@ class _AddCurrencySheet extends StatelessWidget {
                             child: Text(
                               item.symbol,
                               style: TextStyle(
-                                fontFamily: 'BebasNeue',
+                                fontFamily: 'Outfit',
                                 fontFamilyFallback: ['Tajawal'],
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -190,7 +190,7 @@ class _AddCurrencySheet extends StatelessWidget {
                             child: Text(
                               '${item.arabicName} · ${item.code}',
                               style: TextStyle(
-                                fontFamily: 'BebasNeue',
+                                fontFamily: 'Outfit',
                                 fontFamilyFallback: ['Tajawal'],
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -258,7 +258,7 @@ class _CurrencyTile extends StatelessWidget {
                 child: Text(
                   item.symbol,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     color: accent,
@@ -273,7 +273,7 @@ class _CurrencyTile extends StatelessWidget {
                     Text(
                       item.arabicName,
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
                         color: textPrimary,
@@ -282,7 +282,7 @@ class _CurrencyTile extends StatelessWidget {
                     Text(
                       active ? '${item.code} · نشطة' : item.code,
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                         fontSize: 12,
                         color: active ? accent : textSecondary,
                       ),

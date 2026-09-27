@@ -238,7 +238,7 @@ class _BalanceCard extends StatelessWidget {
                         Text(
                           'الرصيد الحالي',
                           style: TextStyle(
-                            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                             fontSize: 13.5,
                             color: textSecondary,
                           ),
@@ -257,7 +257,7 @@ class _BalanceCard extends StatelessWidget {
                             child: Text(
                               formatMoney(balance),
                               style: TextStyle(
-                                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 36,
                                 fontWeight: FontWeight.bold,
                                 color: accent,
@@ -269,7 +269,7 @@ class _BalanceCard extends StatelessWidget {
                         Text(
                           currencyLabel,
                           style: TextStyle(
-                            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                             fontSize: 15,
                             color: textSecondary,
                           ),
@@ -282,7 +282,7 @@ class _BalanceCard extends StatelessWidget {
                       child: Text(
                         '${(ratio * 100).round()}%',
                         style: TextStyle(
-                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
                           color: textSecondary,
@@ -300,7 +300,7 @@ class _BalanceCard extends StatelessWidget {
                       'مصروف ${formatMoney(spent)} $currencyLabel '
                       'من ${formatMoney(maxBalance)} $currencyLabel',
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                         fontSize: 12.5,
                         color: textSecondary,
                       ),
@@ -405,7 +405,7 @@ class _ActionButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 fontSize: 14.5,
                 fontWeight: FontWeight.w700,
                 color: textPrimary,
@@ -512,7 +512,7 @@ class _DistributionChart extends StatelessWidget {
               Text(
                 '$topShare%',
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -521,7 +521,7 @@ class _DistributionChart extends StatelessWidget {
               Text(
                 totals.first.category,
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   fontSize: 10.5,
                   color: textPrimary.withValues(alpha: 0.6),
                 ),
@@ -583,7 +583,7 @@ class _DistributionLegend extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: textPrimary,
@@ -593,7 +593,7 @@ class _DistributionLegend extends StatelessWidget {
               Text(
                 '$share%',
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: textSecondary,
@@ -710,7 +710,7 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
           'لا يوجد هدف حالياً',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
             fontSize: compact ? 13 : 15,
             fontWeight: FontWeight.w700,
             color: textSecondary,
@@ -719,44 +719,126 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
       );
     }
 
+    final inactiveDot = textPrimary.withValues(alpha: 0.22);
+
     return _SectionCard(
       title: 'هدف التوفير',
       compact: compact,
       centerChild: compact,
-      child: SizedBox(
-        height: compact ? 140 : 150,
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            return notification.metrics.axis == Axis.horizontal;
-          },
-          child: PageView.builder(
-            controller: _controller,
-            itemCount: goals.length,
-            physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
-            onPageChanged: (index) {
-              _goalId = goals[index].id;
-            },
-            itemBuilder: (context, index) {
-              final goal = goals[index];
-              final saved = widget.store.currentSaved(goal);
-              final target = goal.targetAmount;
-              final ratio = target <= 0
-                  ? 0.0
-                  : (saved / target).clamp(0.0, 1.0);
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: compact ? 128 : 150,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                return notification.metrics.axis == Axis.horizontal;
+              },
+              child: PageView.builder(
+                controller: _controller,
+                itemCount: goals.length,
+                physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
+                onPageChanged: (index) {
+                  _goalId = goals[index].id;
+                },
+                itemBuilder: (context, index) {
+                  final goal = goals[index];
+                  final saved = widget.store.currentSaved(goal);
+                  final target = goal.targetAmount;
+                  final ratio = target <= 0
+                      ? 0.0
+                      : (saved / target).clamp(0.0, 1.0);
 
-              return Center(
-                child: _SavingGoalPage(
-                  compact: compact,
-                  ratio: ratio,
-                  saved: saved,
-                  target: target,
-                  accent: accent,
-                  textPrimary: textPrimary,
-                  textSecondary: textSecondary,
-                ),
-              );
-            },
+                  return Center(
+                    child: _SavingGoalPage(
+                      compact: compact,
+                      ratio: ratio,
+                      saved: saved,
+                      target: target,
+                      accent: accent,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
+          SizedBox(height: compact ? 6 : 8),
+          _GoalPageDots(
+            controller: _controller,
+            count: goals.length,
+            activeColor: accent,
+            inactiveColor: inactiveDot,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Page dots under the goals pager. Follows the same direction as the
+// PageView, so the highlighted dot stays aligned in RTL.
+class _GoalPageDots extends StatelessWidget {
+  final PageController controller;
+  final int count;
+  final Color activeColor;
+  final Color inactiveColor;
+
+  const _GoalPageDots({
+    required this.controller,
+    required this.count,
+    required this.activeColor,
+    required this.inactiveColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final page = controller.hasClients
+            ? (controller.page ?? controller.initialPage.toDouble())
+            : controller.initialPage.toDouble();
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var index = 0; index < count; index++)
+              _GoalPageDot(
+                selected: 1 - (page - index).abs().clamp(0.0, 1.0),
+                activeColor: activeColor,
+                inactiveColor: inactiveColor,
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _GoalPageDot extends StatelessWidget {
+  final double selected;
+  final Color activeColor;
+  final Color inactiveColor;
+
+  const _GoalPageDot({
+    required this.selected,
+    required this.activeColor,
+    required this.inactiveColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final width = 6 + (8 * selected);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      child: Container(
+        width: width,
+        height: 6,
+        decoration: BoxDecoration(
+          color: Color.lerp(inactiveColor, activeColor, selected),
+          borderRadius: BorderRadius.circular(999),
         ),
       ),
     );
@@ -806,7 +888,7 @@ class _SavingGoalPage extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   fontSize: compact ? 11 : 12.5,
                   fontWeight: FontWeight.w700,
                   color: textSecondary,
@@ -821,7 +903,7 @@ class _SavingGoalPage extends StatelessWidget {
           child: Text(
             '${formatMoney(saved)} / ${formatMoney(target)}',
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: compact ? 14 : 17,
               fontWeight: FontWeight.bold,
               color: textPrimary,
@@ -947,7 +1029,7 @@ class _ExpenseRow extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       textAlign: TextAlign.end,
       style: TextStyle(
-        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
         fontSize: compact ? 11.5 : 14,
         fontWeight: FontWeight.bold,
         color: accent,
@@ -979,7 +1061,7 @@ class _ExpenseRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   fontSize: compact ? 12.5 : 15.5,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -992,7 +1074,7 @@ class _ExpenseRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: compact ? 10.5 : 12.5,
                     color: textSecondary,
                   ),
@@ -1005,7 +1087,7 @@ class _ExpenseRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   fontSize: compact ? 9 : 11,
                   color: textSecondary.withValues(alpha: 0.8),
                 ),
@@ -1074,7 +1156,7 @@ class _SectionCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 fontSize: compact ? 14.5 : 16,
                 fontWeight: FontWeight.bold,
                 color: textPrimary,
@@ -1090,7 +1172,7 @@ class _SectionCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: compact ? 14.5 : 16,
                     fontWeight: FontWeight.bold,
                     color: textPrimary,
@@ -1103,7 +1185,7 @@ class _SectionCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                       fontSize: compact ? 10.5 : 11,
                       fontWeight: FontWeight.w500,
                       color: textSecondary,
@@ -1153,7 +1235,7 @@ class _EmptyState extends StatelessWidget {
             message,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: compact ? 12 : 13.5,
               color: textPrimary.withValues(alpha: 0.55),
             ),

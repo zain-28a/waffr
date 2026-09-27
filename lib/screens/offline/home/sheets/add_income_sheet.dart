@@ -115,7 +115,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
             'الرصيد الحالي',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontWeight: FontWeight.bold,
               color: textPrimary,
             ),
@@ -124,7 +124,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
             'يُظهر هذا القسم الرصيد المتبقي لديك من الفترة السابقة. اختر ما تريد فعله به: نقله إلى التوفير، أو إبقاءه ضمن رصيدك الجديد.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 14,
               height: 1.6,
               color: textSecondary,
@@ -135,7 +135,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'حسناً',
-                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: accent),
+                style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], color: accent),
               ),
             ),
           ],

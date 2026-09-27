@@ -245,7 +245,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                     Text(
                       'المبلغ الموفر',
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 12,
                         color: colors.textSecondary,
                       ),
@@ -261,7 +261,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                          fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: colors.textPrimary,
@@ -287,7 +287,7 @@ class _PeriodSavingsCard extends StatelessWidget {
               'لا يوجد توفير في هذه الفترة',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 13,
                 color: colors.textPrimary.withValues(alpha: 0.55),
               ),
@@ -304,7 +304,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                     child: Text(
                       formatMoney(amount),
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
                         color: colors.accent,
@@ -316,7 +316,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                 Text(
                   currencyLabel,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 13,
                     color: colors.textSecondary,
                   ),
@@ -328,7 +328,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                   Text(
                     comparison.text,
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: comparison.color,
@@ -494,7 +494,7 @@ class _ActiveGoalsPanel extends StatelessWidget {
                 "لايوجد اهداف محددة حاليا",
                 textAlign: TextAlign.start,
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: colors.textSecondary,
@@ -594,7 +594,7 @@ class _SavingsGoalsHeader extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: colors.textPrimary,
@@ -696,7 +696,7 @@ class _TotalSavingsCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: colors.textSecondary,
@@ -712,7 +712,7 @@ class _TotalSavingsCard extends StatelessWidget {
             Text(
               'لا توجد مبالغ موفرة بعد',
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: colors.textSecondary.withValues(alpha: 0.65),
@@ -729,7 +729,7 @@ class _TotalSavingsCard extends StatelessWidget {
                     child: Text(
                       formatMoney(total),
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 27,
                         fontWeight: FontWeight.bold,
                         color: colors.accent,
@@ -743,7 +743,7 @@ class _TotalSavingsCard extends StatelessWidget {
                   child: Text(
                     currencyLabel,
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: colors.textSecondary,
@@ -762,7 +762,7 @@ class _TotalSavingsCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
               fontSize: 10.5,
               color: colors.textSecondary,
             ),
@@ -809,7 +809,7 @@ class _ActionButton extends StatelessWidget {
                 maxLines: 1,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
                   color: colors.textPrimary,
@@ -842,7 +842,7 @@ class _CreateGoalCard extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
             fontSize: 13.5,
             fontWeight: FontWeight.bold,
             color: Color.fromARGB(255, 255, 255, 255),
@@ -879,7 +879,7 @@ class _GoalProgressCard extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
             fontSize: 14.5,
             fontWeight: FontWeight.bold,
             color: colors.textPrimary,
@@ -905,7 +905,7 @@ class _GoalProgressCard extends StatelessWidget {
             Text(
               '${(ratio * 100).round()}%',
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
                 color: colors.textSecondary,
@@ -921,7 +921,7 @@ class _GoalProgressCard extends StatelessWidget {
           child: Text(
             '${formatMoney(saved)} / ${formatMoney(goal.targetAmount)}',
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: colors.textPrimary,
@@ -935,7 +935,7 @@ class _GoalProgressCard extends StatelessWidget {
           currencyLabel,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
             fontSize: 11,
             color: colors.textSecondary,
           ),

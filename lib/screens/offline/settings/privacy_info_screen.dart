@@ -183,7 +183,7 @@ class PrivacyInfoScreen extends StatelessWidget {
                           fontWeight:
                               FontWeight.w600,
                           color: textPrimary,
-                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                           height: 1.5,
                         ),
                       ),
@@ -212,7 +212,7 @@ class PrivacyInfoScreen extends StatelessWidget {
                           fontWeight:
                               FontWeight.w600,
                           color: textPrimary,
-                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                           height: 1.5,
                         ),
                       ),
@@ -302,7 +302,7 @@ class _InfoSection
                     fontWeight:
                         FontWeight.bold,
                     color: textPrimary,
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
               ),
@@ -318,7 +318,7 @@ class _InfoSection
               fontSize: 14,
               height: 1.6,
               color: textSecondary,
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
             ),
           ),
         ],

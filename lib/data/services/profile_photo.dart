@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
@@ -15,6 +16,13 @@ class ProfilePhoto {
 
   static const String pendingUpload = 'upload';
   static const String pendingDelete = 'delete';
+
+  /// Bumped when the local file changes so avatars refresh without disk IO.
+  static final ValueNotifier<int> revision = ValueNotifier<int>(0);
+
+  static void _bump() {
+    revision.value++;
+  }
 
   static Future<String> _destPath() async {
     final directory = await getApplicationDocumentsDirectory();
@@ -77,6 +85,7 @@ class ProfilePhoto {
 
     final prefs = await AppPrefs.instance;
     await prefs.setString(prefsKey, dest.path);
+    _bump();
     return dest.path;
   }
 
@@ -101,6 +110,7 @@ class ProfilePhoto {
       final prefs = await AppPrefs.instance;
       await prefs.setString(prefsKey, dest.path);
       await markPending(pendingUpload);
+      _bump();
       return dest.path;
     } catch (_) {
       return await path();
@@ -124,5 +134,6 @@ class ProfilePhoto {
       await prefs.remove(pendingKey);
       await prefs.remove(updatedAtKey);
     }
+    _bump();
   }
 }

@@ -185,7 +185,7 @@ class GlassSheetHeader extends StatelessWidget {
                     title,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: accent,
@@ -196,7 +196,7 @@ class GlassSheetHeader extends StatelessWidget {
                     subtitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                       fontSize: 13,
                       color: textSecondary,
                     ),
@@ -292,7 +292,7 @@ class SheetFieldLabel extends StatelessWidget {
           Text(
             text,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
               color: textSecondary,
@@ -305,7 +305,7 @@ class SheetFieldLabel extends StatelessWidget {
               child: Text(
                 ' (اختياري)',
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   fontSize: 11,
                   color: textSecondary.withValues(alpha: 0.6),
                 ),
@@ -416,10 +416,13 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
     final origin = anchor.localToGlobal(Offset.zero);
     final anchorSize = anchor.size;
     final screen = MediaQuery.sizeOf(context);
-    final menuWidth = (screen.width * 0.62).clamp(180.0, 260.0);
-    final alignToEnd = menu == _AmountMenu.multiplier;
-    var left = alignToEnd
-        ? origin.dx + anchorSize.width - menuWidth
+    final isMultiplier = menu == _AmountMenu.multiplier;
+    // ×1–×10 is a short label; keep that list a tight column on the button.
+    final menuWidth = isMultiplier
+        ? 64.0
+        : (screen.width * 0.62).clamp(180.0, 260.0);
+    var left = isMultiplier
+        ? origin.dx + (anchorSize.width - menuWidth) / 2
         : origin.dx;
     left = left.clamp(16.0, screen.width - menuWidth - 16);
     final top = origin.dy + anchorSize.height + 6;
@@ -453,6 +456,7 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
             for (final value in _multipliers)
               _AmountMenuTile(
                 title: '×$value',
+                centered: true,
                 selected: value == (widget.multiplier ?? 1),
                 accent: accent,
                 textPrimary: textPrimary,
@@ -479,17 +483,19 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
               left: left,
               top: top,
               width: menuWidth,
-              child: Material(
-                color: surface,
-                elevation: 10,
-                borderRadius: BorderRadius.circular(16),
-                clipBehavior: Clip.antiAlias,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: maxHeight),
-                  child: ListView(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    children: tiles,
+              child: _AmountMenuDrop(
+                child: Material(
+                  color: surface,
+                  elevation: 10,
+                  borderRadius: BorderRadius.circular(16),
+                  clipBehavior: Clip.antiAlias,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: maxHeight),
+                    child: ListView(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      children: tiles,
+                    ),
                   ),
                 ),
               ),
@@ -531,7 +537,7 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
               Text(
                 widget.label,
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   fontSize: 13,
                   color: textSecondary,
                 ),
@@ -561,7 +567,7 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
                   inputFormatters: [ThousandsInputFormatter()],
                   cursorColor: textPrimary,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: 34,
                     fontWeight: FontWeight.bold,
                     color: textPrimary,
@@ -571,7 +577,7 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
                     border: InputBorder.none,
                     hintText: '0',
                     hintStyle: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                       fontSize: 34,
                       fontWeight: FontWeight.bold,
                       color: textSecondary.withValues(alpha: 0.55),
@@ -598,7 +604,7 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
             Text(
               widget.helper!,
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 fontSize: 11.5,
                 color: textSecondary.withValues(alpha: 0.75),
               ),
@@ -608,6 +614,48 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Fade + short drop so the currency / × lists do not pop in fully formed.
+class _AmountMenuDrop extends StatefulWidget {
+  final Widget child;
+
+  const _AmountMenuDrop({required this.child});
+
+  @override
+  State<_AmountMenuDrop> createState() => _AmountMenuDropState();
+}
+
+class _AmountMenuDropState extends State<_AmountMenuDrop>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 180),
+  )..forward();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final curved = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, -0.08),
+          end: Offset.zero,
+        ).animate(curved),
+        child: widget.child,
+      ),
     );
   }
 }
@@ -642,7 +690,7 @@ class _AmountSlotButton extends StatelessWidget {
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: color,
@@ -691,6 +739,7 @@ class _AmountMenuTile extends StatelessWidget {
   final String title;
   final String? leading;
   final bool selected;
+  final bool centered;
   final Color accent;
   final Color textPrimary;
   final Color textSecondary;
@@ -704,46 +753,53 @@ class _AmountMenuTile extends StatelessWidget {
     required this.textSecondary,
     required this.onTap,
     this.leading,
+    this.centered = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = selected ? accent : textPrimary;
+    final label = Text(
+      title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: centered ? TextAlign.center : TextAlign.start,
+      style: TextStyle(
+        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: selected ? accent : textSecondary,
+      ),
+    );
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-        child: Row(
-          children: [
-            if (leading != null) ...[
-              SizedBox(
-                width: 42,
-                child: Text(
-                  leading!,
-                  style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                  ),
-                ),
-              ),
-            ],
-            Expanded(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: selected ? accent : textSecondary,
-                ),
-              ),
-            ),
-          ],
+        padding: EdgeInsets.symmetric(
+          horizontal: centered ? 0 : 4,
+          vertical: centered ? 8 : 10,
         ),
+        child: centered
+            ? Center(child: label)
+            : Row(
+                children: [
+                  if (leading != null) ...[
+                    SizedBox(
+                      width: 42,
+                      child: Text(
+                        leading!,
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontFamilyFallback: ['Tajawal'],
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                  ],
+                  Expanded(child: label),
+                ],
+              ),
       ),
     );
   }
@@ -811,7 +867,7 @@ class _SheetCurrencySelectorState extends State<SheetCurrencySelector> {
                     symbol,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                       fontSize: widget.dense ? 14 : 16,
                       fontWeight: FontWeight.w600,
                       color: textSecondary,
@@ -890,7 +946,7 @@ class SheetTextField extends StatelessWidget {
       textAlign: TextAlign.right,
       cursorColor: textPrimary,
       style: TextStyle(
-        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
         fontSize: 15,
         color: enabled ? textPrimary : textSecondary.withValues(alpha: 0.55),
       ),
@@ -899,7 +955,7 @@ class SheetTextField extends StatelessWidget {
         fillColor: sheetFieldColor(context),
         hintText: hint,
         hintStyle: TextStyle(
-          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
           fontSize: 14,
           color: textSecondary.withValues(alpha: 0.7),
         ),
@@ -993,7 +1049,7 @@ class SheetChoiceChips extends StatelessWidget {
                               duration: const Duration(milliseconds: 220),
                               curve: Curves.easeOut,
                               style: TextStyle(
-                                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 height: 1.1,
@@ -1127,7 +1183,7 @@ class SheetSaveButton extends StatelessWidget {
               Text(
                 label,
                 style: const TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,

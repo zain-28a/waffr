@@ -562,6 +562,13 @@ class TransactionStore extends ChangeNotifier {
     return true;
   }
 
+  // Keeps a periodic contribution from exceeding the reference salary.
+  double _capToIncome(double amount, double income) {
+    if (!amount.isFinite || amount <= 0) return 0;
+    if (income > 0 && amount > income) return income;
+    return amount;
+  }
+
   // Recomputes allocateAmount on percent-based periodic goals for this income.
   bool _syncPeriodicGoalAmounts(
     RecurringFrequency frequency,
@@ -580,11 +587,18 @@ class TransactionStore extends ChangeNotifier {
       final percent = goal.allocatePercent;
       if (percent == null || percent <= 0) continue;
 
-      final perPeriod = income * percent / 100;
+      final cappedPercent = percent.clamp(0, 100).toDouble();
+      final perPeriod = _capToIncome(income * cappedPercent / 100, income);
       if (!perPeriod.isFinite || perPeriod <= 0) continue;
-      if (perPeriod == goal.allocateAmount) continue;
+      if (perPeriod == goal.allocateAmount && cappedPercent == percent) {
+        continue;
+      }
 
-      _goals[i] = goal.copyWith(allocateAmount: perPeriod, touch: true);
+      _goals[i] = goal.copyWith(
+        allocatePercent: cappedPercent,
+        allocateAmount: perPeriod,
+        touch: true,
+      );
       changed = true;
     }
 
@@ -754,7 +768,13 @@ class TransactionStore extends ChangeNotifier {
       return false;
     }
 
-    final periodicAmount = allocateAmount ?? 0;
+    final now = deviceNow();
+    final code = Currencies.normalize(currencyCode ?? _activeCode);
+    final reference = deductFrequency == RecurringFrequency.none
+        ? 0.0
+        : referenceIncome(deductFrequency, currencyCode: code);
+    final cappedPercent = allocatePercent?.clamp(0, 100).toDouble();
+    final periodicAmount = _capToIncome(allocateAmount ?? 0, reference);
 
     if (isPeriodic) {
       if (periodicAmount <= 0) {
@@ -770,9 +790,6 @@ class TransactionStore extends ChangeNotifier {
       }
     }
 
-    final now = deviceNow();
-    final code = Currencies.normalize(currencyCode ?? _activeCode);
-
     _goals.add(
       SavingsGoal(
         id: SavingsGoal.newId(),
@@ -781,7 +798,7 @@ class TransactionStore extends ChangeNotifier {
         currencyCode: code,
         createdAt: now,
         duration: duration,
-        allocatePercent: allocatePercent,
+        allocatePercent: cappedPercent,
         allocateAmount: isPeriodic ? periodicAmount : null,
         deductFrequency: deductFrequency,
         isPeriodic: isPeriodic && periodicAmount > 0,
@@ -820,7 +837,8 @@ class TransactionStore extends ChangeNotifier {
     final code = Currencies.normalize(currencyCode ?? _activeCode);
     final cycles = duration.cycleCount(frequency);
 
-    final perPeriod = income * percent / 100;
+    final cappedPercent = percent.clamp(0, 100).toDouble();
+    final perPeriod = _capToIncome(income * cappedPercent / 100, income);
 
     if (perPeriod <= 0 || cycles <= 0) {
       return false;
@@ -840,7 +858,7 @@ class TransactionStore extends ChangeNotifier {
       }
 
       _goals[index] = existing.copyWith(
-        allocatePercent: percent,
+        allocatePercent: cappedPercent,
         allocateAmount: perPeriod,
         deductFrequency: frequency,
         isPeriodic: true,
@@ -851,12 +869,12 @@ class TransactionStore extends ChangeNotifier {
       _goals.add(
         SavingsGoal(
           id: SavingsGoal.newId(),
-          name: 'ادخار ${percent.round()}٪',
+          name: 'ادخار ${cappedPercent.round()}٪',
           targetAmount: target,
           currencyCode: code,
           createdAt: deviceNow(),
           duration: duration,
-          allocatePercent: percent,
+          allocatePercent: cappedPercent,
           allocateAmount: perPeriod,
           deductFrequency: frequency,
           isPeriodic: true,

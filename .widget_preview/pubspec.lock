@@ -846,7 +846,7 @@ packages:
       path: "C:\\Users\\lenovo\\waffer"
       relative: false
     source: path
-    version: "2.4.0+5"
+    version: "2.6.0+7"
   web:
     dependency: "direct main"
     description:

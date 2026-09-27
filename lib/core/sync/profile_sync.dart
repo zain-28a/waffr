@@ -3,6 +3,7 @@
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffer/data/services/usage_streak_service.dart';
 
 // Reads and writes the on-device user profile used during login and sync push.
 class ProfileSync {
@@ -20,6 +21,7 @@ class ProfileSync {
   // Build the settings fragment sent on push.
   static Future<Map<String, dynamic>> fields() async {
     final prefs = await AppPrefs.instance;
+    await UsageStreakService.instance.ensureLoaded();
     return {
       'display_name': prefs.getString('user_name'),
       'gender': prefs.getString('user_gender'),
@@ -29,6 +31,7 @@ class ProfileSync {
       'street': prefs.getString('user_street'),
       if (prefs.containsKey('dark_mode'))
         'dark_mode': prefs.getBool('dark_mode'),
+      ...UsageStreakService.instance.syncFields(),
     };
   }
 
@@ -62,6 +65,8 @@ class ProfileSync {
 
   // Apply remote settings when the server copy is newer than local settings.
   static Future<void> apply(Map<String, dynamic> settings) async {
+    await UsageStreakService.instance.applyRemote(settings);
+
     final remoteUpdated = parseSyncDate(settings['updated_at']);
     final localUpdated = await SyncDirty.settingsUpdatedAt();
     if (!newerOrEqual(remoteUpdated, localUpdated)) return;

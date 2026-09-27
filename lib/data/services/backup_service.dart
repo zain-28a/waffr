@@ -8,7 +8,9 @@ import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/data/services/drive_backup_client.dart';
 import 'package:waffer/data/services/google_auth_service.dart';
 import 'package:waffer/data/services/notification_service.dart';
+import 'package:waffer/data/services/profile_identity.dart';
 import 'package:waffer/data/services/profile_photo.dart';
+import 'package:waffer/data/services/usage_streak_service.dart';
 import 'package:waffer/data/stores/recurring_expense_store.dart';
 import 'package:waffer/data/stores/shopping_list_store.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
@@ -820,6 +822,8 @@ class BackupService {
     TransactionStore.instance.resetCache();
     CurrencyStore.instance.resetCache();
     NotificationService.instance.resetCache();
+    UsageStreakService.instance.resetCache();
+    ProfileIdentity.instance.reset();
     ShoppingListStore.instance.resetCache();
     RecurringExpenseStore.instance.resetCache();
     CategoryStore.instance.resetCache();
@@ -828,6 +832,7 @@ class BackupService {
       CurrencyStore.instance.ensureLoaded(),
       TransactionStore.instance.ensureLoaded(),
       NotificationService.instance.ensureLoaded(),
+      UsageStreakService.instance.ensureLoaded(),
       ShoppingListStore.instance.ensureLoaded(),
       RecurringExpenseStore.instance.ensureLoaded(),
       CategoryStore.instance.ensureLoaded(),

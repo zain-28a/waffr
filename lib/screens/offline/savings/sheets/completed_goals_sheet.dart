@@ -66,7 +66,7 @@ class _CompletedGoalsSheetState extends State<_CompletedGoalsSheet> {
                   'لا توجد أهداف محققة بعد',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: 14,
                     color: textPrimary.withValues(alpha: 0.55),
                   ),
@@ -120,7 +120,7 @@ class _CompletedGoalCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: textPrimary,
@@ -130,7 +130,7 @@ class _CompletedGoalCard extends StatelessWidget {
           Text(
             'المستهدف: ${formatMoney(goal.targetAmount)} $currencyLabel',
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 13,
               color: textSecondary,
             ),
@@ -138,7 +138,7 @@ class _CompletedGoalCard extends StatelessWidget {
           Text(
             'المتجمّع: ${formatMoney(total)} $currencyLabel',
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 13.5,
               fontWeight: FontWeight.w700,
               color: accent,
@@ -148,7 +148,7 @@ class _CompletedGoalCard extends StatelessWidget {
           Text(
             'المدة: ${goal.duration.label}',
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 12.5,
               color: textSecondary,
             ),
@@ -157,7 +157,7 @@ class _CompletedGoalCard extends StatelessWidget {
             Text(
               'تاريخ الإنجاز: ${formatDate(completed)}',
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 fontSize: 12.5,
                 color: textSecondary,
               ),

@@ -29,7 +29,7 @@ enum _NewsLoadState { loading, ready, empty, error }
 
 class _OnlineScreenState extends State<OnlineScreen>
     with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
-  ExchangeAsset _selectedAsset = ExchangeAsset.usd;
+  String _selectedAsset = 'USD';
   List<NewsArticle> _articles = const [];
   _NewsLoadState _newsState = _NewsLoadState.loading;
   bool _newsRequestInFlight = false;
@@ -104,7 +104,7 @@ class _OnlineScreenState extends State<OnlineScreen>
       SnackBar(
         content: const Text(
           'تعذر فتح خرائط Google',
-          style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal']),
+          style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
         ),
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       ),
@@ -141,7 +141,7 @@ class _OnlineScreenState extends State<OnlineScreen>
 // Buy/sell rates for the selected FX asset, with an overlay currency picker.
 class _ExchangeRateCard extends StatefulWidget {
   final ExchangeRate rate;
-  final ValueChanged<ExchangeAsset> onSelected;
+  final ValueChanged<String> onSelected;
 
   const _ExchangeRateCard({
     required this.rate,
@@ -189,7 +189,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
           link: _menuLink,
           direction: direction,
           colors: colors,
-          selected: widget.rate.asset,
+          selected: widget.rate.code,
           onDismiss: _hideMenu,
           onSelected: (asset) {
             widget.onSelected(asset);
@@ -233,7 +233,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
           Text(
             'سعر الصرف',
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 13,
               color: colors.textSecondary,
             ),
@@ -265,9 +265,9 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
                       },
                       child: Text(
                         'الليرة السورية · ${rate.pairLabel}',
-                        key: ValueKey(rate.asset),
+                        key: ValueKey(rate.code),
                         style: TextStyle(
-                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: colors.textPrimary,
@@ -297,7 +297,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
                   label: 'شراء',
                   value: rate.buy,
                   colors: colors,
-                  valueKey: '${rate.asset}-buy',
+                  valueKey: '${rate.code}-buy',
                 ),
               ),
               const SizedBox(width: 10),
@@ -306,7 +306,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
                   label: 'بيع',
                   value: rate.sell,
                   colors: colors,
-                  valueKey: '${rate.asset}-sell',
+                  valueKey: '${rate.code}-sell',
                 ),
               ),
             ],
@@ -322,9 +322,9 @@ class _CurrencyMenuLayer extends StatefulWidget {
   final LayerLink link;
   final TextDirection direction;
   final AppPalette colors;
-  final ExchangeAsset selected;
+  final String selected;
   final VoidCallback onDismiss;
-  final ValueChanged<ExchangeAsset> onSelected;
+  final ValueChanged<String> onSelected;
 
   const _CurrencyMenuLayer({
     super.key,
@@ -404,45 +404,50 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
                 child: Material(
                   color: Colors.transparent,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
+                    constraints: const BoxConstraints(
+                      minWidth: 220,
+                      maxWidth: 280,
+                      maxHeight: 360,
+                    ),
                     child: GlassContainer(
                       colorType: GlassColorType.surface,
                       tintOpacity: 1,
                       borderRadius: 22,
                       padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (var i = 0; i < OnlineFeedService.rates.length; i++) ...[
-                            if (i > 0)
-                              Divider(
-                                height: 1,
-                                thickness: 1,
-                                indent: 14,
-                                endIndent: 14,
-                                color: widget.colors.textSecondary
-                                    .withValues(alpha: 0.12),
-                              ),
-                            _CurrencyOption(
-                              option: OnlineFeedService.rates[i],
-                              selected:
-                                  OnlineFeedService.rates[i].asset ==
-                                  widget.selected,
-                              colors: widget.colors,
-                              animation: CurvedAnimation(
-                                parent: _controller,
-                                curve: Interval(
-                                  0.18 + (i * 0.12),
-                                  1,
-                                  curve: Curves.easeOutCubic,
-                                ),
-                              ),
-                              onTap: () => widget.onSelected(
-                                OnlineFeedService.rates[i].asset,
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        itemCount: OnlineFeedService.rates.length,
+                        separatorBuilder: (context, index) => Divider(
+                          height: 1,
+                          thickness: 1,
+                          indent: 14,
+                          endIndent: 14,
+                          color: widget.colors.textSecondary
+                              .withValues(alpha: 0.12),
+                        ),
+                        itemBuilder: (context, i) {
+                          final start =
+                              i / OnlineFeedService.rates.length * 0.35;
+                          return _CurrencyOption(
+                            option: OnlineFeedService.rates[i],
+                            selected:
+                                OnlineFeedService.rates[i].code ==
+                                widget.selected,
+                            colors: widget.colors,
+                            animation: CurvedAnimation(
+                              parent: _controller,
+                              curve: Interval(
+                                start,
+                                (start + 0.65).clamp(0.0, 1.0).toDouble(),
+                                curve: Curves.easeOutCubic,
                               ),
                             ),
-                          ],
-                        ],
+                            onTap: () => widget.onSelected(
+                              OnlineFeedService.rates[i].code,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -489,9 +494,11 @@ class _CurrencyOption extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    option.pairLabel,
+                    option.code.length == 3
+                        ? '${option.pairLabel} · ${option.code}'
+                        : option.pairLabel,
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                       fontSize: 15,
                       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                       color: selected ? colors.accent : colors.textPrimary,
@@ -512,7 +519,7 @@ class _CurrencyOption extends StatelessWidget {
 // Buy or sell figure with a crossfade when the selected asset changes.
 class _RateValue extends StatelessWidget {
   final String label;
-  final double value;
+  final double? value;
   final AppPalette colors;
   final String valueKey;
 
@@ -536,7 +543,7 @@ class _RateValue extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
               color: colors.textSecondary,
@@ -562,10 +569,12 @@ class _RateValue extends StatelessWidget {
                 );
               },
               child: Text(
-                _rateFormat.format(value),
+                value == null
+                    ? ExchangeRate.unavailable
+                    : _rateFormat.format(value),
                 key: ValueKey(valueKey),
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   color: colors.accent,
@@ -577,7 +586,7 @@ class _RateValue extends StatelessWidget {
           Text(
             sypCurrencyLabel,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 12,
               color: colors.textSecondary,
             ),
@@ -608,7 +617,7 @@ class _NearbyPlacesCard extends StatelessWidget {
           Text(
             'مواقع قريبة:',
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 16,
               fontWeight: FontWeight.w800,
               color: colors.textPrimary,
@@ -642,7 +651,7 @@ class _NearbyPlacesCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           height: 1.15,
@@ -696,7 +705,7 @@ class _NewsPreviewCard extends StatelessWidget {
                     child: Text(
                       'الأخبار:',
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: colors.textPrimary,
@@ -716,7 +725,7 @@ class _NewsPreviewCard extends StatelessWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13.5,
                     fontWeight: FontWeight.w500,
                     height: 1.55,
@@ -732,7 +741,7 @@ class _NewsPreviewCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                           color: colors.textSecondary,
@@ -743,7 +752,7 @@ class _NewsPreviewCard extends StatelessWidget {
                     Text(
                       '${formatDate(item.publishedAt)} · ${formatTime(item.publishedAt)}',
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                         fontSize: 11.5,
                         color: colors.textSecondary,
                       ),
@@ -796,7 +805,7 @@ class _NewsStatus extends StatelessWidget {
         Text(
           message,
           style: TextStyle(
-            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
             fontSize: 13.5,
             fontWeight: FontWeight.w500,
             height: 1.55,
@@ -808,7 +817,7 @@ class _NewsStatus extends StatelessWidget {
           Text(
             'اضغط لإعادة المحاولة',
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
               color: colors.textSecondary,

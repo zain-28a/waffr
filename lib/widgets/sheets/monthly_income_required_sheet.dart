@@ -36,7 +36,7 @@ Future<void> showMonthlyIncomeRequiredSheet(
                 : 'المصروف المتكرر يحتاج دخلاً شهرياً محدداً حتى يُخصم في موعده. افتح الإعدادات واضبط «الدخل الشهري» أولاً.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 14,
               height: 1.7,
               color: textSecondary,

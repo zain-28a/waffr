@@ -112,7 +112,7 @@ class _LockScreenState extends State<LockScreen> {
                 color: textPrimary,
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               ),
             ),
 
@@ -123,7 +123,7 @@ class _LockScreenState extends State<LockScreen> {
               style: TextStyle(
                 color: textPrimary.withValues(alpha: 0.6),
                 fontSize: 14,
-                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               ),
             ),
 
@@ -135,7 +135,7 @@ class _LockScreenState extends State<LockScreen> {
               label: const Text(
                 'فتح القفل',
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 ),
               ),
               style: ElevatedButton.styleFrom(

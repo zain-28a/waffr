@@ -226,7 +226,7 @@ class HelpScreen extends StatelessWidget {
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: textPrimary,
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
             ),
           ),
           const SizedBox(height: 5),
@@ -236,7 +236,7 @@ class HelpScreen extends StatelessWidget {
             Text(
               section.title,
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: accent,
@@ -327,7 +327,7 @@ class _FAQItemState extends State<_FAQItem> {
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: widget.textPrimary,
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
             ),
           ),
           children: [
@@ -339,7 +339,7 @@ class _FAQItemState extends State<_FAQItem> {
                   fontSize: 14,
                   height: 1.6,
                   color: widget.textSecondary,
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 ),
               ),
             ),

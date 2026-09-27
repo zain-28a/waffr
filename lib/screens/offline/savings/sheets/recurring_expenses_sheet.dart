@@ -78,7 +78,7 @@ class _RecurringExpensesPreviewCardState
                         Text(
                           'المصروفات المتكررة',
                           style: TextStyle(
-                            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: colors.textPrimary,
@@ -89,7 +89,7 @@ class _RecurringExpensesPreviewCardState
                               ? 'لا يوجد اشتراك أو مصروف متكرر'
                               : '${items.length} عناصر محفوظة',
                           style: TextStyle(
-                            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                             fontSize: 11.5,
                             color: colors.textSecondary,
                           ),
@@ -111,7 +111,7 @@ class _RecurringExpensesPreviewCardState
                       '+ ${items.length - preview.length} عناصر أخرى',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: colors.accent,
@@ -236,7 +236,7 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
                     Text(
                       'لا توجد مصروفات متكررة بعد',
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                         fontSize: 14,
                         color: colors.textSecondary,
                       ),
@@ -291,7 +291,7 @@ class _PreviewItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 fontSize: 12.5,
                 color: item.enabled ? colors.textPrimary : colors.textSecondary,
               ),
@@ -300,7 +300,7 @@ class _PreviewItem extends StatelessWidget {
           Text(
             item.intervalDescription,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 11,
               color: colors.textSecondary,
             ),
@@ -348,7 +348,7 @@ class _RecurringItemTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: colors.textPrimary,
@@ -358,7 +358,7 @@ class _RecurringItemTile extends StatelessWidget {
                     Text(
                       '${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)} · ${item.intervalDescription}',
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                         fontSize: 11.5,
                         color: colors.textSecondary,
                       ),
