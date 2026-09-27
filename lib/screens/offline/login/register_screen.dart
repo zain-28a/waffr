@@ -229,7 +229,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         'إنشاء الحساب',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Color.fromARGB(255, 255, 255, 255),
@@ -245,7 +245,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     color: accent,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
               ),

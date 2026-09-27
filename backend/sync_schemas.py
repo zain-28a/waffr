@@ -170,6 +170,9 @@ class SettingsSyncIn(BaseModel):
     city: str | None = Field(default=None, max_length=80)
     street: str | None = Field(default=None, max_length=160)
     dark_mode: bool | None = None
+    usage_started_at: str | None = Field(default=None, max_length=40)
+    streak_count: int | None = None
+    streak_last_date: str | None = Field(default=None, max_length=10)
     updated_at: datetime | None = None
 
     @field_validator("monthly_income_amount", "weekly_income_amount", mode="before")
@@ -214,6 +217,9 @@ class SettingsSyncOut(BaseModel):
     city: str | None = None
     street: str | None = None
     dark_mode: bool | None = None
+    usage_started_at: str | None = None
+    streak_count: int | None = None
+    streak_last_date: str | None = None
     has_photo: bool = False
     photo_updated_at: datetime | None = None
     updated_at: datetime

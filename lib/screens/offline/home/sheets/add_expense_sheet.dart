@@ -33,7 +33,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   final TextEditingController _noteController = TextEditingController();
 
   String _category = expenseCategories.first.label;
-  String _paymentMethod = paymentMethods.first;
+  final String _paymentMethod = paymentMethods.first;
 
   bool _saving = false;
   bool _recurring = false;
@@ -351,7 +351,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
               const SizedBox(width: 8),
               Text(
                 'تعديل',
-                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: textPrimary),
+                style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], color: textPrimary),
               ),
             ],
           ),
@@ -367,7 +367,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
               Text(
                 'حذف',
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   color: Color(0xFFD3544D),
                 ),
               ),
@@ -551,7 +551,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
                 widget.title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: accent,
@@ -585,7 +585,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
                 child: Text(
                   'الشعار',
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: textPrimary,
@@ -619,7 +619,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
                       onPressed: () => Navigator.of(context).pop(),
                       child: const Text(
                         'إلغاء',
-                        style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal']),
+                        style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
                       ),
                     ),
                   ),
@@ -629,7 +629,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
                       child: Text(
                         widget.submitLabel,
                         style: TextStyle(
-                          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                           fontWeight: FontWeight.w800,
                           color: accent,
                         ),
@@ -749,7 +749,7 @@ class _CategoryTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 fontSize: 10.5,
                 fontWeight: FontWeight.w600,
                 color: foreground,

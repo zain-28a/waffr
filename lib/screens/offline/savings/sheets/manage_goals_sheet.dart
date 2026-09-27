@@ -57,7 +57,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
             'حذف الهدف',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontWeight: FontWeight.bold,
               color: textPrimary,
             ),
@@ -65,21 +65,21 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
           content: const Text(
             'هل أنت متأكد من حذف هذا الهدف؟',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], fontSize: 14),
+            style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], fontSize: 14),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
               child: Text(
                 'إلغاء',
-                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: textSecondary),
+                style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], color: textSecondary),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
                 'حذف',
-                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: accent),
+                style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], color: accent),
               ),
             ),
           ],
@@ -135,7 +135,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
                               'لا توجد أهداف حالياً',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 14,
                                 color: textPrimary.withValues(alpha: 0.55),
                               ),
@@ -199,7 +199,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
                             Text(
                               'إضافة هدف',
                               style: TextStyle(
-                                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -279,7 +279,7 @@ class _ManageGoalRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: textPrimary,
@@ -302,7 +302,7 @@ class _ManageGoalRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     color: textSecondary,

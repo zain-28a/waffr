@@ -13,6 +13,8 @@ import 'package:waffer/core/sync/sync_merge.dart';
 import 'package:waffer/core/sync/sync_tombstones.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffer/data/services/system_notifications.dart';
+import 'package:waffer/data/services/usage_streak_service.dart';
 
 /// In-app notification engine for balance, spending, goals, savings, and periods.
 ///
@@ -147,6 +149,11 @@ class NotificationService extends ChangeNotifier {
     await prefs.setBool(_mutedKey, muted);
     await SyncDirty.mark(settings: true);
     notifyListeners();
+    unawaited(
+      SystemNotifications.instance.syncStreakReminder(
+        enabled: !muted && UsageStreakService.instance.count >= 2,
+      ),
+    );
   }
 
   Future<void> toggleMuted() => setMuted(!_muted);
@@ -556,6 +563,13 @@ class NotificationService extends ChangeNotifier {
       ),
     );
     _sort();
+    unawaited(
+      SystemNotifications.instance.present(
+        eventKey: eventKey,
+        title: title,
+        body: message,
+      ),
+    );
     return true;
   }
 

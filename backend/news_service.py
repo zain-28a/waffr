@@ -18,6 +18,7 @@ import html
 import logging
 import re
 import threading
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -37,7 +38,9 @@ logger = logging.getLogger("waffer.news")
 SANA_FEED_URL = "https://sana.sy/feed/"
 SOURCE_NAME = "sana.sy"
 ALLOWED_HOSTS = frozenset({"sana.sy", "www.sana.sy"})
-FEED_TIMEOUT_SECONDS = 20
+FEED_TIMEOUT_SECONDS = 30
+FEED_ATTEMPTS = 3
+FEED_RETRY_DELAY_SECONDS = 2
 MAX_FEED_BYTES = 2_000_000
 NEWS_LIST_LIMIT = 30
 NEWS_REFRESH_INTERVAL_SECONDS = 60 * 60
@@ -274,28 +277,52 @@ def parse_feed(payload: bytes) -> tuple[int, list[NormalizedArticle]]:
     return len(entries), articles
 
 
-def fetch_feed() -> bytes:
-    request = urllib.request.Request(
+def _feed_request() -> urllib.request.Request:
+    return urllib.request.Request(
         SANA_FEED_URL,
         headers={
             "User-Agent": "Waffer/1.0",
             "Accept": "application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
         },
     )
-    try:
-        with urllib.request.urlopen(request, timeout=FEED_TIMEOUT_SECONDS) as response:
-            final_host = (urlparse(response.geturl()).hostname or "").lower()
-            if final_host not in ALLOWED_HOSTS:
-                raise NewsFeedUnavailable()
-            payload = response.read(MAX_FEED_BYTES + 1)
-    except NewsFeedUnavailable:
-        raise
-    except (TimeoutError, urllib.error.URLError, OSError) as exc:
-        logger.warning("SANA feed request failed: %s", type(exc).__name__)
-        raise NewsFeedUnavailable() from exc
-    if not payload or len(payload) > MAX_FEED_BYTES:
-        raise NewsFeedUnavailable()
-    return payload
+
+
+def _request_failure_detail(exc: BaseException) -> str:
+    reason = getattr(exc, "reason", None)
+    if reason is None:
+        return str(exc) or type(exc).__name__
+    return f"{type(reason).__name__}: {reason}"
+
+
+def fetch_feed() -> bytes:
+    last_error: Exception | None = None
+    for attempt in range(1, FEED_ATTEMPTS + 1):
+        try:
+            with urllib.request.urlopen(
+                _feed_request(),
+                timeout=FEED_TIMEOUT_SECONDS,
+            ) as response:
+                final_host = (urlparse(response.geturl()).hostname or "").lower()
+                if final_host not in ALLOWED_HOSTS:
+                    raise NewsFeedUnavailable()
+                payload = response.read(MAX_FEED_BYTES + 1)
+        except NewsFeedUnavailable:
+            raise
+        except (TimeoutError, urllib.error.URLError, OSError) as exc:
+            last_error = exc
+            logger.warning(
+                "SANA feed request failed (attempt %s/%s): %s",
+                attempt,
+                FEED_ATTEMPTS,
+                _request_failure_detail(exc),
+            )
+            if attempt < FEED_ATTEMPTS:
+                time.sleep(FEED_RETRY_DELAY_SECONDS)
+            continue
+        if not payload or len(payload) > MAX_FEED_BYTES:
+            raise NewsFeedUnavailable()
+        return payload
+    raise NewsFeedUnavailable() from last_error
 
 
 def _query_latest(db: Session, limit: int) -> list[NewsArticle]:

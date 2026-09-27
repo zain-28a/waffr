@@ -22,6 +22,7 @@ import 'package:waffer/core/sync/sync_mapper.dart';
 import 'package:waffer/core/sync/sync_pull_policy.dart';
 import 'package:waffer/core/sync/profile_photo_sync.dart';
 import 'package:waffer/core/sync/profile_sync.dart';
+import 'package:waffer/data/services/usage_streak_service.dart';
 import 'package:waffer/core/sync/sync_tombstones.dart';
 
 enum SyncStatus { success, offline, noAccount, failed, skipped }
@@ -203,6 +204,9 @@ class SyncService with WidgetsBindingObserver {
       );
       await AuthSession.instance.saveLastSyncAt(serverTime);
       await SyncDirty.clear();
+      if (UsageStreakService.instance.consumePushRequest()) {
+        await SyncDirty.mark(settings: true);
+      }
       return const SyncResult(SyncStatus.success, 'تمت المزامنة');
     } catch (_) {
       return const SyncResult(

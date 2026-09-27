@@ -103,7 +103,7 @@ class _MonthlyIncomeSheetState extends State<_MonthlyIncomeSheet> {
             child: Text(
               'إزالة الدخل',
               style: TextStyle(
-                fontFamily: 'BebasNeue',
+                fontFamily: 'Outfit',
                 fontFamilyFallback: ['Tajawal'],
                 fontSize: 15,
                 color: Theme.of(context).brightness == Brightness.dark

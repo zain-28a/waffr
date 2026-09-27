@@ -9,6 +9,7 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
 
   final Widget title;
   final Widget? leading;
+  final double leadingWidth;
   final bool centerTitle;
   final ValueListenable<bool>? elevated;
   final bool applySafeArea;
@@ -17,6 +18,7 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.title,
     this.leading,
+    this.leadingWidth = 48,
     this.centerTitle = false,
     this.elevated,
     this.applySafeArea = true,
@@ -28,13 +30,14 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     if (elevated == null) {
-      return _HeaderChrome(
-        title: title,
-        leading: leading,
-        centerTitle: centerTitle,
-        elevated: false,
-        applySafeArea: applySafeArea,
-      );
+        return _HeaderChrome(
+          title: title,
+          leading: leading,
+          leadingWidth: leadingWidth,
+          centerTitle: centerTitle,
+          elevated: false,
+          applySafeArea: applySafeArea,
+        );
     }
 
     return ValueListenableBuilder<bool>(
@@ -43,6 +46,7 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
         return _HeaderChrome(
           title: title,
           leading: leading,
+          leadingWidth: leadingWidth,
           centerTitle: centerTitle,
           elevated: isElevated,
           applySafeArea: applySafeArea,
@@ -56,6 +60,7 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
 class _HeaderChrome extends StatelessWidget {
   final Widget title;
   final Widget? leading;
+  final double leadingWidth;
   final bool centerTitle;
   final bool elevated;
   final bool applySafeArea;
@@ -63,6 +68,7 @@ class _HeaderChrome extends StatelessWidget {
   const _HeaderChrome({
     required this.title,
     required this.leading,
+    required this.leadingWidth,
     required this.centerTitle,
     required this.elevated,
     required this.applySafeArea,
@@ -115,7 +121,7 @@ class _HeaderChrome extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 48,
+              width: leadingWidth,
               child: leading,
             ),
             Expanded(
@@ -129,7 +135,7 @@ class _HeaderChrome extends StatelessWidget {
                       ),
                     ),
             ),
-            if (centerTitle) const SizedBox(width: 48),
+            if (centerTitle) SizedBox(width: leadingWidth),
           ],
         ),
       ),

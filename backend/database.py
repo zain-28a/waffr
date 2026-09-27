@@ -552,3 +552,27 @@ def _ensure_settings_columns(connection, inspector, tables: set[str]) -> None:
         "dark_mode",
         "dark_mode BOOLEAN",
     )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "user_settings",
+        "usage_started_at",
+        "usage_started_at VARCHAR(40)",
+    )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "user_settings",
+        "streak_count",
+        "streak_count INTEGER",
+    )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "user_settings",
+        "streak_last_date",
+        "streak_last_date VARCHAR(10)",
+    )

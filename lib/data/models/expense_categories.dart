@@ -112,13 +112,21 @@ const List<IconData> customCategoryIconChoices = [
   Icons.celebration_outlined,
 ];
 
-const List<Color> _customCategoryColors = [
-  Color(0xFF8A6B4A),
-  Color(0xFF6B8F71),
-  Color(0xFFA67C5B),
-  Color(0xFF5B7D8A),
-  Color(0xFF8B6B7A),
-  Color(0xFF7A8B5B),
+// Muted olive, gold, and clay tones for chart slices of added categories.
+// Kept apart from the built-in swatches so percentage charts stay readable.
+const List<Color> customCategoryColors = [
+  Color(0xFF6E8F4E),
+  Color(0xFFC4A15A),
+  Color(0xFF8C6A45),
+  Color(0xFF4E7A62),
+  Color(0xFFA68462),
+  Color(0xFF7A8A48),
+  Color(0xFF9A7048),
+  Color(0xFF5C7350),
+  Color(0xFFB89A6A),
+  Color(0xFF6A5E42),
+  Color(0xFF8E9A68),
+  Color(0xFFA07858),
 ];
 
 // Wired by CategoryStore so charts/reports resolve saved custom icons.
@@ -129,17 +137,39 @@ int clampCustomIconIndex(int index) {
   return index.clamp(0, customCategoryIconChoices.length - 1).toInt();
 }
 
-// Builds a custom category with a stable color from the label hash.
-ExpenseCategory customCategoryNamed(String label, {int? iconIndex}) {
-  final colorIndex = label.hashCode.abs();
+int clampCustomColorIndex(int index) {
+  if (customCategoryColors.isEmpty) return 0;
+  return index.clamp(0, customCategoryColors.length - 1).toInt();
+}
+
+// First palette slot not already taken; wraps only after every color is used.
+int nextCustomColorIndex(Iterable<int> used) {
+  final taken = used.toSet();
+  for (var i = 0; i < customCategoryColors.length; i++) {
+    if (!taken.contains(i)) return i;
+  }
+  return taken.length % customCategoryColors.length;
+}
+
+// Builds a custom category. [colorIndex] keeps a saved color; otherwise the
+// label hash picks one from the added-category palette.
+ExpenseCategory customCategoryNamed(
+  String label, {
+  int? iconIndex,
+  int? colorIndex,
+}) {
+  final hash = label.hashCode.abs();
   final resolvedIcon = iconIndex == null
-      ? colorIndex % customCategoryIconChoices.length
+      ? hash % customCategoryIconChoices.length
       : clampCustomIconIndex(iconIndex);
+  final resolvedColor = colorIndex == null
+      ? hash % customCategoryColors.length
+      : clampCustomColorIndex(colorIndex);
 
   return ExpenseCategory(
     label: label,
     icon: customCategoryIconChoices[resolvedIcon],
-    color: _customCategoryColors[colorIndex % _customCategoryColors.length],
+    color: customCategoryColors[resolvedColor],
   );
 }
 

@@ -1,0 +1,65 @@
+// Name, email, and photo shown on Profile. Not an account editor.
+
+import 'package:flutter/foundation.dart';
+import 'package:waffer/core/sync/auth_session.dart';
+import 'package:waffer/data/services/profile_photo.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
+
+class ProfileIdentity extends ChangeNotifier {
+  ProfileIdentity._();
+
+  static final ProfileIdentity instance = ProfileIdentity._();
+
+  String _name = '';
+  String _email = '';
+  bool _loggedIn = false;
+  String? _photoPath;
+  Future<void>? _loader;
+
+  String get name => _name;
+
+  String get email => _email;
+
+  bool get isLoggedIn => _loggedIn;
+
+  String? get photoPath => _photoPath;
+
+  String get displayName {
+    final trimmed = _name.trim();
+    if (trimmed.isNotEmpty) return trimmed;
+    return _loggedIn ? 'مستخدم وفّر' : 'ضيف';
+  }
+
+  String? get displayEmail {
+    if (!_loggedIn) return null;
+    final trimmed = _email.trim();
+    if (trimmed.isEmpty) return null;
+    return trimmed;
+  }
+
+  Future<void> reload() {
+    _loader = _load();
+    return _loader!;
+  }
+
+  void reset() {
+    _name = '';
+    _email = '';
+    _loggedIn = false;
+    _photoPath = null;
+    _loader = null;
+    notifyListeners();
+  }
+
+  Future<void> _load() async {
+    final prefs = await AppPrefs.instance;
+    final loggedIn = await AuthSession.instance.isLoggedIn();
+    final accountEmail = await AuthSession.instance.email() ?? '';
+    final photoPath = await ProfilePhoto.path();
+    _loggedIn = loggedIn;
+    _name = prefs.getString('user_name') ?? '';
+    _email = loggedIn ? accountEmail : '';
+    _photoPath = photoPath;
+    notifyListeners();
+  }
+}

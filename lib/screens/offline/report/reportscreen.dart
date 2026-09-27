@@ -9,6 +9,7 @@ import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/models/expense_categories.dart';
 import 'package:waffer/data/models/transaction.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
+import 'package:waffer/core/insights/spending_improvement.dart';
 import 'package:waffer/core/theme/app_palette.dart';
 import 'package:waffer/data/stores/shopping_list_store.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
@@ -17,6 +18,7 @@ import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffer/screens/offline/report/expense_history_share.dart';
 
 // Picks a range (day / week / month / 3 months / 6 months / year) via chips.
 // A horizontal PageView pages between older and newer periods; itemBuilder
@@ -136,16 +138,19 @@ class _ReportScreenState extends State<ReportScreen>
                   onPageChanged: (index) {
                     setState(() => _periodOffset = index);
                   },
+                  allowImplicitScrolling: false,
                   itemBuilder: (context, offset) {
                     final pageReport = _ReportData.from(
                       expenses,
                       _periodFor(_range, offset),
                     );
-                    return _SpendingChartCard(
+                    return RepaintBoundary(
+                      child: _SpendingChartCard(
                       report: pageReport,
                       canShowNewer: offset > 0,
                       onOlder: _showOlderPeriod,
                       onNewer: _showNewerPeriod,
+                    ),
                     );
                   },
                 ),
@@ -328,7 +333,7 @@ class _SpendingChartCard extends StatelessWidget {
                     Text(
                       'الصرف خلال الفترة',
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 13,
                         color: colors.textSecondary,
                       ),
@@ -343,7 +348,7 @@ class _SpendingChartCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                          fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: colors.textPrimary,
@@ -482,7 +487,7 @@ class _SpendingLineChart extends StatelessWidget {
                     maxLines: 1,
                     textAlign: TextAlign.right,
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: colors.textSecondary,
@@ -513,7 +518,7 @@ class _SpendingLineChart extends StatelessWidget {
                     text,
                     maxLines: 1,
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: colors.textSecondary,
@@ -565,7 +570,7 @@ class _SpendingLineChart extends StatelessWidget {
                   '${buckets[index].label}\n'
                   '${formatMoney(spot.y)} $currencyLabel',
                   TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: colors.surface,
@@ -626,7 +631,7 @@ class _SpendingSummary extends StatelessWidget {
                 Text(
                   'الصرف',
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 13.5,
                     color: colors.textSecondary,
                   ),
@@ -643,7 +648,7 @@ class _SpendingSummary extends StatelessWidget {
                         child: Text(
                           formatMoney(total),
                           style: TextStyle(
-                            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
                             color: colors.accent,
@@ -655,7 +660,7 @@ class _SpendingSummary extends StatelessWidget {
                     Text(
                       currencyLabel,
                       style: TextStyle(
-                        fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 14,
                         color: colors.textSecondary,
                       ),
@@ -687,7 +692,7 @@ class _SpendingSummary extends StatelessWidget {
                   Text(
                     'سجل المصاريف',
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: colors.textPrimary,
@@ -726,7 +731,7 @@ class _ExpenseDistribution extends StatelessWidget {
               Text(
                 'توزيع المصروفات',
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: colors.textPrimary,
@@ -739,7 +744,7 @@ class _ExpenseDistribution extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                     color: colors.textSecondary,
@@ -846,7 +851,7 @@ class _CategoryRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: colors.textPrimary,
@@ -856,7 +861,7 @@ class _CategoryRow extends StatelessWidget {
         Text(
           '${percentage.round()}%',
           style: TextStyle(
-            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
             fontSize: 12.5,
             fontWeight: FontWeight.w700,
             color: colors.textSecondary,
@@ -870,7 +875,7 @@ class _CategoryRow extends StatelessWidget {
             child: Text(
               '${formatMoney(item.amount)} $currencyLabel',
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: colors.accent,
@@ -896,19 +901,19 @@ class _ImprovementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
-    final comparison = _ImprovementComparison.calculate(
+    final comparison = SpendingImprovement.calculate(
       currentTotal: currentTotal,
       previousTotal: previousTotal,
     );
     final valueColor = switch (comparison.kind) {
-      _ImprovementKind.positive => colors.accent,
-      _ImprovementKind.negative => colors.textPrimary,
-      _ImprovementKind.neutral => colors.textSecondary,
+      SpendingChange.positive => colors.accent,
+      SpendingChange.negative => colors.textPrimary,
+      SpendingChange.neutral => colors.textSecondary,
     };
     final icon = switch (comparison.kind) {
-      _ImprovementKind.positive => Icons.trending_up_rounded,
-      _ImprovementKind.negative => Icons.trending_down_rounded,
-      _ImprovementKind.neutral => Icons.remove_rounded,
+      SpendingChange.positive => Icons.trending_up_rounded,
+      SpendingChange.negative => Icons.trending_down_rounded,
+      SpendingChange.neutral => Icons.remove_rounded,
     };
 
     return GlassContainer(
@@ -924,7 +929,7 @@ class _ImprovementCard extends StatelessWidget {
                 Text(
                   'نسبة التحسن',
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: colors.textPrimary,
@@ -941,7 +946,7 @@ class _ImprovementCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                          fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                           fontSize: comparison.hasPercentage ? 22 : 12.5,
                           fontWeight: FontWeight.bold,
                           color: valueColor,
@@ -956,7 +961,7 @@ class _ImprovementCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 12,
                     color: colors.textSecondary,
                   ),
@@ -978,7 +983,7 @@ class _ImprovementCard extends StatelessWidget {
                 Text(
                   "بس اعمل الai",
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                     color: colors.textSecondary,
@@ -989,69 +994,6 @@ class _ImprovementCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// Whether spending fell, rose, or stayed flat vs the previous period.
-enum _ImprovementKind { positive, negative, neutral }
-
-// Percent change text and tone: spending down is positive, up is negative.
-class _ImprovementComparison {
-  final _ImprovementKind kind;
-  final String text;
-  final String detail;
-  final bool hasPercentage;
-
-  const _ImprovementComparison(
-    this.kind,
-    this.text,
-    this.detail,
-    this.hasPercentage,
-  );
-
-  factory _ImprovementComparison.calculate({
-    required double currentTotal,
-    required double previousTotal,
-  }) {
-    if (previousTotal <= 0) {
-      if (currentTotal <= 0) {
-        return const _ImprovementComparison(
-          _ImprovementKind.neutral,
-          '—',
-          'لا توجد بيانات للمقارنة',
-          false,
-        );
-      }
-      return const _ImprovementComparison(
-        _ImprovementKind.neutral,
-        '—',
-        'لا توجد مصاريف في الفترة السابقة',
-        false,
-      );
-    }
-    final percentage = (previousTotal - currentTotal) / previousTotal * 100;
-    if (percentage > 0) {
-      return _ImprovementComparison(
-        _ImprovementKind.positive,
-        '+${percentage.toStringAsFixed(1)}%',
-        'المصروف انخفض مقارنة بالفترة السابقة',
-        true,
-      );
-    }
-    if (percentage < 0) {
-      return _ImprovementComparison(
-        _ImprovementKind.negative,
-        '−${percentage.abs().toStringAsFixed(1)}%',
-        'المصروف ارتفع مقارنة بالفترة السابقة',
-        true,
-      );
-    }
-    return const _ImprovementComparison(
-      _ImprovementKind.neutral,
-      '0%',
-      'لا تغيير في المصروف',
-      true,
     );
   }
 }
@@ -1069,12 +1011,164 @@ class TransactionHistoryScreen extends StatefulWidget {
       _TransactionHistoryScreenState();
 }
 
-class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
+class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
+    with SingleTickerProviderStateMixin {
   final TransactionStore _store = TransactionStore.instance;
   late final Listenable _listenables = Listenable.merge([
     _store,
     CategoryStore.instance,
   ]);
+
+  bool _selecting = false;
+  final Set<String> _selected = <String>{};
+  bool _sharing = false;
+  late final AnimationController _selectionAnim;
+  late final CurvedAnimation _selectionReveal;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectionAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+      reverseDuration: const Duration(milliseconds: 200),
+    );
+    _selectionReveal = CurvedAnimation(
+      parent: _selectionAnim,
+      curve: Curves.easeInOutCubic,
+      reverseCurve: Curves.easeInOutCubic,
+    );
+    _selectionAnim.addStatusListener(_onSelectionStatus);
+  }
+
+  @override
+  void dispose() {
+    _selectionAnim.removeStatusListener(_onSelectionStatus);
+    _selectionReveal.dispose();
+    _selectionAnim.dispose();
+    super.dispose();
+  }
+
+  void _onSelectionStatus(AnimationStatus status) {
+    if (status != AnimationStatus.dismissed || !_selecting) return;
+    setState(() {
+      _selecting = false;
+      _selected.clear();
+    });
+  }
+
+  void _enterSelection({Set<String> selected = const <String>{}}) {
+    setState(() {
+      _selecting = true;
+      _selected
+        ..clear()
+        ..addAll(selected);
+    });
+    _selectionAnim.forward();
+  }
+
+  void _exitSelection() {
+    if (_selectionAnim.status == AnimationStatus.reverse ||
+        _selectionAnim.status == AnimationStatus.dismissed) {
+      return;
+    }
+    _selectionAnim.reverse();
+  }
+
+  void _toggleExpense(String id) {
+    setState(() {
+      if (!_selected.add(id)) {
+        _selected.remove(id);
+      }
+    });
+  }
+
+  void _toggleDay(List<WafferTransaction> expenses) {
+    final ids = expenses.map((item) => item.id);
+    final allSelected = ids.every(_selected.contains);
+    setState(() {
+      if (allSelected) {
+        _selected.removeAll(ids);
+      } else {
+        _selected.addAll(ids);
+      }
+    });
+  }
+
+  void _toggleAll(List<WafferTransaction> expenses) {
+    final ids = expenses.map((item) => item.id).toSet();
+    final allSelected = ids.isNotEmpty && ids.every(_selected.contains);
+    setState(() {
+      if (allSelected) {
+        _selected.removeAll(ids);
+      } else {
+        _selected.addAll(ids);
+      }
+    });
+  }
+
+  Future<void> _pickRange(List<WafferTransaction> expenses) async {
+    if (expenses.isEmpty) return;
+    var oldest = expenses.first.dateTime.toLocal();
+    for (final expense in expenses) {
+      final local = expense.dateTime.toLocal();
+      if (local.isBefore(oldest)) oldest = local;
+    }
+    final now = DateTime.now();
+    final firstDate = DateTime(oldest.year, oldest.month, oldest.day);
+    final lastDate = DateTime(now.year, now.month, now.day);
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: firstDate,
+      lastDate: lastDate.isBefore(firstDate) ? firstDate : lastDate,
+      locale: const Locale('ar'),
+      builder: (context, child) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+    if (!mounted || range == null) return;
+    final start = DateTime(range.start.year, range.start.month, range.start.day);
+    final end = DateTime(range.end.year, range.end.month, range.end.day);
+    final matched = <String>{
+      for (final expense in expenses)
+        if (_dayOf(expense.dateTime).isBefore(start) == false &&
+            _dayOf(expense.dateTime).isAfter(end) == false)
+          expense.id,
+    };
+    setState(() {
+      _selecting = true;
+      _selected
+        ..clear()
+        ..addAll(matched);
+    });
+  }
+
+  Future<void> _confirmShare(List<WafferTransaction> expenses) async {
+    final chosen = expenses.where((item) => _selected.contains(item.id)).toList();
+    if (chosen.isEmpty || _sharing) return;
+    final format = await showDialog<_ExpenseShareFormat>(
+      context: context,
+      builder: (context) => const _ShareFormatDialog(),
+    );
+    if (format == null || !mounted) return;
+    setState(() => _sharing = true);
+    try {
+      if (format == _ExpenseShareFormat.pdf) {
+        await shareExpenseHistoryPdf(chosen);
+      } else {
+        await shareExpenseHistoryText(chosen);
+      }
+    } catch (_) {
+      if (mounted) {
+        showAppSnackBar(context, 'تعذر مشاركة السجل.');
+      }
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1105,13 +1199,57 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           style: Theme.of(context).textTheme.headlineSmall,
         ),
       ),
+      floatingActionButton: isIncome
+          ? null
+          : AnimatedBuilder(
+              animation: _listenables,
+              builder: (context, _) {
+                final liveIds = _store.expenses.map((item) => item.id).toSet();
+                final selectedCount = _selected.where(liveIds.contains).length;
+                final canShare = _selecting && selectedCount > 0 && !_sharing;
+                return FloatingActionButton(
+                  onPressed: _selecting
+                      ? (canShare
+                          ? () => _confirmShare(_store.expenses)
+                          : null)
+                      : () => _enterSelection(),
+                  backgroundColor: canShare || !_selecting
+                      ? colors.accent
+                      : colors.accent.withValues(alpha: 0.35),
+                  foregroundColor: Colors.white,
+                  elevation: canShare || !_selecting ? 4 : 0,
+                  child: const Icon(Icons.share_rounded),
+                );
+              },
+            ),
       body: AnimatedBuilder(
         animation: _listenables,
         builder: (context, _) {
           final items = isIncome ? _store.incomes : _store.expenses;
           final groups = _groupExpensesByDay(items);
+          final liveIds = items.map((item) => item.id).toSet();
+          final selectedCount = _selected.where(liveIds.contains).length;
+          final allSelected =
+              items.isNotEmpty && items.every((item) => _selected.contains(item.id));
           return Column(
             children: [
+              if (!isIncome)
+                ClipRect(
+                  child: SizeTransition(
+                    sizeFactor: _selectionReveal,
+                    alignment: Alignment.topCenter,
+                    child: FadeTransition(
+                      opacity: _selectionReveal,
+                      child: _SelectionBar(
+                        count: selectedCount,
+                        allSelected: allSelected,
+                        onClose: _exitSelection,
+                        onToggleAll: () => _toggleAll(items),
+                        onPickRange: () => _pickRange(items),
+                      ),
+                    ),
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
                 child: GlassContainer(
@@ -1132,7 +1270,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                                 fontSize: 13,
                                 color: colors.textSecondary,
                               ),
@@ -1141,7 +1279,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                               '${formatMoney(_sumExpenses(items))} '
                               '$currencyLabel',
                               style: TextStyle(
-                                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                                 fontSize: 21,
                                 fontWeight: FontWeight.bold,
                                 color: colors.accent,
@@ -1164,17 +1302,50 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(18, 0, 18, 28),
+                        padding: EdgeInsets.fromLTRB(
+                          18,
+                          0,
+                          18,
+                          isIncome ? 28 : 96,
+                        ),
                         itemCount: groups.length,
                         itemBuilder: (context, index) {
                           final group = groups[index];
+                          return AnimatedBuilder(
+                            animation: _selectionReveal,
+                            builder: (context, _) {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 14),
                             child: _HistoryDayGroup(
                               date: group.date,
                               expenses: group.expenses,
                               isIncome: isIncome,
+                              selecting: !isIncome && _selectionReveal.value > 0,
+                              reveal: _selectionReveal.value,
+                              selectedIds: _selected,
+                              onToggleDay: () => _toggleDay(group.expenses),
+                              onLongPressDay: () {
+                                if (_selecting) {
+                                  _toggleDay(group.expenses);
+                                } else {
+                                  _enterSelection(
+                                    selected: group.expenses
+                                        .map((item) => item.id)
+                                        .toSet(),
+                                  );
+                                }
+                              },
+                              onToggleExpense: _toggleExpense,
+                              onLongPressExpense: (expense) {
+                                if (_selecting) {
+                                  _toggleExpense(expense.id);
+                                } else {
+                                  _enterSelection(selected: {expense.id});
+                                }
+                              },
                             ),
+                          );
+                            },
                           );
                         },
                       ),
@@ -1182,6 +1353,192 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+DateTime _dayOf(DateTime value) {
+  final local = value.toLocal();
+  return DateTime(local.year, local.month, local.day);
+}
+
+enum _ExpenseShareFormat { pdf, text }
+
+class _ShareFormatDialog extends StatelessWidget {
+  const _ShareFormatDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppPalette.of(context);
+    return AlertDialog(
+      backgroundColor: colors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: Text(
+        'مشاركة السجل',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+          fontWeight: FontWeight.bold,
+          color: colors.textPrimary,
+        ),
+      ),
+      content: Row(
+        children: [
+          Expanded(
+            child: _FormatChoice(
+              label: 'PDF',
+              icon: Icons.picture_as_pdf_outlined,
+              onTap: () => Navigator.pop(context, _ExpenseShareFormat.pdf),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _FormatChoice(
+              label: 'نص',
+              icon: Icons.notes_rounded,
+              onTap: () => Navigator.pop(context, _ExpenseShareFormat.text),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FormatChoice extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _FormatChoice({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppPalette.of(context);
+    return GlassButton(
+      onTap: onTap,
+      colorType: GlassColorType.surface,
+      borderRadius: 18,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: colors.accent),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+              fontWeight: FontWeight.w700,
+              color: colors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectionBar extends StatelessWidget {
+  final int count;
+  final bool allSelected;
+  final VoidCallback onClose;
+  final VoidCallback onToggleAll;
+  final VoidCallback onPickRange;
+
+  const _SelectionBar({
+    required this.count,
+    required this.allSelected,
+    required this.onClose,
+    required this.onToggleAll,
+    required this.onPickRange,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppPalette.of(context);
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+        child: Row(
+          children: [
+            IconButton(
+              tooltip: 'إلغاء',
+              onPressed: onClose,
+              icon: Icon(Icons.close_rounded, color: colors.textPrimary),
+            ),
+            _SelectMark(
+              state: allSelected ? _SelectState.checked : _SelectState.empty,
+              onTap: onToggleAll,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '$count',
+              style: TextStyle(
+                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: colors.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            IconButton(
+              tooltip: 'نطاق التاريخ',
+              onPressed: onPickRange,
+              icon: Icon(
+                Icons.calendar_month_outlined,
+                color: colors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+enum _SelectState { empty, partial, checked }
+
+class _SelectMark extends StatelessWidget {
+  final _SelectState state;
+  final VoidCallback onTap;
+
+  const _SelectMark({required this.state, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppPalette.of(context);
+    final checked = state == _SelectState.checked;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 22,
+        height: 22,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: checked ? colors.accent : Colors.transparent,
+          border: Border.all(
+            color: checked ? colors.accent : colors.textSecondary,
+            width: 1.6,
+          ),
+        ),
+        child: state == _SelectState.checked
+            ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+            : state == _SelectState.partial
+                ? Container(
+                    width: 10,
+                    height: 2,
+                    color: colors.accent,
+                  )
+                : null,
       ),
     );
   }
@@ -1208,7 +1565,7 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
           'التراجع عن المصروف',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
             fontWeight: FontWeight.bold,
             color: colors.textPrimary,
           ),
@@ -1217,7 +1574,7 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
           'سيُحذف هذا المصروف من السجل ويُعاد ${formatMoney(expense.amount)} ${currencyLabelFor(expense.currencyCode)} إلى رصيدك.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
             fontSize: 14,
             color: colors.textSecondary,
           ),
@@ -1227,14 +1584,14 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'إلغاء',
-              style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'], color: colors.textSecondary),
+              style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'], color: colors.textSecondary),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'تراجع',
-              style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'], color: colors.accent),
+              style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'], color: colors.accent),
             ),
           ),
         ],
@@ -1270,7 +1627,7 @@ Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
           'التراجع عن الدخل',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
             fontWeight: FontWeight.bold,
             color: colors.textPrimary,
           ),
@@ -1279,7 +1636,7 @@ Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
           'سيُحذف هذا الدخل من السجل ويُخصم ${formatMoney(income.amount)} ${currencyLabelFor(income.currencyCode)} من رصيدك.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
             fontSize: 14,
             color: colors.textSecondary,
           ),
@@ -1289,14 +1646,14 @@ Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'إلغاء',
-              style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'], color: colors.textSecondary),
+              style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'], color: colors.textSecondary),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'تراجع',
-              style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'], color: colors.accent),
+              style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'], color: colors.accent),
             ),
           ),
         ],
@@ -1322,28 +1679,69 @@ class _HistoryDayGroup extends StatelessWidget {
   final DateTime date;
   final List<WafferTransaction> expenses;
   final bool isIncome;
+  final bool selecting;
+  final double reveal;
+  final Set<String> selectedIds;
+  final VoidCallback? onToggleDay;
+  final VoidCallback? onLongPressDay;
+  final ValueChanged<String>? onToggleExpense;
+  final ValueChanged<WafferTransaction>? onLongPressExpense;
 
   const _HistoryDayGroup({
     required this.date,
     required this.expenses,
     this.isIncome = false,
+    this.selecting = false,
+    this.reveal = 1,
+    this.selectedIds = const <String>{},
+    this.onToggleDay,
+    this.onLongPressDay,
+    this.onToggleExpense,
+    this.onLongPressExpense,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
+    final selectedCount =
+        expenses.where((item) => selectedIds.contains(item.id)).length;
+    final dayState = selectedCount == 0
+        ? _SelectState.empty
+        : selectedCount == expenses.length
+            ? _SelectState.checked
+            : _SelectState.partial;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: 7, bottom: 7),
-          child: Text(
-            _historyDateLabel(date),
-            style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: colors.textSecondary,
+        GestureDetector(
+          onLongPress: onLongPressDay,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(start: 7, bottom: 7),
+            child: Row(
+              children: [
+                if (selecting) ...[
+                  Opacity(
+                    opacity: reveal,
+                    child: _SelectMark(
+                      state: dayState,
+                      onTap: reveal > 0.99 ? (onToggleDay ?? () {}) : () {},
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Text(
+                    _historyDateLabel(date),
+                    style: TextStyle(
+                      fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1362,9 +1760,16 @@ class _HistoryDayGroup extends StatelessWidget {
                 _HistoryExpenseRow(
                   expense: expenses[index],
                   isIncome: isIncome,
-                  onUndo: () => isIncome
-                      ? _undoIncome(context, expenses[index])
-                      : _undoExpense(context, expenses[index]),
+                  selecting: selecting,
+                  reveal: reveal,
+                  selected: selectedIds.contains(expenses[index].id),
+                  onToggle: () => onToggleExpense?.call(expenses[index].id),
+                  onLongPress: () => onLongPressExpense?.call(expenses[index]),
+                  onUndo: selecting
+                      ? null
+                      : () => isIncome
+                          ? _undoIncome(context, expenses[index])
+                          : _undoExpense(context, expenses[index]),
                 ),
               ],
             ],
@@ -1379,12 +1784,22 @@ class _HistoryDayGroup extends StatelessWidget {
 class _HistoryExpenseRow extends StatelessWidget {
   final WafferTransaction expense;
   final bool isIncome;
+  final bool selecting;
+  final double reveal;
+  final bool selected;
   final VoidCallback? onUndo;
+  final VoidCallback? onToggle;
+  final VoidCallback? onLongPress;
 
   const _HistoryExpenseRow({
     required this.expense,
     this.isIncome = false,
+    this.selecting = false,
+    this.reveal = 1,
+    this.selected = false,
     this.onUndo,
+    this.onToggle,
+    this.onLongPress,
   });
 
   @override
@@ -1401,9 +1816,26 @@ class _HistoryExpenseRow extends StatelessWidget {
         ? _incomeFrequencyLabel(expense.frequency)
         : (!isIncome ? note : null);
     final icon = isIncome ? Icons.payments_outlined : category.icon;
-    return Row(
+    return GestureDetector(
+      onLongPress: onLongPress,
+      onTap: selecting ? onToggle : null,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (selecting) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Opacity(
+              opacity: reveal,
+              child: _SelectMark(
+                state: selected ? _SelectState.checked : _SelectState.empty,
+                onTap: reveal > 0.99 ? (onToggle ?? () {}) : () {},
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+        ],
         Container(
           width: 42,
           height: 42,
@@ -1423,7 +1855,7 @@ class _HistoryExpenseRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: colors.textPrimary,
@@ -1436,7 +1868,7 @@ class _HistoryExpenseRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 12.5,
                     color: colors.textSecondary,
                   ),
@@ -1448,7 +1880,7 @@ class _HistoryExpenseRow extends StatelessWidget {
                 '${formatTime(expense.dateTime)}',
                 textDirection: TextDirection.ltr,
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 10.5,
                   color: colors.textSecondary.withValues(alpha: 0.85),
                 ),
@@ -1466,7 +1898,7 @@ class _HistoryExpenseRow extends StatelessWidget {
               child: Text(
                 '${formatMoney(expense.amount)} $currencyLabel',
                 style: TextStyle(
-                  fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: colors.accent,
@@ -1489,6 +1921,7 @@ class _HistoryExpenseRow extends StatelessWidget {
           ],
         ),
       ],
+      ),
     );
   }
 }
@@ -1519,7 +1952,7 @@ class _EmptyState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: const ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 13,
                 color: colors.textPrimary.withValues(alpha: 0.55),
               ),

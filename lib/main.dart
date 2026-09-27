@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffer/data/services/backup_service.dart';
 import 'package:waffer/data/services/notification_service.dart';
@@ -92,7 +93,6 @@ class _WafarAppState extends State<WafarApp> {
 
     await _changeTheme(newMode);
   }
-
   @override
   void dispose() {
     _themeMode.dispose();
@@ -116,6 +116,12 @@ class _WafarAppState extends State<WafarApp> {
           debugShowCheckedModeBanner: false,
 
           locale: const Locale('ar'),
+          supportedLocales: const [Locale('ar')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
 
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,

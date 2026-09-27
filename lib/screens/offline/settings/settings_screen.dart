@@ -6,7 +6,9 @@ import 'package:waffer/data/services/backup_service.dart';
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/data/services/notification_service.dart';
+import 'package:waffer/data/services/profile_identity.dart';
 import 'package:waffer/data/services/profile_photo.dart';
+import 'package:waffer/data/services/usage_streak_service.dart';
 import 'package:waffer/data/stores/recurring_expense_store.dart';
 import 'package:waffer/data/stores/shopping_list_store.dart';
 import 'package:waffer/data/models/transaction.dart';
@@ -257,7 +259,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 ),
               ),
 
@@ -271,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(
                   fontSize: 15,
                   color: textSecondary,
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   height: 1.5,
                 ),
               ),
@@ -286,7 +288,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   color: textSecondary,
-                  fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 ),
               ),
 
@@ -309,7 +311,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Text(
                     'حسناً',
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -469,6 +471,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     TransactionStore.instance.resetCache();
     CurrencyStore.instance.resetCache();
     NotificationService.instance.resetCache();
+    UsageStreakService.instance.resetCache();
+    ProfileIdentity.instance.reset();
     ShoppingListStore.instance.resetCache();
     RecurringExpenseStore.instance.resetCache();
     CategoryStore.instance.resetCache();
@@ -799,7 +803,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           Center(
             child: Text(
-              'waffr 2.6.0',
+              'waffr 2.7.0',
 
               style: TextStyle(
                 color: textSecondary.withValues(alpha: 0.6),
@@ -852,7 +856,6 @@ class _ProfileCard extends StatelessWidget {
 
       decoration: BoxDecoration(
         color: surface,
-
         borderRadius: BorderRadius.circular(25),
       ),
 
@@ -959,14 +962,10 @@ class _SettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: surface,
-
       borderRadius: BorderRadius.circular(20),
-
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-
         onTap: onTap,
-
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
 

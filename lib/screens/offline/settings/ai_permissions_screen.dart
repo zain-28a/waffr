@@ -50,7 +50,7 @@ class AIPermissionsScreen extends StatelessWidget {
                   'لا توجد أذونات حاليا',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: textPrimary,

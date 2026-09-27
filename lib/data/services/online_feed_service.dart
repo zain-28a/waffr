@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:waffer/data/models/currency.dart';
 import 'package:waffer/data/models/exchange_rate.dart';
 import 'package:waffer/data/models/news_article.dart';
 import 'package:waffer/core/sync/api_config.dart';
@@ -13,39 +14,25 @@ class OnlineFeedService {
 
   static const Duration _timeout = Duration(seconds: 25);
 
-  static const List<ExchangeRate> rates = [
-    ExchangeRate(
-      asset: ExchangeAsset.usd,
-      chipLabel: 'دولار',
-      pairLabel: 'دولار أمريكي',
-      buy: 11850,
-      sell: 12120,
-    ),
-    ExchangeRate(
-      asset: ExchangeAsset.eur,
-      chipLabel: 'يورو',
-      pairLabel: 'يورو',
-      buy: 12840,
-      sell: 13180,
-    ),
-    ExchangeRate(
-      asset: ExchangeAsset.tryLira,
-      chipLabel: 'ليرة',
-      pairLabel: 'ليرة تركية',
-      buy: 345,
-      sell: 368,
-    ),
-    ExchangeRate(
-      asset: ExchangeAsset.gold,
+  // Every catalog currency except SYP, plus 21k gold. Quotes are a minus
+  // until a live feed replaces these placeholders.
+  static final List<ExchangeRate> rates = [
+    for (final item in Currencies.catalog)
+      if (item.code != defaultCurrencyCode)
+        ExchangeRate(
+          code: item.code,
+          chipLabel: item.symbol,
+          pairLabel: item.arabicName,
+        ),
+    const ExchangeRate(
+      code: 'GOLD21',
       chipLabel: 'ذهب',
       pairLabel: 'ذهب عيار 21',
-      buy: 852000,
-      sell: 868000,
     ),
   ];
 
-  static ExchangeRate rateFor(ExchangeAsset asset) {
-    return rates.firstWhere((rate) => rate.asset == asset);
+  static ExchangeRate rateFor(String code) {
+    return rates.firstWhere((rate) => rate.code == code);
   }
 
   /// GET `/online/news` and parse each map into a [NewsArticle].

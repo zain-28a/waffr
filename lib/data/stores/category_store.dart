@@ -16,29 +16,36 @@ class CustomCategoryEntry {
   final String id;
   final String label;
   final int iconIndex;
+  final int? colorIndex;
   final DateTime? updatedAt;
 
   const CustomCategoryEntry({
     required this.id,
     required this.label,
     required this.iconIndex,
+    this.colorIndex,
     this.updatedAt,
   });
 
   DateTime get syncUpdatedAt => (updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0)).toUtc();
 
-  ExpenseCategory toCategory() =>
-      customCategoryNamed(label, iconIndex: iconIndex);
+  ExpenseCategory toCategory() => customCategoryNamed(
+        label,
+        iconIndex: iconIndex,
+        colorIndex: colorIndex,
+      );
 
   CustomCategoryEntry copyWith({
     String? label,
     int? iconIndex,
+    int? colorIndex,
     DateTime? updatedAt,
   }) {
     return CustomCategoryEntry(
       id: id,
       label: label ?? this.label,
       iconIndex: iconIndex ?? this.iconIndex,
+      colorIndex: colorIndex ?? this.colorIndex,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
@@ -47,6 +54,7 @@ class CustomCategoryEntry {
         'id': id,
         'label': label,
         'icon': iconIndex,
+        if (colorIndex != null) 'color': colorIndex,
         'updatedAt': toSyncIso(syncUpdatedAt),
       };
 
@@ -68,6 +76,7 @@ class CustomCategoryEntry {
       id: rawId.isEmpty ? _legacyCategoryId(label) : rawId,
       label: label,
       iconIndex: clampCustomIconIndex(iconIndex),
+      colorIndex: _readColorIndex(json['color'] ?? json['color_index']),
       updatedAt: parseSyncDate(json['updatedAt'] ?? json['updated_at']) ??
           syncNow(),
     );
@@ -86,9 +95,17 @@ class CustomCategoryEntry {
       id: id,
       label: label,
       iconIndex: clampCustomIconIndex(iconIndex),
+      colorIndex: _readColorIndex(raw['color'] ?? raw['color_index']),
       updatedAt: parseSyncDate(raw['updated_at'] ?? raw['updatedAt']),
     );
   }
+}
+
+int? _readColorIndex(Object? raw) {
+  if (raw == null) return null;
+  final index = raw is int ? raw : int.tryParse(raw.toString());
+  if (index == null || customCategoryColors.isEmpty) return null;
+  return clampCustomColorIndex(index);
 }
 
 // Stable id for pre-v2 categories that only stored a label string.
@@ -179,6 +196,9 @@ class CategoryStore extends ChangeNotifier {
         id: _newCategoryId(),
         label: name,
         iconIndex: clampCustomIconIndex(iconIndex),
+        colorIndex: nextCustomColorIndex(
+          _entries.map((entry) => entry.colorIndex).whereType<int>(),
+        ),
         updatedAt: syncNow(),
       ),
     );
@@ -239,6 +259,11 @@ class CategoryStore extends ChangeNotifier {
   }) async {
     await ensureLoaded();
 
+    final previousColors = {
+      for (final entry in _entries)
+        if (entry.colorIndex != null) entry.id: entry.colorIndex!,
+    };
+
     final changed = mergeRemoteRecords<CustomCategoryEntry>(
       items: _entries,
       upserts: [
@@ -252,7 +277,15 @@ class CategoryStore extends ChangeNotifier {
       updatedOf: (item) => item.syncUpdatedAt,
     );
 
-    if (!changed) return;
+    for (var i = 0; i < _entries.length; i++) {
+      final kept = previousColors[_entries[i].id];
+      if (_entries[i].colorIndex == null && kept != null) {
+        _entries[i] = _entries[i].copyWith(colorIndex: kept);
+      }
+    }
+    final filled = _assignMissingColors();
+
+    if (!changed && !filled) return;
     await _persist();
     notifyListeners();
   }
@@ -269,8 +302,23 @@ class CategoryStore extends ChangeNotifier {
     _entries
       ..clear()
       ..addAll(await _readEntries(prefs));
+    if (_assignMissingColors()) {
+      await _persist();
+    }
     _loaded = true;
     notifyListeners();
+  }
+
+  // Gives each saved category its own palette slot when none was stored.
+  bool _assignMissingColors() {
+    var changed = false;
+    for (var i = 0; i < _entries.length; i++) {
+      if (_entries[i].colorIndex != null) continue;
+      final used = _entries.map((entry) => entry.colorIndex).whereType<int>();
+      _entries[i] = _entries[i].copyWith(colorIndex: nextCustomColorIndex(used));
+      changed = true;
+    }
+    return changed;
   }
 
   // Prefers v2 JSON; migrates the old string-list format when needed.

@@ -4,19 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/services/notification_service.dart';
+import 'package:waffer/data/services/profile_identity.dart';
+import 'package:waffer/data/services/system_notifications.dart';
+import 'package:waffer/data/services/usage_streak_service.dart';
 import 'package:waffer/data/stores/recurring_expense_store.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/screens/offline/home/dashboard.dart';
 import 'package:waffer/screens/offline/notifications/notifications_screen.dart';
+import 'package:waffer/screens/offline/profile/profile_screen.dart';
 import 'package:waffer/screens/online/online_screen.dart';
 import 'package:waffer/screens/offline/report/reportscreen.dart';
 import 'package:waffer/screens/offline/savings/savings_screen.dart';
 import 'package:waffer/screens/offline/settings/settings_screen.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 
-// Bottom navigation shell. Five tabs: home, report, savings, online,
-// notifications. Settings is a pushed route from the header, not a tab.
+// Bottom navigation shell. Five tabs: home, report, savings, online, profile.
+// Settings and notifications are pushed from the header, not tabs.
 class AppShell extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeNotifier;
   final VoidCallback onThemeChanged;
@@ -42,6 +46,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   int? _animatingToPage;
 
   Timer? _dueTimer;
+  bool _syncingEvents = false;
 
   static const int _tabCount = 5;
 
@@ -60,7 +65,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       1 => const ReportScreen(),
       2 => const SavingsScreen(),
       3 => const OnlineScreen(),
-      _ => const NotificationsScreen(),
+      _ => ProfileScreen(tabIndex: _tabIndex),
     };
     _builtTabs[index] = page;
     return page;
@@ -70,7 +75,12 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _startDueTimer();
     _syncFinancialEvents();
+  }
+
+  void _startDueTimer() {
+    _dueTimer?.cancel();
     _dueTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       _syncFinancialEvents();
     });
@@ -79,20 +89,57 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      _startDueTimer();
       _syncFinancialEvents();
+      ProfileIdentity.instance.reload();
+    } else if (state == AppLifecycleState.paused) {
+      _dueTimer?.cancel();
+      _dueTimer = null;
     }
   }
 
-  // Due periods, recurring expenses, and notification evaluation.
+  // Due periods, recurring expenses, streak, and notification evaluation.
   Future<void> _syncFinancialEvents() async {
-    final notifications = NotificationService.instance;
-    await notifications.ensureLoaded();
-    notifications.listen();
-    await TransactionStore.instance.processDuePeriods();
-    await RecurringExpenseStore.instance.ensureLoaded();
-    await RecurringExpenseStore.instance.processDue();
-    await CategoryStore.instance.ensureLoaded();
-    await notifications.evaluate();
+    if (_syncingEvents) return;
+    _syncingEvents = true;
+    try {
+      final notifications = NotificationService.instance;
+      await notifications.ensureLoaded();
+      notifications.listen();
+      await TransactionStore.instance.processDuePeriods();
+      await RecurringExpenseStore.instance.ensureLoaded();
+      await RecurringExpenseStore.instance.processDue();
+      await CategoryStore.instance.ensureLoaded();
+      await notifications.evaluate();
+      final streak = await UsageStreakService.instance.recordToday();
+      await SystemNotifications.instance.syncStreakReminder(
+        enabled: !notifications.isMuted && streak.count >= 2,
+      );
+    } finally {
+      _syncingEvents = false;
+    }
+  }
+
+  void _openNotifications() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const NotificationsScreen(),
+      ),
+    );
+  }
+
+  Future<void> _openSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SettingsScreen(
+          themeNotifier: widget.themeNotifier,
+          onThemeChanged: widget.onThemeChanged,
+          appFlowController: widget.appFlowController,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    await ProfileIdentity.instance.reload();
   }
 
   // Animates the pager; highlight updates wait until the animation settles.
@@ -152,32 +199,38 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           children: [
             WafferPageHeader(
               applySafeArea: false,
-              leading: Padding(
-                padding: const EdgeInsets.only(top: 15),
-                child: IconButton(
-                  iconSize: 30,
-                  icon: Icon(
-                    Icons.settings_rounded,
-                    color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
+              leadingWidth: 96,
+              leading: Row(
+                children: [
+                  IconButton(
+                    iconSize: 30,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 48,
+                      height: 48,
+                    ),
+                    icon: Icon(
+                      Icons.settings_rounded,
+                      color: isDark
+                          ? AppColors.darkAccent
+                          : AppColors.lightAccent,
+                    ),
+                    onPressed: _openSettings,
                   ),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => SettingsScreen(
-                          themeNotifier: widget.themeNotifier,
-                          onThemeChanged: widget.onThemeChanged,
-                          appFlowController: widget.appFlowController,
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                  _NotificationsButton(
+                    accent: isDark
+                        ? AppColors.darkAccent
+                        : AppColors.lightAccent,
+                    onPressed: _openNotifications,
+                  ),
+                ],
               ),
               title: Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
-                  'waffr',
+                  'WAFFR',
                   style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                    fontFamily: 'BebasNeue',
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -258,20 +311,16 @@ class _BottomNavBar extends StatelessWidget {
                         scale: isSelected ? 1.25 : 1.0,
                         duration: const Duration(milliseconds: 250),
                         curve: Curves.easeOut,
-                        child: index == 4
-                            ? _NotificationsTabIcon(
-                                selected: isSelected,
-                                accent: accent,
-                                idle: textPrimary.withValues(alpha: 0.35),
-                              )
-                            : Icon(
+                        child: Icon(
                                 index == 0
                                     ? Icons.home_rounded
                                     : index == 1
                                         ? Icons.bar_chart_rounded
                                         : index == 2
                                             ? Icons.wallet_rounded
-                                            : Icons.public_rounded,
+                                            : index == 3
+                                                ? Icons.public_rounded
+                                                : Icons.person_rounded,
                                 size: 26,
                                 color: isSelected
                                     ? accent
@@ -290,16 +339,14 @@ class _BottomNavBar extends StatelessWidget {
   }
 }
 
-// Bell with an unread dot driven by NotificationService.unreadCount.
-class _NotificationsTabIcon extends StatelessWidget {
-  final bool selected;
+// Header bell. Unread dot comes from NotificationService, not a tab.
+class _NotificationsButton extends StatelessWidget {
   final Color accent;
-  final Color idle;
+  final VoidCallback onPressed;
 
-  const _NotificationsTabIcon({
-    required this.selected,
+  const _NotificationsButton({
     required this.accent,
-    required this.idle,
+    required this.onPressed,
   });
 
   @override
@@ -309,33 +356,41 @@ class _NotificationsTabIcon extends StatelessWidget {
       builder: (context, _) {
         final unread = NotificationService.instance.unreadCount;
 
-        return SizedBox(
-          width: 30,
-          height: 30,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Icon(
-                selected
-                    ? Icons.notifications_rounded
-                    : Icons.notifications_outlined,
-                size: 26,
-                color: selected ? accent : idle,
-              ),
-              if (unread > 0)
-                PositionedDirectional(
-                  top: 1,
-                  start: 1,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: accent,
-                      shape: BoxShape.circle,
+        return IconButton(
+          iconSize: 30,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(
+            width: 48,
+            height: 48,
+          ),
+          onPressed: onPressed,
+          icon: SizedBox(
+            width: 30,
+            height: 30,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  Icons.notifications_rounded,
+                  size: 30,
+                  color: accent,
+                ),
+                if (unread > 0)
+                  PositionedDirectional(
+                    top: 0,
+                    start: 0,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: accent,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         );
       },

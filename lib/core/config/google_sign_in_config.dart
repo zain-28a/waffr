@@ -4,7 +4,7 @@ class GoogleSignInConfig {
 
   static const String? clientId = null;
 
-  static const String? serverClientId =
+  static const String serverClientId =
       '111706237253-n2l64h07it6jgebqbco4mnhgr8r991b0.apps.googleusercontent.com';
 
 

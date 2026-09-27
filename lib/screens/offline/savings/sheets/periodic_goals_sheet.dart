@@ -136,7 +136,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
             'أضف دخلاً شهرياً أولاً لاقتراح خطط مناسبة.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 14,
               color: textSecondary,
             ),
@@ -155,7 +155,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
         '${formatMoney(_income)} $currencyLabel',
         textAlign: TextAlign.center,
         style: TextStyle(
-          fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
           fontSize: 22,
           fontWeight: FontWeight.bold,
           color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
@@ -268,7 +268,7 @@ class _PreviewRow extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 fontSize: 13.5,
                 color: textSecondary,
               ),
@@ -279,7 +279,7 @@ class _PreviewRow extends StatelessWidget {
               value,
               textAlign: TextAlign.end,
               style: TextStyle(
-                fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                 fontSize: emphasize ? 16 : 14,
                 fontWeight: FontWeight.bold,
                 color: textPrimary,
@@ -332,7 +332,7 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
             'حذف الخطة',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontWeight: FontWeight.bold,
               color: textPrimary,
             ),
@@ -340,21 +340,21 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
           content: const Text(
             'هل أنت متأكد من حذف هذه الخطة الدورية؟',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], fontSize: 14),
+            style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], fontSize: 14),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
               child: Text(
                 'إلغاء',
-                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: textSecondary),
+                style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], color: textSecondary),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
                 'حذف',
-                style: TextStyle(fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'], color: accent),
+                style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], color: accent),
               ),
             ),
           ],
@@ -460,7 +460,7 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
                   Text(
                     'حذف الخطة',
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
                       color: textPrimary,

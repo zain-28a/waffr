@@ -51,7 +51,7 @@ class _NewsSheet extends StatelessWidget {
                     'لا توجد أخبار حالياً',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                       fontSize: 14,
                       color: textPrimary.withValues(alpha: 0.55),
                     ),
@@ -62,7 +62,7 @@ class _NewsSheet extends StatelessWidget {
           : ListView.separated(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               itemCount: articles.length,
-              separatorBuilder: (_, __) => Padding(
+              separatorBuilder: (_, _) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Divider(
                   height: 1,
@@ -102,7 +102,7 @@ class _NewsArticleBlock extends StatelessWidget {
         Text(
           article.title,
           style: TextStyle(
-            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: textPrimary,
@@ -114,7 +114,7 @@ class _NewsArticleBlock extends StatelessWidget {
           Text(
             article.body,
             style: TextStyle(
-              fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 13.5,
               fontWeight: FontWeight.w400,
               color: textPrimary.withValues(alpha: 0.82),
@@ -126,7 +126,7 @@ class _NewsArticleBlock extends StatelessWidget {
         Text(
           '${article.source} · ${formatDate(article.publishedAt)} · ${formatTime(article.publishedAt)}',
           style: TextStyle(
-            fontFamily: 'BebasNeue', fontFamilyFallback: ['Tajawal'],
+            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
             fontSize: 12,
             fontWeight: FontWeight.w500,
             color: textSecondary,
