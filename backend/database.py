@@ -8,7 +8,20 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+
+def _engine_url(raw: str | None) -> str:
+    # Render hands out postgresql://. SQLAlchemy needs the psycopg driver name.
+    if raw is None or not raw.strip():
+        raise RuntimeError("DATABASE_URL is not set")
+    url = raw.strip()
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url.removeprefix("postgres://")
+    if url.startswith("postgresql://"):
+        url = "postgresql+psycopg://" + url.removeprefix("postgresql://")
+    return url
+
+
+DATABASE_URL = _engine_url(os.getenv("DATABASE_URL"))
 
 engine = create_engine(DATABASE_URL)
 

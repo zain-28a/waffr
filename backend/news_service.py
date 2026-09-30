@@ -1,10 +1,13 @@
-"""Fetch, filter, and store SANA economic news.
+"""Fetch, filter, and store economic news from official RSS feeds.
 
-The official feed is the general SANA RSS document, not an economy-only feed.
-Section metadata is preferred over keyword matching:
+SANA publishes one general feed. Section metadata is preferred over keyword
+matching:
 
 * RSS ``category`` terms such as ``اقتصاد`` and ``اقتصاد سوريا``
 * the article permalink section, such as ``/economy/``
+
+Al-Ikhbariya publishes an economy category feed. Entries still have to carry
+the ``اقتصاد`` category. The site-wide feed and the comments feed are ignored.
 
 ``ECONOMY_KEYWORDS`` is used only when an entry has neither category tags nor
 a permalink section.
@@ -35,9 +38,6 @@ from online_model import NewsArticle
 
 logger = logging.getLogger("waffer.news")
 
-SANA_FEED_URL = "https://sana.sy/feed/"
-SOURCE_NAME = "sana.sy"
-ALLOWED_HOSTS = frozenset({"sana.sy", "www.sana.sy"})
 FEED_TIMEOUT_SECONDS = 30
 FEED_ATTEMPTS = 3
 FEED_RETRY_DELAY_SECONDS = 2
@@ -50,11 +50,15 @@ GUID_LIMIT = 1000
 SUMMARY_LIMIT = 4000
 
 # Explicit SANA section names seen on the general RSS feed.
-ECONOMY_CATEGORIES = frozenset({"اقتصاد", "اقتصاد سوريا"})
+SANA_ECONOMY_CATEGORIES = frozenset({"اقتصاد", "اقتصاد سوريا"})
 
-# First permalink segment for the economy desk, including child sections
+# First permalink segment for the SANA economy desk, including child sections
 # such as /economy/syrian-economy/.
-ECONOMY_SECTION_SLUGS = frozenset({"economy"})
+SANA_ECONOMY_SECTION_SLUGS = frozenset({"economy"})
+
+# Al-Ikhbariya economy desk. Permalinks are post slugs, so the category is
+# the only section signal.
+IKHBARIA_ECONOMY_CATEGORIES = frozenset({"اقتصاد"})
 
 # Fallback only. Edit this tuple when category metadata is missing.
 ECONOMY_KEYWORDS = (
@@ -87,6 +91,38 @@ class NewsFeedUnavailable(Exception):
 
 
 @dataclass(frozen=True)
+class NewsSource:
+    name: str
+    feed_url: str
+    allowed_hosts: frozenset[str]
+    economy_categories: frozenset[str]
+    economy_section_slugs: frozenset[str]
+
+
+SANA_SOURCE = NewsSource(
+    name="sana.sy",
+    feed_url="https://sana.sy/feed/",
+    allowed_hosts=frozenset({"sana.sy", "www.sana.sy"}),
+    economy_categories=SANA_ECONOMY_CATEGORIES,
+    economy_section_slugs=SANA_ECONOMY_SECTION_SLUGS,
+)
+IKHBARIA_SOURCE = NewsSource(
+    name="alikhbariah.com",
+    feed_url="https://alikhbariah.com/category/%D8%A7%D9%82%D8%AA%D8%B5%D8%A7%D8%AF/feed/",
+    allowed_hosts=frozenset({"alikhbariah.com", "www.alikhbariah.com"}),
+    economy_categories=IKHBARIA_ECONOMY_CATEGORIES,
+    economy_section_slugs=frozenset(),
+)
+NEWS_SOURCES = (SANA_SOURCE, IKHBARIA_SOURCE)
+
+# WordPress appends this sentence to excerpts on alikhbariah.com.
+_WP_CREDIT_RE = re.compile(
+    r"\s*The post .+ appeared first on .+\s*$",
+    re.IGNORECASE,
+)
+
+
+@dataclass(frozen=True)
 class NewsRefreshResult:
     ok: bool
     fetched: int = 0
@@ -102,6 +138,7 @@ class NormalizedArticle:
     guid: str
     summary: str | None
     published_at: datetime | None
+    source: str
 
 
 _last_result = NewsRefreshResult(ok=False, error="not_run")
@@ -123,7 +160,6 @@ def _normalize(value: object) -> str:
     return clean_text(value, 300).casefold()
 
 
-_ECONOMY_CATEGORY_KEYS = frozenset(_normalize(name) for name in ECONOMY_CATEGORIES)
 _ECONOMY_KEYWORD_KEYS = tuple(_normalize(keyword) for keyword in ECONOMY_KEYWORDS)
 
 
@@ -139,18 +175,20 @@ def is_economy_entry(
     url: str,
     title: str,
     summary: str,
+    source: NewsSource,
 ) -> bool:
-    """Keep an entry when SANA marks it as economy.
+    """Keep an entry when the source marks it as economy.
 
     Category terms and the permalink section win. Keywords are consulted only
     when both of those signals are absent, so a political story that merely
     mentions money is not treated as economic news.
     """
+    category_keys = frozenset(_normalize(name) for name in source.economy_categories)
     category_set = {_normalize(name) for name in categories if name}
-    if category_set & _ECONOMY_CATEGORY_KEYS:
+    if category_set & category_keys:
         return True
     section = section_slug(url)
-    if section in ECONOMY_SECTION_SLUGS:
+    if section in source.economy_section_slugs:
         return True
     if category_set or section:
         return False
@@ -205,7 +243,7 @@ def _entry_categories(entry: dict) -> list[str]:
     return names
 
 
-def _clean_url(value: object) -> str:
+def _clean_url(value: object, allowed_hosts: frozenset[str]) -> str:
     text = html.unescape(str(value or "")).strip()
     text = _BIDI_RE.sub("", text)
     text = _WS_RE.sub("", text)
@@ -213,7 +251,7 @@ def _clean_url(value: object) -> str:
         return ""
     parsed = urlparse(text)
     host = (parsed.hostname or "").lower()
-    if parsed.scheme not in {"http", "https"} or host not in ALLOWED_HOSTS:
+    if parsed.scheme not in {"http", "https"} or host not in allowed_hosts:
         return ""
     return text
 
@@ -229,18 +267,20 @@ def _clean_guid(value: object, fallback_url: str) -> str:
 
 def _entry_summary(entry: dict) -> str:
     summary = clean_text(entry.get("summary"), SUMMARY_LIMIT)
-    if summary:
-        return summary
-    content = entry.get("content") or []
-    if isinstance(content, list) and content:
-        first = content[0]
-        raw = first.get("value") if isinstance(first, dict) else ""
-        return clean_text(raw, SUMMARY_LIMIT)
-    return ""
+    if not summary:
+        content = entry.get("content") or []
+        if isinstance(content, list) and content:
+            first = content[0]
+            raw = first.get("value") if isinstance(first, dict) else ""
+            summary = clean_text(raw, SUMMARY_LIMIT)
+    summary = _WP_CREDIT_RE.sub("", summary).strip()
+    if len(summary) > SUMMARY_LIMIT:
+        return summary[:SUMMARY_LIMIT].rstrip()
+    return summary
 
 
-def normalize_entry(entry: dict) -> NormalizedArticle | None:
-    url = _clean_url(entry.get("link"))
+def normalize_entry(entry: dict, source: NewsSource) -> NormalizedArticle | None:
+    url = _clean_url(entry.get("link"), source.allowed_hosts)
     title = clean_text(entry.get("title"), TITLE_LIMIT)
     if not url or not title:
         return None
@@ -249,7 +289,7 @@ def normalize_entry(entry: dict) -> NormalizedArticle | None:
         return None
     summary = _entry_summary(entry)
     categories = _entry_categories(entry)
-    if not is_economy_entry(categories, url, title, summary):
+    if not is_economy_entry(categories, url, title, summary, source):
         return None
     return NormalizedArticle(
         title=title,
@@ -257,10 +297,11 @@ def normalize_entry(entry: dict) -> NormalizedArticle | None:
         guid=guid,
         summary=summary or None,
         published_at=parse_published(entry),
+        source=source.name,
     )
 
 
-def parse_feed(payload: bytes) -> tuple[int, list[NormalizedArticle]]:
+def parse_feed(payload: bytes, source: NewsSource) -> tuple[int, list[NormalizedArticle]]:
     parsed = feedparser.parse(payload)
     entries = list(getattr(parsed, "entries", None) or [])
     if not entries and getattr(parsed, "bozo", False):
@@ -268,7 +309,7 @@ def parse_feed(payload: bytes) -> tuple[int, list[NormalizedArticle]]:
     articles: list[NormalizedArticle] = []
     seen: set[str] = set()
     for entry in entries:
-        article = normalize_entry(entry)
+        article = normalize_entry(entry, source)
         if article is None or article.guid in seen or article.url in seen:
             continue
         seen.add(article.guid)
@@ -277,9 +318,9 @@ def parse_feed(payload: bytes) -> tuple[int, list[NormalizedArticle]]:
     return len(entries), articles
 
 
-def _feed_request() -> urllib.request.Request:
+def _feed_request(source: NewsSource) -> urllib.request.Request:
     return urllib.request.Request(
-        SANA_FEED_URL,
+        source.feed_url,
         headers={
             "User-Agent": "Waffer/1.0",
             "Accept": "application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
@@ -294,16 +335,16 @@ def _request_failure_detail(exc: BaseException) -> str:
     return f"{type(reason).__name__}: {reason}"
 
 
-def fetch_feed() -> bytes:
+def fetch_feed(source: NewsSource) -> bytes:
     last_error: Exception | None = None
     for attempt in range(1, FEED_ATTEMPTS + 1):
         try:
             with urllib.request.urlopen(
-                _feed_request(),
+                _feed_request(source),
                 timeout=FEED_TIMEOUT_SECONDS,
             ) as response:
                 final_host = (urlparse(response.geturl()).hostname or "").lower()
-                if final_host not in ALLOWED_HOSTS:
+                if final_host not in source.allowed_hosts:
                     raise NewsFeedUnavailable()
                 payload = response.read(MAX_FEED_BYTES + 1)
         except NewsFeedUnavailable:
@@ -311,7 +352,8 @@ def fetch_feed() -> bytes:
         except (TimeoutError, urllib.error.URLError, OSError) as exc:
             last_error = exc
             logger.warning(
-                "SANA feed request failed (attempt %s/%s): %s",
+                "%s feed request failed (attempt %s/%s): %s",
+                source.name,
                 attempt,
                 FEED_ATTEMPTS,
                 _request_failure_detail(exc),
@@ -358,7 +400,7 @@ def _upsert(db: Session, article: NormalizedArticle, fetched_at: datetime) -> No
         db.add(
             NewsArticle(
                 title=article.title,
-                source=SOURCE_NAME,
+                source=article.source,
                 url=article.url,
                 guid=article.guid,
                 summary=article.summary,
@@ -369,7 +411,7 @@ def _upsert(db: Session, article: NormalizedArticle, fetched_at: datetime) -> No
         return
 
     existing.title = article.title
-    existing.source = SOURCE_NAME
+    existing.source = article.source
     existing.summary = article.summary
     existing.fetched_at = fetched_at
     if published_at is not None:
@@ -394,12 +436,41 @@ def _store_articles(db: Session, articles: list[NormalizedArticle]) -> int:
     return saved
 
 
+def _collect_articles() -> tuple[int, list[NormalizedArticle], int]:
+    fetched = 0
+    articles: list[NormalizedArticle] = []
+    failures = 0
+    seen: set[str] = set()
+    for source in NEWS_SOURCES:
+        try:
+            payload = fetch_feed(source)
+            count, parsed = parse_feed(payload, source)
+        except NewsFeedUnavailable:
+            failures += 1
+            logger.warning(
+                "%s feed unavailable; previously stored news was kept",
+                source.name,
+            )
+            continue
+        fetched += count
+        for article in parsed:
+            if article.guid in seen or article.url in seen:
+                continue
+            seen.add(article.guid)
+            seen.add(article.url)
+            articles.append(article)
+        logger.info(
+            "%s matched %s economic articles from %s feed entries",
+            source.name,
+            len(parsed),
+            count,
+        )
+    return fetched, articles, failures
+
+
 def _refresh_unlocked() -> NewsRefreshResult:
-    try:
-        payload = fetch_feed()
-        fetched, articles = parse_feed(payload)
-    except NewsFeedUnavailable:
-        logger.warning("SANA feed unavailable; previously stored news was kept")
+    fetched, articles, failures = _collect_articles()
+    if failures == len(NEWS_SOURCES):
         return NewsRefreshResult(ok=False, error="feed_unavailable")
 
     db = SessionLocal()
@@ -407,7 +478,7 @@ def _refresh_unlocked() -> NewsRefreshResult:
         saved = _store_articles(db, articles)
     except Exception:
         db.rollback()
-        logger.exception("failed to store SANA news; previously stored news was kept")
+        logger.exception("failed to store news; previously stored news was kept")
         return NewsRefreshResult(
             ok=False,
             fetched=fetched,
@@ -418,7 +489,7 @@ def _refresh_unlocked() -> NewsRefreshResult:
         db.close()
 
     logger.info(
-        "SANA news refresh stored %s economic articles from %s feed entries",
+        "news refresh stored %s economic articles from %s feed entries",
         saved,
         fetched,
     )
@@ -431,10 +502,11 @@ def _refresh_unlocked() -> NewsRefreshResult:
 
 
 def refresh_news(*, wait: bool = True) -> NewsRefreshResult:
-    """Fetch the RSS feed and upsert economic articles.
+    """Fetch each RSS feed and upsert economic articles.
 
-    A failed fetch leaves existing rows in place. Overlapping calls share one
-    refresh so repeated triggers do not insert duplicates.
+    A failed fetch leaves existing rows in place. One unavailable source does
+    not drop articles already collected from the others. Overlapping calls
+    share one refresh so repeated triggers do not insert duplicates.
     """
     global _last_result
     acquired = _refresh_lock.acquire(blocking=False)
@@ -449,7 +521,7 @@ def refresh_news(*, wait: bool = True) -> NewsRefreshResult:
         _last_result = _refresh_unlocked()
         return _last_result
     except Exception:
-        logger.exception("SANA news refresh failed; previously stored news was kept")
+        logger.exception("news refresh failed; previously stored news was kept")
         _last_result = NewsRefreshResult(ok=False, error="feed_unavailable")
         return _last_result
     finally:
