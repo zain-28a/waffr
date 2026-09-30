@@ -46,3 +46,7 @@ app.*.map.json
 
 # User profile photos stored by the API
 backend/uploads/avatars/
+
+# Local secrets. Render gets DATABASE_URL from the dashboard, not this file.
+backend/.env
+.env
