@@ -133,7 +133,7 @@ class SyncService with WidgetsBindingObserver {
               },
               body: jsonEncode(payload),
             )
-            .timeout(_timeout);
+            .timeout(ApiConfig.timeoutFor(base, local: _timeout));
       } on SocketException {
         return const SyncResult(
           SyncStatus.offline,

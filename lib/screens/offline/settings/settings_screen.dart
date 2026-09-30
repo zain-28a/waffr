@@ -137,7 +137,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (!supported) {
           if (!mounted) return;
 
-          showAppSnackBar(context, 'جهازك لا يدعم المصادقة البيومترية');
+          showAppSnackBar(
+            context,
+            'جهازك لا يدعم المصادقة البيومترية',
+            kind: AppFeedbackKind.warning,
+          );
 
           setState(() {
             _isAuthenticating = false;
@@ -423,40 +427,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Clears prefs, session, photo, and in-memory stores, then returns to first route.
   Future<void> _resetApp() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        return AlertDialog(
-          title: const Text('إعادة ضبط التطبيق'),
-
-          content: const Text(
-            'سيتم حذف بيانات المستخدم والرصيد وسجل المصاريف. هل أنت متأكد؟',
-          ),
-
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-
-              child: const Text('إلغاء'),
-            ),
-
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-
-              child: Text(
-                'حذف البيانات',
-
-                style: TextStyle(
-                  color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+    final confirm = await showAppConfirmDialog(
+      context,
+      title: 'إعادة ضبط التطبيق',
+      message: 'سيتم حذف بيانات المستخدم والرصيد وسجل المصاريف. هل أنت متأكد؟',
+      confirmLabel: 'حذف البيانات',
+      destructive: true,
     );
 
     if (confirm != true) return;

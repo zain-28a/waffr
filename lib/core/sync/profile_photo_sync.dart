@@ -89,7 +89,7 @@ class ProfilePhotoSync {
             },
             body: bytes,
           )
-          .timeout(_timeout);
+          .timeout(ApiConfig.timeoutFor(base, local: _timeout));
 
       if (response.statusCode == 401) {
         await AuthSession.instance.clearSession();
@@ -122,7 +122,7 @@ class ProfilePhotoSync {
             Uri.parse('$base/auth/photo'),
             headers: {'Authorization': 'Bearer $token'},
           )
-          .timeout(_timeout);
+          .timeout(ApiConfig.timeoutFor(base, local: _timeout));
 
       if (response.statusCode == 404) {
         await ProfilePhoto.clear();
@@ -161,7 +161,7 @@ class ProfilePhotoSync {
             Uri.parse('$base/auth/photo'),
             headers: {'Authorization': 'Bearer $token'},
           )
-          .timeout(_timeout);
+          .timeout(ApiConfig.timeoutFor(base, local: _timeout));
 
       if (response.statusCode == 401) {
         await AuthSession.instance.clearSession();

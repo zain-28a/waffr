@@ -61,6 +61,9 @@ class MainActivity : FlutterFragmentActivity() {
                 Intent.FLAG_GRANT_READ_URI_PERMISSION,
             )
         }
-        startActivity(Intent.createChooser(send, null))
+        val chooser = Intent.createChooser(send, "مشاركة السجل").apply {
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(chooser)
     }
 }

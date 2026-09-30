@@ -6,8 +6,8 @@ import 'package:waffer/data/models/exchange_rate.dart';
 import 'package:waffer/data/models/nearby_place_category.dart';
 import 'package:waffer/data/models/news_article.dart';
 import 'package:waffer/data/services/online_feed_service.dart';
-import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/theme/app_palette.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/online/sheets/news_sheet.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
@@ -99,16 +99,7 @@ class _OnlineScreenState extends State<OnlineScreen>
     final opened = await openNearbyPlaceSearch(category);
     if (opened || !mounted) return;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'تعذر فتح خرائط Google',
-          style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
-        ),
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-      ),
-    );
+    showAppSnackBar(context, 'تعذر فتح خرائط Google');
   }
 
   @override

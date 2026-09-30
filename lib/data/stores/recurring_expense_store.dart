@@ -28,7 +28,7 @@ class RecurringExpenseStore extends ChangeNotifier {
 
   Future<void>? _loader;
   bool _loaded = false;
-  bool _processing = false;
+  Future<void>? _dueTail;
 
   bool get isLoaded => _loaded;
 
@@ -78,12 +78,15 @@ class RecurringExpenseStore extends ChangeNotifier {
         unit: unit,
         intervalCount: intervalCount,
         createdAt: now,
-        nextDueAt: RecurringExpense.nextDueFrom(now, unit, intervalCount),
+        // Due immediately so the first charge is written to history now.
+        // Later charges wait until this date, then catch up on the next open.
+        nextDueAt: now,
       ),
     );
 
     await _persist();
     notifyListeners();
+    await processDue();
   }
 
   static const double _maxAmount = 999999999;
@@ -135,106 +138,153 @@ class RecurringExpenseStore extends ChangeNotifier {
   }
 
   // Deducts due items when balance allows; otherwise notifies and stops catch-up.
-  Future<void> processDue() async {
+  // Calls are queued so opening the app twice cannot post the same period twice.
+  Future<void> processDue() {
+    final previous = _dueTail ?? Future<void>.value();
+    final run = previous.catchError((Object _) {}).then((_) => _processDue());
+    _dueTail = run;
+    return run;
+  }
+
+  Future<void> _processDue() async {
     await ensureLoaded();
     await TransactionStore.instance.ensureLoaded();
 
-    if (_processing) return;
-    _processing = true;
+    final now = deviceNow();
+    var changed = false;
 
-    try {
-      final now = deviceNow();
-      var changed = false;
-
-      for (var i = 0; i < _items.length; i++) {
-        var item = _items[i];
-        if (!item.enabled) continue;
-        if (!TransactionStore.instance.hasConfiguredMonthlyIncomeFor(
-          item.currencyCode,
-        )) {
-          continue;
-        }
-
-        var catchUps = 0;
-        DateTime? postedDue;
-
-        while (!item.nextDueAt.isAfter(now) && catchUps < _maxCatchUp) {
-          catchUps++;
-
-          final store = TransactionStore.instance;
-          if (!store.canDeduct(item.amount, currencyCode: item.currencyCode)) {
-            await NotificationService.instance.add(
-              type: NotificationType.recurringExpenseBlocked,
-              title: 'تعذر خصم المصروف المتكرر',
-              message:
-                  'رصيدك لا يكفي لخصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}'
-                  ' (${item.note ?? item.category}).',
-              eventKey:
-                  'recurringBlocked:${item.id}:${item.nextDueAt.toIso8601String()}',
-              relatedId: item.id,
-            );
-            break;
-          }
-
-          final sourceId =
-              'recurring:${item.id}:${item.nextDueAt.millisecondsSinceEpoch}';
-          final dueAt = item.nextDueAt;
-
-          final added = await store.addExpense(
-            amount: item.amount,
-            category: item.category,
-            paymentMethod: item.paymentMethod,
-            note: item.note ?? item.intervalDescription,
-            sourceId: sourceId,
-            occurredAt: dueAt.toLocal(),
-            currencyCode: item.currencyCode,
-          );
-
-          if (added == null) {
-            await NotificationService.instance.add(
-              type: NotificationType.recurringExpenseBlocked,
-              title: 'تعذر خصم المصروف المتكرر',
-              message:
-                  'رصيدك لا يكفي لخصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}'
-                  ' (${item.note ?? item.category}).',
-              eventKey:
-                  'recurringBlocked:${item.id}:${dueAt.toIso8601String()}',
-              relatedId: item.id,
-            );
-            break;
-          }
-
-          postedDue = dueAt;
-          item = item.copyWith(
-            nextDueAt: RecurringExpense.nextDueFrom(
-              dueAt,
-              item.unit,
-              item.intervalCount,
-            ),
-          );
-          _items[i] = item;
-          changed = true;
-        }
-
-        if (postedDue != null) {
-          await NotificationService.instance.add(
-            type: NotificationType.recurringExpenseApplied,
-            title: 'تم خصم مصروف متكرر',
-            message:
-                'خُصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}'
-                ' (${item.note ?? item.category}).',
-            eventKey: 'recurringApplied:${item.id}:${postedDue.toIso8601String()}',
-            relatedId: item.id,
-          );
-        }
+    for (var i = 0; i < _items.length; i++) {
+      var item = _items[i];
+      if (!item.enabled) continue;
+      if (!TransactionStore.instance.hasConfiguredMonthlyIncomeFor(
+        item.currencyCode,
+      )) {
+        continue;
       }
 
-      if (changed) {
+      // Schedules saved before the first charge was due never reached history.
+      if (item.nextDueAt.isAfter(now) && !_hasPosted(item.id)) {
+        item = item.copyWith(nextDueAt: now);
+        _items[i] = item;
+        changed = true;
+      }
+
+      var catchUps = 0;
+      DateTime? postedDue;
+
+      while (_isDue(item.nextDueAt, now) && catchUps < _maxCatchUp) {
+        catchUps++;
+
+        final store = TransactionStore.instance;
+        final dueAt = item.nextDueAt;
+        final sourceId = _sourceId(item.id, dueAt);
+
+        if (!store.canDeduct(item.amount, currencyCode: item.currencyCode) &&
+            !_alreadyPosted(sourceId)) {
+          await _notifyBlocked(item, dueAt);
+          break;
+        }
+
+        final added = await store.addExpense(
+          amount: item.amount,
+          category: item.category,
+          paymentMethod: item.paymentMethod,
+          note: item.note ?? item.intervalDescription,
+          sourceId: sourceId,
+          occurredAt: dueAt.toLocal(),
+          currencyCode: item.currencyCode,
+        );
+
+        if (added == null) {
+          await _notifyBlocked(item, dueAt);
+          break;
+        }
+
+        postedDue = dueAt;
+        item = item.copyWith(
+          nextDueAt: RecurringExpense.nextDueFrom(
+            dueAt,
+            item.unit,
+            item.intervalCount,
+          ),
+        );
+        _items[i] = item;
+        changed = true;
         await _persist();
-        notifyListeners();
       }
-    } finally {
-      _processing = false;
+
+      if (postedDue != null) {
+        await _notifyApplied(item, postedDue);
+      }
+    }
+
+    if (changed) {
+      await _persist();
+      notifyListeners();
+    }
+  }
+
+  bool _isDue(DateTime due, DateTime now) => !due.toUtc().isAfter(now.toUtc());
+
+  // Stable for a given local minute so a reload cannot mint a second source id.
+  String _sourceId(String id, DateTime due) {
+    final local = due.toLocal();
+    final stamp =
+        '${local.year.toString().padLeft(4, '0')}'
+        '${local.month.toString().padLeft(2, '0')}'
+        '${local.day.toString().padLeft(2, '0')}'
+        '${local.hour.toString().padLeft(2, '0')}'
+        '${local.minute.toString().padLeft(2, '0')}';
+    return 'recurring:$id:$stamp';
+  }
+
+  bool _alreadyPosted(String sourceId) {
+    for (final item in TransactionStore.instance.transactions) {
+      if (item.isExpense && item.sourceId == sourceId) return true;
+    }
+    return false;
+  }
+
+  bool _hasPosted(String id) {
+    final prefix = 'recurring:$id:';
+    for (final item in TransactionStore.instance.transactions) {
+      final source = item.sourceId;
+      if (item.isExpense && source != null && source.startsWith(prefix)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _notifyBlocked(RecurringExpense item, DateTime dueAt) async {
+    try {
+      await NotificationService.instance.add(
+        type: NotificationType.recurringExpenseBlocked,
+        title: 'تعذر خصم المصروف المتكرر',
+        message:
+            'رصيدك لا يكفي لخصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}'
+            ' (${item.note ?? item.category}).',
+        eventKey: 'recurringBlocked:${item.id}:${dueAt.toIso8601String()}',
+        relatedId: item.id,
+      );
+    } catch (error, stack) {
+      debugPrint('Recurring block notice failed: $error\n$stack');
+    }
+  }
+
+  Future<void> _notifyApplied(RecurringExpense item, DateTime postedDue) async {
+    try {
+      await NotificationService.instance.add(
+        type: NotificationType.recurringExpenseApplied,
+        title: 'تم خصم مصروف متكرر',
+        message:
+            'خُصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}'
+            ' (${item.note ?? item.category}).',
+        eventKey: 'recurringApplied:${item.id}:${postedDue.toIso8601String()}',
+        relatedId: item.id,
+      );
+    } catch (error, stack) {
+      debugPrint('Recurring applied notice failed: $error\n$stack');
     }
   }
 

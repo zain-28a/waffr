@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
 Future<void> showCurrenciesSheet(BuildContext context) {
@@ -33,32 +34,12 @@ class _CurrenciesSheetState extends State<_CurrenciesSheet> {
   Future<void> _remove(CurrencyInfo item) async {
     if (item.code == defaultCurrencyCode) return;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('إخفاء العملة'),
-          content: Text(
-            'ستُخفى ${item.arabicName} من القائمة. السجل المالي الخاص بها يبقى محفوظاً ويمكن استعادته لاحقاً.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                'إخفاء',
-                style: TextStyle(
-                  color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+    final confirm = await showAppConfirmDialog(
+      context,
+      title: 'إخفاء العملة',
+      message:
+          'ستُخفى ${item.arabicName} من القائمة. السجل المالي الخاص بها يبقى محفوظاً ويمكن استعادته لاحقاً.',
+      confirmLabel: 'إخفاء',
     );
 
     if (confirm != true) return;

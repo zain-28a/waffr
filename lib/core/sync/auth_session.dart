@@ -166,7 +166,7 @@ class AuthSession {
             headers: const {'Content-Type': 'application/json'},
             body: jsonEncode(body),
           )
-          .timeout(_timeout);
+          .timeout(ApiConfig.timeoutFor(base, local: _timeout));
 
       Object? decoded;
       try {
@@ -283,7 +283,7 @@ class AuthSession {
             Uri.parse('$base/auth/me'),
             headers: {'Authorization': 'Bearer $token'},
           )
-          .timeout(_timeout);
+          .timeout(ApiConfig.timeoutFor(base, local: _timeout));
       if (response.statusCode != 200) return null;
       final decoded = jsonDecode(response.body);
       if (decoded is! Map) return null;

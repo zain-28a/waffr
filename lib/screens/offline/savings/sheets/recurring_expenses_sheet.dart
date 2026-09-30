@@ -145,30 +145,12 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
   }
 
   Future<void> _delete(RecurringExpense item) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return AlertDialog(
-          title: const Text('حذف المصروف المتكرر'),
-          content: const Text('سيتم إيقاف الخصم التلقائي لهذا المصروف.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                'حذف',
-                style: TextStyle(
-                  color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+    final confirm = await showAppConfirmDialog(
+      context,
+      title: 'حذف المصروف المتكرر',
+      message: 'سيتم إيقاف الخصم التلقائي لهذا المصروف.',
+      confirmLabel: 'حذف',
+      destructive: true,
     );
 
     if (confirm != true) return;
@@ -180,7 +162,7 @@ class _RecurringExpensesSheetState extends State<RecurringExpensesSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
-    final result = await showDialog<Object>(
+    final result = await showAppDialog<Object>(
       context: context,
       builder: (context) => EditAmountDialog(
         title: item.note ?? item.category,

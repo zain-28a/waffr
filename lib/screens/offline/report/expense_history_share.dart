@@ -1,6 +1,7 @@
 // Builds an offline PDF or plain-text export of selected expenses and opens
 // the system share sheet. Event times stay the ones stored on each record.
 
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -89,12 +90,13 @@ Future<void> shareExpenseHistoryText(List<WafferTransaction> expenses) {
   );
 }
 
-Future<void> shareExpenseHistoryPdf(List<WafferTransaction> expenses) async {
+Future<Uint8List> buildExpenseHistoryPdfBytes(
+  List<WafferTransaction> expenses,
+) async {
   final regular = pw.Font.ttf(
     await rootBundle.load('fonts/Tajawal-Regular.ttf'),
   );
   final bold = pw.Font.ttf(await rootBundle.load('fonts/Tajawal-Bold.ttf'));
-  final brand = pw.Font.ttf(await rootBundle.load('fonts/Outfit-Regular.ttf'));
   final logo = pw.MemoryImage(
     (await rootBundle.load('assets/brand/waffer_logo.png')).buffer.asUint8List(),
   );
@@ -108,25 +110,20 @@ Future<void> shareExpenseHistoryPdf(List<WafferTransaction> expenses) async {
       header: (context) => pw.Directionality(
         textDirection: pw.TextDirection.ltr,
         child: pw.Align(
-          alignment: pw.Alignment.topLeft,
+          alignment: pw.Alignment.centerLeft,
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             mainAxisSize: pw.MainAxisSize.min,
             children: [
               pw.Image(logo, width: 64, height: 64),
               pw.SizedBox(height: 2),
-              pw.Transform(
-                alignment: pw.Alignment.center,
-                adjustLayout: true,
-                transform: Matrix4.skewX(-0.22),
-                child: pw.Text(
-                  'waffr',
-                  style: pw.TextStyle(
-                    font: brand,
-                    fontSize: 22,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColor.fromInt(0xFF254A23),
-                  ),
+              pw.Text(
+                'waffr',
+                textDirection: pw.TextDirection.ltr,
+                style: pw.TextStyle(
+                  font: bold,
+                  fontSize: 22,
+                  color: PdfColor.fromInt(0xFF254A23),
                 ),
               ),
             ],
@@ -136,26 +133,38 @@ Future<void> shareExpenseHistoryPdf(List<WafferTransaction> expenses) async {
       build: (context) => [
         pw.Text(
           'سجل المصاريف',
+          textAlign: pw.TextAlign.right,
           style: pw.TextStyle(font: bold, fontSize: 22),
         ),
         pw.SizedBox(height: 16),
         for (final day in days) ...[
           pw.Text(
             expenseShareDayLabel(day.date),
+            textAlign: pw.TextAlign.right,
             style: pw.TextStyle(font: bold, fontSize: 14),
           ),
           pw.SizedBox(height: 6),
           for (final expense in day.expenses) ...[
-            pw.Text(_expenseLine(expense), style: const pw.TextStyle(fontSize: 12)),
+            pw.Text(
+              _expenseLine(expense),
+              textAlign: pw.TextAlign.right,
+              style: pw.TextStyle(font: regular, fontSize: 12),
+            ),
             if (expense.note?.trim().isNotEmpty == true)
               pw.Text(
                 expense.note!.trim(),
-                style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(
+                  font: regular,
+                  fontSize: 11,
+                  color: PdfColors.grey700,
+                ),
               ),
             pw.SizedBox(height: 4),
           ],
           pw.Text(
             _totalsLine('مجموع اليوم', day.expenses),
+            textAlign: pw.TextAlign.right,
             style: pw.TextStyle(font: bold, fontSize: 12),
           ),
           pw.SizedBox(height: 14),
@@ -164,6 +173,7 @@ Future<void> shareExpenseHistoryPdf(List<WafferTransaction> expenses) async {
         pw.SizedBox(height: 8),
         pw.Text(
           _totalsLine('المجموع', expenses),
+          textAlign: pw.TextAlign.right,
           style: pw.TextStyle(font: bold, fontSize: 14),
         ),
       ],
@@ -172,21 +182,56 @@ Future<void> shareExpenseHistoryPdf(List<WafferTransaction> expenses) async {
 
   final bytes = await document.save();
   if (bytes.length < 5 || String.fromCharCodes(bytes.take(5)) != '%PDF-') {
-    throw StateError('PDF was not written');
+    throw StateError('PDF bytes are empty or not a PDF');
   }
-  final folder = Directory('${(await getApplicationSupportDirectory()).path}/shared_pdfs');
-  await folder.create(recursive: true);
-  final file = File(
-    '${folder.path}/waffer-expenses-${DateTime.now().millisecondsSinceEpoch}.pdf',
-  );
-  await file.writeAsBytes(bytes, flush: true);
-  if (!await file.exists() || await file.length() != bytes.length) {
-    throw StateError('PDF was not saved');
+  return bytes;
+}
+
+Future<void> shareExpenseHistoryPdf(List<WafferTransaction> expenses) async {
+  try {
+    final bytes = await buildExpenseHistoryPdfBytes(expenses);
+    final folder = Directory(
+      '${(await getTemporaryDirectory()).path}/shared_pdfs',
+    );
+    await folder.create(recursive: true);
+    final file = File(
+      '${folder.path}/waffer-expenses-${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
+    await file.writeAsBytes(bytes, flush: true);
+    final saved = await file.length();
+    if (!await file.exists() || saved != bytes.length || saved <= 0) {
+      throw StateError('PDF was not saved at ${file.path}');
+    }
+    developer.log(
+      'PDF saved path=${file.path} bytes=$saved',
+      name: 'waffer.pdf',
+    );
+    await _sharePdfFile(file);
+  } catch (error, stack) {
+    developer.log(
+      'PDF share failed',
+      name: 'waffer.pdf',
+      error: error,
+      stackTrace: stack,
+    );
+    rethrow;
   }
+}
+
+Future<void> _sharePdfFile(File file) async {
   if (Platform.isAndroid) {
-    const channel = MethodChannel('waffer/share_pdf');
-    await channel.invokeMethod<void>('share', {'path': file.path});
-    return;
+    try {
+      const channel = MethodChannel('waffer/share_pdf');
+      await channel.invokeMethod<void>('share', {'path': file.path});
+      return;
+    } catch (error, stack) {
+      developer.log(
+        'Android PDF channel failed, falling back to share_plus',
+        name: 'waffer.pdf',
+        error: error,
+        stackTrace: stack,
+      );
+    }
   }
   await SharePlus.instance.share(
     ShareParams(

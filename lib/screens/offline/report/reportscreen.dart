@@ -1149,7 +1149,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   Future<void> _confirmShare(List<WafferTransaction> expenses) async {
     final chosen = expenses.where((item) => _selected.contains(item.id)).toList();
     if (chosen.isEmpty || _sharing) return;
-    final format = await showDialog<_ExpenseShareFormat>(
+    final format = await showAppDialog<_ExpenseShareFormat>(
       context: context,
       builder: (context) => const _ShareFormatDialog(),
     );
@@ -1370,20 +1370,11 @@ class _ShareFormatDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppPalette.of(context);
-    return AlertDialog(
-      backgroundColor: colors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: Text(
-        'مشاركة السجل',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-          fontWeight: FontWeight.bold,
-          color: colors.textPrimary,
-        ),
-      ),
-      content: Row(
+    return AppDialogFrame(
+      title: 'مشاركة السجل',
+      message: 'اختر طريقة تصدير المصاريف المحددة.',
+      kind: AppFeedbackKind.info,
+      child: Row(
         children: [
           Expanded(
             child: _FormatChoice(
@@ -1554,49 +1545,13 @@ class _ExpenseDayGroup {
 
 // Confirms, deletes the expense, refunds balance, and undoes linked shopping purchases.
 Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async {
-  final colors = AppPalette.of(context);
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        backgroundColor: colors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        title: Text(
-          'التراجع عن المصروف',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-            fontWeight: FontWeight.bold,
-            color: colors.textPrimary,
-          ),
-        ),
-        content: Text(
-          'سيُحذف هذا المصروف من السجل ويُعاد ${formatMoney(expense.amount)} ${currencyLabelFor(expense.currencyCode)} إلى رصيدك.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-            fontSize: 14,
-            color: colors.textSecondary,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'إلغاء',
-              style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'], color: colors.textSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'تراجع',
-              style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'], color: colors.accent),
-            ),
-          ),
-        ],
-      );
-    },
+  final confirmed = await showAppConfirmDialog(
+    context,
+    title: 'التراجع عن المصروف',
+    message:
+        'سيُحذف هذا المصروف من السجل ويُعاد ${formatMoney(expense.amount)} ${currencyLabelFor(expense.currencyCode)} إلى رصيدك.',
+    confirmLabel: 'تراجع',
+    kind: AppFeedbackKind.warning,
   );
 
   if (confirmed != true || !context.mounted) return;
@@ -1616,49 +1571,13 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
 
 // Confirms, deletes the income entry, and subtracts it from the running balance.
 Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
-  final colors = AppPalette.of(context);
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        backgroundColor: colors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        title: Text(
-          'التراجع عن الدخل',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-            fontWeight: FontWeight.bold,
-            color: colors.textPrimary,
-          ),
-        ),
-        content: Text(
-          'سيُحذف هذا الدخل من السجل ويُخصم ${formatMoney(income.amount)} ${currencyLabelFor(income.currencyCode)} من رصيدك.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-            fontSize: 14,
-            color: colors.textSecondary,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'إلغاء',
-              style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'], color: colors.textSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'تراجع',
-              style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'], color: colors.accent),
-            ),
-          ),
-        ],
-      );
-    },
+  final confirmed = await showAppConfirmDialog(
+    context,
+    title: 'التراجع عن الدخل',
+    message:
+        'سيُحذف هذا الدخل من السجل ويُخصم ${formatMoney(income.amount)} ${currencyLabelFor(income.currencyCode)} من رصيدك.',
+    confirmLabel: 'تراجع',
+    kind: AppFeedbackKind.warning,
   );
 
   if (confirmed != true || !context.mounted) return;
