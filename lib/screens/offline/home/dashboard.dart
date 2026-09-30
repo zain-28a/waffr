@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen>
   late final Listenable _listenables = Listenable.merge([
     _store,
     CategoryStore.instance,
+    CurrencyStore.instance,
   ]);
 
   @override
@@ -191,6 +192,10 @@ class _BalanceCard extends StatelessWidget {
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
 
+    final codes = CurrencyStore.instance.enabledCodes;
+    final activeIndex = codes.indexOf(CurrencyStore.instance.activeCode);
+    final showDots = codes.length > 1;
+
     return GlassContainer(
       colorType: GlassColorType.surface,
       borderRadius: 28,
@@ -229,7 +234,12 @@ class _BalanceCard extends StatelessWidget {
               },
               child: Padding(
                 key: ValueKey(CurrencyStore.instance.activeCode),
-                padding: const EdgeInsets.fromLTRB(22, 20, 22, 10),
+                padding: EdgeInsetsDirectional.fromSTEB(
+                  showDots ? 34 : 22,
+                  20,
+                  22,
+                  10,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -310,6 +320,20 @@ class _BalanceCard extends StatelessWidget {
               ),
             ),
           ),
+          if (showDots)
+            PositionedDirectional(
+              start: 12,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: _CurrencyDots(
+                  count: codes.length,
+                  activeIndex: activeIndex < 0 ? 0 : activeIndex,
+                  activeColor: accent,
+                  inactiveColor: textSecondary.withValues(alpha: 0.35),
+                ),
+              ),
+            ),
           PositionedDirectional(
             top: kBalanceCardActionTop,
             end: kBalanceCardActionEnd,
@@ -330,6 +354,46 @@ class _BalanceCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Vertical page dots for the balance-card currency swipe. The active
+// mark grows and takes the accent color; PositionedDirectional places
+// the column on the start edge in both LTR and RTL.
+class _CurrencyDots extends StatelessWidget {
+  final int count;
+  final int activeIndex;
+  final Color activeColor;
+  final Color inactiveColor;
+
+  const _CurrencyDots({
+    required this.count,
+    required this.activeIndex,
+    required this.activeColor,
+    required this.inactiveColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var index = 0; index < count; index++)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+              width: 6,
+              height: index == activeIndex ? 18 : 6,
+              decoration: BoxDecoration(
+                color: index == activeIndex ? activeColor : inactiveColor,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -165,32 +165,12 @@ class _AccountScreenState extends State<AccountScreen> {
 
   // Confirms, clears the session, then runs the host's onSignedOut callback.
   Future<void> _signOut() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return AlertDialog(
-          title: const Text('تسجيل الخروج'),
-          content: const Text(
-            'سيتم تسجيل الخروج من حسابك على هذا الجهاز. تبقى بياناتك محفوظة هنا، وتعود إلى شاشة الدخول حيث يمكنك المتابعة كضيف أو تسجيل الدخول بحساب آخر.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                'تسجيل الخروج',
-                style: TextStyle(
-                  color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+    final confirm = await showAppConfirmDialog(
+      context,
+      title: 'تسجيل الخروج',
+      message:
+          'سيتم تسجيل الخروج من حسابك على هذا الجهاز. تبقى بياناتك محفوظة هنا، وتعود إلى شاشة الدخول حيث يمكنك المتابعة كضيف أو تسجيل الدخول بحساب آخر.',
+      confirmLabel: 'تسجيل الخروج',
     );
 
     if (confirm != true) return;
@@ -207,32 +187,13 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _deleteAccount() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return AlertDialog(
-          title: const Text('حذف الحساب'),
-          content: const Text(
-            'سيتم حذف بيانات هذا الحساب من الجهاز ومن النسخة الاحتياطية إن وُجدت. لا يمكن التراجع عن هذا الإجراء.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                'حذف الحساب',
-                style: TextStyle(
-                  color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+    final confirm = await showAppConfirmDialog(
+      context,
+      title: 'حذف الحساب',
+      message:
+          'سيتم حذف بيانات هذا الحساب من الجهاز ومن النسخة الاحتياطية إن وُجدت. لا يمكن التراجع عن هذا الإجراء.',
+      confirmLabel: 'حذف الحساب',
+      destructive: true,
     );
 
     if (confirm != true) return;

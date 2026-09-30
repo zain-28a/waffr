@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:waffer/data/models/app_notification.dart';
 import 'package:waffer/data/services/notification_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/widgets/containers/glass.dart';
@@ -26,51 +27,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   // Clears history only — balance, savings, goals, and mute stay intact.
   Future<void> _confirmClear() async {
-    final colors = _NotificationColors.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: colors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
-          title: Text(
-            'مسح سجل الإشعارات',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-              fontWeight: FontWeight.bold,
-              color: colors.textPrimary,
-            ),
-          ),
-          content: Text(
-            'سيتم حذف سجل الإشعارات فقط. لن يتأثر رصيدك أو ادخارك أو أهدافك، ولن يتغيّر إعداد الكتم.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-              fontSize: 14,
-              color: colors.textSecondary,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(
-                'إلغاء',
-                style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], color: colors.textSecondary),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                'مسح السجل',
-                style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], color: colors.accent),
-              ),
-            ),
-          ],
-        );
-      },
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'مسح سجل الإشعارات',
+      message:
+          'سيتم حذف سجل الإشعارات فقط. لن يتأثر رصيدك أو ادخارك أو أهدافك، ولن يتغيّر إعداد الكتم.',
+      confirmLabel: 'مسح السجل',
+      destructive: true,
     );
 
     if (confirmed == true) {

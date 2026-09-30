@@ -1,4 +1,4 @@
-// News items from the SANA feed API.
+// News items from the economic feeds API.
 
 class NewsArticle {
   final int? id;

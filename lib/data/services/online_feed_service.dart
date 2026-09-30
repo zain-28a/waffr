@@ -43,7 +43,7 @@ class OnlineFeedService {
           Uri.parse('$base/online/news'),
           headers: const {'Accept': 'application/json'},
         )
-        .timeout(_timeout);
+        .timeout(ApiConfig.timeoutFor(base, local: _timeout));
 
     if (response.statusCode != 200) {
       throw Exception('news ${response.statusCode}');

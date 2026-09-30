@@ -298,9 +298,8 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
     ExpenseCategory? editing,
   }) {
     final store = CategoryStore.instance;
-    return showDialog<_CustomCategoryDraft>(
+    return showAppDialog<_CustomCategoryDraft>(
       context: context,
-      barrierDismissible: true,
       builder: (_) => _CustomCategoryNameDialog(
         title: editing == null ? 'تصنيف مخصص' : 'تعديل التصنيف',
         submitLabel: editing == null ? 'إضافة' : 'حفظ',
@@ -535,16 +534,28 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
         : AppColors.lightTextPrimary;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.72;
+    final width = MediaQuery.sizeOf(context).width;
 
-    return Dialog(
-      backgroundColor: surface,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: SizedBox(
-        width: 420,
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: width > 460 ? 400 : width - 40,
         height: maxHeight,
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.14),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
+          padding: EdgeInsets.zero,
           child: Column(
             children: [
               Text(

@@ -3,6 +3,7 @@ import 'package:waffer/data/models/transaction.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
@@ -95,52 +96,11 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
 
   // Explains what happens to leftover balance when a new income period starts.
   void _showBalanceInfo() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
-          title: Text(
-            'الرصيد الحالي',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-              fontWeight: FontWeight.bold,
-              color: textPrimary,
-            ),
-          ),
-          content: Text(
-            'يُظهر هذا القسم الرصيد المتبقي لديك من الفترة السابقة. اختر ما تريد فعله به: نقله إلى التوفير، أو إبقاءه ضمن رصيدك الجديد.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-              fontSize: 14,
-              height: 1.6,
-              color: textSecondary,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'حسناً',
-                style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], color: accent),
-              ),
-            ),
-          ],
-        );
-      },
+    showAppInfoDialog(
+      context,
+      title: 'الرصيد الحالي',
+      message:
+          'يُظهر هذا القسم الرصيد المتبقي لديك من الفترة السابقة. اختر ما تريد فعله به: نقله إلى التوفير، أو إبقاءه ضمن رصيدك الجديد.',
     );
   }
 

@@ -1,6 +1,7 @@
 // Alert dialog for editing a money amount (same validation as monthly income).
 import 'package:flutter/material.dart';
 import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 
@@ -81,9 +82,28 @@ class _EditAmountDialogState extends State<EditAmountDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: Column(
+    return AppDialogFrame(
+      title: widget.title,
+      kind: AppFeedbackKind.info,
+      actions: [
+        AppDialogAction(
+          label: 'إلغاء',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        if (widget.allowClear)
+          AppDialogAction(
+            label: 'إزالة الدخل',
+            destructive: true,
+            onPressed: () =>
+                Navigator.of(context).pop(AmountDialogCleared(_currencyCode)),
+          ),
+        AppDialogAction(
+          label: 'حفظ',
+          primary: true,
+          onPressed: _submit,
+        ),
+      ],
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
@@ -92,6 +112,7 @@ class _EditAmountDialogState extends State<EditAmountDialog> {
             keyboardType: TextInputType.number,
             inputFormatters: [ThousandsInputFormatter()],
             textAlign: TextAlign.center,
+            cursorColor: widget.accent,
             onChanged: (_) {
               if (_error != null) setState(() => _error = null);
             },
@@ -112,22 +133,6 @@ class _EditAmountDialogState extends State<EditAmountDialog> {
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('إلغاء'),
-        ),
-        if (widget.allowClear)
-          TextButton(
-            onPressed: () =>
-                Navigator.of(context).pop(AmountDialogCleared(_currencyCode)),
-            child: Text('إزالة الدخل', style: TextStyle(color: widget.accent)),
-          ),
-        TextButton(
-          onPressed: _submit,
-          child: Text('حفظ', style: TextStyle(color: widget.accent)),
-        ),
-      ],
     );
   }
 }

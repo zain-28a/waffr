@@ -5,6 +5,7 @@ import 'package:waffer/data/models/savings_goal.dart';
 import 'package:waffer/data/models/transaction.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
@@ -310,56 +311,12 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
   Future<void> _confirmDelete() async {
     if (_deleting) return;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
-          title: Text(
-            'حذف الخطة',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-              fontWeight: FontWeight.bold,
-              color: textPrimary,
-            ),
-          ),
-          content: const Text(
-            'هل أنت متأكد من حذف هذه الخطة الدورية؟',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], fontSize: 14),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(
-                'إلغاء',
-                style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], color: textSecondary),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                'حذف',
-                style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], color: accent),
-              ),
-            ),
-          ],
-        );
-      },
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'حذف الخطة',
+      message: 'هل أنت متأكد من حذف هذه الخطة الدورية؟',
+      confirmLabel: 'حذف',
+      destructive: true,
     );
 
     if (confirmed != true || !mounted) return;

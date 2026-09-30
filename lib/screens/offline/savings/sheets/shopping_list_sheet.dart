@@ -214,57 +214,12 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
   Future<void> _clearList() async {
     if (_store.items.isEmpty) return;
 
-    final colors = _ShoppingColors.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: colors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
-          title: Text(
-            'إفراغ قائمة المشتريات',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-              fontWeight: FontWeight.bold,
-              color: colors.textPrimary,
-            ),
-          ),
-          content: Text(
-            'سيتم حذف كل العناصر من القائمة. المصروفات المسجّلة لن تتأثر.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-              fontSize: 14,
-              color: colors.textSecondary,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(
-                'إلغاء',
-                style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                  color: colors.textSecondary,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                'إفراغ',
-                style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                  color: colors.accent,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'إفراغ قائمة المشتريات',
+      message: 'سيتم حذف كل العناصر من القائمة. المصروفات المسجّلة لن تتأثر.',
+      confirmLabel: 'إفراغ',
+      destructive: true,
     );
 
     if (confirmed != true || !mounted) return;

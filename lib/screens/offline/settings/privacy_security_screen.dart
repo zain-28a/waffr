@@ -425,7 +425,11 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
       case AppLockToggleResult.disabled:
         showAppSnackBar(context, 'تم إيقاف قفل التطبيق', success: true);
       case AppLockToggleResult.unsupported:
-        showAppSnackBar(context, 'جهازك لا يدعم المصادقة البيومترية');
+        showAppSnackBar(
+          context,
+          'جهازك لا يدعم المصادقة البيومترية',
+          kind: AppFeedbackKind.warning,
+        );
       case AppLockToggleResult.cancelled:
         break;
     }
@@ -492,31 +496,13 @@ class _LocalResetDetailPage extends StatelessWidget {
   const _LocalResetDetailPage();
 
   Future<void> _confirmReset(BuildContext context) async {
-    final colors = _PrivacyColors.of(context);
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('إعادة ضبط البيانات المحلية'),
-          content: const Text(
-            'سيتم حذف البيانات المخزّنة على هذا الجهاز. لا يمكن التراجع عن هذا الإجراء.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(
-                'حذف البيانات',
-                style: TextStyle(color: colors.accent),
-              ),
-            ),
-          ],
-        );
-      },
+    final confirm = await showAppConfirmDialog(
+      context,
+      title: 'إعادة ضبط البيانات المحلية',
+      message:
+          'سيتم حذف البيانات المخزّنة على هذا الجهاز. لا يمكن التراجع عن هذا الإجراء.',
+      confirmLabel: 'حذف البيانات',
+      destructive: true,
     );
 
     if (confirm != true || !context.mounted) return;
