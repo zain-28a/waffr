@@ -63,6 +63,7 @@ class TransactionOut(ApiModel):
     client_id: str
     type: str
     amount: Decimal
+    currency_code: str = "SYP"
     category: str | None
     payment_method: str | None
     note: str | None
@@ -166,6 +167,7 @@ class SavingsGoalOut(ApiModel):
     id: int
     client_id: str
     name: str
+    currency_code: str = "SYP"
     target_amount: Decimal
     saved_amount: Decimal
     duration: str
@@ -224,6 +226,7 @@ class SavingsTransferOut(ApiModel):
     client_id: str
     goal_id: int | None
     amount: Decimal
+    currency_code: str = "SYP"
     direction: str
     kind: str | None
     note: str | None
@@ -388,6 +391,7 @@ class RecurringExpenseOut(ApiModel):
     id: int
     client_id: str
     amount: Decimal
+    currency_code: str = "SYP"
     category: str
     payment_method: str
     note: str | None
@@ -460,6 +464,9 @@ class UserSettingsOut(ApiModel):
     ai_data_enabled: bool
     monthly_income_amount: Decimal | None
     weekly_income_amount: Decimal | None
+    income_overrides_by_currency: dict = Field(default_factory=dict)
+    enabled_currencies: list[str] = Field(default_factory=lambda: ["SYP"])
+    active_currency: str = "SYP"
     processed_period_keys: list[str]
     updated_at: datetime
 

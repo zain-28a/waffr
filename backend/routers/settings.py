@@ -37,6 +37,9 @@ def _to_out(row: UserSettings) -> UserSettingsOut:
         ai_data_enabled=row.ai_data_enabled,
         monthly_income_amount=row.monthly_income_amount,
         weekly_income_amount=row.weekly_income_amount,
+        income_overrides_by_currency=dict(row.income_overrides_by_currency or {}),
+        enabled_currencies=list(row.enabled_currencies or ["SYP"]),
+        active_currency=row.active_currency or "SYP",
         processed_period_keys=list(row.processed_period_keys or []),
         updated_at=row.updated_at,
     )

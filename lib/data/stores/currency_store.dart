@@ -3,6 +3,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:waffer/data/models/currency.dart';
 import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffer/core/sync/sync_dirty.dart';
 
 export 'package:waffer/data/models/currency.dart';
 
@@ -64,6 +65,35 @@ class CurrencyStore extends ChangeNotifier {
 
     _activeCode = normalized;
     await _persistActive();
+    await SyncDirty.mark(settings: true);
+    notifyListeners();
+  }
+
+  // Replaces the enabled list and active code from a newer account sync.
+  Future<void> applyRemote({
+    List<dynamic>? enabled,
+    String? active,
+  }) async {
+    await ensureLoaded();
+    if (enabled == null && (active == null || active.trim().isEmpty)) return;
+
+    if (enabled != null) {
+      _enabled
+        ..clear()
+        ..add(defaultCurrencyCode);
+      for (final raw in enabled) {
+        final code = Currencies.normalize(raw?.toString());
+        if (code == defaultCurrencyCode) continue;
+        if (!Currencies.isKnown(code)) continue;
+        if (_enabled.contains(code)) continue;
+        _enabled.add(code);
+      }
+    }
+
+    final nextActive = Currencies.normalize(active ?? _activeCode);
+    _activeCode = _enabled.contains(nextActive) ? nextActive : defaultCurrencyCode;
+    await _persistEnabled();
+    await _persistActive();
     notifyListeners();
   }
 
@@ -100,6 +130,7 @@ class CurrencyStore extends ChangeNotifier {
 
     _enabled.add(normalized);
     await _persistEnabled();
+    await SyncDirty.mark(settings: true);
     notifyListeners();
     return true;
   }
@@ -122,6 +153,7 @@ class CurrencyStore extends ChangeNotifier {
       await _persistActive();
     }
     await _persistEnabled();
+    await SyncDirty.mark(settings: true);
     notifyListeners();
     return true;
   }

@@ -14,6 +14,7 @@ import 'package:waffer/data/services/notification_service.dart';
 import 'package:waffer/data/stores/recurring_expense_store.dart';
 import 'package:waffer/data/stores/shopping_list_store.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
+import 'package:waffer/core/prefs/app_prefs.dart';
 import 'package:waffer/core/sync/api_config.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
@@ -48,6 +49,7 @@ class SyncService with WidgetsBindingObserver {
   static const Duration _debounce = Duration(seconds: 3);
   static const Duration _timeout = Duration(seconds: 25);
   static const Duration _minPullInterval = Duration(seconds: 20);
+  static const String _currencySyncedKey = 'waffer_currency_synced';
 
   Timer? _debounceTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
@@ -120,7 +122,12 @@ class SyncService with WidgetsBindingObserver {
         );
       }
 
-      final payload = await _buildRequest(lastSync: lastSync, sendAll: dirty || lastSync == null || force);
+      final prefs = await AppPrefs.instance;
+      final currencySynced = prefs.getBool(_currencySyncedKey) ?? false;
+      final payload = await _buildRequest(
+        lastSync: lastSync,
+        sendAll: dirty || lastSync == null || force || !currencySynced,
+      );
       final base = await ApiConfig.baseUrl();
       http.Response response;
       try {
@@ -204,6 +211,9 @@ class SyncService with WidgetsBindingObserver {
       );
       await AuthSession.instance.saveLastSyncAt(serverTime);
       await SyncDirty.clear();
+      if (!currencySynced) {
+        await prefs.setBool(_currencySyncedKey, true);
+      }
       if (UsageStreakService.instance.consumePushRequest()) {
         await SyncDirty.mark(settings: true);
       }

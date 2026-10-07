@@ -114,6 +114,7 @@ def _ensure_schema_updates() -> None:
         _ensure_recurring_columns(connection, inspector, tables)
         _ensure_notification_columns(connection, inspector, tables)
         _ensure_settings_columns(connection, inspector, tables)
+        _ensure_currency_columns(connection, inspector, tables)
         _ensure_soft_delete_columns(connection, inspector, tables)
         _ensure_transfer_updated_at(connection, inspector, tables)
         _ensure_notification_updated_at(connection, inspector, tables)
@@ -588,4 +589,45 @@ def _ensure_settings_columns(connection, inspector, tables: set[str]) -> None:
         "user_settings",
         "streak_last_date",
         "streak_last_date VARCHAR(10)",
+    )
+
+
+def _ensure_currency_columns(connection, inspector, tables: set[str]) -> None:
+    for table in (
+        "transactions",
+        "savings_goals",
+        "savings_transfers",
+        "recurring_expenses",
+    ):
+        _add_column(
+            connection,
+            inspector,
+            tables,
+            table,
+            "currency_code",
+            "currency_code VARCHAR(10) NOT NULL DEFAULT 'SYP'",
+        )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "user_settings",
+        "enabled_currencies",
+        "enabled_currencies JSONB NOT NULL DEFAULT '[\"SYP\"]'::jsonb",
+    )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "user_settings",
+        "active_currency",
+        "active_currency VARCHAR(10) NOT NULL DEFAULT 'SYP'",
+    )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "user_settings",
+        "income_overrides_by_currency",
+        "income_overrides_by_currency JSONB NOT NULL DEFAULT '{}'::jsonb",
     )
