@@ -8,8 +8,7 @@ class ApiConfig {
 
   static const String overrideKey = 'waffer_api_base_url';
 
-  // Dev default: this PC's current Wi-Fi address. The phone must be on the
-  // same network (192.168.2.x). Update this if the PC's IP changes.
+  // Dev default; with USB debugging, adb reverse can map this to the PC.
   static const String defaultBaseUrl = 'http://192.168.2.24:8001';
 
   // Free Render instances take about a minute to wake after they sleep.
