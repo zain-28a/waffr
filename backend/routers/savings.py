@@ -53,6 +53,7 @@ def _goal_out(goal: SavingsGoal, transfers: list[SavingsTransfer]) -> SavingsGoa
         id=goal.id,
         client_id=goal.client_id,
         name=goal.name,
+        currency_code=goal.currency_code,
         target_amount=goal.target_amount,
         saved_amount=_saved_amount(goal, transfers),
         duration=goal.duration,

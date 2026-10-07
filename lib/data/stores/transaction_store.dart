@@ -1037,7 +1037,17 @@ class TransactionStore extends ChangeNotifier {
             _weeklyIncomeByCurrency.remove(defaultCurrencyCode);
           }
         }
-        _applyIncomeOverridesJson(settings['income_overrides_by_currency']);
+        if (settings.containsKey('income_overrides_by_currency')) {
+          _replaceNonDefaultIncomeOverrides(
+            settings['income_overrides_by_currency'],
+          );
+        }
+        await CurrencyStore.instance.applyRemote(
+          enabled: settings['enabled_currencies'] is List
+              ? settings['enabled_currencies'] as List
+              : null,
+          active: settings['active_currency']?.toString(),
+        );
         if (remoteUpdated != null) {
           await SyncDirty.setSettingsUpdatedAt(remoteUpdated);
         }
@@ -1778,6 +1788,20 @@ class TransactionStore extends ChangeNotifier {
 
     if (payload.isEmpty) return null;
     return jsonEncode(payload);
+  }
+
+  void _replaceNonDefaultIncomeOverrides(Object? raw) {
+    final monthly = _monthlyIncomeByCurrency[defaultCurrencyCode];
+    final weekly = _weeklyIncomeByCurrency[defaultCurrencyCode];
+    _monthlyIncomeByCurrency.removeWhere(
+      (code, _) => code != defaultCurrencyCode,
+    );
+    _weeklyIncomeByCurrency.removeWhere(
+      (code, _) => code != defaultCurrencyCode,
+    );
+    if (monthly != null) _monthlyIncomeByCurrency[defaultCurrencyCode] = monthly;
+    if (weekly != null) _weeklyIncomeByCurrency[defaultCurrencyCode] = weekly;
+    _applyIncomeOverridesJson(raw);
   }
 
   void _applyIncomeOverridesJson(Object? raw) {

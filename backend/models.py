@@ -138,6 +138,21 @@ class UserSettings(TimestampMixin, Base):
     usage_started_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
     streak_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     streak_last_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    enabled_currencies: Mapped[list] = mapped_column(
+        JSONB,
+        default=lambda: ["SYP"],
+        nullable=False,
+    )
+    active_currency: Mapped[str] = mapped_column(
+        String(10),
+        default="SYP",
+        nullable=False,
+    )
+    income_overrides_by_currency: Mapped[dict] = mapped_column(
+        JSONB,
+        default=dict,
+        nullable=False,
+    )
 
     user: Mapped[User] = relationship(back_populates="settings")
 

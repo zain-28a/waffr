@@ -30,6 +30,7 @@ def _to_out(row: RecurringExpense) -> RecurringExpenseOut:
         id=row.id,
         client_id=row.client_id,
         amount=row.amount,
+        currency_code=row.currency_code,
         category=row.category,
         payment_method=row.payment_method,
         note=row.note,

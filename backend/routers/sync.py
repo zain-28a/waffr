@@ -11,6 +11,9 @@ from crud_utils import (
     as_utc_or_now,
     direction_from_kind,
     empty_to_none,
+    normalize_currency,
+    normalize_enabled_currencies,
+    normalize_income_overrides,
     period_from_unit,
     unit_from_period,
     utc_now,
@@ -160,6 +163,16 @@ def _apply_settings(
     for field in ("monthly_income_amount", "weekly_income_amount"):
         if field in data.model_fields_set:
             setattr(row, field, getattr(data, field))
+    if "income_overrides_by_currency" in data.model_fields_set:
+        row.income_overrides_by_currency = normalize_income_overrides(
+            data.income_overrides_by_currency
+        )
+    if "enabled_currencies" in data.model_fields_set:
+        row.enabled_currencies = normalize_enabled_currencies(data.enabled_currencies)
+    if "active_currency" in data.model_fields_set:
+        active = normalize_currency(data.active_currency)
+        enabled = list(row.enabled_currencies or ["SYP"])
+        row.active_currency = active if active in enabled else "SYP"
     if data.display_name is not None:
         name = data.display_name.strip()
         user.name = name or None
@@ -187,6 +200,9 @@ def _settings_out(row: UserSettings, user: User) -> SettingsSyncOut:
         ai_data_enabled=row.ai_data_enabled,
         monthly_income_amount=row.monthly_income_amount,
         weekly_income_amount=row.weekly_income_amount,
+        income_overrides_by_currency=dict(row.income_overrides_by_currency or {}),
+        enabled_currencies=list(row.enabled_currencies or ["SYP"]),
+        active_currency=row.active_currency or "SYP",
         processed_period_keys=list(row.processed_period_keys or []),
         display_name=user.name,
         gender=user.gender or row.gender,
@@ -215,6 +231,7 @@ def _apply_transaction(db: Session, user_id: int, data: TransactionSyncIn) -> No
         return
     row.type = data.type
     row.amount = data.amount
+    row.currency_code = normalize_currency(data.currency_code)
     row.category = empty_to_none(data.category)
     row.payment_method = empty_to_none(data.payment_method)
     row.note = empty_to_none(data.note)
@@ -237,6 +254,7 @@ def _apply_goal(db: Session, user_id: int, data: GoalSyncIn) -> None:
     elif not _newer_or_equal(incoming, row.updated_at):
         return
     row.name = data.name
+    row.currency_code = normalize_currency(data.currency_code)
     row.target_amount = data.target_amount
     row.duration = data.duration
     row.deadline = as_utc(data.deadline)
@@ -269,6 +287,7 @@ def _apply_transfer(db: Session, user_id: int, data: TransferSyncIn) -> None:
         return
     row.goal_id = None if goal is None else goal.id
     row.amount = data.amount
+    row.currency_code = normalize_currency(data.currency_code)
     row.direction = direction_from_kind(data.kind, data.direction)
     row.kind = data.kind
     row.note = empty_to_none(data.note)
@@ -330,6 +349,7 @@ def _apply_recurring(db: Session, user_id: int, data: RecurringSyncIn) -> None:
     elif not _newer_or_equal(incoming, row.updated_at):
         return
     row.amount = data.amount
+    row.currency_code = normalize_currency(data.currency_code)
     row.category = data.category
     row.payment_method = data.payment_method
     row.note = empty_to_none(data.note)
@@ -476,6 +496,7 @@ def sync_changes(
                     "client_id": row.client_id,
                     "type": row.type,
                     "amount": str(row.amount),
+                    "currency_code": row.currency_code,
                     "category": row.category,
                     "payment_method": row.payment_method,
                     "note": row.note,
@@ -492,6 +513,7 @@ def sync_changes(
                 lambda row: {
                     "client_id": row.client_id,
                     "name": row.name,
+                    "currency_code": row.currency_code,
                     "target_amount": str(row.target_amount),
                     "duration": row.duration,
                     "deadline": row.deadline,
@@ -513,6 +535,7 @@ def sync_changes(
                     "client_id": row.client_id,
                     "goal_client_id": None if row.goal_id is None else getattr(goals.get(row.goal_id), "client_id", None),
                     "amount": str(row.amount),
+                    "currency_code": row.currency_code,
                     "direction": row.direction,
                     "kind": row.kind,
                     "note": row.note,
@@ -551,6 +574,7 @@ def sync_changes(
                 lambda row: {
                     "client_id": row.client_id,
                     "amount": str(row.amount),
+                    "currency_code": row.currency_code,
                     "category": row.category,
                     "payment_method": row.payment_method,
                     "note": row.note,

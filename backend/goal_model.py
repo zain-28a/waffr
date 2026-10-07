@@ -48,6 +48,11 @@ class SavingsGoal(ClientIdMixin, SoftDeleteMixin, TimestampMixin, Base):
     )
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+    currency_code: Mapped[str] = mapped_column(
+        String(10),
+        default="SYP",
+        nullable=False,
+    )
     target_amount: Mapped[Decimal] = mapped_column(MONEY, nullable=False)
     saved_amount: Mapped[Decimal] = mapped_column(
         MONEY,
@@ -134,6 +139,11 @@ class SavingsTransfer(ClientIdMixin, SoftDeleteMixin, CreatedAtMixin, Base):
     )
 
     amount: Mapped[Decimal] = mapped_column(MONEY, nullable=False)
+    currency_code: Mapped[str] = mapped_column(
+        String(10),
+        default="SYP",
+        nullable=False,
+    )
     direction: Mapped[str] = mapped_column(String(20), nullable=False)
     kind: Mapped[str | None] = mapped_column(String(30), nullable=True)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)

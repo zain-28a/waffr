@@ -22,6 +22,7 @@ class TransactionSyncIn(BaseModel):
     occurred_at: datetime | None = None
     frequency: str = Field(default="none", pattern="^(none|weekly|monthly)$")
     period_key: str | None = None
+    currency_code: str | None = None
     updated_at: datetime | None = None
 
     @field_validator("amount", mode="before")
@@ -47,6 +48,7 @@ class GoalSyncIn(BaseModel):
     priority: int = 0
     completed_at: datetime | None = None
     completed_amount: Decimal | None = None
+    currency_code: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -74,6 +76,7 @@ class TransferSyncIn(BaseModel):
     note: str | None = None
     occurred_at: datetime | None = None
     processed_period_key: str | None = None
+    currency_code: str | None = None
     updated_at: datetime | None = None
 
     @field_validator("amount", mode="before")
@@ -119,6 +122,7 @@ class RecurringSyncIn(BaseModel):
     interval_count: int = 1
     next_due_at: datetime | None = None
     enabled: bool = True
+    currency_code: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -162,6 +166,9 @@ class SettingsSyncIn(BaseModel):
     ai_data_enabled: bool | None = None
     monthly_income_amount: Decimal | None = None
     weekly_income_amount: Decimal | None = None
+    income_overrides_by_currency: dict | None = None
+    enabled_currencies: list[str] | None = None
+    active_currency: str | None = None
     processed_period_keys: list[str] | None = None
     display_name: str | None = Field(default=None, max_length=100)
     gender: str | None = Field(default=None, max_length=20)
@@ -209,6 +216,9 @@ class SettingsSyncOut(BaseModel):
     ai_data_enabled: bool
     monthly_income_amount: Decimal | None
     weekly_income_amount: Decimal | None
+    income_overrides_by_currency: dict = Field(default_factory=dict)
+    enabled_currencies: list[str] = Field(default_factory=lambda: ["SYP"])
+    active_currency: str = "SYP"
     processed_period_keys: list[str]
     display_name: str | None = None
     gender: str | None = None

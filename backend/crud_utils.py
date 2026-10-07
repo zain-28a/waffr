@@ -1,4 +1,6 @@
+import re
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
@@ -20,6 +22,57 @@ PERIOD_TO_UNIT = {
     "weekly": "week",
     "monthly": "month",
 }
+
+_CURRENCY = re.compile(r"^[A-Z]{3,10}$")
+
+
+def normalize_currency(value: str | None) -> str:
+    code = (value or "").strip().upper()
+    if _CURRENCY.fullmatch(code) is None:
+        return "SYP"
+    return code
+
+
+def normalize_enabled_currencies(raw: object) -> list[str]:
+    codes = ["SYP"]
+    if not isinstance(raw, list):
+        return codes
+    for item in raw:
+        code = normalize_currency(None if item is None else str(item))
+        if code not in codes:
+            codes.append(code)
+    return codes
+
+
+def _positive_money(value: object) -> str | None:
+    if value is None or value == "":
+        return None
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    if amount <= 0:
+        return None
+    return format(amount.quantize(Decimal("0.01")), "f")
+
+
+def normalize_income_overrides(raw: object) -> dict:
+    if not isinstance(raw, dict):
+        return {}
+    cleaned: dict[str, dict[str, str]] = {}
+    for key, entry in raw.items():
+        code = normalize_currency(str(key))
+        if code == "SYP" or not isinstance(entry, dict):
+            continue
+        item: dict[str, str] = {}
+        for field in ("monthly", "weekly"):
+            amount = _positive_money(entry.get(field))
+            if amount is not None:
+                item[field] = amount
+        if item:
+            cleaned[code] = item
+    return cleaned
+
 
 KIND_TO_DIRECTION = {
     "periodLeftover": "to_savings",

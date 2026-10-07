@@ -16,5 +16,5 @@ class AppColors {
   static const Color darkTextPrimary   = Color.fromARGB(255, 255, 255, 255); 
   static const Color darkTextSecondary = Color.fromARGB(255, 131, 131, 131);
   static const Color darkAccent        = Color.fromARGB(255, 91, 136, 88);
-
+  
 }

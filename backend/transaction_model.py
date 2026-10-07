@@ -47,6 +47,11 @@ class Transaction(ClientIdMixin, SoftDeleteMixin, TimestampMixin, Base):
 
     type: Mapped[str] = mapped_column(String(20), nullable=False)
     amount: Mapped[Decimal] = mapped_column(MONEY, nullable=False)
+    currency_code: Mapped[str] = mapped_column(
+        String(10),
+        default="SYP",
+        nullable=False,
+    )
     category: Mapped[str | None] = mapped_column(String(100), nullable=True)
     payment_method: Mapped[str | None] = mapped_column(String(100), nullable=True)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -108,6 +113,11 @@ class RecurringExpense(ClientIdMixin, SoftDeleteMixin, TimestampMixin, Base):
     )
 
     amount: Mapped[Decimal] = mapped_column(MONEY, nullable=False)
+    currency_code: Mapped[str] = mapped_column(
+        String(10),
+        default="SYP",
+        nullable=False,
+    )
     category: Mapped[str] = mapped_column(String(100), nullable=False)
     payment_method: Mapped[str] = mapped_column(
         String(100),
