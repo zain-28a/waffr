@@ -41,14 +41,16 @@ dependencies:
   shared_preferences: ^2.2.3
   local_auth: ^3.0.2
   google_sign_in: ^7.2.0
-  flutter_secure_storage: ^9.2.4
+  flutter_secure_storage: ^11.2.0
   http: ^1.6.0
-  connectivity_plus: ^6.1.4
+  # 7.3.2 pulls dbus ^0.8 via nm, which clashes with flutter_local_notifications 22.x.
+  connectivity_plus: '>=7.2.0 <7.3.2'
   url_launcher: ^6.3.2
   image_picker: ^1.1.2
   path_provider: ^2.1.5
   pdf: ^3.11.3
-  share_plus: ^11.1.0
+  # 13.2+ applies KGP only when android.builtInKotlin=false.
+  share_plus: ^13.3.1
   flutter_local_notifications: ^22.3.1
   timezone: ^0.11.1
 dev_dependencies:

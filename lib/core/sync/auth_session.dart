@@ -41,9 +41,8 @@ class AuthSession {
 
   static const Duration _timeout = Duration(seconds: 15);
 
-  static const FlutterSecureStorage _secure = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-  );
+  // v11 dropped EncryptedSharedPreferences; the default cipher storage is used.
+  static const FlutterSecureStorage _secure = FlutterSecureStorage();
 
   Future<bool> isLoggedIn() async {
     final value = await token();
