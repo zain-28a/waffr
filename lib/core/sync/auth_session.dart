@@ -462,6 +462,7 @@ class AuthSession {
       'country',
       'city',
       'street',
+      'phone',
     ];
     final profile = <String, dynamic>{};
     for (final field in fields) {

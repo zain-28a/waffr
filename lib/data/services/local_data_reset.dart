@@ -1,3 +1,4 @@
+import 'package:waffer/data/stores/expense_preset_store.dart';
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/services/notification_service.dart';
 import 'package:waffer/data/services/profile_identity.dart';
@@ -33,5 +34,6 @@ class LocalDataReset {
     ShoppingListStore.instance.resetCache();
     RecurringExpenseStore.instance.resetCache();
     CategoryStore.instance.resetCache();
+    ExpensePresetStore.instance.resetCache();
   }
 }

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:waffer/data/services/backup_service.dart';
+import 'package:waffer/data/stores/expense_preset_store.dart';
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/data/services/notification_service.dart';
@@ -452,6 +453,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ShoppingListStore.instance.resetCache();
     RecurringExpenseStore.instance.resetCache();
     CategoryStore.instance.resetCache();
+    ExpensePresetStore.instance.resetCache();
 
     if (!mounted) return;
 

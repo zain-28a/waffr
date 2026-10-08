@@ -14,42 +14,43 @@ class ExpenseCategory {
   });
 }
 
-// Grid order for "add expense"; olive/cream palette matches the Waffer theme.
+// Grid order for "add expense". Chart colors are distinct hues anchored on the
+// Waffer green so neighbouring donut slices stay easy to tell apart.
 const List<ExpenseCategory> expenseCategories = [
   ExpenseCategory(
     label: 'طعام',
     icon: Icons.lunch_dining_outlined,
-    color: Color(0xFFB8924A),
+    color: Color(0xFF2E7D4F),
   ),
   ExpenseCategory(
     label: 'مواصلات',
     icon: Icons.directions_bus_outlined,
-    color: Color(0xFF5F8F82),
+    color: Color(0xFF3F88C5),
   ),
   ExpenseCategory(
     label: 'تسوق',
     icon: Icons.shopping_bag_outlined,
-    color: Color(0xFFC4956A),
+    color: Color(0xFFE39B3A),
   ),
   ExpenseCategory(
     label: 'فواتير',
     icon: Icons.receipt_long_outlined,
-    color: Color(0xFFA89B55),
+    color: Color(0xFFD1603D),
   ),
   ExpenseCategory(
     label: 'صحة',
     icon: Icons.favorite_border_rounded,
-    color: Color(0xFFB07A6E),
+    color: Color(0xFFC2477A),
   ),
   ExpenseCategory(
     label: 'ترفيه',
     icon: Icons.sports_esports_outlined,
-    color: Color(0xFF7D9160),
+    color: Color(0xFF8A63C8),
   ),
   ExpenseCategory(
     label: 'تعليم',
     icon: Icons.school_outlined,
-    color: Color(0xFF4F7D52),
+    color: Color(0xFF2BA39A),
   ),
 ];
 
@@ -112,21 +113,21 @@ const List<IconData> customCategoryIconChoices = [
   Icons.celebration_outlined,
 ];
 
-// Muted olive, gold, and clay tones for chart slices of added categories.
-// Kept apart from the built-in swatches so percentage charts stay readable.
+// Chart slices for added categories. Separate hues from the built-in swatches
+// so percentage charts stay readable. Saved categories keep their slot index.
 const List<Color> customCategoryColors = [
-  Color(0xFF6E8F4E),
-  Color(0xFFC4A15A),
-  Color(0xFF8C6A45),
-  Color(0xFF4E7A62),
-  Color(0xFFA68462),
-  Color(0xFF7A8A48),
-  Color(0xFF9A7048),
-  Color(0xFF5C7350),
-  Color(0xFFB89A6A),
-  Color(0xFF6A5E42),
-  Color(0xFF8E9A68),
-  Color(0xFFA07858),
+  Color(0xFF7CB342),
+  Color(0xFF5C6BC0),
+  Color(0xFFF2C14E),
+  Color(0xFFA1665E),
+  Color(0xFF26A0C9),
+  Color(0xFFE07B91),
+  Color(0xFF6D8B3A),
+  Color(0xFFB07CC6),
+  Color(0xFF4E9E7D),
+  Color(0xFFCF8B4F),
+  Color(0xFF5A7EA6),
+  Color(0xFFB5A642),
 ];
 
 // Wired by CategoryStore so charts/reports resolve saved custom icons.

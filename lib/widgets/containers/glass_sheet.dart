@@ -346,6 +346,9 @@ class SheetAmountField extends StatefulWidget {
   final int? multiplier;
   final ValueChanged<int>? onMultiplierChanged;
 
+  /// Optional control stacked above the × button in the same column.
+  final Widget? multiplierAccessory;
+
   const SheetAmountField({
     super.key,
     required this.label,
@@ -357,6 +360,7 @@ class SheetAmountField extends StatefulWidget {
     this.onCurrencyChanged,
     this.multiplier,
     this.onMultiplierChanged,
+    this.multiplierAccessory,
   });
 
   @override
@@ -547,16 +551,24 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(
-                    key: _multiplierKey,
                     width: 46,
                     child: showMultiplier
-                        ? _AmountSlotButton(
-                            label: '×${widget.multiplier ?? 1}',
-                            color: textSecondary,
-                            open: _menu == _AmountMenu.multiplier,
-                            onTap: () => _toggle(_AmountMenu.multiplier),
+                        ? _MultiplierColumn(
+                            accessory: widget.multiplierAccessory,
+                            button: KeyedSubtree(
+                              key: _multiplierKey,
+                              child: _AmountSlotButton(
+                                label: '×${widget.multiplier ?? 1}',
+                                color: textSecondary,
+                                open: _menu == _AmountMenu.multiplier,
+                                onTap: () => _toggle(_AmountMenu.multiplier),
+                              ),
+                            ),
                           )
-                        : widget.leading,
+                        : KeyedSubtree(
+                            key: _multiplierKey,
+                            child: widget.leading ?? const SizedBox.shrink(),
+                          ),
                   ),
               Expanded(
                 child: TextField(
@@ -614,6 +626,28 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
           ),
         );
       },
+    );
+  }
+}
+
+/// × button alone, or with an accessory above it. Both share the row height
+/// evenly so the amount text keeps its place.
+class _MultiplierColumn extends StatelessWidget {
+  final Widget? accessory;
+  final Widget button;
+
+  const _MultiplierColumn({required this.accessory, required this.button});
+
+  @override
+  Widget build(BuildContext context) {
+    final top = accessory;
+    if (top == null) return button;
+    return SizedBox(
+      height: 64,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [top, button],
+      ),
     );
   }
 }

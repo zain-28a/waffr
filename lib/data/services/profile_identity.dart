@@ -13,8 +13,15 @@ class ProfileIdentity extends ChangeNotifier {
   String _name = '';
   String _email = '';
   bool _loggedIn = false;
+  bool _loaded = false;
   String? _photoPath;
   Future<void>? _loader;
+
+  /// False until the first [reload] finishes; sign-in state is unknown before.
+  bool get isLoaded => _loaded;
+
+  /// Loads once if nothing has loaded yet; otherwise returns the last load.
+  Future<void> ensureLoaded() => _loader ??= _load();
 
   String get name => _name;
 
@@ -46,6 +53,7 @@ class ProfileIdentity extends ChangeNotifier {
     _name = '';
     _email = '';
     _loggedIn = false;
+    _loaded = false;
     _photoPath = null;
     _loader = null;
     notifyListeners();
@@ -60,6 +68,7 @@ class ProfileIdentity extends ChangeNotifier {
     _name = prefs.getString('user_name') ?? '';
     _email = loggedIn ? accountEmail : '';
     _photoPath = photoPath;
+    _loaded = true;
     notifyListeners();
   }
 }

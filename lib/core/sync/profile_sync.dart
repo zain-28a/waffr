@@ -4,6 +4,7 @@ import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/prefs/app_prefs.dart';
 import 'package:waffer/data/services/usage_streak_service.dart';
+import 'package:waffer/data/stores/category_store.dart';
 
 // Reads and writes the on-device user profile used during login and sync push.
 class ProfileSync {
@@ -16,6 +17,7 @@ class ProfileSync {
     'country': 'user_country',
     'city': 'user_city',
     'street': 'user_street',
+    'phone': 'user_phone',
   };
 
   // Build the settings fragment sent on push.
@@ -29,6 +31,7 @@ class ProfileSync {
       'country': prefs.getString('user_country'),
       'city': prefs.getString('user_city'),
       'street': prefs.getString('user_street'),
+      'phone': prefs.getString('user_phone'),
       if (prefs.containsKey('dark_mode'))
         'dark_mode': prefs.getBool('dark_mode'),
       ...UsageStreakService.instance.syncFields(),
@@ -84,6 +87,7 @@ class ProfileSync {
       'country': 'user_country',
       'city': 'user_city',
       'street': 'user_street',
+      'phone': 'user_phone',
     };
     for (final entry in synced.entries) {
       final value = settings[entry.key]?.toString().trim() ?? '';
@@ -94,6 +98,12 @@ class ProfileSync {
 
     if (settings.containsKey('dark_mode') && settings['dark_mode'] is bool) {
       await prefs.setBool('dark_mode', settings['dark_mode'] as bool);
+    }
+
+    if (settings.containsKey('hidden_categories')) {
+      await CategoryStore.instance.applyRemoteHidden(
+        settings['hidden_categories'],
+      );
     }
   }
 }

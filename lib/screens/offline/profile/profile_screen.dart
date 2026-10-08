@@ -9,6 +9,7 @@ import 'package:waffer/data/services/usage_streak_service.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/widgets/brand/profile_avatar.dart';
+import 'package:waffer/screens/offline/profile/streak_card.dart';
 import 'package:waffer/widgets/charts/savings_spending_bar.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
@@ -26,6 +27,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   static const int _tab = 4;
 
   final TransactionStore _store = TransactionStore.instance;
+
+  // Bumped each time the tab is opened so the streak card plays again.
+  int _streakReplay = 0;
   late final Listenable _data = Listenable.merge([
     _store,
     CurrencyStore.instance,
@@ -54,6 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _onTab() {
     if (widget.tabIndex.value != _tab) return;
     ProfileIdentity.instance.reload();
+    setState(() => _streakReplay++);
   }
 
   @override
@@ -72,10 +77,12 @@ class _ProfileScreenState extends State<ProfileScreen>
         return ListView(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
           children: [
-            _ProfileHeader(
-              identity: identity,
-              palette: palette,
-              streakCount: streak.isLoaded ? streak.count : 1,
+            _ProfileHeader(identity: identity, palette: palette),
+            const SizedBox(height: 18),
+            StreakCard(
+              count: streak.isLoaded && streak.count > 0 ? streak.count : 1,
+              lastDay: streak.lastDay,
+              replayToken: _streakReplay,
             ),
             if (started != null) ...[
               const SizedBox(height: 18),
@@ -123,12 +130,10 @@ class _ProfileScreenState extends State<ProfileScreen>
 class _ProfileHeader extends StatelessWidget {
   final ProfileIdentity identity;
   final AppPalette palette;
-  final int streakCount;
 
   const _ProfileHeader({
     required this.identity,
     required this.palette,
-    required this.streakCount,
   });
 
   @override
@@ -140,18 +145,11 @@ class _ProfileHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ProfileAvatar(
-                photoPath: identity.photoPath,
-                accent: palette.accent,
-                radius: 46,
-                placeholder: !identity.isLoggedIn && identity.photoPath == null,
-              ),
-              const SizedBox(height: 14),
-              _StreakChip(count: streakCount, palette: palette),
-            ],
+          ProfileAvatar(
+            photoPath: identity.photoPath,
+            accent: palette.accent,
+            radius: 46,
+            placeholder: !identity.isLoggedIn && identity.photoPath == null,
           ),
           const SizedBox(width: 18),
           Expanded(
@@ -196,83 +194,6 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StreakChip extends StatefulWidget {
-  final int count;
-  final AppPalette palette;
-
-  const _StreakChip({
-    required this.count,
-    required this.palette,
-  });
-
-  @override
-  State<_StreakChip> createState() => _StreakChipState();
-}
-
-class _StreakChipState extends State<_StreakChip>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _enter = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  );
-
-  @override
-  void initState() {
-    super.initState();
-    _enter.forward();
-  }
-
-  @override
-  void dispose() {
-    _enter.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = widget.palette;
-    final style = TextStyle(
-      fontFamily: 'Outfit',
-      fontFamilyFallback: const ['Tajawal'],
-      fontSize: 13.5,
-      fontWeight: FontWeight.w800,
-      color: palette.textPrimary,
-    );
-    final firstDay = widget.count <= 1;
-
-    return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _enter,
-        builder: (context, child) {
-          final t = Curves.easeOutCubic.transform(_enter.value);
-          return Opacity(
-            opacity: t,
-            child: Transform.translate(
-              offset: Offset(0, (1 - t) * 8),
-              child: GlassContainer(
-                colorType: GlassColorType.surface,
-                borderRadius: 22,
-                padding: const EdgeInsets.fromLTRB(12, 8, 14, 8),
-                child: firstDay
-                    ? Text('اليوم الأول', style: style)
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        textDirection: TextDirection.rtl,
-                        children: [
-                          Text('${widget.count}', style: style),
-                          const SizedBox(width: 4),
-                          Text('أيام متواصلة', style: style),
-                        ],
-                      ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }

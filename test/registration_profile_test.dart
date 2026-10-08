@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:waffer/data/models/country.dart';
 import 'package:waffer/data/models/registration_profile.dart';
 
 void main() {
@@ -10,14 +11,13 @@ void main() {
     expect(ageInYears(DateTime(2000, 1, 1), today), 26);
   });
 
-  test('requires name, birth date, gender, country, and city', () {
+  test('requires name, birth date and country', () {
     expect(
       registrationProfileError(
         name: '  ',
         birthDate: DateTime(2000, 1, 1),
         gender: 'male',
         country: 'سوريا',
-        city: 'اللاذقية',
         today: today,
       ),
       'أدخل الاسم',
@@ -28,7 +28,6 @@ void main() {
         birthDate: null,
         gender: 'male',
         country: 'سوريا',
-        city: 'اللاذقية',
         today: today,
       ),
       'اختر تاريخ الميلاد',
@@ -39,7 +38,6 @@ void main() {
         birthDate: DateTime(2027, 1, 1),
         gender: 'female',
         country: 'سوريا',
-        city: 'اللاذقية',
         today: today,
       ),
       'تاريخ الميلاد غير صالح',
@@ -48,45 +46,21 @@ void main() {
       registrationProfileError(
         name: 'أحمد',
         birthDate: DateTime(2000, 1, 1),
-        gender: null,
-        country: 'سوريا',
-        city: 'اللاذقية',
-        today: today,
-      ),
-      'اختر الجنس',
-    );
-    expect(
-      registrationProfileError(
-        name: 'أحمد',
-        birthDate: DateTime(2000, 1, 1),
         gender: 'male',
         country: '',
-        city: 'اللاذقية',
         today: today,
       ),
-      'أدخل الدولة',
-    );
-    expect(
-      registrationProfileError(
-        name: 'أحمد',
-        birthDate: DateTime(2000, 1, 1),
-        gender: 'male',
-        country: 'سوريا',
-        city: ' ',
-        today: today,
-      ),
-      'أدخل المدينة',
+      'اختر الدولة',
     );
   });
 
-  test('street is optional and a complete profile has no error', () {
+  test('gender, phone and address are optional', () {
     expect(
       registrationProfileError(
         name: 'أحمد',
         birthDate: DateTime(1998, 5, 12),
-        gender: 'male',
+        gender: null,
         country: 'سوريا',
-        city: 'اللاذقية',
         today: today,
       ),
       isNull,
@@ -95,15 +69,62 @@ void main() {
     final profile = RegistrationProfile(
       name: 'أحمد',
       birthDate: DateTime.utc(1998, 5, 12),
-      gender: 'male',
       country: 'سوريا',
-      city: 'اللاذقية',
     );
     final body = profile.toAuthBody();
+    expect(body.containsKey('gender'), isFalse);
     expect(body.containsKey('street'), isFalse);
+    expect(body.containsKey('city'), isFalse);
+    expect(body.containsKey('phone'), isFalse);
     expect(body['name'], 'أحمد');
-    expect(body['gender'], 'male');
     expect(body['country'], 'سوريا');
-    expect(body['city'], 'اللاذقية');
+  });
+
+  test('phone numbers drop the trunk zero and reject junk', () {
+    expect(normalizePhoneNumber(''), '');
+    expect(normalizePhoneNumber('0912 345 678'), '912345678');
+    expect(normalizePhoneNumber('12'), isNull);
+    expect(
+      registrationProfileError(
+        name: 'أحمد',
+        birthDate: DateTime(1998, 5, 12),
+        gender: 'female',
+        country: 'سوريا',
+        phone: '12',
+        today: today,
+      ),
+      'رقم الهاتف غير صالح',
+    );
+
+    final body = RegistrationProfile(
+      name: 'أحمد',
+      birthDate: DateTime.utc(1998, 5, 12),
+      gender: 'female',
+      country: 'سوريا',
+      phone: '+963 912345678',
+    ).toAuthBody();
+    expect(body['phone'], '+963 912345678');
+    expect(body['gender'], 'female');
+  });
+
+  test('one address field splits into city and street at the first comma', () {
+    expect(splitAddress('اللاذقية، المشروع الأول'), (
+      city: 'اللاذقية',
+      street: 'المشروع الأول',
+    ));
+    expect(splitAddress('المشروع الأول'), (city: '', street: 'المشروع الأول'));
+    expect(splitAddress('  '), (city: '', street: ''));
+  });
+
+  test('country search folds hamza and matches calling codes', () {
+    expect(
+      Countries.search('الاردن').map((item) => item.iso),
+      contains('JO'),
+    );
+    expect(
+      Countries.search('+963').map((item) => item.iso),
+      contains('SY'),
+    );
+    expect(Countries.byName('سوريا')?.dialLabel, '+963');
   });
 }

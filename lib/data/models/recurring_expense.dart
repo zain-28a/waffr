@@ -180,6 +180,21 @@ class RecurringExpense {
   static String newId() =>
       'r${DateTime.now().microsecondsSinceEpoch}_${_seq++}';
 
+  /// Expenses posted by a schedule carry `recurring:<id>:<stamp>` as source.
+  static const String sourcePrefix = 'recurring:';
+
+  static bool isRecurringSource(String? sourceId) =>
+      sourceId != null && sourceId.startsWith(sourcePrefix);
+
+  /// Schedule id from an expense source id, or null for other expenses.
+  static String? idFromSource(String? sourceId) {
+    if (!isRecurringSource(sourceId)) return null;
+    final rest = sourceId!.substring(sourcePrefix.length);
+    final end = rest.lastIndexOf(':');
+    final id = end <= 0 ? rest : rest.substring(0, end);
+    return id.isEmpty ? null : id;
+  }
+
   static RecurringUnit _parseUnit(String? raw) {
     return switch (raw) {
       'week' => RecurringUnit.week,
