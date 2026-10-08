@@ -209,6 +209,17 @@ def store_data_key(
     return {"data_key": _data_key(current_user)}
 
 
+@app.delete("/auth/account", status_code=204)
+def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Rows owned by the user go with it (ORM cascade and ON DELETE CASCADE).
+    stored_photo.delete_photo(current_user.id)
+    db.delete(current_user)
+    db.commit()
+
+
 @app.put("/auth/photo")
 async def upload_photo(
     request: Request,
