@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -9,7 +10,8 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import User
 
-SECRET_KEY = "CHANGE_THIS_LATER"
+# Render generates SECRET_KEY from render.yaml; the fallback is for local runs only.
+SECRET_KEY = os.getenv("SECRET_KEY") or "CHANGE_THIS_LATER"
 ALGORITHM = "HS256"
 
 password_hash = PasswordHash.recommended()
