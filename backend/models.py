@@ -36,6 +36,8 @@ class User(TimestampMixin, Base):
     country: Mapped[str | None] = mapped_column(String(80), nullable=True)
     city: Mapped[str | None] = mapped_column(String(80), nullable=True)
     street: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    # International format, e.g. "+963 912345678". Optional.
+    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     photo_updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
@@ -83,6 +85,10 @@ class User(TimestampMixin, Base):
         cascade="all, delete-orphan",
     )
     expense_categories: Mapped[list["ExpenseCategory"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    expense_presets: Mapped[list["ExpensePreset"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
@@ -155,6 +161,12 @@ class UserSettings(TimestampMixin, Base):
     usage_started_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
     streak_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     streak_last_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    # Built-in category labels the user removed from the pickers.
+    hidden_categories: Mapped[list] = mapped_column(
+        JSONB,
+        default=list,
+        nullable=False,
+    )
     enabled_currencies: Mapped[list] = mapped_column(
         JSONB,
         default=lambda: ["SYP"],
