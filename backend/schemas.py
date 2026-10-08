@@ -47,3 +47,9 @@ class LoginRequest(BaseModel):
 class AuthResponse(BaseModel):
     access_token: str
     token_type: str
+
+
+class DataKeyIn(BaseModel):
+    salt: str = Field(min_length=16, max_length=64)
+    iterations: int = Field(ge=100_000, le=10_000_000)
+    wrapped_key: str = Field(min_length=40, max_length=512)

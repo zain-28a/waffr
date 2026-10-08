@@ -9,7 +9,7 @@ from database import create_tables, get_db, utc_now
 from category_model import ExpenseCategory
 from models import Notification, User, UserSettings
 import profile_photo as stored_photo
-from schemas import RegisterRequest, LoginRequest, AuthResponse
+from schemas import RegisterRequest, LoginRequest, AuthResponse, DataKeyIn
 from auth import (
     hash_password,
     verify_password,
@@ -172,13 +172,41 @@ def _user_payload(user: User) -> dict:
         "country": _clean(user.country),
         "city": _clean(user.city),
         "street": _clean(user.street),
+        "data_key": _data_key(user),
         **_photo_meta(user),
+    }
+
+
+def _data_key(user: User) -> dict | None:
+    if not user.wrapped_key or not user.key_salt or not user.key_iterations:
+        return None
+    return {
+        "salt": user.key_salt,
+        "iterations": user.key_iterations,
+        "wrapped_key": user.wrapped_key,
     }
 
 
 @app.get("/auth/me")
 def get_me(current_user: User = Depends(get_current_user)):
     return _user_payload(current_user)
+
+
+@app.put("/auth/key")
+def store_data_key(
+    data: DataKeyIn,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Set once. Replacing it would leave the encrypted rows unreadable.
+    if current_user.wrapped_key:
+        raise HTTPException(status_code=409, detail="Data key already set")
+    current_user.key_salt = data.salt
+    current_user.key_iterations = data.iterations
+    current_user.wrapped_key = data.wrapped_key
+    db.commit()
+    db.refresh(current_user)
+    return {"data_key": _data_key(current_user)}
 
 
 @app.put("/auth/photo")

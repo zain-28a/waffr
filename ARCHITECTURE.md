@@ -46,6 +46,7 @@ sheets. Shared sheet pieces (glass body, amount field, save button) live in
 | Notifications | `lib/data/services/notification_service.dart` and `lib/screens/offline/notifications/notifications_screen.dart`. |
 | Sign-in and cloud sync | `lib/core/sync/` (`auth_session.dart`, `sync_service.dart`). Login UI: `lib/screens/offline/login/`. |
 | App lock | `lib/core/security/app_lock.dart` and `lib/screens/offline/applock/applockscreen.dart`. |
+| Encryption of synced private text | `lib/core/security/data_key.dart` (data key, wrapped with the password) and `lib/core/sync/sync_crypto.dart` (which fields are sealed). Amounts, dates and the profile stay readable on the server. A forgotten password cannot recover the sealed text. |
 | Profile photo | `lib/data/services/profile_photo.dart`. |
 | Google sign-in and Drive backup | `lib/data/services/google_auth_service.dart`, `lib/data/services/drive_backup_client.dart`, `lib/data/services/backup_service.dart`, `lib/core/config/google_sign_in_config.dart`. Drive is off (`driveBackupEnabled`). Leave the re-enable markers in place. |
 | On-device preferences | `lib/core/prefs/app_prefs.dart`. Call `AppPrefs.instance` instead of `SharedPreferences.getInstance()`. |

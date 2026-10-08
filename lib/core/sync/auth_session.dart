@@ -10,6 +10,7 @@ import 'package:waffer/core/sync/api_config.dart';
 import 'package:waffer/core/sync/auth_errors.dart';
 import 'package:waffer/core/sync/profile_sync.dart';
 import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffer/core/security/data_key.dart';
 
 export 'package:waffer/core/sync/auth_errors.dart';
 
@@ -87,9 +88,11 @@ class AuthSession {
     await prefs.remove(tokenKey);
   }
 
-  // Drop the API session; local financial data and data-owner stamp stay.
+  // Drop the API session and data key; local financial data and the
+  // data-owner stamp stay.
   Future<void> clearSession() async {
     await clearToken();
+    await DataKeyStore.instance.clear();
     final prefs = await AppPrefs.instance;
     await prefs.remove(lastSyncKey);
     await prefs.remove(accountEmailKey);
@@ -186,14 +189,25 @@ class AuthSession {
         return const AuthResult.failure('تعذر قراءة رد الخادم');
       }
 
-      final me = await _fetchMe(access);
-      final resolvedEmail = (me?['email']?.toString() ?? address).toLowerCase();
+      var me = await _fetchMe(access);
+      if (me == null) {
+        return const AuthResult.failure('تعذر قراءة رد الخادم');
+      }
+      final dataKey = await _unlockDataKey(access, password, me);
+      if (dataKey == null) {
+        return const AuthResult.failure(
+          'تعذر فتح بياناتك المشفّرة. حاول مرة أخرى',
+        );
+      }
+      me = dataKey.me;
+      final resolvedEmail = (me['email']?.toString() ?? address).toLowerCase();
 
       await _bindAccount(
         email: resolvedEmail,
         token: access,
         profile: _mergedProfile(me, body),
       );
+      await DataKeyStore.instance.save(dataKey.key);
       return const AuthResult.success();
     } catch (_) {
       return const AuthResult.failure(
@@ -230,6 +244,49 @@ class AuthSession {
       await ProfileSync.adoptAccount(profile);
     } else {
       await ProfileSync.fillMissing(profile);
+    }
+  }
+
+  // Open the account's data key with the password, or create and upload one
+  // on first sign-in. Returns the key and the latest /auth/me payload.
+  Future<({List<int> key, Map<String, dynamic> me})?> _unlockDataKey(
+    String token,
+    String password,
+    Map<String, dynamic> me,
+  ) async {
+    var wrapped = WrappedDataKey.fromJson(me['data_key']);
+    if (wrapped == null) {
+      final created = await DataKeyStore.create(password);
+      final status = await _uploadDataKey(token, created.wrapped);
+      if (status == 200) return (key: created.key, me: me);
+      if (status != 409) return null;
+      // Another device set the key first; use that one.
+      final latest = await _fetchMe(token);
+      if (latest == null) return null;
+      me = latest;
+      wrapped = WrappedDataKey.fromJson(me['data_key']);
+      if (wrapped == null) return null;
+    }
+    final key = await DataKeyStore.unwrap(password, wrapped);
+    return key == null ? null : (key: key, me: me);
+  }
+
+  Future<int?> _uploadDataKey(String token, WrappedDataKey wrapped) async {
+    try {
+      final base = await ApiConfig.baseUrl();
+      final response = await http
+          .put(
+            Uri.parse('$base/auth/key'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode(wrapped.toJson()),
+          )
+          .timeout(ApiConfig.timeoutFor(base, local: _timeout));
+      return response.statusCode;
+    } catch (_) {
+      return null;
     }
   }
 

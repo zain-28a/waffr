@@ -40,6 +40,11 @@ class User(TimestampMixin, Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    # The app's data key, encrypted on the device with a key derived from the
+    # user's password. The server never sees the unwrapped key.
+    key_salt: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    key_iterations: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    wrapped_key: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     transactions: Mapped[list["Transaction"]] = relationship(
         back_populates="user",
@@ -171,7 +176,7 @@ class Notification(ClientIdMixin, SoftDeleteMixin, TimestampMixin, Base):
     )
 
     type: Mapped[str] = mapped_column(String(50), index=True)
-    title: Mapped[str] = mapped_column(String(255))
+    title: Mapped[str] = mapped_column(Text)
     message: Mapped[str] = mapped_column(Text)
     is_read: Mapped[bool] = mapped_column(
         Boolean,
