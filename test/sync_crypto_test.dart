@@ -1,0 +1,82 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:waffer/core/security/data_key.dart';
+import 'package:waffer/core/sync/sync_crypto.dart';
+
+void main() {
+  final cipher = DataCipher(List<int>.generate(32, (i) => i));
+
+  test('seals private text and leaves amounts readable', () async {
+    final request = <String, dynamic>{
+      'transactions': {
+        'upserts': [
+          {
+            'client_id': 'tx1',
+            'amount': '250.5',
+            'category': 'طعام',
+            'payment_method': null,
+            'note': 'عشاء',
+          },
+        ],
+        'deletes': [],
+      },
+      'notifications': {
+        'upserts': [
+          {
+            'client_id': 'n1',
+            'title': 'هدف',
+            'message': 'وصلت',
+            'event_key': 'goalReached:g1',
+            'metadata': const {'goalName': 'سيارة', 'percent': '100'},
+          },
+        ],
+        'deletes': [],
+      },
+    };
+
+    await sealSyncRequest(request, cipher);
+
+    final tx = request['transactions']['upserts'][0] as Map;
+    expect(tx['amount'], '250.5');
+    expect(tx['payment_method'], isNull);
+    expect(DataCipher.isSealed(tx['category'] as String), isTrue);
+    expect(DataCipher.isSealed(tx['note'] as String), isTrue);
+
+    final note = request['notifications']['upserts'][0] as Map;
+    expect(note['event_key'], 'goalReached:g1');
+    expect(DataCipher.isSealed(note['metadata']['goalName'] as String), isTrue);
+
+    final sawPlaintext = await openSyncResponse(request, cipher);
+    expect(sawPlaintext, isFalse);
+    expect(tx['category'], 'طعام');
+    expect(tx['note'], 'عشاء');
+    expect(note['metadata'], {'goalName': 'سيارة', 'percent': '100'});
+  });
+
+  test('reports text the server still holds unencrypted', () async {
+    final body = <String, dynamic>{
+      'savings_goals': {
+        'upserts': [
+          {'client_id': 'g1', 'name': 'سفر', 'target_amount': '100'},
+        ],
+      },
+    };
+    expect(await openSyncResponse(body, cipher), isTrue);
+    expect(body['savings_goals']['upserts'][0]['name'], 'سفر');
+  });
+
+  test('a different key cannot read sealed text', () async {
+    final sealed = await cipher.seal('سري');
+    final other = DataCipher(List<int>.filled(32, 7));
+    expect(await other.open(sealed), isNull);
+  });
+
+  test('the password unwraps the data key and a wrong one does not', () async {
+    final created = await DataKeyStore.create('pass-1234', iterations: 1000);
+    expect(await DataKeyStore.unwrap('pass-1234', created.wrapped), created.key);
+    expect(await DataKeyStore.unwrap('wrong', created.wrapped), isNull);
+
+    final restored = WrappedDataKey.fromJson(created.wrapped.toJson());
+    expect(restored, isNotNull);
+    expect(await DataKeyStore.unwrap('pass-1234', restored!), created.key);
+  });
+}

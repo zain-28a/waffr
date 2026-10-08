@@ -5,6 +5,9 @@ from pydantic import BaseModel, Field, field_serializer, field_validator
 
 from api_schemas import money_str, parse_decimal
 
+# Private text arrives encrypted, which is longer than what the user typed.
+PRIVATE_TEXT_MAX = 4000
+
 
 class TombstoneIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=64)
@@ -36,7 +39,7 @@ class TransactionSyncIn(BaseModel):
 
 class GoalSyncIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=64)
-    name: str = Field(min_length=1, max_length=100)
+    name: str = Field(min_length=1, max_length=PRIVATE_TEXT_MAX)
     target_amount: Decimal = Field(gt=0)
     duration: str = Field(default="month")
     deadline: datetime | None = None
@@ -97,7 +100,7 @@ class ShoppingListSyncIn(BaseModel):
 class ShoppingItemSyncIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=64)
     list_client_id: str = Field(default="shopping_default", max_length=64)
-    name: str = Field(min_length=1, max_length=255)
+    name: str = Field(min_length=1, max_length=PRIVATE_TEXT_MAX)
     quantity: int = 1
     price: Decimal | None = None
     is_purchased: bool = False
@@ -150,7 +153,7 @@ class NotificationSyncIn(BaseModel):
 
 class CategorySyncIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=64)
-    label: str = Field(min_length=1, max_length=100)
+    label: str = Field(min_length=1, max_length=PRIVATE_TEXT_MAX)
     icon_index: int = 0
     created_at: datetime | None = None
     updated_at: datetime | None = None
