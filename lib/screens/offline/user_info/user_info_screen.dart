@@ -292,22 +292,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
-              _FieldLabel(text: 'رقم الهاتف (اختياري)', color: textPrimary),
-              const SizedBox(height: 8),
-              _PhoneField(
-                controller: _phoneController,
-                country: _country,
-                surface: surface,
-                accent: accent,
-                textPrimary: textPrimary,
-                textSecondary: textSecondary,
-                onPickCountry: _pickCountry,
-                onChanged: (_) => setState(() {}),
-              ),
-
-              const SizedBox(height: 24),
-
-              _FieldLabel(text: 'المدينة والشارع (اختياري)', color: textPrimary),
+              _FieldLabel(text: 'العنوان (اختياري)', color: textPrimary),
               const SizedBox(height: 8),
               TextField(
                 controller: _addressController,
@@ -320,6 +305,21 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                   fillColor: surface,
                   textSecondary: textSecondary,
                 ).copyWith(counterText: ''),
+              ),
+
+              const SizedBox(height: 24),
+
+              _FieldLabel(text: 'رقم الهاتف (اختياري)', color: textPrimary),
+              const SizedBox(height: 8),
+              _PhoneField(
+                controller: _phoneController,
+                country: _country,
+                surface: surface,
+                accent: accent,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                onPickCountry: _pickCountry,
+                onChanged: (_) => setState(() {}),
               ),
 
               const SizedBox(height: 48),
