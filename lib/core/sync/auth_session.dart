@@ -247,6 +247,36 @@ class AuthSession {
     }
   }
 
+  // Delete the account and all its synced data on the server. Local data
+  // is left for the caller to clear.
+  Future<AuthResult> deleteRemoteAccount() async {
+    final token = await ensureToken();
+    if (token == null) {
+      return const AuthResult.failure(
+        'انتهت الجلسة. سجّل الدخول مجدداً ثم احذف الحساب',
+      );
+    }
+    try {
+      final base = await ApiConfig.baseUrl();
+      final response = await http
+          .delete(
+            Uri.parse('$base/auth/account'),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(ApiConfig.timeoutFor(base, local: _timeout));
+      if (response.statusCode != 204 && response.statusCode != 401) {
+        return const AuthResult.failure(
+          'تعذر حذف الحساب من الخادم. حاول لاحقاً',
+        );
+      }
+      return const AuthResult.success();
+    } catch (_) {
+      return const AuthResult.failure(
+        'لا يوجد اتصال. حذف الحساب يحتاج إلى الإنترنت',
+      );
+    }
+  }
+
   // Open the account's data key with the password, or create and upload one
   // on first sign-in. Returns the key and the latest /auth/me payload.
   Future<({List<int> key, Map<String, dynamic> me})?> _unlockDataKey(

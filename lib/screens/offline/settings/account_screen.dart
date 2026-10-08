@@ -191,7 +191,7 @@ class _AccountScreenState extends State<AccountScreen> {
       context,
       title: 'حذف الحساب',
       message:
-          'سيتم حذف بيانات هذا الحساب من الجهاز ومن النسخة الاحتياطية إن وُجدت. لا يمكن التراجع عن هذا الإجراء.',
+          'سيتم حذف حسابك وكل بياناته من الخادم ومن هذا الجهاز ومن النسخة الاحتياطية إن وُجدت. لا يمكن التراجع عن هذا الإجراء.',
       confirmLabel: 'حذف الحساب',
       destructive: true,
     );
@@ -199,6 +199,14 @@ class _AccountScreenState extends State<AccountScreen> {
     if (confirm != true) return;
 
     setState(() => _busy = true);
+    // Server first: if it fails, local data stays so the user can retry.
+    final remote = await AuthSession.instance.deleteRemoteAccount();
+    if (!remote.ok) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      showAppSnackBar(context, remote.message);
+      return;
+    }
     await BackupService.instance.deleteAccount();
     if (!mounted) return;
     Navigator.of(context).pop();
@@ -328,7 +336,7 @@ class _AccountScreenState extends State<AccountScreen> {
           _ActionTile(
             icon: Icons.delete_forever_outlined,
             title: 'حذف الحساب',
-            subtitle: 'حذف بيانات هذا الحساب من الجهاز والنسخة الاحتياطية',
+            subtitle: 'حذف الحساب وبياناته من الخادم والجهاز',
             accent: accent,
             surface: surface,
             textPrimary: textPrimary,
