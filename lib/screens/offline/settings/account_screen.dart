@@ -11,6 +11,7 @@ import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/widgets/brand/profile_avatar.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffer/screens/offline/settings/change_password_screen.dart';
 
 // Edit display name and photo, or sign out of the synced account.
 class AccountScreen extends StatefulWidget {
@@ -321,6 +322,20 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
           const SizedBox(height: 25),
+          _ActionTile(
+            icon: Icons.lock_reset_rounded,
+            title: 'تغيير كلمة المرور',
+            subtitle: 'يسجّل الخروج من أجهزتك الأخرى',
+            accent: accent,
+            surface: surface,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
+            busy: _busy,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+            ),
+          ),
+          const SizedBox(height: 12),
           _ActionTile(
             icon: Icons.logout_rounded,
             title: 'تسجيل الخروج',

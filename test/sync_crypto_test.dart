@@ -79,4 +79,15 @@ void main() {
     expect(restored, isNotNull);
     expect(await DataKeyStore.unwrap('pass-1234', restored!), created.key);
   });
+
+  test('a password change re-wraps the same key', () async {
+    final created = await DataKeyStore.create('old-pass-1', iterations: 1000);
+    final rewrapped = await DataKeyStore.wrap(
+      created.key,
+      'new-pass-2',
+      iterations: 1000,
+    );
+    expect(await DataKeyStore.unwrap('new-pass-2', rewrapped), created.key);
+    expect(await DataKeyStore.unwrap('old-pass-1', rewrapped), isNull);
+  });
 }

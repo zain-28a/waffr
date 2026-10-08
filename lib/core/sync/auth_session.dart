@@ -247,6 +247,137 @@ class AuthSession {
     }
   }
 
+  // Email a reset code. The server answers the same for unknown emails.
+  Future<AuthResult> requestPasswordReset(String email) async {
+    final address = email.trim().toLowerCase();
+    if (!_looksLikeEmail(address)) {
+      return const AuthResult.failure('أدخل بريداً إلكترونياً صالحاً');
+    }
+    final status = await _postJson('/auth/password/forgot', {'email': address});
+    if (status == 200) return const AuthResult.success();
+    if (status == 503) {
+      return const AuthResult.failure(
+        'تعذر إرسال البريد الآن. حاول لاحقاً',
+      );
+    }
+    if (status == null) {
+      return const AuthResult.failure(
+        'لا يوجد اتصال. تحقق من الشبكة وحاول مرة أخرى',
+      );
+    }
+    return const AuthResult.failure('أدخل بريداً إلكترونياً صالحاً');
+  }
+
+  // Set a new password with the emailed code. The old data key cannot be
+  // opened without the old password, so the next sign-in makes a new one.
+  Future<AuthResult> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    final status = await _postJson('/auth/password/reset', {
+      'email': email.trim().toLowerCase(),
+      'code': code.trim(),
+      'new_password': newPassword,
+    });
+    if (status == 200) {
+      // Sign-in after this must push everything again under the new key.
+      await clearSession();
+      return const AuthResult.success();
+    }
+    if (status == null) {
+      return const AuthResult.failure(
+        'لا يوجد اتصال. تحقق من الشبكة وحاول مرة أخرى',
+      );
+    }
+    return const AuthResult.failure('الرمز غير صحيح أو انتهت صلاحيته');
+  }
+
+  // Re-wrap the same data key with the new password, so nothing is lost.
+  Future<AuthResult> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final token = await ensureToken();
+    if (token == null) {
+      return const AuthResult.failure('انتهت الجلسة. سجّل الدخول مجدداً');
+    }
+    final me = await _fetchMe(token);
+    if (me == null) {
+      return const AuthResult.failure(
+        'لا يوجد اتصال. تحقق من الشبكة وحاول مرة أخرى',
+      );
+    }
+
+    List<int>? key;
+    WrappedDataKey? rewrapped;
+    final wrapped = WrappedDataKey.fromJson(me['data_key']);
+    if (wrapped != null) {
+      key = await DataKeyStore.unwrap(currentPassword, wrapped);
+      if (key == null) {
+        return const AuthResult.failure('كلمة المرور الحالية غير صحيحة');
+      }
+      rewrapped = await DataKeyStore.wrap(key, newPassword);
+    }
+
+    try {
+      final base = await ApiConfig.baseUrl();
+      final response = await http
+          .post(
+            Uri.parse('$base/auth/password/change'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({
+              'current_password': currentPassword,
+              'new_password': newPassword,
+              'data_key': rewrapped?.toJson(),
+            }),
+          )
+          .timeout(ApiConfig.timeoutFor(base, local: _timeout));
+      if (response.statusCode == 400) {
+        return const AuthResult.failure('كلمة المرور الحالية غير صحيحة');
+      }
+      if (response.statusCode != 200) {
+        return const AuthResult.failure(
+          'تعذر تغيير كلمة المرور. حاول لاحقاً',
+        );
+      }
+      final decoded = jsonDecode(response.body);
+      final access =
+          decoded is Map ? decoded['access_token']?.toString() ?? '' : '';
+      if (access.isEmpty) {
+        return const AuthResult.failure('تعذر قراءة رد الخادم');
+      }
+      // Other devices are signed out; this one keeps going on the new token.
+      await _storeToken(access);
+      if (key != null) await DataKeyStore.instance.save(key);
+      return const AuthResult.success();
+    } catch (_) {
+      return const AuthResult.failure(
+        'لا يوجد اتصال. تحقق من الشبكة وحاول مرة أخرى',
+      );
+    }
+  }
+
+  // POST JSON without a token. Returns the status, or null when offline.
+  Future<int?> _postJson(String path, Map<String, dynamic> body) async {
+    try {
+      final base = await ApiConfig.baseUrl();
+      final response = await http
+          .post(
+            Uri.parse('$base$path'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(ApiConfig.timeoutFor(base, local: _timeout));
+      return response.statusCode;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // Delete the account and all its synced data on the server. Local data
   // is left for the caller to clear.
   Future<AuthResult> deleteRemoteAccount() async {
