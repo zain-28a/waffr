@@ -103,29 +103,31 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'المصاريف المحفوظة',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Outfit',
-                fontFamilyFallback: const ['Tajawal'],
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: accent,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              widget.marked
-                  ? 'سيُحفظ هذا المصروف هنا عند حفظه.'
-                  : 'اختر مصروفاً لتعبئته، أو اضغط إضافة لحفظ المصروف الحالي.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Outfit',
-                fontFamilyFallback: const ['Tajawal'],
-                fontSize: 12.5,
-                color: textSecondary,
-              ),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                  child: Text(
+                    'المصاريف المحفوظة',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: const ['Tajawal'],
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: accent,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  child: SheetCircleButton(
+                    icon: Icons.info_outline_rounded,
+                    onTap: () => _showHelp(context),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 14),
             Flexible(
@@ -201,6 +203,24 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
       ),
     );
   }
+}
+
+// What the star does, in plain Arabic, opened from the (i) button.
+Future<void> _showHelp(BuildContext context) {
+  return showAppInfoDialog(
+    context,
+    title: 'ما هي المصاريف المحفوظة؟',
+    message: 'المصاريف المحفوظة توفّر عليك إعادة كتابة المصاريف التي تتكرر '
+        'عندك، مثل الخبز أو أجرة المواصلات.\n\n'
+        'لحفظ مصروف: أدخل المبلغ والتصنيف والملاحظة كالمعتاد، ثم اضغط النجمة '
+        'واختر "إضافة". تصبح النجمة خضراء، وعند الضغط على "حفظ المصروف" يُسجَّل '
+        'المصروف ويُحفظ معه نسخة هنا.\n\n'
+        'لاستخدام مصروف محفوظ: اضغط النجمة واختر البطاقة المناسبة، فتُملأ '
+        'الحقول تلقائياً، ويمكنك تعديلها قبل الحفظ.\n\n'
+        'لحذف مصروف محفوظ: اضغط على بطاقته مطولاً. حذفه لا يؤثر على '
+        'المصاريف المسجّلة سابقاً.',
+    actionLabel: 'فهمت',
+  );
 }
 
 String _titleOf(ExpensePreset preset) {
