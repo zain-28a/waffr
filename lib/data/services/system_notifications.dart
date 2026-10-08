@@ -45,7 +45,10 @@ class SystemNotifications {
   }
 
   /// One reminder for tomorrow evening. Cancelled whenever the app is opened.
-  Future<void> syncStreakReminder({required bool enabled}) async {
+  Future<void> syncStreakReminder({
+    required bool enabled,
+    int streakCount = 0,
+  }) async {
     await initialize();
     if (!_ready) return;
     try {
@@ -56,8 +59,10 @@ class SystemNotifications {
 
       await _plugin.zonedSchedule(
         id: _streakId,
-        title: 'وفّر',
-        body: 'افتح وفّر اليوم لتستمر أيامك المتواصلة',
+        title: streakCount >= 2
+            ? 'لديك $streakCount أيام متواصلة في وفّر'
+            : 'أيامك المتواصلة في وفّر',
+        body: 'سجّل مصاريف اليوم حتى لا تنقطع أيامك المتواصلة.',
         scheduledDate: tomorrow,
         notificationDetails: _details(),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

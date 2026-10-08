@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from database import create_tables, get_db, utc_now
 from category_model import ExpenseCategory
 from models import Notification, User, UserSettings
+from preset_model import ExpensePreset
 import password_reset
 import profile_photo as stored_photo
 from schemas import (
@@ -50,6 +51,7 @@ _MODEL_MODULES = (
     ShoppingList,
     ShoppingItem,
     ExpenseCategory,
+    ExpensePreset,
     NewsArticle,
     ExchangeRate,
 )
@@ -101,6 +103,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     country = _clean(data.country)
     city = _clean(data.city)
     street = _clean(data.street)
+    phone = _clean(data.phone)
 
     user = User(
         email=data.email,
@@ -111,6 +114,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
         country=country,
         city=city,
         street=street,
+        phone=phone,
         settings=UserSettings(
             gender=gender,
             birthdate=birthdate,
@@ -181,6 +185,7 @@ def _user_payload(user: User) -> dict:
         "country": _clean(user.country),
         "city": _clean(user.city),
         "street": _clean(user.street),
+        "phone": _clean(user.phone),
         "data_key": _data_key(user),
         **_photo_meta(user),
     }

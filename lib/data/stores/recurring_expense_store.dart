@@ -43,6 +43,13 @@ class RecurringExpenseStore extends ChangeNotifier {
 
   Future<void> ensureLoaded() => _loader ??= _load();
 
+  RecurringExpense? byId(String id) {
+    for (final item in _items) {
+      if (item.id == id) return item;
+    }
+    return null;
+  }
+
   // Requires configured monthly income for that currency before scheduling.
   Future<void> addExpense({
     required double amount,
@@ -222,6 +229,37 @@ class RecurringExpenseStore extends ChangeNotifier {
       await _persist();
       notifyListeners();
     }
+
+    await _warnUpcomingShortfalls(now);
+  }
+
+  // One heads-up per charge when the next scheduled amount, due within two
+  // days, is more than the balance in that currency.
+  Future<void> _warnUpcomingShortfalls(DateTime now) async {
+    final store = TransactionStore.instance;
+    final horizon = now.add(const Duration(days: 2));
+    for (final item in _items) {
+      if (!item.enabled) continue;
+      final due = item.nextDueAt;
+      if (!due.isAfter(now) || due.isAfter(horizon)) continue;
+      if (store.canDeduct(item.amount, currencyCode: item.currencyCode)) {
+        continue;
+      }
+      final symbol = currencyLabelFor(item.currencyCode);
+      try {
+        await NotificationService.instance.add(
+          type: NotificationType.recurringExpenseUpcoming,
+          title: 'رصيدك لا يكفي لمصروف قادم',
+          message:
+              '${_labelOf(item)}: يُخصم ${formatMoney(item.amount)} $symbol في ${formatDate(due)}، '
+              'ورصيدك الآن ${formatMoney(store.balanceFor(item.currencyCode))} $symbol.',
+          eventKey: 'recurringUpcoming:${item.id}:${due.toIso8601String()}',
+          relatedId: item.id,
+        );
+      } catch (error, stack) {
+        debugPrint('Recurring upcoming notice failed: $error\n$stack');
+      }
+    }
   }
 
   bool _isDue(DateTime due, DateTime now) => !due.toUtc().isAfter(now.toUtc());
@@ -235,7 +273,7 @@ class RecurringExpenseStore extends ChangeNotifier {
         '${local.day.toString().padLeft(2, '0')}'
         '${local.hour.toString().padLeft(2, '0')}'
         '${local.minute.toString().padLeft(2, '0')}';
-    return 'recurring:$id:$stamp';
+    return '${RecurringExpense.sourcePrefix}$id:$stamp';
   }
 
   bool _alreadyPosted(String sourceId) {
@@ -246,7 +284,7 @@ class RecurringExpenseStore extends ChangeNotifier {
   }
 
   bool _hasPosted(String id) {
-    final prefix = 'recurring:$id:';
+    final prefix = '${RecurringExpense.sourcePrefix}$id:';
     for (final item in TransactionStore.instance.transactions) {
       final source = item.sourceId;
       if (item.isExpense && source != null && source.startsWith(prefix)) {
@@ -256,14 +294,20 @@ class RecurringExpenseStore extends ChangeNotifier {
     return false;
   }
 
+  // Name used in notices: the note, else the category.
+  String _labelOf(RecurringExpense item) {
+    final note = item.note?.trim() ?? '';
+    return note.isEmpty ? item.category : note;
+  }
+
   Future<void> _notifyBlocked(RecurringExpense item, DateTime dueAt) async {
     try {
       await NotificationService.instance.add(
         type: NotificationType.recurringExpenseBlocked,
-        title: 'تعذر خصم المصروف المتكرر',
+        title: 'تعذّر خصم ${_labelOf(item)}',
         message:
-            'رصيدك لا يكفي لخصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}'
-            ' (${item.note ?? item.category}).',
+            'رصيدك لا يكفي لخصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}. '
+            'سيُخصم تلقائياً عندما يتوفر الرصيد.',
         eventKey: 'recurringBlocked:${item.id}:${dueAt.toIso8601String()}',
         relatedId: item.id,
       );
@@ -276,10 +320,10 @@ class RecurringExpenseStore extends ChangeNotifier {
     try {
       await NotificationService.instance.add(
         type: NotificationType.recurringExpenseApplied,
-        title: 'تم خصم مصروف متكرر',
+        title: 'خُصم ${_labelOf(item)}',
         message:
-            'خُصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}'
-            ' (${item.note ?? item.category}).',
+            'خُصم ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)} '
+            '(${item.intervalDescription}). الخصم التالي في ${formatDate(item.nextDueAt)}.',
         eventKey: 'recurringApplied:${item.id}:${postedDue.toIso8601String()}',
         relatedId: item.id,
       );

@@ -123,6 +123,11 @@ String _newCategoryId() =>
     'cat_${DateTime.now().microsecondsSinceEpoch}_${_categorySeq++}';
 
 // Owns custom categories in prefs and registers them with customCategoryLookup.
+//
+// Built-in categories can be removed too. They are only hidden from the
+// pickers (the label list travels with settings sync), so old expenses keep
+// their label, icon and color. Removed custom categories are kept in a local
+// archive for the same reason.
 class CategoryStore extends ChangeNotifier {
   CategoryStore._() {
     customCategoryLookup = findCustom;
@@ -132,8 +137,12 @@ class CategoryStore extends ChangeNotifier {
 
   static const String itemsKey = 'custom_expense_categories';
   static const String itemsJsonKey = 'custom_expense_categories_v2';
+  static const String hiddenBuiltInsKey = 'hidden_builtin_categories';
+  static const String archivedKey = 'archived_expense_categories';
 
   final List<CustomCategoryEntry> _entries = [];
+  final Set<String> _hiddenBuiltIns = {};
+  final Map<String, CustomCategoryEntry> _archived = {};
   Future<void>? _loader;
   bool _loaded = false;
 
@@ -144,23 +153,43 @@ class CategoryStore extends ChangeNotifier {
 
   List<CustomCategoryEntry> get entries => List.unmodifiable(_entries);
 
-  // Built-ins plus customs for pickers; excludes the "custom" action tile.
+  /// Built-in labels the user removed, in catalog order (for settings sync).
+  List<String> get hiddenBuiltIns => [
+        for (final item in expenseCategories)
+          if (_hiddenBuiltIns.contains(item.label)) item.label,
+      ];
+
+  // Visible built-ins plus customs for pickers; excludes the "custom" tile.
   List<ExpenseCategory> get selectableCategories => [
-        ...expenseCategories,
+        for (final item in expenseCategories)
+          if (!_hiddenBuiltIns.contains(item.label)) item,
         ...customCategories,
       ];
 
+  /// First category a new expense starts on.
+  String get defaultLabel {
+    final options = selectableCategories;
+    return options.isEmpty ? fallbackCategory.label : options.first.label;
+  }
+
   Future<void> ensureLoaded() => _loader ??= _load();
 
+  // Live custom categories first, then removed ones so history keeps its icon.
   ExpenseCategory? findCustom(String label) {
     for (final entry in _entries) {
       if (entry.label == label) return entry.toCategory();
     }
-    return null;
+    return _archived[label]?.toCategory();
   }
 
   bool isCustom(String label) =>
       _entries.any((entry) => entry.label == label);
+
+  bool isBuiltIn(String label) =>
+      expenseCategories.any((item) => item.label == label);
+
+  bool isSelectable(String label) =>
+      selectableCategories.any((item) => item.label == label);
 
   int iconIndexOf(String label) {
     for (final entry in _entries) {
@@ -182,6 +211,10 @@ class CategoryStore extends ChangeNotifier {
     )) {
       return 'هذا التصنيف موجود مسبقاً';
     }
+    // A removed built-in comes back through "add", not through a rename.
+    if (ignoring != null && name != ignoring && isBuiltIn(name)) {
+      return 'هذا التصنيف موجود مسبقاً';
+    }
     return null;
   }
 
@@ -191,6 +224,14 @@ class CategoryStore extends ChangeNotifier {
     if (validateName(rawName) != null) return null;
 
     final name = rawName.trim();
+
+    // Typing the name of a removed built-in brings that built-in back.
+    if (_hiddenBuiltIns.remove(name)) {
+      await _persistHidden();
+      notifyListeners();
+      return name;
+    }
+
     _entries.add(
       CustomCategoryEntry(
         id: _newCategoryId(),
@@ -221,6 +262,7 @@ class CategoryStore extends ChangeNotifier {
     if (error != null) return null;
 
     final name = rawName.trim();
+    _archive(_entries[index]);
     _entries[index] = _entries[index].copyWith(
       label: name,
       iconIndex: clampCustomIconIndex(iconIndex ?? _entries[index].iconIndex),
@@ -248,9 +290,44 @@ class CategoryStore extends ChangeNotifier {
       SyncCollection.expenseCategories,
       removed!.id,
     );
+    _archive(removed!);
     await _persist();
     notifyListeners();
     return true;
+  }
+
+  /// Removes a built-in or custom category from the pickers. Expenses that
+  /// already use it are not touched.
+  Future<bool> removeCategory(String label) async {
+    await ensureLoaded();
+    if (isCustom(label)) return removeCustom(label);
+    if (!isBuiltIn(label) || !_hiddenBuiltIns.add(label)) return false;
+    await _persistHidden();
+    notifyListeners();
+    return true;
+  }
+
+  /// Settings sync: the remote list of removed built-ins replaces ours.
+  Future<void> applyRemoteHidden(Object? raw) async {
+    if (raw is! List) return;
+    await ensureLoaded();
+    final next = {
+      for (final item in raw)
+        if (isBuiltIn(item.toString())) item.toString(),
+    };
+    if (next.length == _hiddenBuiltIns.length &&
+        next.containsAll(_hiddenBuiltIns)) {
+      return;
+    }
+    _hiddenBuiltIns
+      ..clear()
+      ..addAll(next);
+    await _persistHidden(markDirty: false);
+    notifyListeners();
+  }
+
+  void _archive(CustomCategoryEntry entry) {
+    _archived[entry.label] = entry;
   }
 
   Future<void> applyRemoteSync({
@@ -263,6 +340,7 @@ class CategoryStore extends ChangeNotifier {
       for (final entry in _entries)
         if (entry.colorIndex != null) entry.id: entry.colorIndex!,
     };
+    final previous = List<CustomCategoryEntry>.of(_entries);
 
     final changed = mergeRemoteRecords<CustomCategoryEntry>(
       items: _entries,
@@ -286,12 +364,20 @@ class CategoryStore extends ChangeNotifier {
     final filled = _assignMissingColors();
 
     if (!changed && !filled) return;
+    for (final entry in previous) {
+      final live = _entries.any(
+        (item) => item.id == entry.id && item.label == entry.label,
+      );
+      if (!live) _archive(entry);
+    }
     await _persist();
     notifyListeners();
   }
 
   void resetCache() {
     _entries.clear();
+    _hiddenBuiltIns.clear();
+    _archived.clear();
     _loaded = false;
     _loader = null;
     notifyListeners();
@@ -299,6 +385,13 @@ class CategoryStore extends ChangeNotifier {
 
   Future<void> _load() async {
     final prefs = await AppPrefs.instance;
+    _hiddenBuiltIns
+      ..clear()
+      ..addAll(prefs.getStringList(hiddenBuiltInsKey) ?? const []);
+    _archived.clear();
+    for (final entry in _parseJson(prefs.getString(archivedKey) ?? '')) {
+      _archived[entry.label] = entry;
+    }
     _entries
       ..clear()
       ..addAll(await _readEntries(prefs));
@@ -377,6 +470,16 @@ class CategoryStore extends ChangeNotifier {
       itemsJsonKey,
       jsonEncode([for (final entry in _entries) entry.toJson()]),
     );
+    await prefs.setString(
+      archivedKey,
+      jsonEncode([for (final entry in _archived.values) entry.toJson()]),
+    );
     await SyncDirty.mark();
+  }
+
+  Future<void> _persistHidden({bool markDirty = true}) async {
+    final prefs = await AppPrefs.instance;
+    await prefs.setStringList(hiddenBuiltInsKey, hiddenBuiltIns);
+    if (markDirty) await SyncDirty.mark(settings: true);
   }
 }

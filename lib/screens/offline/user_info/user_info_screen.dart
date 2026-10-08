@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:waffer/data/models/country.dart';
 import 'package:waffer/data/models/registration_profile.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
+import 'package:waffer/core/utils/money.dart';
+import 'package:waffer/screens/offline/user_info/country_picker_sheet.dart';
 import 'package:waffer/widgets/button/ani_pri_button.dart';
+import 'package:waffer/widgets/dialogs/waffer_date_picker.dart';
 
-// Collects name, birth date, gender, and address for RegistrationProfile.
+// Collects name, birth date, optional gender, country with an optional phone
+// number, and one optional address line for RegistrationProfile.
 
 enum Gender { male, female }
 
@@ -24,19 +30,18 @@ class UserInfoScreen extends StatefulWidget {
 
 class _UserInfoScreenState extends State<UserInfoScreen> {
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _countryController = TextEditingController();
-  final TextEditingController _cityController = TextEditingController();
-  final TextEditingController _streetController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
 
   Gender? _selectedGender;
   DateTime? _birthDate;
+  CountryInfo? _country;
 
   @override
   void dispose() {
     _nameController.dispose();
-    _countryController.dispose();
-    _cityController.dispose();
-    _streetController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -46,69 +51,73 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     return null;
   }
 
-  bool get _isFormValid {
-    return registrationProfileError(
-          name: _nameController.text,
-          birthDate: _birthDate,
-          gender: _genderValue,
-          country: _countryController.text,
-          city: _cityController.text,
-          street: _streetController.text,
-        ) ==
-        null;
+  // Tapping the chosen option again clears it; gender stays optional.
+  void _toggleGender(Gender gender) {
+    setState(() {
+      _selectedGender = _selectedGender == gender ? null : gender;
+    });
   }
 
-  Future<void> _pickBirthDate(Color accent) async {
-    final picked = await showDatePicker(
+  String? get _formError {
+    return registrationProfileError(
+      name: _nameController.text,
+      birthDate: _birthDate,
+      gender: _genderValue,
+      country: _country?.arabicName ?? '',
+      address: _addressController.text,
+      phone: _phoneController.text,
+    );
+  }
+
+  bool get _isFormValid => _formError == null;
+
+  Future<void> _pickBirthDate() async {
+    FocusScope.of(context).unfocus();
+    final picked = await showWafferDatePicker(
       context: context,
-      initialDate: _birthDate ?? DateTime(2000, 1, 1),
+      title: 'تاريخ الميلاد',
+      initialDate: _birthDate,
       firstDate: DateTime(1930),
       lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(primary: accent),
-          ),
-          child: child!,
-        );
-      },
+      startWithYear: true,
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() => _birthDate = picked);
     }
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+  Future<void> _pickCountry() async {
+    FocusScope.of(context).unfocus();
+    final picked = await showCountryPickerSheet(context, selected: _country);
+    if (picked != null && mounted) {
+      setState(() => _country = picked);
+    }
   }
 
   void _continue() {
-    final error = registrationProfileError(
-      name: _nameController.text,
-      birthDate: _birthDate,
-      gender: _genderValue,
-      country: _countryController.text,
-      city: _cityController.text,
-      street: _streetController.text,
-    );
+    final error = _formError;
     if (error != null) {
       showAppSnackBar(context, error);
       return;
     }
 
     final birthDate = _birthDate;
-    final gender = _genderValue;
-    if (birthDate == null || gender == null) return;
+    final country = _country;
+    if (birthDate == null || country == null) return;
+
+    final digits = normalizePhoneNumber(_phoneController.text) ?? '';
+    final address = splitAddress(_addressController.text);
 
     widget.onContinue(
       RegistrationProfile(
         name: _nameController.text.trim(),
         birthDate: birthDate,
-        gender: gender,
-        country: _countryController.text.trim(),
-        city: _cityController.text.trim(),
-        street: _streetController.text.trim(),
+        gender: _genderValue,
+        country: country.arabicName,
+        city: address.city,
+        street: address.street,
+        phone: digits.isEmpty ? '' : '${country.dialLabel} $digits',
       ),
     );
   }
@@ -179,7 +188,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
               _FieldLabel(text: 'تاريخ الميلاد', color: textPrimary),
               const SizedBox(height: 8),
               GestureDetector(
-                onTap: () => _pickBirthDate(accent),
+                onTap: _pickBirthDate,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
@@ -190,9 +199,12 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _birthDate != null ? _formatDate(_birthDate!) : "...",
+                        _birthDate != null ? formatDate(_birthDate!) : 'DD/MM/YYYY',
+                        textDirection: TextDirection.ltr,
                         style: TextStyle(
-                          color: _birthDate != null ? textPrimary : textSecondary,
+                          color: _birthDate != null
+                              ? textPrimary
+                              : textSecondary.withValues(alpha: 0.6),
                           fontSize: 16,
                         ),
                       ),
@@ -211,80 +223,103 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
-              _FieldLabel(text: 'الجنس', color: textPrimary),
-              const SizedBox(height: 8),
+              _FieldLabel(text: 'الجنس (اختياري)', color: textPrimary),
+              const SizedBox(height: 4),
               Row(
                 children: [
-                  Expanded(
-                    child: _GenderButton(
-                      label: 'ذكر',
-                      isSelected: _selectedGender == Gender.male,
-                      accent: accent,
-                      surface: surface,
-                      textPrimary: textPrimary,
-                      onTap: () => setState(() => _selectedGender = Gender.male),
-                    ),
+                  _GenderRadio(
+                    label: 'ذكر',
+                    selected: _selectedGender == Gender.male,
+                    accent: accent,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    onTap: () => _toggleGender(Gender.male),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _GenderButton(
-                      label: 'أنثى',
-                      isSelected: _selectedGender == Gender.female,
-                      accent: accent,
-                      surface: surface,
-                      textPrimary: textPrimary,
-                      onTap: () => setState(() => _selectedGender = Gender.female),
-                    ),
+                  const SizedBox(width: 28),
+                  _GenderRadio(
+                    label: 'أنثى',
+                    selected: _selectedGender == Gender.female,
+                    accent: accent,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    onTap: () => _toggleGender(Gender.female),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               _FieldLabel(text: 'الدولة', color: textPrimary),
               const SizedBox(height: 8),
-              TextField(
-                controller: _countryController,
-                textAlign: TextAlign.right,
-                onChanged: (_) => setState(() {}),
-                style: TextStyle(color: textPrimary, fontSize: 16),
-                decoration: _fieldDecoration(
-                  hint: 'سوريا',
-                  fillColor: surface,
-                  textSecondary: textSecondary,
+              GestureDetector(
+                onTap: _pickCountry,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: surface,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _country?.arabicName ?? 'اختر الدولة',
+                          style: TextStyle(
+                            color: _country != null
+                                ? textPrimary
+                                : textSecondary.withValues(alpha: 0.6),
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      if (_country != null) ...[
+                        Text(
+                          _country!.dialLabel,
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(
+                            color: textSecondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Icon(Icons.keyboard_arrow_down_rounded, color: accent),
+                    ],
+                  ),
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              _FieldLabel(text: 'المدينة', color: textPrimary),
+              _FieldLabel(text: 'العنوان (اختياري)', color: textPrimary),
               const SizedBox(height: 8),
               TextField(
-                controller: _cityController,
+                controller: _addressController,
                 textAlign: TextAlign.right,
+                maxLength: maxStreetLength,
                 onChanged: (_) => setState(() {}),
                 style: TextStyle(color: textPrimary, fontSize: 16),
                 decoration: _fieldDecoration(
-                  hint: 'اللاذقية',
+                  hint: 'المشروع الأول',
                   fillColor: surface,
                   textSecondary: textSecondary,
-                ),
+                ).copyWith(counterText: ''),
               ),
 
               const SizedBox(height: 24),
 
-              _FieldLabel(text: 'الشارع (اختياري)', color: textPrimary),
+              _FieldLabel(text: 'رقم الهاتف (اختياري)', color: textPrimary),
               const SizedBox(height: 8),
-              TextField(
-                controller: _streetController,
-                textAlign: TextAlign.right,
+              _PhoneField(
+                controller: _phoneController,
+                country: _country,
+                surface: surface,
+                accent: accent,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                onPickCountry: _pickCountry,
                 onChanged: (_) => setState(() {}),
-                style: TextStyle(color: textPrimary, fontSize: 16),
-                decoration: _fieldDecoration(
-                  hint: 'العنوان',
-                  fillColor: surface,
-                  textSecondary: textSecondary,
-                ),
               ),
 
               const SizedBox(height: 48),
@@ -342,45 +377,186 @@ class _FieldLabel extends StatelessWidget {
   }
 }
 
-class _GenderButton extends StatelessWidget {
+// Round radio mark next to its label. No box around it.
+class _GenderRadio extends StatelessWidget {
   final String label;
-  final bool isSelected;
+  final bool selected;
   final Color accent;
-  final Color surface;
   final Color textPrimary;
+  final Color textSecondary;
   final VoidCallback onTap;
 
-  const _GenderButton({
+  const _GenderRadio({
     required this.label,
-    required this.isSelected,
+    required this.selected,
     required this.accent,
-    required this.surface,
     required this.textPrimary,
+    required this.textSecondary,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: isSelected ? accent : surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? accent : accent.withValues(alpha: 0.2),
+    return Semantics(
+      inMutuallyExclusiveGroup: true,
+      checked: selected,
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: selected
+                        ? accent
+                        : textSecondary.withValues(alpha: 0.6),
+                    width: 2,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: AnimatedScale(
+                  scale: selected ? 1 : 0,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutBack,
+                  child: Container(
+                    width: 11,
+                    height: 11,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 15,
+                ),
+              ),
+            ],
           ),
         ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isSelected ? surface : textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-          ),
+      ),
+    );
+  }
+}
+
+// Calling code and number in one field. The code sits on the left (numbers
+// read left to right) and opens the country list.
+class _PhoneField extends StatelessWidget {
+  final TextEditingController controller;
+  final CountryInfo? country;
+  final Color surface;
+  final Color accent;
+  final Color textPrimary;
+  final Color textSecondary;
+  final VoidCallback onPickCountry;
+  final ValueChanged<String> onChanged;
+
+  const _PhoneField({
+    required this.controller,
+    required this.country,
+    required this.surface,
+    required this.accent,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.onPickCountry,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasCountry = country != null;
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Container(
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            InkWell(
+              onTap: onPickCountry,
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(14),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 16, 10, 16),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      hasCountry ? country!.dialLabel : '+',
+                      style: TextStyle(
+                        color: hasCountry ? accent : textSecondary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_drop_down_rounded,
+                      size: 20,
+                      color: textSecondary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 26,
+              color: textSecondary.withValues(alpha: 0.25),
+            ),
+            Expanded(
+              child: TextField(
+                controller: controller,
+                enabled: hasCountry,
+                keyboardType: TextInputType.phone,
+                textDirection: TextDirection.ltr,
+                textAlign: TextAlign.left,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9 ]')),
+                  LengthLimitingTextInputFormatter(18),
+                ],
+                onChanged: onChanged,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 16,
+                  letterSpacing: 0.4,
+                ),
+                decoration: InputDecoration(
+                  hintText: hasCountry ? '9XX XXX XXX' : 'اختر الدولة أولاً',
+                  hintTextDirection:
+                      hasCountry ? TextDirection.ltr : TextDirection.rtl,
+                  hintStyle: TextStyle(
+                    color: textSecondary.withValues(alpha: 0.6),
+                    fontSize: hasCountry ? 16 : 14,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
