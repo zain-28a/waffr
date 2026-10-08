@@ -7,6 +7,7 @@ import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/screens/offline/login/account_creation_flow.dart';
 import 'package:waffer/screens/offline/login/auth_fields.dart';
 import 'package:waffer/screens/offline/login/forgot_password_screen.dart';
+import 'package:waffer/widgets/brand/waffer_logo.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/core/prefs/app_prefs.dart';
@@ -144,8 +145,9 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 48),
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
+              const Center(child: WafferLogo(size: 72)),
+              const SizedBox(height: 16),
               Text.rich(
                 TextSpan(
                   children: [
@@ -170,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(color: textSecondary, fontSize: 16),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
               GlassContainer(
                 colorType: GlassColorType.surface,
                 borderRadius: 28,

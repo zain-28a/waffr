@@ -7,7 +7,7 @@ import 'package:waffer/screens/offline/report/expense_history_share.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('builds a non-empty Arabic PDF', () async {
+  test('builds a non-empty Arabic PDF with day tables and totals', () async {
     final bytes = await buildExpenseHistoryPdfBytes([
       WafferTransaction(
         id: 'e1',
@@ -17,6 +17,23 @@ void main() {
         paymentMethod: 'نقداً',
         note: 'غداء مع العائلة',
         dateTime: DateTime(2026, 9, 30, 14, 5),
+      ),
+      WafferTransaction(
+        id: 'e2',
+        type: TransactionType.expense,
+        amount: 40000,
+        category: 'فواتير',
+        paymentMethod: 'نقداً',
+        sourceId: 'recurring:r1_0:202609300900',
+        dateTime: DateTime(2026, 9, 30, 9),
+      ),
+      WafferTransaction(
+        id: 'e3',
+        type: TransactionType.expense,
+        amount: 20,
+        currencyCode: 'USD',
+        category: 'صحة',
+        dateTime: DateTime(2026, 9, 28, 18, 30),
       ),
     ]);
 

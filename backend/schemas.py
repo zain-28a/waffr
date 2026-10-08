@@ -1,4 +1,9 @@
+import re
+
 from pydantic import BaseModel, EmailStr, Field, field_validator
+
+# "+<calling code> <number>" as sent by the app.
+PHONE_PATTERN = re.compile(r"\+[0-9]{1,4} [0-9]{4,15}")
 
 
 class RegisterRequest(BaseModel):
@@ -10,6 +15,7 @@ class RegisterRequest(BaseModel):
     country: str | None = Field(default=None, max_length=80)
     city: str | None = Field(default=None, max_length=80)
     street: str | None = Field(default=None, max_length=160)
+    phone: str | None = Field(default=None, max_length=32)
 
     @field_validator(
         "name",
@@ -18,6 +24,7 @@ class RegisterRequest(BaseModel):
         "country",
         "city",
         "street",
+        "phone",
         mode="before",
     )
     @classmethod
@@ -36,6 +43,15 @@ class RegisterRequest(BaseModel):
             return None
         if value not in {"male", "female"}:
             raise ValueError("gender must be male or female")
+        return value
+
+    @field_validator("phone")
+    @classmethod
+    def _plausible_phone(cls, value):
+        if value is None:
+            return None
+        if not PHONE_PATTERN.fullmatch(value):
+            raise ValueError("phone must look like +963 912345678")
         return value
 
 

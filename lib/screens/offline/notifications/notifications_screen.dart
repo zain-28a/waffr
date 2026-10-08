@@ -472,6 +472,7 @@ class _NotificationTile extends StatelessWidget {
       NotificationType.recurringPeriodCompleted => Icons.event_available_outlined,
       NotificationType.recurringExpenseBlocked => Icons.block_rounded,
       NotificationType.recurringExpenseApplied => Icons.event_repeat_rounded,
+      NotificationType.recurringExpenseUpcoming => Icons.event_busy_outlined,
     };
   }
 }

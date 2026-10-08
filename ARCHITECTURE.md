@@ -39,10 +39,15 @@ sheets. Shared sheet pieces (glass body, amount field, save button) live in
 | Money formatting and the active currency symbol | `lib/core/utils/money.dart`. |
 | The currency list and the active currency | Catalog: `lib/data/models/currency.dart`. Saved selection: `lib/data/stores/currency_store.dart`. |
 | Transactions, balance, savings goals | `lib/data/models/transaction.dart`, `lib/data/models/savings_goal.dart`, and `lib/data/stores/transaction_store.dart`. |
-| Custom expense categories | `lib/data/models/expense_categories.dart` and `lib/data/stores/category_store.dart`. |
+| Expense categories | `lib/data/models/expense_categories.dart` (built-ins and chart colors) and `lib/data/stores/category_store.dart` (custom categories, removed built-ins, archive of removed ones so old expenses keep their icon). |
+| Saved expenses (star on the expense sheet) | `lib/data/models/expense_preset.dart`, `lib/data/stores/expense_preset_store.dart`, `lib/screens/offline/home/sheets/expense_presets_dialog.dart`. Synced as `expense_presets`. |
+| Date pickers and typed dates | `lib/widgets/dialogs/waffer_date_picker.dart` and `lib/core/utils/date_input.dart`. Arabic picker text with 0-9 digits comes from `lib/core/l10n/waffer_material_localizations.dart`. |
+| Streak | `lib/core/usage/streak_math.dart`, `lib/data/services/usage_streak_service.dart`, the profile card `lib/screens/offline/profile/streak_card.dart`, and the launch overlay `lib/widgets/brand/streak_celebration.dart` (shown from `app_shell.dart`). |
+| Countries and calling codes | `lib/data/models/country.dart`, picked in `lib/screens/offline/user_info/country_picker_sheet.dart`. |
 | Shopping list and recurring bills | `lib/data/stores/shopping_list_store.dart`, `lib/data/stores/recurring_expense_store.dart`. |
-| Spending chart | `lib/screens/offline/report/reportscreen.dart` (`fl_chart` line chart). The home donut is `_DistributionChart` in `lib/screens/offline/home/dashboard.dart`. |
-| Exchange rates, news, nearby places | Rates and news: `lib/data/services/online_feed_service.dart`, drawn by `lib/screens/online/online_screen.dart`. Nearby places: `lib/data/models/nearby_place_category.dart` (opens a maps search). |
+| Spending chart | `lib/screens/offline/report/reportscreen.dart` (`fl_chart` line chart). The home donut is `_DistributionChart` in `lib/screens/offline/home/dashboard.dart`. Slice colors come from `expense_categories.dart`. |
+| Expense history export (PDF / text) | `lib/screens/offline/report/expense_history_share.dart`. |
+| Exchange rates, news, nearby places | Rates and news: `lib/data/services/online_feed_service.dart`, drawn by `lib/screens/online/online_screen.dart` (guests see a sign-in cover instead). Nearby places: `lib/data/models/nearby_place_category.dart` (opens a maps search). |
 | Notifications | `lib/data/services/notification_service.dart` and `lib/screens/offline/notifications/notifications_screen.dart`. |
 | Sign-in and cloud sync | `lib/core/sync/` (`auth_session.dart`, `sync_service.dart`). Login UI: `lib/screens/offline/login/`. |
 | App lock | `lib/core/security/app_lock.dart` and `lib/screens/offline/applock/applockscreen.dart`. |
@@ -63,8 +68,8 @@ shows one of: login, first-launch theme, biometric lock, or `AppShell`.
 1. Home
 2. Report
 3. Savings
-4. Online
-5. Notifications
+4. Online (signed-in users only; guests see a sign-in cover)
+5. Profile (streak, usage)
 
 Only the visible page is mounted (`scrollCacheExtent` is zero). The first
 visit builds that tab; `AutomaticKeepAliveClientMixin` on each tab keeps it

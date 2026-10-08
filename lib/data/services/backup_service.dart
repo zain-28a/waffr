@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffer/data/stores/expense_preset_store.dart';
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/data/services/drive_backup_client.dart';
@@ -827,6 +828,7 @@ class BackupService {
     ShoppingListStore.instance.resetCache();
     RecurringExpenseStore.instance.resetCache();
     CategoryStore.instance.resetCache();
+    ExpensePresetStore.instance.resetCache();
 
     await Future.wait<void>(<Future<void>>[
       CurrencyStore.instance.ensureLoaded(),
@@ -975,5 +977,6 @@ class BackupService {
     ShoppingListStore.instance.addListener(scheduleBackup);
     RecurringExpenseStore.instance.addListener(scheduleBackup);
     CategoryStore.instance.addListener(scheduleBackup);
+    ExpensePresetStore.instance.addListener(scheduleBackup);
   }
 }

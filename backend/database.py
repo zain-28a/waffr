@@ -56,6 +56,7 @@ PRIVATE_TEXT_COLUMNS: dict[str, tuple[str, ...]] = {
     "recurring_expenses": ("category", "payment_method", "note"),
     "notifications": ("title", "message"),
     "expense_categories": ("label",),
+    "expense_presets": ("category", "payment_method", "note"),
 }
 
 
@@ -192,6 +193,7 @@ def _ensure_user_profile_columns(connection, inspector, tables: set[str]) -> Non
         ("country", "country VARCHAR(80)"),
         ("city", "city VARCHAR(80)"),
         ("street", "street VARCHAR(160)"),
+        ("phone", "phone VARCHAR(32)"),
     ):
         _add_column(connection, inspector, tables, "users", name, ddl)
 
@@ -611,6 +613,14 @@ def _ensure_settings_columns(connection, inspector, tables: set[str]) -> None:
         "user_settings",
         "streak_last_date",
         "streak_last_date VARCHAR(10)",
+    )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "user_settings",
+        "hidden_categories",
+        "hidden_categories JSONB NOT NULL DEFAULT '[]'::jsonb",
     )
 
 

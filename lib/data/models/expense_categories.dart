@@ -14,42 +14,43 @@ class ExpenseCategory {
   });
 }
 
-// Grid order for "add expense"; olive/cream palette matches the Waffer theme.
+// Grid order for "add expense". Chart colors come from the Waffer reference
+// palette: sky blue, dusty rose, cream yellow, lavender, peach and sage.
 const List<ExpenseCategory> expenseCategories = [
   ExpenseCategory(
     label: 'طعام',
     icon: Icons.lunch_dining_outlined,
-    color: Color(0xFFB8924A),
+    color: Color(0xFFFEB599),
   ),
   ExpenseCategory(
     label: 'مواصلات',
     icon: Icons.directions_bus_outlined,
-    color: Color(0xFF5F8F82),
+    color: Color(0xFFA9CFEC),
   ),
   ExpenseCategory(
     label: 'تسوق',
     icon: Icons.shopping_bag_outlined,
-    color: Color(0xFFC4956A),
+    color: Color(0xFFB67880),
   ),
   ExpenseCategory(
     label: 'فواتير',
     icon: Icons.receipt_long_outlined,
-    color: Color(0xFFA89B55),
+    color: Color(0xFFFEE1B1),
   ),
   ExpenseCategory(
     label: 'صحة',
     icon: Icons.favorite_border_rounded,
-    color: Color(0xFFB07A6E),
+    color: Color(0xFF7C9687),
   ),
   ExpenseCategory(
     label: 'ترفيه',
     icon: Icons.sports_esports_outlined,
-    color: Color(0xFF7D9160),
+    color: Color(0xFF9D90B0),
   ),
   ExpenseCategory(
     label: 'تعليم',
     icon: Icons.school_outlined,
-    color: Color(0xFF4F7D52),
+    color: Color(0xFF7FAED3),
   ),
 ];
 
@@ -112,21 +113,21 @@ const List<IconData> customCategoryIconChoices = [
   Icons.celebration_outlined,
 ];
 
-// Muted olive, gold, and clay tones for chart slices of added categories.
-// Kept apart from the built-in swatches so percentage charts stay readable.
+// Chart slices for added categories: deeper and lighter shades of the same
+// reference palette. Saved categories keep their slot index.
 const List<Color> customCategoryColors = [
-  Color(0xFF6E8F4E),
-  Color(0xFFC4A15A),
-  Color(0xFF8C6A45),
-  Color(0xFF4E7A62),
-  Color(0xFFA68462),
-  Color(0xFF7A8A48),
-  Color(0xFF9A7048),
-  Color(0xFF5C7350),
-  Color(0xFFB89A6A),
-  Color(0xFF6A5E42),
-  Color(0xFF8E9A68),
-  Color(0xFFA07858),
+  Color(0xFF5B7B69),
+  Color(0xFF93585F),
+  Color(0xFFF2C97E),
+  Color(0xFF7A6C95),
+  Color(0xFFF08F6E),
+  Color(0xFFCFE5F6),
+  Color(0xFFA9C2B3),
+  Color(0xFFD7A3AA),
+  Color(0xFFC2B8D3),
+  Color(0xFFFFD3C2),
+  Color(0xFF5E8FB8),
+  Color(0xFFD9B97A),
 ];
 
 // Wired by CategoryStore so charts/reports resolve saved custom icons.
@@ -189,11 +190,7 @@ ExpenseCategory categoryFor(String? label) {
   return customCategoryNamed(label);
 }
 
-// Slightly lightens category colors in dark mode for chart readability.
+// The palette is already soft, so light and dark mode use the same swatch.
 Color categoryChartColor(BuildContext context, String? label) {
-  final base = categoryFor(label).color;
-  if (Theme.of(context).brightness != Brightness.dark) {
-    return base;
-  }
-  return Color.lerp(base, const Color(0xFFE8F0E4), 0.18)!;
+  return categoryFor(label).color;
 }

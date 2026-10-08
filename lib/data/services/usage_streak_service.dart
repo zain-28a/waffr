@@ -7,6 +7,14 @@ import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/insights/profile_snapshot.dart';
 import 'package:waffer/core/prefs/app_prefs.dart';
 
+/// A streak that just grew by a day on this device: [from] to [to].
+class StreakIncrease {
+  final int from;
+  final int to;
+
+  const StreakIncrease({required this.from, required this.to});
+}
+
 class UsageStreakService extends ChangeNotifier {
   UsageStreakService._();
 
@@ -20,6 +28,7 @@ class UsageStreakService extends ChangeNotifier {
   Future<void>? _loader;
   bool _loaded = false;
   bool _needsPush = false;
+  StreakIncrease? _pendingIncrease;
 
   bool get isLoaded => _loaded;
 
@@ -52,6 +61,12 @@ class UsageStreakService extends ChangeNotifier {
 
     final next = StreakMath.record(current, now ?? DateTime.now());
     if (!StreakMath.differs(_state, next)) return _state;
+
+    // Opening on the next calendar day: the home screen celebrates it once.
+    final previous = _state.count;
+    if (previous >= 1 && next.count == previous + 1) {
+      _pendingIncrease = StreakIncrease(from: previous, to: next.count);
+    }
 
     _state = next;
     await _persist(markDirty: true);
@@ -100,6 +115,13 @@ class UsageStreakService extends ChangeNotifier {
     };
   }
 
+  /// The increase recorded by the last [recordToday], handed out once.
+  StreakIncrease? takeIncrease() {
+    final value = _pendingIncrease;
+    _pendingIncrease = null;
+    return value;
+  }
+
   /// True once when local streak should be pushed after a pull.
   bool consumePushRequest() {
     final value = _needsPush;
@@ -112,6 +134,7 @@ class UsageStreakService extends ChangeNotifier {
     _loaded = false;
     _loader = null;
     _needsPush = false;
+    _pendingIncrease = null;
     notifyListeners();
   }
 

@@ -7,10 +7,12 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/models/expense_categories.dart';
+import 'package:waffer/data/models/recurring_expense.dart';
 import 'package:waffer/data/models/transaction.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/insights/spending_improvement.dart';
 import 'package:waffer/core/theme/app_palette.dart';
+import 'package:waffer/data/stores/recurring_expense_store.dart';
 import 'package:waffer/data/stores/shopping_list_store.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
@@ -18,6 +20,7 @@ import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffer/widgets/dialogs/waffer_date_picker.dart';
 import 'package:waffer/screens/offline/report/expense_history_share.dart';
 
 // Picks a range (day / week / month / 3 months / 6 months / year) via chips.
@@ -1017,6 +1020,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   late final Listenable _listenables = Listenable.merge([
     _store,
     CategoryStore.instance,
+    RecurringExpenseStore.instance,
   ]);
 
   bool _selecting = false;
@@ -1028,6 +1032,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   @override
   void initState() {
     super.initState();
+    RecurringExpenseStore.instance.ensureLoaded();
     _selectionAnim = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 240),
@@ -1117,17 +1122,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     final now = DateTime.now();
     final firstDate = DateTime(oldest.year, oldest.month, oldest.day);
     final lastDate = DateTime(now.year, now.month, now.day);
-    final range = await showDateRangePicker(
+    final range = await showWafferDateRangePicker(
       context: context,
+      title: 'نطاق التاريخ',
       firstDate: firstDate,
       lastDate: lastDate.isBefore(firstDate) ? firstDate : lastDate,
-      locale: const Locale('ar'),
-      builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
     );
     if (!mounted || range == null) return;
     final start = DateTime(range.start.year, range.start.month, range.start.day);
@@ -1726,14 +1725,22 @@ class _HistoryExpenseRow extends StatelessWidget {
     final colors = AppPalette.of(context);
     final category = categoryFor(expense.category);
     final note = expense.note?.trim();
+    final recurring =
+        !isIncome && RecurringExpense.isRecurringSource(expense.sourceId);
+    final schedule = recurring ? _recurringSchedule(expense) : null;
     final title = isIncome
         ? (note != null && note.isNotEmpty
             ? note
             : _incomeFrequencyLabel(expense.frequency))
         : category.label;
+    // A schedule without a note stored its "every N" text as the note; the
+    // recurring badge already shows it.
+    final noteIsSchedule = recurring &&
+        note != null &&
+        (note == schedule || _looksLikeSchedule(note));
     final subtitle = isIncome && note != null && note.isNotEmpty
         ? _incomeFrequencyLabel(expense.frequency)
-        : (!isIncome ? note : null);
+        : (!isIncome && !noteIsSchedule ? note : null);
     final icon = isIncome ? Icons.payments_outlined : category.icon;
     return GestureDetector(
       onLongPress: onLongPress,
@@ -1793,6 +1800,10 @@ class _HistoryExpenseRow extends StatelessWidget {
                   ),
                 ),
               ],
+              if (recurring) ...[
+                const SizedBox(height: 4),
+                _RecurringBadge(schedule: schedule ?? _scheduleFromNote(note)),
+              ],
               const SizedBox(height: 2),
               Text(
                 '${formatDate(expense.dateTime)} • '
@@ -1843,6 +1854,82 @@ class _HistoryExpenseRow extends StatelessWidget {
       ),
     );
   }
+}
+
+// "Recurring" pill on history rows posted by a schedule, with the schedule
+// ("كل شهر") next to it when it is still known.
+class _RecurringBadge extends StatelessWidget {
+  final String? schedule;
+
+  const _RecurringBadge({required this.schedule});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppPalette.of(context);
+    final text = TextStyle(
+      fontFamily: 'Outfit',
+      fontFamilyFallback: const ['Tajawal'],
+      fontSize: 10.5,
+      height: 1.2,
+      fontWeight: FontWeight.w700,
+      color: colors.accent,
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsetsDirectional.fromSTEB(7, 3, 8, 3),
+          decoration: BoxDecoration(
+            color: colors.accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: colors.accent.withValues(alpha: 0.22)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.autorenew_rounded, size: 12, color: colors.accent),
+              const SizedBox(width: 4),
+              Text('مصروف متكرر', style: text),
+            ],
+          ),
+        ),
+        if (schedule != null) ...[
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              schedule!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: text.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// "كل شهر" for the schedule that posted [expense], if it still exists.
+String? _recurringSchedule(WafferTransaction expense) {
+  final id = RecurringExpense.idFromSource(expense.sourceId);
+  if (id == null) return null;
+  return RecurringExpenseStore.instance.byId(id)?.intervalDescription;
+}
+
+final RegExp _schedulePattern = RegExp(
+  r'^كل (\d+ )?(يوم|أسبوع|شهر|أيام|أسابيع|أشهر)$',
+);
+
+bool _looksLikeSchedule(String text) => _schedulePattern.hasMatch(text);
+
+// Deleted schedules: the note may still hold the "every N" text.
+String? _scheduleFromNote(String? note) {
+  if (note == null || !_looksLikeSchedule(note)) return null;
+  return note;
 }
 
 // Centered icon + message used when a chart or list has nothing to show.
