@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -47,7 +48,7 @@ class SavingsGoal(ClientIdMixin, SoftDeleteMixin, TimestampMixin, Base):
         nullable=False,
     )
 
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
     currency_code: Mapped[str] = mapped_column(
         String(10),
         default="SYP",
@@ -146,7 +147,7 @@ class SavingsTransfer(ClientIdMixin, SoftDeleteMixin, CreatedAtMixin, Base):
     )
     direction: Mapped[str] = mapped_column(String(20), nullable=False)
     kind: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,

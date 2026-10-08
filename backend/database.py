@@ -47,6 +47,25 @@ def new_client_id() -> str:
 MONEY = Numeric(18, 2)
 RATE = Numeric(18, 6)
 
+# Text the app encrypts before upload. Amounts, dates and ids stay readable.
+PRIVATE_TEXT_COLUMNS: dict[str, tuple[str, ...]] = {
+    "transactions": ("category", "payment_method", "note"),
+    "savings_transfers": ("note",),
+    "savings_goals": ("name",),
+    "shopping_items": ("name",),
+    "recurring_expenses": ("category", "payment_method", "note"),
+    "notifications": ("title", "message"),
+    "expense_categories": ("label",),
+}
+
+
+def scrub_private_text(row) -> None:
+    """Blank a deleted row's private text so it does not outlive the row."""
+    for column in PRIVATE_TEXT_COLUMNS.get(row.__tablename__, ()):
+        setattr(row, column, "")
+    if hasattr(row, "event_metadata"):
+        row.event_metadata = {}
+
 
 class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(
@@ -119,6 +138,9 @@ def _ensure_schema_updates() -> None:
         _ensure_transfer_updated_at(connection, inspector, tables)
         _ensure_notification_updated_at(connection, inspector, tables)
         _ensure_notification_event_unique(connection, tables)
+        _ensure_user_key_columns(connection, inspector, tables)
+        _ensure_private_text_columns(connection, inspector, tables)
+        _scrub_deleted_private_text(connection, tables)
 
 
 def _columns(inspector, table: str) -> set[str]:
@@ -631,3 +653,50 @@ def _ensure_currency_columns(connection, inspector, tables: set[str]) -> None:
         "income_overrides_by_currency",
         "income_overrides_by_currency JSONB NOT NULL DEFAULT '{}'::jsonb",
     )
+
+
+def _ensure_user_key_columns(connection, inspector, tables: set[str]) -> None:
+    for name, ddl in (
+        ("key_salt", "key_salt VARCHAR(64)"),
+        ("key_iterations", "key_iterations INTEGER"),
+        ("wrapped_key", "wrapped_key TEXT"),
+        ("token_version", "token_version INTEGER NOT NULL DEFAULT 0"),
+        ("reset_code_hash", "reset_code_hash VARCHAR(255)"),
+        ("reset_code_expires_at", "reset_code_expires_at TIMESTAMPTZ"),
+        ("reset_code_sent_at", "reset_code_sent_at TIMESTAMPTZ"),
+        ("reset_attempts", "reset_attempts INTEGER NOT NULL DEFAULT 0"),
+    ):
+        _add_column(connection, inspector, tables, "users", name, ddl)
+
+
+def _ensure_private_text_columns(connection, inspector, tables: set[str]) -> None:
+    # Encrypted values are longer than the old VARCHAR limits.
+    for table, columns in PRIVATE_TEXT_COLUMNS.items():
+        if table not in tables:
+            continue
+        types = {
+            column["name"]: str(column["type"]).upper()
+            for column in inspector.get_columns(table)
+        }
+        for column in columns:
+            if column in types and types[column] != "TEXT":
+                connection.execute(
+                    text(f"ALTER TABLE {table} ALTER COLUMN {column} TYPE TEXT")
+                )
+
+
+def _scrub_deleted_private_text(connection, tables: set[str]) -> None:
+    for table, columns in PRIVATE_TEXT_COLUMNS.items():
+        if table not in tables:
+            continue
+        assignments = ", ".join(f"{column} = ''" for column in columns)
+        dirty = " OR ".join(f"{column} <> ''" for column in columns)
+        if table == "notifications":
+            assignments += ", event_metadata = '{}'::jsonb"
+            dirty += " OR event_metadata <> '{}'::jsonb"
+        connection.execute(
+            text(
+                f"UPDATE {table} SET {assignments} "
+                f"WHERE deleted_at IS NOT NULL AND ({dirty})"
+            )
+        )
