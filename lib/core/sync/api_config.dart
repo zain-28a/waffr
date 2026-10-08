@@ -8,8 +8,8 @@ class ApiConfig {
 
   static const String overrideKey = 'waffer_api_base_url';
 
-  // Dev default; with USB debugging, adb reverse can map this to the PC.
-  static const String defaultBaseUrl = 'http://192.168.2.24:8001';
+  // Production API deployed from render.yaml (Render Blueprint).
+  static const String defaultBaseUrl = 'https://waffer-api.onrender.com';
 
   // Free Render instances take about a minute to wake after they sleep.
   static Duration timeoutFor(
