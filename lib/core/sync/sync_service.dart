@@ -10,6 +10,7 @@ import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffer/data/stores/expense_preset_store.dart';
 import 'package:waffer/data/services/notification_service.dart';
 import 'package:waffer/data/stores/recurring_expense_store.dart';
 import 'package:waffer/data/stores/shopping_list_store.dart';
@@ -276,6 +277,7 @@ class SyncService with WidgetsBindingObserver {
       RecurringExpenseStore.instance.ensureLoaded(),
       NotificationService.instance.ensureLoaded(),
       CategoryStore.instance.ensureLoaded(),
+      ExpensePresetStore.instance.ensureLoaded(),
       SyncTombstones.instance.ensureLoaded(),
     ]);
 
@@ -325,6 +327,12 @@ class SyncService with WidgetsBindingObserver {
           categoryToSync(item),
     ];
 
+    final presets = [
+      for (final item in ExpensePresetStore.instance.items)
+        if (_shouldSend(item.syncUpdatedAt, lastSync, sendAll))
+          item.toSyncJson(),
+    ];
+
     final settingsUpdated = await SyncDirty.settingsUpdatedAt();
     final includeSettings = sendAll ||
         lastSync == null ||
@@ -364,6 +372,10 @@ class SyncService with WidgetsBindingObserver {
         upserts: categories,
         deletes: SyncTombstones.instance.of(SyncCollection.expenseCategories),
       ),
+      'expense_presets': collectionPayload(
+        upserts: presets,
+        deletes: SyncTombstones.instance.of(SyncCollection.expensePresets),
+      ),
       'settings': includeSettings ? await _settingsPayload() : null,
     };
   }
@@ -384,6 +396,7 @@ class SyncService with WidgetsBindingObserver {
       'enabled_currencies': CurrencyStore.instance.enabledCodes,
       'active_currency': CurrencyStore.instance.activeCode,
       'processed_period_keys': store.processedPeriodTokens.toList(),
+      'hidden_categories': CategoryStore.instance.hiddenBuiltIns,
       ...await ProfileSync.fields(),
       'updated_at': toSyncIso(await SyncDirty.settingsUpdatedAt()),
     };
@@ -425,6 +438,13 @@ class SyncService with WidgetsBindingObserver {
         upserts: asMapList(_collection(body, 'expense_categories')['upserts']),
         deletes: tombstonesFromSync(
           _collection(body, 'expense_categories')['deletes'],
+        ),
+      );
+
+      await ExpensePresetStore.instance.applyRemoteSync(
+        upserts: asMapList(_collection(body, 'expense_presets')['upserts']),
+        deletes: tombstonesFromSync(
+          _collection(body, 'expense_presets')['deletes'],
         ),
       );
 
@@ -497,6 +517,7 @@ class SyncService with WidgetsBindingObserver {
     await clear('recurring_expenses', SyncCollection.recurringExpenses);
     await clear('notifications', SyncCollection.notifications);
     await clear('expense_categories', SyncCollection.expenseCategories);
+    await clear('expense_presets', SyncCollection.expensePresets);
   }
 
   @override

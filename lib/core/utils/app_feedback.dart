@@ -177,12 +177,14 @@ class AppDialogAction {
   final VoidCallback onPressed;
   final bool primary;
   final bool destructive;
+  final bool enabled;
 
   const AppDialogAction({
     required this.label,
     required this.onPressed,
     this.primary = false,
     this.destructive = false,
+    this.enabled = true,
   });
 }
 
@@ -270,7 +272,7 @@ class AppDialogFrame extends StatelessWidget {
                 children: [
                   for (var i = 0; i < actions.length; i++) ...[
                     if (i > 0) const SizedBox(width: 8),
-                    Expanded(child: _ActionButton(action: actions[i])),
+                    Expanded(child: AppDialogActionButton(action: actions[i])),
                   ],
                 ],
               ),
@@ -282,10 +284,11 @@ class AppDialogFrame extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
+// One dialog action styled like the confirm dialogs. Public for custom frames.
+class AppDialogActionButton extends StatelessWidget {
   final AppDialogAction action;
 
-  const _ActionButton({required this.action});
+  const AppDialogActionButton({super.key, required this.action});
 
   @override
   Widget build(BuildContext context) {
@@ -296,7 +299,7 @@ class _ActionButton extends StatelessWidget {
 
     if (!action.primary && !action.destructive) {
       return TextButton(
-        onPressed: action.onPressed,
+        onPressed: action.enabled ? action.onPressed : null,
         style: TextButton.styleFrom(
           foregroundColor: palette.textSecondary,
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -313,10 +316,12 @@ class _ActionButton extends StatelessWidget {
 
     final background = action.destructive ? destructiveColor : palette.accent;
     return FilledButton(
-      onPressed: action.onPressed,
+      onPressed: action.enabled ? action.onPressed : null,
       style: FilledButton.styleFrom(
         backgroundColor: background,
         foregroundColor: Colors.white,
+        disabledBackgroundColor: background.withValues(alpha: 0.35),
+        disabledForegroundColor: Colors.white,
         elevation: 0,
         padding: const EdgeInsets.symmetric(vertical: 12),
         shape: RoundedRectangleBorder(

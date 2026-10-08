@@ -1,8 +1,8 @@
 // Shopping list preview card plus sheets to add items and record purchases as expenses.
 
 import 'package:flutter/material.dart';
+import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/models/expense_categories.dart';
 import 'package:waffer/data/stores/shopping_list_store.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
@@ -12,6 +12,7 @@ import 'package:waffer/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffer/widgets/dialogs/edit_delete_menu.dart';
 
 Future<void> showShoppingListSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -234,6 +235,47 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
     await showPurchaseShoppingItemSheet(context, item);
   }
 
+  // Same edit / delete menu as the expense categories.
+  Future<void> _showItemActions(
+    BuildContext anchorContext,
+    ShoppingItem item,
+  ) async {
+    final action = await showEditDeleteMenu(
+      context,
+      anchorContext: anchorContext,
+    );
+    if (!mounted || action == null) return;
+    switch (action) {
+      case EditDeleteAction.edit:
+        await _renameItem(item);
+      case EditDeleteAction.delete:
+        await _removeItem(item);
+    }
+  }
+
+  Future<void> _renameItem(ShoppingItem item) async {
+    final name = await showAppDialog<String>(
+      context: context,
+      builder: (_) => _RenameShoppingItemDialog(initialName: item.name),
+    );
+    if (name == null || !mounted) return;
+    await _store.renameItem(item.id, name);
+  }
+
+  Future<void> _removeItem(ShoppingItem item) async {
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'حذف "${item.name}"',
+      message: item.isPurchased
+          ? 'سيُحذف العنصر من القائمة. المصروف المسجّل لشرائه لن يتأثر.'
+          : 'سيُحذف العنصر من قائمة المشتريات.',
+      confirmLabel: 'حذف',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+    await _store.removeItem(item.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = _ShoppingColors.of(context);
@@ -333,9 +375,11 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
               const SizedBox(height: 4),
               for (final item in _store.items) ...[
                 _ShoppingItemTile(
+                  key: ValueKey(item.id),
                   item: item,
                   colors: colors,
                   onTap: () => _purchase(item),
+                  onActions: (anchor) => _showItemActions(anchor, item),
                 ),
                 const SizedBox(height: 8),
               ],
@@ -347,16 +391,20 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
   }
 }
 
-// Checkbox row; tap opens the purchase sheet when not yet bought.
+// Checkbox row; tap opens the purchase sheet when not yet bought. The dots
+// button (or a long press) opens edit / delete.
 class _ShoppingItemTile extends StatelessWidget {
   final ShoppingItem item;
   final _ShoppingColors colors;
   final VoidCallback onTap;
+  final ValueChanged<BuildContext> onActions;
 
   const _ShoppingItemTile({
+    super.key,
     required this.item,
     required this.colors,
     required this.onTap,
+    required this.onActions,
   });
 
   @override
@@ -366,9 +414,10 @@ class _ShoppingItemTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: item.isPurchased ? null : onTap,
+        onLongPress: () => onActions(context),
         borderRadius: BorderRadius.circular(18),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          padding: const EdgeInsetsDirectional.fromSTEB(12, 9, 4, 9),
           child: Row(
             children: [
               Checkbox(
@@ -409,9 +458,80 @@ class _ShoppingItemTile extends StatelessWidget {
                       : colors.accent,
                 ),
               ),
+              Builder(
+                builder: (anchorContext) => IconButton(
+                  tooltip: 'تعديل أو حذف',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 34,
+                    minHeight: 34,
+                  ),
+                  onPressed: () => onActions(anchorContext),
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    size: 19,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Name field for editing one shopping item.
+class _RenameShoppingItemDialog extends StatefulWidget {
+  final String initialName;
+
+  const _RenameShoppingItemDialog({required this.initialName});
+
+  @override
+  State<_RenameShoppingItemDialog> createState() =>
+      _RenameShoppingItemDialogState();
+}
+
+class _RenameShoppingItemDialogState extends State<_RenameShoppingItemDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialName);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  bool get _canSave => _controller.text.trim().isNotEmpty;
+
+  void _save() {
+    if (!_canSave) return;
+    Navigator.of(context).pop(_controller.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppDialogFrame(
+      title: 'تعديل العنصر',
+      kind: AppFeedbackKind.info,
+      actions: [
+        AppDialogAction(
+          label: 'إلغاء',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppDialogAction(
+          label: 'حفظ',
+          primary: true,
+          enabled: _canSave,
+          onPressed: _save,
+        ),
+      ],
+      child: SheetTextField(
+        controller: _controller,
+        hint: 'اسم العنصر',
+        onChanged: (_) => setState(() {}),
       ),
     );
   }
@@ -443,7 +563,7 @@ class _PurchaseShoppingItemSheetState
     extends State<_PurchaseShoppingItemSheet> {
   final TextEditingController _amountController = TextEditingController();
 
-  String _category = expenseCategories.first.label;
+  String _category = CategoryStore.instance.defaultLabel;
   bool _saving = false;
   late String _currencyCode;
 

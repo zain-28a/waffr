@@ -11,6 +11,7 @@ const Map<String, List<String>> privateSyncFields = {
   'recurring_expenses': ['category', 'payment_method', 'note'],
   'notifications': ['title', 'message'],
   'expense_categories': ['label'],
+  'expense_presets': ['category', 'payment_method', 'note'],
 };
 
 // Notification metadata can carry goal names and categories.

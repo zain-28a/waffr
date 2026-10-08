@@ -15,6 +15,7 @@ enum SyncCollection {
   recurringExpenses,
   notifications,
   expenseCategories,
+  expensePresets,
 }
 
 // One deleted client_id plus when it was removed on this device.

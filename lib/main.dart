@@ -8,6 +8,7 @@ import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_service.dart';
+import 'package:waffer/core/l10n/waffer_material_localizations.dart';
 import 'package:waffer/core/theme/app_theme.dart';
 import 'package:waffer/screens/offline/applock/applockscreen.dart';
 import 'package:waffer/screens/offline/login/login_screen.dart';
@@ -118,6 +119,8 @@ class _WafarAppState extends State<WafarApp> {
           locale: const Locale('ar'),
           supportedLocales: const [Locale('ar')],
           localizationsDelegates: const [
+            // Arabic strings with 0-9 digits; must come before the global one.
+            WafferMaterialLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
