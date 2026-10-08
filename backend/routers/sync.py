@@ -18,7 +18,7 @@ from crud_utils import (
     unit_from_period,
     utc_now,
 )
-from database import get_db
+from database import get_db, scrub_private_text
 from category_model import ExpenseCategory
 from goal_model import SavingsGoal, SavingsTransfer
 from models import Notification, User, UserSettings
@@ -83,6 +83,7 @@ def _apply_delete(row, deleted_at: datetime | None) -> None:
     row.deleted_at = stamp
     if hasattr(row, "updated_at"):
         row.updated_at = stamp
+    scrub_private_text(row)
 
 
 def _changed_since(query, model, last_sync: datetime | None):

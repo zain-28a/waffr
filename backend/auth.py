@@ -26,11 +26,12 @@ def verify_password(password: str, hashed_password: str) -> bool:
     return password_hash.verify(password, hashed_password)
 
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(user: User) -> str:
     expire = datetime.now(timezone.utc) + timedelta(days=7)
 
     payload = {
-        "sub": str(user_id),
+        "sub": str(user.id),
+        "ver": user.token_version,
         "exp": expire,
     }
 
@@ -57,6 +58,7 @@ def get_current_user(
         )
 
         user_id = int(payload["sub"])
+        version = int(payload.get("ver", 0))
 
     except (jwt.InvalidTokenError, KeyError, ValueError):
         raise HTTPException(
@@ -70,6 +72,12 @@ def get_current_user(
         raise HTTPException(
             status_code=401,
             detail="User not found",
+        )
+
+    if version != user.token_version:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token",
         )
 
     return user

@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    Text,
     UniqueConstraint,
     text,
 )
@@ -52,9 +53,9 @@ class Transaction(ClientIdMixin, SoftDeleteMixin, TimestampMixin, Base):
         default="SYP",
         nullable=False,
     )
-    category: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    payment_method: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    category: Mapped[str | None] = mapped_column(Text, nullable=True)
+    payment_method: Mapped[str | None] = mapped_column(Text, nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -118,13 +119,13 @@ class RecurringExpense(ClientIdMixin, SoftDeleteMixin, TimestampMixin, Base):
         default="SYP",
         nullable=False,
     )
-    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    category: Mapped[str] = mapped_column(Text, nullable=False)
     payment_method: Mapped[str] = mapped_column(
-        String(100),
+        Text,
         default="",
         nullable=False,
     )
-    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
     period: Mapped[str] = mapped_column(String(20), nullable=False)
     interval_count: Mapped[int] = mapped_column(default=1, nullable=False)
     next_run_at: Mapped[datetime] = mapped_column(

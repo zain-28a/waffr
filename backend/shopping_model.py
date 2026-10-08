@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -61,7 +62,7 @@ class ShoppingItem(ClientIdMixin, SoftDeleteMixin, TimestampMixin, Base):
         nullable=False,
     )
 
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
     quantity: Mapped[int] = mapped_column(default=1, nullable=False)
     price: Mapped[Decimal | None] = mapped_column(MONEY, nullable=True)
     is_purchased: Mapped[bool] = mapped_column(

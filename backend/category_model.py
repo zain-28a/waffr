@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Index, Integer, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, Integer, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, ClientIdMixin, SoftDeleteMixin, TimestampMixin
@@ -21,7 +21,7 @@ class ExpenseCategory(ClientIdMixin, SoftDeleteMixin, TimestampMixin, Base):
         index=True,
         nullable=False,
     )
-    label: Mapped[str] = mapped_column(String(100), nullable=False)
+    label: Mapped[str] = mapped_column(Text, nullable=False)
     icon_index: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="expense_categories")

@@ -15,9 +15,11 @@ import 'package:waffer/data/stores/recurring_expense_store.dart';
 import 'package:waffer/data/stores/shopping_list_store.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffer/core/security/data_key.dart';
 import 'package:waffer/core/sync/api_config.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
+import 'package:waffer/core/sync/sync_crypto.dart';
 import 'package:waffer/core/sync/sync_dirty.dart';
 import 'package:waffer/core/sync/sync_mapper.dart';
 import 'package:waffer/core/sync/sync_pull_policy.dart';
@@ -58,6 +60,7 @@ class SyncService with WidgetsBindingObserver {
   bool _listenersAttached = false;
   bool _applying = false;
   bool _wasOnline = true;
+  bool _resealPending = false;
   DateTime? _lastNetworkAttemptAt;
 
   final ValueNotifier<bool> isSyncing = ValueNotifier<bool>(false);
@@ -122,12 +125,24 @@ class SyncService with WidgetsBindingObserver {
         );
       }
 
+      // Sessions from before encryption have no data key. Signing in again
+      // with the password creates or unlocks it.
+      final cipher = await DataKeyStore.instance.cipher();
+      if (cipher == null) {
+        await AuthSession.instance.clearSession();
+        return const SyncResult(
+          SyncStatus.noAccount,
+          'سجّل الدخول مجدداً لحماية بياناتك',
+        );
+      }
+
       final prefs = await AppPrefs.instance;
       final currencySynced = prefs.getBool(_currencySyncedKey) ?? false;
       final payload = await _buildRequest(
         lastSync: lastSync,
         sendAll: dirty || lastSync == null || force || !currencySynced,
       );
+      await sealSyncRequest(payload, cipher);
       final base = await ApiConfig.baseUrl();
       http.Response response;
       try {
@@ -192,6 +207,7 @@ class SyncService with WidgetsBindingObserver {
         );
       }
 
+      final sawPlaintext = await openSyncResponse(body, cipher);
       final applied = await _applyResponse(body);
       if (!applied) {
         return const SyncResult(
@@ -217,6 +233,9 @@ class SyncService with WidgetsBindingObserver {
       if (UsageStreakService.instance.consumePushRequest()) {
         await SyncDirty.mark(settings: true);
       }
+      // Rows saved before encryption came back readable; push everything
+      // once more so the server copy is replaced with sealed text.
+      _resealPending = sawPlaintext && !force;
       return const SyncResult(SyncStatus.success, 'تمت المزامنة');
     } catch (_) {
       return const SyncResult(
@@ -226,7 +245,11 @@ class SyncService with WidgetsBindingObserver {
     } finally {
       _syncing = false;
       isSyncing.value = false;
-      if (_pending) {
+      if (_resealPending) {
+        _resealPending = false;
+        _pending = false;
+        unawaited(syncNow(force: true));
+      } else if (_pending) {
         _pending = false;
         scheduleSync();
       }

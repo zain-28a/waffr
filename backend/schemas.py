@@ -47,3 +47,26 @@ class LoginRequest(BaseModel):
 class AuthResponse(BaseModel):
     access_token: str
     token_type: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=6, max_length=6, pattern="^[0-9]{6}$")
+    new_password: str = Field(min_length=8, max_length=256)
+
+
+class DataKeyIn(BaseModel):
+    salt: str = Field(min_length=16, max_length=64)
+    iterations: int = Field(ge=100_000, le=10_000_000)
+    wrapped_key: str = Field(min_length=40, max_length=512)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=256)
+    # The same data key, re-wrapped with the new password.
+    data_key: DataKeyIn | None = None

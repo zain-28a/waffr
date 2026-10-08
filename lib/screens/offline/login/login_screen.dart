@@ -6,6 +6,7 @@ import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/screens/offline/login/account_creation_flow.dart';
 import 'package:waffer/screens/offline/login/auth_fields.dart';
+import 'package:waffer/screens/offline/login/forgot_password_screen.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/core/prefs/app_prefs.dart';
@@ -97,6 +98,23 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  // After a reset, sign in with the new password straight away.
+  Future<void> _openForgotPassword() async {
+    final result = await Navigator.of(context)
+        .push<({String email, String password})>(
+      MaterialPageRoute(
+        builder: (_) => ForgotPasswordScreen(
+          initialEmail: _emailController.text.trim(),
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    _emailController.text = result.email;
+    _passwordController.text = result.password;
+    setState(() {});
+    await _login();
   }
 
   Future<void> _finish() async {
@@ -203,7 +221,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 28),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  onPressed: _busy ? null : _openForgotPassword,
+                  child: Text(
+                    'نسيت كلمة المرور؟',
+                    style: TextStyle(
+                      color: accent,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               GlassButton(
                 onTap: _canSubmit ? _login : () {},
                 colorType: GlassColorType.accent,
