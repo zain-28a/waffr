@@ -131,6 +131,15 @@ class DataKeyStore {
     int iterations = defaultIterations,
   }) async {
     final key = _randomBytes(32);
+    return NewDataKey(key, await wrap(key, password, iterations: iterations));
+  }
+
+  // Wrap an existing key with a password, e.g. after a password change.
+  static Future<WrappedDataKey> wrap(
+    List<int> key,
+    String password, {
+    int iterations = defaultIterations,
+  }) async {
     final salt = _randomBytes(16);
     final passwordKey = await _passwordKey(password, salt, iterations);
     final box = await _aes.encrypt(
@@ -138,13 +147,10 @@ class DataKeyStore {
       secretKey: SecretKey(passwordKey),
       nonce: _aes.newNonce(),
     );
-    return NewDataKey(
-      key,
-      WrappedDataKey(
-        salt: base64Encode(salt),
-        iterations: iterations,
-        wrappedKey: base64Encode(box.concatenation()),
-      ),
+    return WrappedDataKey(
+      salt: base64Encode(salt),
+      iterations: iterations,
+      wrappedKey: base64Encode(box.concatenation()),
     );
   }
 

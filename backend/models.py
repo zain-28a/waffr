@@ -45,6 +45,18 @@ class User(TimestampMixin, Base):
     key_salt: Mapped[str | None] = mapped_column(String(64), nullable=True)
     key_iterations: Mapped[int | None] = mapped_column(Integer, nullable=True)
     wrapped_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Bumped on password change or reset so older tokens stop working.
+    token_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    reset_code_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    reset_code_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    reset_code_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    reset_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     transactions: Mapped[list["Transaction"]] = relationship(
         back_populates="user",

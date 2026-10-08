@@ -660,6 +660,11 @@ def _ensure_user_key_columns(connection, inspector, tables: set[str]) -> None:
         ("key_salt", "key_salt VARCHAR(64)"),
         ("key_iterations", "key_iterations INTEGER"),
         ("wrapped_key", "wrapped_key TEXT"),
+        ("token_version", "token_version INTEGER NOT NULL DEFAULT 0"),
+        ("reset_code_hash", "reset_code_hash VARCHAR(255)"),
+        ("reset_code_expires_at", "reset_code_expires_at TIMESTAMPTZ"),
+        ("reset_code_sent_at", "reset_code_sent_at TIMESTAMPTZ"),
+        ("reset_attempts", "reset_attempts INTEGER NOT NULL DEFAULT 0"),
     ):
         _add_column(connection, inspector, tables, "users", name, ddl)
 
