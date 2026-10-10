@@ -2,8 +2,8 @@
 
 import 'dart:convert';
 
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 // Which synced collection a delete belongs to.
 enum SyncCollection {
@@ -15,6 +15,7 @@ enum SyncCollection {
   recurringExpenses,
   notifications,
   expenseCategories,
+  expensePresets,
 }
 
 // One deleted client_id plus when it was removed on this device.

@@ -1,7 +1,7 @@
 // Counts and lifetime spending/saving for the profile. One pass, no charts.
 
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
 
 class ProfileSnapshot {
   final int expenseCount;

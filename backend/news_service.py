@@ -36,7 +36,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, utc_now
 from online_model import NewsArticle
 
-logger = logging.getLogger("waffer.news")
+logger = logging.getLogger("waffr.news")
 
 FEED_TIMEOUT_SECONDS = 30
 FEED_ATTEMPTS = 3
@@ -322,7 +322,7 @@ def _feed_request(source: NewsSource) -> urllib.request.Request:
     return urllib.request.Request(
         source.feed_url,
         headers={
-            "User-Agent": "Waffer/1.0",
+            "User-Agent": "Waffr/1.0",
             "Accept": "application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
         },
     )

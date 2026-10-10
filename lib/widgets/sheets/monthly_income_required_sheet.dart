@@ -1,18 +1,11 @@
-// Bottom sheet shown when the user tries to create a plan or recurring expense
+// Bottom sheet shown when the user tries to create a periodic savings plan
 // without a monthly income set.
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
-
-/// Why income is required — wording differs for plans vs expenses.
-enum MonthlyIncomeRequirement { plan, expense }
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 /// Explains that monthly income must be set in settings, then dismisses.
-Future<void> showMonthlyIncomeRequiredSheet(
-  BuildContext context, {
-  required MonthlyIncomeRequirement requirement,
-}) {
-  final isPlan = requirement == MonthlyIncomeRequirement.plan;
+Future<void> showMonthlyIncomeRequiredSheet(BuildContext context) {
   return showGlassSheet<void>(
     context: context,
     builder: (context) {
@@ -25,15 +18,11 @@ Future<void> showMonthlyIncomeRequiredSheet(
         children: [
           GlassSheetHeader(
             title: 'يلزم الدخل الشهري',
-            subtitle: isPlan
-                ? 'لا يمكن إنشاء الخطة الدورية الآن.'
-                : 'لا يمكن إنشاء مصروف متكرر الآن.',
+            subtitle: 'لا يمكن إنشاء الخطة الدورية الآن.',
           ),
           const SizedBox(height: 16),
           Text(
-            isPlan
-                ? 'الخطة الدورية تُحسب من دخلك الشهري. افتح الإعدادات واضبط «الدخل الشهري» أولاً، ثم أعد المحاولة.'
-                : 'المصروف المتكرر يحتاج دخلاً شهرياً محدداً حتى يُخصم في موعده. افتح الإعدادات واضبط «الدخل الشهري» أولاً.',
+            'الخطة الدورية تُحسب من دخلك الشهري. افتح الإعدادات وحدّد «الدخل الشهري» أولاً، ثم أعد المحاولة.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],

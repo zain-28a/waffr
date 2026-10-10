@@ -1,25 +1,22 @@
 // Create or inspect an automatic % of-income savings plan over a fixed duration.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/data/models/savings_goal.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/containers/glass.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
-import 'package:waffer/widgets/sheets/monthly_income_required_sheet.dart';
+import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/sheets/monthly_income_required_sheet.dart';
 
 // Requires monthly income; opens create UI or details for the active plan.
 Future<void> showPeriodicGoalsSheet(BuildContext context) async {
   await TransactionStore.instance.ensureLoaded();
   if (!context.mounted) return;
   if (!TransactionStore.instance.hasConfiguredMonthlyIncome) {
-    await showMonthlyIncomeRequiredSheet(
-      context,
-      requirement: MonthlyIncomeRequirement.plan,
-    );
+    await showMonthlyIncomeRequiredSheet(context);
     return;
   }
 
@@ -98,7 +95,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
     return GlassSheetBody(
       children: [
         GlassSheetHeader(
-          title: _preview ? 'معاينة الخطة' : 'أهداف ادخار دورية',
+          title: _preview ? 'معاينة الخطة' : 'خطط التوفير الدورية',
           subtitle: _preview
               ? 'راجع النتيجة قبل التأكيد.'
               : 'اختر النسبة والمدة حسب دخلك.',
@@ -163,7 +160,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
         ),
       ),
       const SizedBox(height: 18),
-      const SheetFieldLabel(text: 'نسبة الادخار'),
+      const SheetFieldLabel(text: 'نسبة التوفير'),
       SheetChoiceChips(
         options: _percents.map((item) => '$item٪').toList(),
         selected: '$_percent٪',
@@ -212,7 +209,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
               textSecondary: textSecondary,
             ),
             _PreviewRow(
-              label: 'نسبة الادخار',
+              label: 'نسبة التوفير',
               value: '$_percent٪',
               textPrimary: textPrimary,
               textSecondary: textSecondary,
@@ -367,7 +364,7 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
               ),
               if (percent != null && percent > 0)
                 _PreviewRow(
-                  label: 'نسبة الادخار',
+                  label: 'نسبة التوفير',
                   value: '${percent.round()}٪',
                   textPrimary: textPrimary,
                   textSecondary: textSecondary,
@@ -380,7 +377,7 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
                   textSecondary: textSecondary,
                 ),
               _PreviewRow(
-                label: 'التردد',
+                label: 'التكرار',
                 value: periodWord,
                 textPrimary: textPrimary,
                 textSecondary: textSecondary,
@@ -402,37 +399,10 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
             ],
           ),
         ),
-        const SizedBox(height: 22),
-        Material(
-          color: textPrimary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(22),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(22),
-            onTap: _deleting ? null : _confirmDelete,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'حذف الخطة',
-                    style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.delete_outline_rounded,
-                    size: 20,
-                    color: textPrimary.withValues(alpha: 0.75),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        const SizedBox(height: 12),
+        SheetDestructiveButton(
+          label: 'حذف الخطة',
+          onTap: _deleting ? null : _confirmDelete,
         ),
       ],
     );

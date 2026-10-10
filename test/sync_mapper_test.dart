@@ -1,31 +1,31 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:waffer/data/models/app_notification.dart';
-import 'package:waffer/data/stores/category_store.dart';
-import 'package:waffer/data/models/recurring_expense.dart';
-import 'package:waffer/data/models/savings_goal.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_mapper.dart';
-import 'package:waffer/core/sync/sync_merge.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
+import 'package:waffr/data/models/app_notification.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
+import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_mapper.dart';
+import 'package:waffr/core/sync/sync_merge.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
 
 void main() {
   test('income and expense stay transactions; savings become transfers', () {
-    final income = WafferTransaction(
+    final income = WaffrTransaction(
       id: 'tx_income',
       type: TransactionType.income,
       amount: 100,
       dateTime: DateTime.utc(2026, 1, 1),
       frequency: RecurringFrequency.monthly,
     );
-    final expense = WafferTransaction(
+    final expense = WaffrTransaction(
       id: 'tx_expense',
       type: TransactionType.expense,
       amount: 20,
       dateTime: DateTime.utc(2026, 1, 2),
       category: 'طعام',
     );
-    final saved = WafferTransaction(
+    final saved = WaffrTransaction(
       id: 'tx_save',
       type: TransactionType.savingsIn,
       amount: 15,
@@ -61,10 +61,15 @@ void main() {
       intervalCount: 1,
       createdAt: DateTime.utc(2026, 3, 1),
       nextDueAt: DateTime.utc(2026, 4, 1),
+      requiresConfirmation: true,
+      remindAt: DateTime.utc(2026, 4, 3),
     );
     final recurringDecoded = recurringFromSync(recurringToSync(recurring));
     expect(recurringDecoded?.id, 'r1');
     expect(recurringDecoded?.amount, 12.5);
+    expect(recurringDecoded?.requiresConfirmation, isTrue);
+    expect(recurringDecoded?.remindAt?.toUtc(), DateTime.utc(2026, 4, 3));
+    expect(recurringDecoded?.remindOnIncome, isFalse);
 
     final note = AppNotification(
       id: 'n1',
@@ -80,14 +85,14 @@ void main() {
   });
 
   test('last-write-wins keeps the newer local record', () {
-    final older = WafferTransaction(
+    final older = WaffrTransaction(
       id: 'same',
       type: TransactionType.expense,
       amount: 10,
       dateTime: DateTime.utc(2026, 1, 1),
       updatedAt: DateTime.utc(2026, 1, 1),
     );
-    final newer = WafferTransaction(
+    final newer = WaffrTransaction(
       id: 'same',
       type: TransactionType.expense,
       amount: 11,
@@ -95,7 +100,7 @@ void main() {
       updatedAt: DateTime.utc(2026, 1, 2),
     );
     final items = [newer];
-    final changed = mergeRemoteRecords<WafferTransaction>(
+    final changed = mergeRemoteRecords<WaffrTransaction>(
       items: items,
       upserts: [older],
       deletes: const [],
@@ -108,7 +113,7 @@ void main() {
   });
 
   test('newer remote delete removes the local record', () {
-    final local = WafferTransaction(
+    final local = WaffrTransaction(
       id: 'gone',
       type: TransactionType.expense,
       amount: 8,
@@ -116,7 +121,7 @@ void main() {
       updatedAt: DateTime.utc(2026, 1, 1),
     );
     final items = [local];
-    final changed = mergeRemoteRecords<WafferTransaction>(
+    final changed = mergeRemoteRecords<WaffrTransaction>(
       items: items,
       upserts: const [],
       deletes: [

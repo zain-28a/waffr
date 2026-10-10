@@ -1,20 +1,23 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/data/services/backup_service.dart';
-import 'package:waffer/data/services/notification_service.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/sync/auth_session.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/sync/sync_service.dart';
-import 'package:waffer/core/theme/app_theme.dart';
-import 'package:waffer/screens/offline/applock/applockscreen.dart';
-import 'package:waffer/screens/offline/login/login_screen.dart';
-import 'package:waffer/screens/offline/theme_select_screen.dart';
-import 'package:waffer/screens/shell/app_shell.dart';
-import 'package:waffer/widgets/brand/waffer_logo.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/data/services/backup_service.dart';
+import 'package:waffr/data/services/notification_service.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/sync/auth_session.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/sync/sync_service.dart';
+import 'package:waffr/core/l10n/waffr_material_localizations.dart';
+import 'package:waffr/core/theme/app_theme.dart';
+import 'package:waffr/screens/offline/applock/applockscreen.dart';
+import 'package:waffr/screens/offline/login/login_screen.dart';
+import 'package:waffr/screens/offline/theme_select_screen.dart';
+import 'package:waffr/screens/shell/app_shell.dart';
+import 'package:waffr/widgets/brand/waffr_logo.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 /// App entry: theme, first-launch flow, and the signed-in shell.
 ///
@@ -28,11 +31,26 @@ Future<void> main() async {
   TransactionStore.instance.onHydrated =
       NotificationService.instance.seedIfNeeded;
 
-  // Drive backup is currently disabled. Harmless no-op until re-enabled.
-  unawaited(BackupService.instance.initialize());
   unawaited(SyncService.instance.initialize());
+  _registerFontLicenses();
 
   runApp(const WafarApp());
+}
+
+// Bundled fonts are OFL-licensed; their notices must ship with the app.
+// Package licenses are added by Flutter itself.
+void _registerFontLicenses() {
+  const fonts = <String, String>{
+    'Tajawal': 'assets/licenses/Tajawal-OFL.txt',
+    'Outfit': 'assets/licenses/Outfit-OFL.txt',
+    'Bebas Neue': 'assets/licenses/BebasNeue-OFL.txt',
+  };
+  LicenseRegistry.addLicense(() async* {
+    for (final entry in fonts.entries) {
+      final text = await rootBundle.loadString(entry.value);
+      yield LicenseEntryWithLineBreaks(<String>[entry.key], text);
+    }
+  });
 }
 
 /// Root widget. Holds the light/dark choice and waits until it is known.
@@ -80,7 +98,6 @@ class _WafarAppState extends State<WafarApp> {
       mode == ThemeMode.dark,
     );
 
-    BackupService.instance.scheduleBackup();
     unawaited(SyncDirty.mark(settings: true));
   }
 
@@ -104,7 +121,7 @@ class _WafarAppState extends State<WafarApp> {
     if (!_themeLoaded) {
       return const MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: WafferSplash(followPlatformBrightness: true),
+        home: WaffrSplash(followPlatformBrightness: true),
       );
     }
 
@@ -118,6 +135,8 @@ class _WafarAppState extends State<WafarApp> {
           locale: const Locale('ar'),
           supportedLocales: const [Locale('ar')],
           localizationsDelegates: const [
+            // Arabic strings with 0-9 digits; must come before the global one.
+            WaffrMaterialLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
@@ -266,8 +285,6 @@ class _AppFlowControllerState
       false,
     );
 
-    BackupService.instance.scheduleBackup();
-
     if (!mounted) return;
 
     setState(() {
@@ -308,7 +325,7 @@ class _AppFlowControllerState
     if (_authChoiceMade == null ||
         _isFirstLaunch == null ||
         _appLockEnabled == null) {
-      return const WafferSplash();
+      return const WaffrSplash();
     }
 
     // User has not chosen an account or guest mode yet.

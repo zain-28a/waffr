@@ -1,7 +1,7 @@
 // Last-write-wins merge of remote upserts/deletes into an in-memory local list.
 
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
 
 // Apply server deletes then upserts. A local tombstone that is newer than an
 // incoming upsert wins, so an offline delete is not resurrected by an old row.

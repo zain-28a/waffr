@@ -2,14 +2,14 @@
 
 import 'dart:convert';
 
-import 'package:waffer/data/models/app_notification.dart';
-import 'package:waffer/data/stores/category_store.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/models/recurring_expense.dart';
-import 'package:waffer/data/models/savings_goal.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
+import 'package:waffr/data/models/app_notification.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
+import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
 
 const String defaultShoppingListId = 'shopping_default';
 const String defaultShoppingListName = 'المشتريات';
@@ -31,7 +31,7 @@ Map<String, dynamic> collectionPayload({
   };
 }
 
-Map<String, dynamic> transactionToSync(WafferTransaction item) {
+Map<String, dynamic> transactionToSync(WaffrTransaction item) {
   return {
     'client_id': item.id,
     'type': item.isIncome ? 'income' : 'expense',
@@ -48,7 +48,7 @@ Map<String, dynamic> transactionToSync(WafferTransaction item) {
   };
 }
 
-Map<String, dynamic> transferToSync(WafferTransaction item) {
+Map<String, dynamic> transferToSync(WaffrTransaction item) {
   return {
     'client_id': item.id,
     'goal_client_id': item.goalId,
@@ -103,6 +103,9 @@ Map<String, dynamic> recurringToSync(RecurringExpense item) {
     'interval_count': item.intervalCount,
     'next_due_at': toSyncIso(item.nextDueAt),
     'enabled': item.enabled,
+    'requires_confirmation': item.requiresConfirmation,
+    'remind_at': item.remindAt == null ? null : toSyncIso(item.remindAt!),
+    'remind_on_income': item.remindOnIncome,
     'created_at': toSyncIso(item.createdAt),
     'currency_code': item.currencyCode,
     'updated_at': toSyncIso(item.syncUpdatedAt),
@@ -133,7 +136,7 @@ Map<String, dynamic> categoryToSync(CustomCategoryEntry item) {
   };
 }
 
-WafferTransaction? transactionFromSync(Map<String, dynamic> raw) {
+WaffrTransaction? transactionFromSync(Map<String, dynamic> raw) {
   final amount = parseMoney(raw['amount']);
   if (amount == null || amount <= 0) return null;
   final id = raw['client_id']?.toString().trim() ?? '';
@@ -146,7 +149,7 @@ WafferTransaction? transactionFromSync(Map<String, dynamic> raw) {
   final occurred = parseEventLocal(raw['occurred_at'] ?? raw['dateTime']);
   if (occurred == null) return null;
 
-  return WafferTransaction(
+  return WaffrTransaction(
     id: id,
     type: type,
     amount: amount,
@@ -158,7 +161,7 @@ WafferTransaction? transactionFromSync(Map<String, dynamic> raw) {
     currencyCode: Currencies.normalize(
       _text(raw['currency_code']) ?? _text(raw['currencyCode']),
     ),
-    frequency: WafferTransaction.frequencyFrom(
+    frequency: WaffrTransaction.frequencyFrom(
       raw['frequency']?.toString(),
     ),
     periodKey: _text(raw['period_key'] ?? raw['periodKey']),
@@ -166,20 +169,20 @@ WafferTransaction? transactionFromSync(Map<String, dynamic> raw) {
   );
 }
 
-WafferTransaction? transferFromSync(Map<String, dynamic> raw) {
+WaffrTransaction? transferFromSync(Map<String, dynamic> raw) {
   final amount = parseMoney(raw['amount']);
   if (amount == null || amount <= 0) return null;
   final id = raw['client_id']?.toString().trim() ?? '';
   if (id.isEmpty) return null;
 
   final direction = raw['direction']?.toString();
-  final kind = WafferTransaction.transferKindFrom(raw['kind']?.toString());
+  final kind = WaffrTransaction.transferKindFrom(raw['kind']?.toString());
   final outgoing = direction == 'to_balance' ||
       kind == SavingsTransferKind.withdraw;
   final occurred = parseEventLocal(raw['occurred_at'] ?? raw['dateTime']);
   if (occurred == null) return null;
 
-  return WafferTransaction(
+  return WaffrTransaction(
     id: id,
     type: outgoing ? TransactionType.savingsOut : TransactionType.savingsIn,
     amount: amount,
@@ -240,6 +243,10 @@ RecurringExpense? recurringFromSync(Map<String, dynamic> raw) {
       'createdAt': raw['created_at'] ?? raw['createdAt'],
       'nextDueAt': raw['next_due_at'] ?? raw['nextDueAt'],
       'enabled': raw['enabled'],
+      'requiresConfirmation':
+          raw['requires_confirmation'] ?? raw['requiresConfirmation'],
+      'remindAt': raw['remind_at'] ?? raw['remindAt'],
+      'remindOnIncome': raw['remind_on_income'] ?? raw['remindOnIncome'],
       'updatedAt': raw['updated_at'] ?? raw['updatedAt'],
     }),
   );

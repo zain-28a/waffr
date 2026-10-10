@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:waffer/data/stores/category_store.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/models/expense_categories.dart';
-import 'package:waffer/data/models/recurring_expense.dart';
-import 'package:waffer/data/stores/recurring_expense_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
-import 'package:waffer/widgets/sheets/monthly_income_required_sheet.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/expense_preset_store.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/data/models/expense_preset.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/screens/offline/home/sheets/expense_presets_dialog.dart';
+import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/dialogs/edit_delete_menu.dart';
 
 // Glass bottom sheet for one-off or recurring expenses, plus category picks.
 
@@ -32,15 +36,19 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
 
-  String _category = expenseCategories.first.label;
+  String _category = CategoryStore.instance.defaultLabel;
   final String _paymentMethod = paymentMethods.first;
 
   bool _saving = false;
   bool _recurring = false;
+  // Star filled: the expense is also kept as a preset once it is saved.
+  bool _saveAsPreset = false;
   // Multiplies the entered amount (×1–×10) before saving.
   int _multiplier = 1;
   late String _currencyCode;
   RecurringUnit _recurringUnit = RecurringUnit.month;
+  // Null until the user picks; then the default follows the monthly income.
+  bool? _confirmChoice;
   final TextEditingController _intervalController = TextEditingController(
     text: '1',
   );
@@ -62,6 +70,11 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     if (_multiplier == 1) return null;
     return 'الإجمالي ${formatMoney(_amount)} $symbol';
   }
+
+  // Fixed salary → automatic; no monthly income set → ask before deducting.
+  bool get _requiresConfirmation =>
+      _confirmChoice ??
+      !TransactionStore.instance.hasConfiguredMonthlyIncomeFor(_currencyCode);
 
   int get _intervalCount {
     final value = int.tryParse(_intervalController.text.trim()) ?? 0;
@@ -88,6 +101,75 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     TransactionStore.instance.ensureLoaded().then((_) {
       if (mounted) setState(() {});
     });
+    ExpensePresetStore.instance.ensureLoaded();
+    CategoryStore.instance.ensureLoaded().then((_) {
+      if (!mounted) return;
+      final store = CategoryStore.instance;
+      if (!store.isSelectable(_category)) {
+        setState(() => _category = store.defaultLabel);
+      }
+    });
+  }
+
+  // Star: pick a saved expense, or mark this one to be saved as a preset.
+  Future<void> _openPresets() async {
+    FocusScope.of(context).unfocus();
+    final choice = await showExpensePresetsDialog(
+      context,
+      marked: _saveAsPreset,
+    );
+    if (!mounted || choice == null) return;
+
+    switch (choice) {
+      case ExpensePresetMark():
+        setState(() => _saveAsPreset = true);
+      case ExpensePresetUnmark():
+        setState(() => _saveAsPreset = false);
+      case ExpensePresetSelected(:final preset):
+        await _applyPreset(preset);
+    }
+  }
+
+  // Fills every field from [preset]; the user can still edit before saving.
+  Future<void> _applyPreset(ExpensePreset preset) async {
+    final recurring = preset.recurring;
+    final code = CurrencyStore.instance.enabledCodes.contains(
+      preset.currencyCode,
+    )
+        ? preset.currencyCode
+        : _currencyCode;
+
+    final note = preset.note ?? '';
+    setState(() {
+      _amountController.text = formatMoney(preset.amount);
+      _multiplier = preset.multiplier;
+      _currencyCode = code;
+      _category = preset.category;
+      _noteController.text = note;
+      _recurring = recurring;
+      _recurringUnit = preset.unit;
+      _intervalController.text = '${preset.intervalCount}';
+      _saveAsPreset = false;
+    });
+  }
+
+  Future<void> _storePresetIfMarked(String note) async {
+    if (!_saveAsPreset) return;
+    await ExpensePresetStore.instance.add(
+      ExpensePreset(
+        id: ExpensePreset.newId(),
+        amount: _enteredAmount,
+        multiplier: _multiplier,
+        currencyCode: _currencyCode,
+        category: _category,
+        paymentMethod: _paymentMethod,
+        note: note.isEmpty ? null : note,
+        recurring: _recurring,
+        unit: _recurringUnit,
+        intervalCount: _recurring ? _intervalCount : 1,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 
   @override
@@ -98,7 +180,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     super.dispose();
   }
 
-  // One-off goes to TransactionStore; recurring needs monthly income first.
+  // One-off goes to TransactionStore; recurring becomes an obligation.
   Future<void> _save() async {
     if (!_isValid || _saving) return;
 
@@ -107,18 +189,6 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     final note = _noteController.text.trim();
 
     if (_recurring) {
-      await TransactionStore.instance.ensureLoaded();
-      if (!TransactionStore.instance.hasConfiguredMonthlyIncomeFor(
-        _currencyCode,
-      )) {
-        if (!mounted) return;
-        setState(() => _saving = false);
-        await showMonthlyIncomeRequiredSheet(
-          context,
-          requirement: MonthlyIncomeRequirement.expense,
-        );
-        return;
-      }
       await RecurringExpenseStore.instance.addExpense(
         amount: _amount,
         category: _category,
@@ -127,7 +197,9 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         intervalCount: _intervalCount,
         note: note.isEmpty ? null : note,
         currencyCode: _currencyCode,
+        requiresConfirmation: _requiresConfirmation,
       );
+      await _storePresetIfMarked(note);
 
       if (!mounted) return;
       Navigator.of(context).maybePop();
@@ -150,6 +222,8 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
       return;
     }
 
+    await _storePresetIfMarked(note);
+    if (!mounted) return;
     Navigator.of(context).maybePop();
   }
 
@@ -172,6 +246,10 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
           onCurrencyChanged: (code) => setState(() => _currencyCode = code),
           multiplier: _multiplier,
           onMultiplierChanged: (value) => setState(() => _multiplier = value),
+          multiplierAccessory: _PresetStarButton(
+            filled: _saveAsPreset,
+            onTap: _openPresets,
+          ),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 10),
@@ -179,23 +257,8 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         SheetChoiceChips(
           options: const [_onceLabel, _recurringLabel],
           selected: _recurring ? _recurringLabel : _onceLabel,
-          onSelected: (value) async {
-            final recurring = value == _recurringLabel;
-            if (recurring) {
-              await TransactionStore.instance.ensureLoaded();
-              if (!context.mounted) return;
-              if (!TransactionStore.instance.hasConfiguredMonthlyIncomeFor(
-                _currencyCode,
-              )) {
-                await showMonthlyIncomeRequiredSheet(
-                  context,
-                  requirement: MonthlyIncomeRequirement.expense,
-                );
-                return;
-              }
-            }
-            if (!mounted) return;
-            setState(() => _recurring = recurring);
+          onSelected: (value) {
+            setState(() => _recurring = value == _recurringLabel);
           },
         ),
         SheetExpand(
@@ -232,6 +295,23 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                 ],
                 onChanged: (_) => setState(() {}),
               ),
+              const SizedBox(height: 10),
+              const SheetFieldLabel(
+                text: 'طريقة الخصم',
+                action: SheetInfoButton(
+                  title: kDeductModeInfoTitle,
+                  message: kDeductModeInfoMessage,
+                ),
+              ),
+              SheetChoiceChips(
+                options: const [kDeductAutomaticLabel, kDeductConfirmLabel],
+                selected: _requiresConfirmation
+                    ? kDeductConfirmLabel
+                    : kDeductAutomaticLabel,
+                onSelected: (value) => setState(
+                  () => _confirmChoice = value == kDeductConfirmLabel,
+                ),
+              ),
             ],
           ),
         ),
@@ -259,7 +339,53 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   }
 }
 
-// Built-in + custom categories; long-press custom tiles for edit/delete.
+// Star above the × button. Filled (accent green) once the expense is marked
+// to be kept as a preset.
+class _PresetStarButton extends StatelessWidget {
+  final bool filled;
+  final VoidCallback onTap;
+
+  const _PresetStarButton({required this.filled, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
+    return Semantics(
+      button: true,
+      label: filled ? 'سيُحفظ كمصروف محفوظ' : 'المصروفات المحفوظة',
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          width: 36,
+          height: 26,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 260),
+            switchInCurve: Curves.easeOutBack,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) => ScaleTransition(
+              scale: animation,
+              child: FadeTransition(opacity: animation, child: child),
+            ),
+            child: Icon(
+              filled ? Icons.star_rounded : Icons.star_border_rounded,
+              key: ValueKey(filled),
+              size: 22,
+              color: filled ? accent : textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Built-in + custom categories; long-press a tile to remove it (custom tiles
+// can also be edited).
 class ExpenseCategoryGrid extends StatefulWidget {
   final String selected;
   final ValueChanged<String> onSelected;
@@ -311,77 +437,29 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
     );
   }
 
-  // Context menu for custom categories only (edit / delete).
+  // Long-press menu: custom categories can be edited or removed; built-in
+  // ones can be removed.
   Future<void> _showActions(
     BuildContext tileContext,
     ExpenseCategory category,
   ) async {
-    if (!CategoryStore.instance.isCustom(category.label)) return;
+    final store = CategoryStore.instance;
+    final custom = store.isCustom(category.label);
+    if (!custom && !store.isBuiltIn(category.label)) return;
 
-    final tileBox = tileContext.findRenderObject() as RenderBox?;
-    if (tileBox == null || !tileBox.hasSize) return;
-
-    final origin = tileBox.localToGlobal(Offset.zero);
-    final size = tileBox.size;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-
-    final action = await showMenu<String>(
-      context: context,
-      color: surface,
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      position: RelativeRect.fromLTRB(
-        origin.dx,
-        origin.dy - 8,
-        origin.dx + size.width,
-        origin.dy,
-      ),
-      items: [
-        PopupMenuItem(
-          value: 'edit',
-          height: 44,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.edit_rounded, size: 18, color: textPrimary.withValues(alpha: 0.8)),
-              const SizedBox(width: 8),
-              Text(
-                'تعديل',
-                style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'], color: textPrimary),
-              ),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'delete',
-          height: 44,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.delete_rounded, size: 18, color: Color(0xFFD3544D)),
-              SizedBox(width: 8),
-              Text(
-                'حذف',
-                style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                  color: Color(0xFFD3544D),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+    final action = await showEditDeleteMenu(
+      context,
+      anchorContext: tileContext,
+      allowEdit: custom,
     );
 
     if (!mounted || action == null) return;
 
-    if (action == 'edit') {
-      await _editCustom(category);
-    } else if (action == 'delete') {
-      await _deleteCustom(category.label);
+    switch (action) {
+      case EditDeleteAction.edit:
+        await _editCustom(category);
+      case EditDeleteAction.delete:
+        await _deleteCategory(category.label);
     }
   }
 
@@ -402,12 +480,26 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
     }
   }
 
-  Future<void> _deleteCustom(String label) async {
-    final removed = await CategoryStore.instance.removeCustom(label);
+  // Old expenses keep the label, icon and color of a removed category.
+  Future<void> _deleteCategory(String label) async {
+    final store = CategoryStore.instance;
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'حذف تصنيف «$label»',
+      message: store.isBuiltIn(label)
+          ? 'لن يظهر في قائمة التصنيفات بعد الآن. المصروفات السابقة تبقى كما هي، '
+              'ويمكنك إعادته بإضافة تصنيف مخصص بالاسم نفسه.'
+          : 'لن يظهر في قائمة التصنيفات بعد الآن. المصروفات السابقة تبقى كما هي.',
+      confirmLabel: 'حذف',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    final removed = await store.removeCategory(label);
     if (!removed || !mounted) return;
 
     if (widget.selected == label) {
-      widget.onSelected(expenseCategories.first.label);
+      widget.onSelected(store.defaultLabel);
     }
   }
 
@@ -437,10 +529,8 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
                       category: category,
                       isSelected: category.label == widget.selected,
                       onTap: () => widget.onSelected(category.label),
-                      onLongPress:
-                          CategoryStore.instance.isCustom(category.label)
-                          ? () => _showActions(tileContext, category)
-                          : null,
+                      onLongPress: () =>
+                          _showActions(tileContext, category),
                     );
                   },
                 ),
@@ -594,7 +684,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
-                  'الشعار',
+                  'الأيقونة',
                   style: TextStyle(
                     fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
@@ -626,24 +716,20 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
-                        'إلغاء',
-                        style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
+                    child: AppDialogActionButton(
+                      action: AppDialogAction(
+                        label: 'إلغاء',
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Expanded(
-                    child: TextButton(
-                      onPressed: _submit,
-                      child: Text(
-                        widget.submitLabel,
-                        style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                          fontWeight: FontWeight.w800,
-                          color: accent,
-                        ),
+                    child: AppDialogActionButton(
+                      action: AppDialogAction(
+                        label: widget.submitLabel,
+                        primary: true,
+                        onPressed: _submit,
                       ),
                     ),
                   ),

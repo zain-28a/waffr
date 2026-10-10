@@ -18,16 +18,18 @@ from crud_utils import (
     unit_from_period,
     utc_now,
 )
-from database import get_db
+from database import get_db, scrub_private_text
 from category_model import ExpenseCategory
 from goal_model import SavingsGoal, SavingsTransfer
 from models import Notification, User, UserSettings
+from preset_model import ExpensePreset
 import profile_photo as stored_photo
 from shopping_model import ShoppingItem, ShoppingList
 from sync_schemas import (
     CategorySyncIn,
     GoalSyncIn,
     NotificationSyncIn,
+    PresetSyncIn,
     RecurringSyncIn,
     SettingsSyncIn,
     SettingsSyncOut,
@@ -83,6 +85,7 @@ def _apply_delete(row, deleted_at: datetime | None) -> None:
     row.deleted_at = stamp
     if hasattr(row, "updated_at"):
         row.updated_at = stamp
+    scrub_private_text(row)
 
 
 def _changed_since(query, model, last_sync: datetime | None):
@@ -154,11 +157,13 @@ def _apply_settings(
         cleaned = value.strip() or None
         setattr(row, field, cleaned)
         setattr(user, field, cleaned)
-    for field in ("country", "city", "street"):
+    for field in ("country", "city", "street", "phone"):
         value = getattr(data, field)
         if value is None:
             continue
         setattr(user, field, value.strip() or None)
+    if data.hidden_categories is not None:
+        row.hidden_categories = _clean_labels(data.hidden_categories)
     # Null is meaningful: the user removed the configured income.
     for field in ("monthly_income_amount", "weekly_income_amount"):
         if field in data.model_fields_set:
@@ -189,6 +194,15 @@ def _apply_settings(
         row.updated_at = incoming
 
 
+def _clean_labels(raw: list[str]) -> list[str]:
+    labels: list[str] = []
+    for item in raw[:50]:
+        label = (item or "").strip()[:40]
+        if label and label not in labels:
+            labels.append(label)
+    return labels
+
+
 def _settings_out(row: UserSettings, user: User) -> SettingsSyncOut:
     return SettingsSyncOut(
         notifications_enabled=row.notifications_enabled,
@@ -210,10 +224,12 @@ def _settings_out(row: UserSettings, user: User) -> SettingsSyncOut:
         country=user.country,
         city=user.city,
         street=user.street,
+        phone=user.phone,
         dark_mode=row.dark_mode,
         usage_started_at=row.usage_started_at,
         streak_count=row.streak_count,
         streak_last_date=row.streak_last_date,
+        hidden_categories=list(row.hidden_categories or []),
         has_photo=stored_photo.has_photo(user.id),
         photo_updated_at=user.photo_updated_at,
         updated_at=row.updated_at,
@@ -357,6 +373,9 @@ def _apply_recurring(db: Session, user_id: int, data: RecurringSyncIn) -> None:
     row.interval_count = max(1, data.interval_count)
     row.next_run_at = as_utc_or_now(data.next_due_at)
     row.is_active = data.enabled
+    row.requires_confirmation = data.requires_confirmation
+    row.remind_at = None if data.remind_at is None else as_utc_or_now(data.remind_at)
+    row.remind_on_income = data.remind_on_income
     if data.created_at is not None:
         row.created_at = as_utc_or_now(data.created_at)
     row.deleted_at = None
@@ -373,6 +392,29 @@ def _apply_category(db: Session, user_id: int, data: CategorySyncIn) -> None:
         return
     row.label = data.label.strip()
     row.icon_index = max(0, data.icon_index)
+    row.deleted_at = None
+    row.updated_at = incoming
+
+
+def _apply_preset(db: Session, user_id: int, data: PresetSyncIn) -> None:
+    row = _get_by_client(db, ExpensePreset, user_id, data.client_id)
+    incoming = as_utc_or_now(data.updated_at or data.created_at)
+    if row is None:
+        row = ExpensePreset(user_id=user_id, client_id=data.client_id)
+        db.add(row)
+    elif not _newer_or_equal(incoming, row.updated_at):
+        return
+    row.amount = data.amount
+    row.multiplier = data.multiplier
+    row.currency_code = normalize_currency(data.currency_code)
+    row.category = data.category
+    row.payment_method = data.payment_method
+    row.note = empty_to_none(data.note)
+    row.recurring = data.recurring
+    row.unit = data.unit
+    row.interval_count = data.interval_count
+    if data.created_at is not None:
+        row.created_at = as_utc_or_now(data.created_at)
     row.deleted_at = None
     row.updated_at = incoming
 
@@ -449,6 +491,8 @@ def sync_changes(
             _apply_notification(db, user_id, item)
         for item in _parse_many(CategorySyncIn, payload.expense_categories.upserts):
             _apply_category(db, user_id, item)
+        for item in _parse_many(PresetSyncIn, payload.expense_presets.upserts):
+            _apply_preset(db, user_id, item)
 
         _apply_deletes(db, ShoppingItem, user_id, payload.shopping_items.deletes)
         _apply_deletes(db, SavingsTransfer, user_id, payload.savings_transfers.deletes)
@@ -456,6 +500,7 @@ def sync_changes(
         _apply_deletes(db, RecurringExpense, user_id, payload.recurring_expenses.deletes)
         _apply_deletes(db, Notification, user_id, payload.notifications.deletes)
         _apply_deletes(db, ExpenseCategory, user_id, payload.expense_categories.deletes)
+        _apply_deletes(db, ExpensePreset, user_id, payload.expense_presets.deletes)
         _apply_deletes(db, SavingsGoal, user_id, payload.savings_goals.deletes)
         _apply_deletes(db, ShoppingList, user_id, payload.shopping_lists.deletes)
 
@@ -582,6 +627,9 @@ def sync_changes(
                     "interval_count": row.interval_count,
                     "next_due_at": row.next_run_at,
                     "enabled": row.is_active,
+                    "requires_confirmation": bool(row.requires_confirmation),
+                    "remind_at": row.remind_at,
+                    "remind_on_income": bool(row.remind_on_income),
                     "created_at": row.created_at,
                     "updated_at": row.updated_at,
                 },
@@ -607,6 +655,23 @@ def sync_changes(
                     "client_id": row.client_id,
                     "label": row.label,
                     "icon_index": row.icon_index,
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                },
+            ),
+            expense_presets=dump_changed(
+                ExpensePreset,
+                lambda row: {
+                    "client_id": row.client_id,
+                    "amount": str(row.amount),
+                    "multiplier": row.multiplier,
+                    "currency_code": row.currency_code,
+                    "category": row.category,
+                    "payment_method": row.payment_method,
+                    "note": row.note,
+                    "recurring": row.recurring,
+                    "unit": row.unit,
+                    "interval_count": row.interval_count,
                     "created_at": row.created_at,
                     "updated_at": row.updated_at,
                 },

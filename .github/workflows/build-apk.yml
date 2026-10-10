@@ -1,0 +1,63 @@
+# Builds a release APK for testing and attaches it to the run as an artifact.
+# Runs on every push to main, and on demand from the Actions tab.
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      # The committed wrapper points at a local Windows zip; CI downloads it.
+      - name: Use the public Gradle distribution
+        run: |
+          sed -i 's#^distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-9.3.1-all.zip#' \
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      # Release key from repository secrets. Without them the APK is signed
+      # with a throwaway debug key and cannot update an installed copy.
+      - name: Write the release signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::warning::Release key secrets are missing; signing with a debug key."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          {
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyPassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=upload"
+            echo "storeFile=upload-keystore.jks"
+          } > android/key.properties
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: waffr-apk-${{ github.run_number }}
+          path: build/app/outputs/flutter-apk/Waffr-*.apk
+          if-no-files-found: error
+          retention-days: 30

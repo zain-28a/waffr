@@ -1,4 +1,4 @@
-// Device notifications for real Waffer events. In-app history stays in
+// Device notifications for real Waffr events. In-app history stays in
 // NotificationService; this only mirrors new alerts and one daily streak nudge.
 
 import 'dart:async';
@@ -13,7 +13,7 @@ class SystemNotifications {
 
   static final SystemNotifications instance = SystemNotifications._();
 
-  static const String channelId = 'waffer_alerts';
+  static const String channelId = 'waffr_alerts';
   static const int _streakId = 41021;
 
   final FlutterLocalNotificationsPlugin _plugin =
@@ -45,7 +45,10 @@ class SystemNotifications {
   }
 
   /// One reminder for tomorrow evening. Cancelled whenever the app is opened.
-  Future<void> syncStreakReminder({required bool enabled}) async {
+  Future<void> syncStreakReminder({
+    required bool enabled,
+    int streakCount = 0,
+  }) async {
     await initialize();
     if (!_ready) return;
     try {
@@ -56,8 +59,10 @@ class SystemNotifications {
 
       await _plugin.zonedSchedule(
         id: _streakId,
-        title: 'وفّر',
-        body: 'افتح وفّر اليوم لتستمر أيامك المتواصلة',
+        title: streakCount >= 2
+            ? 'لديك $streakCount أيام متواصلة في وفّر'
+            : 'أيامك المتواصلة في وفّر',
+        body: 'سجّل مصروفات اليوم حتى لا تنقطع أيامك المتواصلة.',
         scheduledDate: tomorrow,
         notificationDetails: _details(),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -87,23 +92,53 @@ class SystemNotifications {
     try {
       final granted = await _plugin.initialize(
         settings: const InitializationSettings(
-          android: AndroidInitializationSettings('ic_stat_waffer'),
+          android: AndroidInitializationSettings('ic_stat_waffr'),
         ),
       );
       _ready = granted != false;
-      final android = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
-      await android?.createNotificationChannel(
+      await _android?.createNotificationChannel(
         const AndroidNotificationChannel(
           channelId,
           'تنبيهات وفّر',
-          description: 'تنبيهات الرصيد والادخار والأهداف',
+          description: 'تنبيهات الرصيد والتوفير والأهداف',
           importance: Importance.defaultImportance,
         ),
       );
-      await android?.requestNotificationsPermission();
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Notification setup failed: $error');
       _ready = false;
+    }
+
+    // Asked separately so a setup problem never skips the system prompt
+    // (Android 13+; older versions allow notifications by default).
+    await requestPermission();
+  }
+
+  AndroidFlutterLocalNotificationsPlugin? get _android =>
+      _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
+  /// Whether the system lets the app post notifications. Null when unknown
+  /// (not Android).
+  Future<bool?> deviceNotificationsEnabled() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return null;
+    try {
+      return await _android?.areNotificationsEnabled();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Shows the system permission prompt when Android still allows it.
+  /// Returns true when notifications are allowed afterwards.
+  Future<bool> requestPermission() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return false;
+    try {
+      final granted = await _android?.requestNotificationsPermission();
+      return granted ?? (await deviceNotificationsEnabled() ?? false);
+    } catch (error) {
+      debugPrint('Notification permission request failed: $error');
+      return false;
     }
   }
 
@@ -112,10 +147,10 @@ class SystemNotifications {
       android: AndroidNotificationDetails(
         channelId,
         'تنبيهات وفّر',
-        channelDescription: 'تنبيهات الرصيد والادخار والأهداف',
+        channelDescription: 'تنبيهات الرصيد والتوفير والأهداف',
         importance: Importance.defaultImportance,
         priority: Priority.defaultPriority,
-        icon: 'ic_stat_waffer',
+        icon: 'ic_stat_waffr',
       ),
     );
   }

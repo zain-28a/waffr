@@ -2,22 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
-import 'package:waffer/data/stores/category_store.dart';
-import 'package:waffer/data/services/notification_service.dart';
-import 'package:waffer/data/services/profile_identity.dart';
-import 'package:waffer/data/services/system_notifications.dart';
-import 'package:waffer/data/services/usage_streak_service.dart';
-import 'package:waffer/data/stores/recurring_expense_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/screens/offline/home/dashboard.dart';
-import 'package:waffer/screens/offline/notifications/notifications_screen.dart';
-import 'package:waffer/screens/offline/profile/profile_screen.dart';
-import 'package:waffer/screens/online/online_screen.dart';
-import 'package:waffer/screens/offline/report/reportscreen.dart';
-import 'package:waffer/screens/offline/savings/savings_screen.dart';
-import 'package:waffer/screens/offline/settings/settings_screen.dart';
-import 'package:waffer/widgets/brand/waffer_page_header.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/services/notification_service.dart';
+import 'package:waffr/data/services/profile_identity.dart';
+import 'package:waffr/data/services/system_notifications.dart';
+import 'package:waffr/data/services/usage_streak_service.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/screens/offline/home/dashboard.dart';
+import 'package:waffr/screens/offline/notifications/notifications_screen.dart';
+import 'package:waffr/screens/offline/profile/profile_screen.dart';
+import 'package:waffr/screens/online/online_screen.dart';
+import 'package:waffr/screens/offline/report/reportscreen.dart';
+import 'package:waffr/screens/offline/savings/savings_screen.dart';
+import 'package:waffr/screens/offline/settings/settings_screen.dart';
+import 'package:waffr/screens/shell/app_shell_scope.dart';
+import 'package:waffr/widgets/brand/streak_celebration.dart';
+import 'package:waffr/widgets/brand/waffr_page_header.dart';
 
 // Bottom navigation shell. Five tabs: home, report, savings, online, profile.
 // Settings and notifications are pushed from the header, not tabs.
@@ -47,6 +49,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
   Timer? _dueTimer;
   bool _syncingEvents = false;
+
+  // Set when today's open extended the streak; drives the overlay once.
+  StreakIncrease? _streakIncrease;
 
   static const int _tabCount = 5;
 
@@ -114,10 +119,20 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       final streak = await UsageStreakService.instance.recordToday();
       await SystemNotifications.instance.syncStreakReminder(
         enabled: !notifications.isMuted && streak.count >= 2,
+        streakCount: streak.count,
       );
+      _showStreakIncrease(UsageStreakService.instance.takeIncrease());
     } finally {
       _syncingEvents = false;
     }
+  }
+
+  // Lets the home screen settle on screen before the overlay starts.
+  Future<void> _showStreakIncrease(StreakIncrease? increase) async {
+    if (increase == null) return;
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    if (!mounted) return;
+    setState(() => _streakIncrease = increase);
   }
 
   void _openNotifications() {
@@ -192,67 +207,88 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
     final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
 
-    return Scaffold(
-      backgroundColor: bg,
-      body: SafeArea(
-        child: Column(
+    final increase = _streakIncrease;
+
+    return AppShellScope(
+      selectTab: _onTabTapped,
+      child: Scaffold(
+        backgroundColor: bg,
+        body: Stack(
+          fit: StackFit.expand,
           children: [
-            WafferPageHeader(
-              applySafeArea: false,
-              leadingWidth: 96,
-              leading: Row(
+            SafeArea(
+              child: Column(
                 children: [
-                  IconButton(
-                    iconSize: 30,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(
-                      width: 48,
-                      height: 48,
+                  WaffrPageHeader(
+                    applySafeArea: false,
+                    leadingWidth: 96,
+                    leading: Row(
+                      children: [
+                        IconButton(
+                          iconSize: 30,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints.tightFor(
+                            width: 48,
+                            height: 48,
+                          ),
+                          icon: Icon(
+                            Icons.settings_rounded,
+                            color: isDark
+                                ? AppColors.darkAccent
+                                : AppColors.lightAccent,
+                          ),
+                          onPressed: _openSettings,
+                        ),
+                        _NotificationsButton(
+                          accent: isDark
+                              ? AppColors.darkAccent
+                              : AppColors.lightAccent,
+                          onPressed: _openNotifications,
+                        ),
+                      ],
                     ),
-                    icon: Icon(
-                      Icons.settings_rounded,
-                      color: isDark
-                          ? AppColors.darkAccent
-                          : AppColors.lightAccent,
+                    title: Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        'WAFFR',
+                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                          fontFamily: 'BebasNeue',
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                     ),
-                    onPressed: _openSettings,
                   ),
-                  _NotificationsButton(
-                    accent: isDark
-                        ? AppColors.darkAccent
-                        : AppColors.lightAccent,
-                    onPressed: _openNotifications,
+                  Expanded(
+                    // Only the visible page is built: zero viewport cache and no
+                    // implicit neighbor scrolling. Pages come from _tabAt.
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: _tabCount,
+                      allowImplicitScrolling: false,
+                      scrollCacheExtent: const ScrollCacheExtent.viewport(0),
+                      onPageChanged: _onPageChanged,
+                      itemBuilder: (context, index) => _tabAt(index),
+                    ),
+                  ),
+                  _BottomNavBar(
+                    tabIndex: _tabIndex,
+                    tabCount: _tabCount,
+                    onTap: _onTabTapped,
                   ),
                 ],
               ),
-              title: Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  'WAFFR',
-                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    fontFamily: 'BebasNeue',
-                    fontStyle: FontStyle.italic,
-                  ),
+            ),
+            if (increase != null)
+              Positioned.fill(
+                child: StreakCelebrationOverlay(
+                  key: ValueKey('streak-${increase.to}'),
+                  from: increase.from,
+                  to: increase.to,
+                  onFinished: () {
+                    if (mounted) setState(() => _streakIncrease = null);
+                  },
                 ),
               ),
-            ),
-            Expanded(
-              // Only the visible page is built: zero viewport cache and no
-              // implicit neighbor scrolling. Pages come from _tabAt.
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _tabCount,
-                allowImplicitScrolling: false,
-                scrollCacheExtent: const ScrollCacheExtent.viewport(0),
-                onPageChanged: _onPageChanged,
-                itemBuilder: (context, index) => _tabAt(index),
-              ),
-            ),
-            _BottomNavBar(
-              tabIndex: _tabIndex,
-              tabCount: _tabCount,
-              onTap: _onTabTapped,
-            ),
           ],
         ),
       ),

@@ -1,7 +1,7 @@
 // Proportional savings/spending split. Left is savings, right is spending.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_palette.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 class SavingsSpendingBar extends StatelessWidget {
   final double savings;

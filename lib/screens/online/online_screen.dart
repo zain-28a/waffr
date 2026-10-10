@@ -1,22 +1,28 @@
 // Online tab: exchange rates, nearby place shortcuts, and a news preview.
 
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
-import 'package:waffer/data/models/exchange_rate.dart';
-import 'package:waffer/data/models/nearby_place_category.dart';
-import 'package:waffer/data/models/news_article.dart';
-import 'package:waffer/data/services/online_feed_service.dart';
-import 'package:waffer/core/theme/app_palette.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/screens/online/sheets/news_sheet.dart';
-import 'package:waffer/widgets/button/glass_button.dart';
-import 'package:waffer/widgets/containers/glass.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/data/models/exchange_rate.dart';
+import 'package:waffr/data/models/nearby_place_category.dart';
+import 'package:waffr/data/models/news_article.dart';
+import 'package:waffr/data/services/online_feed_service.dart';
+import 'package:waffr/data/services/profile_identity.dart';
+import 'package:waffr/core/sync/sync_service.dart';
+import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/screens/offline/login/login_screen.dart';
+import 'package:waffr/screens/online/sheets/news_sheet.dart';
+import 'package:waffr/widgets/button/glass_button.dart';
+import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 final NumberFormat _rateFormat = NumberFormat('#,##0.##', 'en');
 
 // Hosts the three online cards and refreshes news when the app resumes.
+// Guests see the cards behind a sign-in overlay; nothing is fetched for them.
 class OnlineScreen extends StatefulWidget {
   const OnlineScreen({super.key});
 
@@ -33,19 +39,27 @@ class _OnlineScreenState extends State<OnlineScreen>
   List<NewsArticle> _articles = const [];
   _NewsLoadState _newsState = _NewsLoadState.loading;
   bool _newsRequestInFlight = false;
+  final ProfileIdentity _identity = ProfileIdentity.instance;
+  bool _wasSignedIn = false;
 
   @override
   bool get wantKeepAlive => true;
+
+  bool get _signedIn => _identity.isLoaded && _identity.isLoggedIn;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadNews();
+    _identity.addListener(_onIdentityChanged);
+    _identity.ensureLoaded();
+    _wasSignedIn = _signedIn;
+    if (_wasSignedIn) _loadNews();
   }
 
   @override
   void dispose() {
+    _identity.removeListener(_onIdentityChanged);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -57,8 +71,33 @@ class _OnlineScreenState extends State<OnlineScreen>
     }
   }
 
+  // Loads the feed the moment the user is known to be signed in.
+  void _onIdentityChanged() {
+    final signedIn = _signedIn;
+    if (signedIn && !_wasSignedIn) _loadNews();
+    _wasSignedIn = signedIn;
+    if (mounted) setState(() {});
+  }
+
+  // Same login route as Settings; the overlay lifts once sign-in succeeds.
+  Future<void> _openLogin() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LoginScreen(
+          allowGuest: false,
+          popOnSuccess: true,
+          onCompleted: () async {
+            await SyncService.instance.syncNow();
+          },
+        ),
+      ),
+    );
+    await _identity.reload();
+  }
+
   // Fetches headlines; keeps prior articles on failure if we already had some.
   Future<void> _loadNews() async {
+    if (!_signedIn) return;
     if (_newsRequestInFlight) return;
     _newsRequestInFlight = true;
     final showLoading = _articles.isEmpty;
@@ -99,14 +138,16 @@ class _OnlineScreenState extends State<OnlineScreen>
     final opened = await openNearbyPlaceSearch(category);
     if (opened || !mounted) return;
 
-    showAppSnackBar(context, 'تعذر فتح خرائط Google');
+    showAppSnackBar(context, 'تعذّر فتح خرائط Google');
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
-    return SingleChildScrollView(
+    final locked = _identity.isLoaded && !_identity.isLoggedIn;
+
+    final content = SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 26),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -119,11 +160,115 @@ class _OnlineScreenState extends State<OnlineScreen>
           _NearbyPlacesCard(onOpen: _openPlace),
           const SizedBox(height: 6),
           _NewsPreviewCard(
-            article: _articles.isEmpty ? null : _articles.first,
+            articles: _articles,
             state: _newsState,
             onTap: _newsState == _NewsLoadState.loading ? null : _onNewsTap,
           ),
         ],
+      ),
+    );
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        AbsorbPointer(
+          absorbing: locked,
+          child: ExcludeSemantics(excluding: locked, child: content),
+        ),
+        IgnorePointer(
+          ignoring: !locked,
+          child: AnimatedOpacity(
+            opacity: locked ? 1 : 0,
+            duration: const Duration(milliseconds: 360),
+            curve: Curves.easeOutCubic,
+            child: _SignInGate(onLogin: _openLogin),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Frosted cover over the online cards for guests, with a sign-in action.
+class _SignInGate extends StatelessWidget {
+  final VoidCallback onLogin;
+
+  const _SignInGate({required this.onLogin});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppPalette.of(context);
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 7, sigmaY: 7),
+        child: ColoredBox(
+          color: colors.background.withValues(alpha: 0.55),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: GlassContainer(
+                colorType: GlassColorType.surface,
+                tintOpacity: 1,
+                borderRadius: 28,
+                padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          color: colors.accent.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.public_rounded,
+                          size: 28,
+                          color: colors.accent,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'سجّل الدخول لاستخدام الميزات التي تحتاج إلى الإنترنت.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: const ['Tajawal'],
+                        fontSize: 16,
+                        height: 1.5,
+                        fontWeight: FontWeight.w700,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    GlassButton(
+                      onTap: onLogin,
+                      colorType: GlassColorType.accent,
+                      tintOpacity: 1,
+                      borderRadius: 20,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      child: const Text(
+                        'تسجيل الدخول',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontFamilyFallback: ['Tajawal'],
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -606,7 +751,7 @@ class _NearbyPlacesCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'مواقع قريبة:',
+            'مواقع قريبة',
             style: TextStyle(
               fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 16,
@@ -661,27 +806,72 @@ class _NearbyPlacesCard extends StatelessWidget {
   }
 }
 
-// Top headline teaser; tap opens the full news sheet (or retries on error).
-class _NewsPreviewCard extends StatelessWidget {
-  final NewsArticle? article;
+// Headline teaser. Swipe up or down on the headline to move between articles
+// without leaving the tab; tap opens the full news sheet (or retries on error).
+class _NewsPreviewCard extends StatefulWidget {
+  final List<NewsArticle> articles;
   final _NewsLoadState state;
   final VoidCallback? onTap;
 
   const _NewsPreviewCard({
-    required this.article,
+    required this.articles,
     required this.state,
     required this.onTap,
   });
 
   @override
+  State<_NewsPreviewCard> createState() => _NewsPreviewCardState();
+}
+
+class _NewsPreviewCardState extends State<_NewsPreviewCard> {
+  // Title (3 lines) plus the source row.
+  static const double _pageHeight = 108;
+
+  final PageController _pages = PageController();
+  int _index = 0;
+
+  @override
+  void didUpdateWidget(covariant _NewsPreviewCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final count = widget.articles.length;
+    if (count == 0) {
+      _index = 0;
+    } else if (_index >= count) {
+      _index = count - 1;
+      if (_pages.hasClients) _pages.jumpToPage(_index);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  // At the first or last article, the drag keeps scrolling the tab instead.
+  bool _forwardOverscroll(OverscrollNotification notification) {
+    if (notification.dragDetails == null) return false;
+    final outer = Scrollable.maybeOf(context)?.position;
+    if (outer == null) return false;
+    final target = (outer.pixels + notification.overscroll).clamp(
+      outer.minScrollExtent,
+      outer.maxScrollExtent,
+    );
+    if (target != outer.pixels) outer.jumpTo(target);
+    return true;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
-    final item = state == _NewsLoadState.ready ? article : null;
+    final ready =
+        widget.state == _NewsLoadState.ready && widget.articles.isNotEmpty;
+    final count = widget.articles.length;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(28),
         child: GlassContainer(
           colorType: GlassColorType.surface,
@@ -694,7 +884,7 @@ class _NewsPreviewCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'الأخبار:',
+                      'الأخبار',
                       style: TextStyle(
                         fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                         fontSize: 16,
@@ -703,59 +893,186 @@ class _NewsPreviewCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (ready && count > 1)
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      child: Text(
+                        '${_index + 1} / $count',
+                        key: ValueKey(_index),
+                        textDirection: TextDirection.ltr,
+                        style: TextStyle(
+                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 4),
                   Icon(
                     Icons.keyboard_arrow_up_rounded,
                     color: colors.textSecondary,
                   ),
                 ],
               ),
-              const SizedBox(height:17),
-              if (item != null) ...[
-                Text(
-                  item.title,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w500,
-                    height: 1.55,
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.source,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          color: colors.textSecondary,
+              const SizedBox(height: 17),
+              if (ready)
+                SizedBox(
+                  height: _pageHeight,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: NotificationListener<OverscrollNotification>(
+                          onNotification: _forwardOverscroll,
+                          child: PageView.builder(
+                            controller: _pages,
+                            scrollDirection: Axis.vertical,
+                            physics: const PageScrollPhysics(
+                              parent: ClampingScrollPhysics(),
+                            ),
+                            itemCount: count,
+                            onPageChanged: (index) =>
+                                setState(() => _index = index),
+                            itemBuilder: (context, index) => _NewsHeadline(
+                              article: widget.articles[index],
+                              colors: colors,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      '${formatDate(item.publishedAt)} · ${formatTime(item.publishedAt)}',
-                      style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                        fontSize: 11.5,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ] else
-                _NewsStatus(state: state, colors: colors),
+                      if (count > 1) ...[
+                        const SizedBox(width: 10),
+                        _NewsPageDots(
+                          controller: _pages,
+                          count: count,
+                          activeColor: colors.accent,
+                          inactiveColor:
+                              colors.textSecondary.withValues(alpha: 0.35),
+                        ),
+                      ],
+                    ],
+                  ),
+                )
+              else
+                _NewsStatus(state: widget.state, colors: colors),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+// One article in the swipeable preview: title, source and time.
+class _NewsHeadline extends StatelessWidget {
+  final NewsArticle article;
+  final AppPalette colors;
+
+  const _NewsHeadline({required this.article, required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Text(
+            article.title,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontSize: 13.5,
+              fontWeight: FontWeight.w500,
+              height: 1.55,
+              color: colors.textPrimary,
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                article.source,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              '${formatDate(article.publishedAt)} · ${formatTime(article.publishedAt)}',
+              style: TextStyle(
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontSize: 11.5,
+                color: colors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// Vertical page marks beside the headline, like the balance-card currency
+// dots. Long feeds show a window of marks around the current article.
+class _NewsPageDots extends StatelessWidget {
+  static const int _maxDots = 7;
+
+  final PageController controller;
+  final int count;
+  final Color activeColor;
+  final Color inactiveColor;
+
+  const _NewsPageDots({
+    required this.controller,
+    required this.count,
+    required this.activeColor,
+    required this.inactiveColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final page = controller.hasClients
+            ? (controller.page ?? controller.initialPage.toDouble())
+            : controller.initialPage.toDouble();
+        final visible = count < _maxDots ? count : _maxDots;
+        final first = (page.round() - visible ~/ 2).clamp(0, count - visible);
+
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = first; i < first + visible; i++)
+              Builder(
+                builder: (context) {
+                  final selected = 1 - (page - i).abs().clamp(0.0, 1.0);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.5),
+                    child: Container(
+                      width: 5,
+                      height: 5 + 11 * selected,
+                      decoration: BoxDecoration(
+                        color: Color.lerp(inactiveColor, activeColor, selected),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -787,7 +1104,7 @@ class _NewsStatus extends StatelessWidget {
     }
 
     final message = state == _NewsLoadState.error
-        ? 'تعذر تحميل الأخبار'
+        ? 'تعذّر تحميل الأخبار'
         : 'لا توجد أخبار حالياً';
 
     return Column(

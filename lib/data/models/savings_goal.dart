@@ -2,8 +2,8 @@
 
 import 'dart:convert';
 
-import 'package:waffer/data/models/currency.dart';
-import 'package:waffer/data/models/transaction.dart';
+import 'package:waffr/data/models/currency.dart';
+import 'package:waffr/data/models/transaction.dart';
 
 // How long the user picked for the goal in the create dialog.
 enum GoalDurationPreset { week, month, threeMonths, sixMonths, year }
