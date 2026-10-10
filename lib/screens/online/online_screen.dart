@@ -251,15 +251,15 @@ class _SignInGate extends StatelessWidget {
                       tintOpacity: 1,
                       borderRadius: 20,
                       padding: const EdgeInsets.symmetric(vertical: 15),
-                      child: const Text(
+                      child: Text(
                         'تسجيل الدخول',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Outfit',
-                          fontFamilyFallback: ['Tajawal'],
+                          fontFamilyFallback: const ['Tajawal'],
                           fontSize: 15.5,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: colors.onAccent,
                         ),
                       ),
                     ),
