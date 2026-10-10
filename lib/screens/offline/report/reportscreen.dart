@@ -744,7 +744,7 @@ class _ExpenseDistribution extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'النسبة من إجمالي الصرف وليس الرصيد',
+                  'النسبة من إجمالي الصرف ',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
