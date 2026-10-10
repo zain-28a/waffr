@@ -25,7 +25,6 @@ class _FeedbackStyle {
 
 _FeedbackStyle _styleFor(BuildContext context, AppFeedbackKind kind) {
   final palette = AppPalette.of(context);
-  final isDark = Theme.of(context).brightness == Brightness.dark;
 
   return switch (kind) {
     AppFeedbackKind.success => _FeedbackStyle(
@@ -37,13 +36,13 @@ _FeedbackStyle _styleFor(BuildContext context, AppFeedbackKind kind) {
     AppFeedbackKind.error => _FeedbackStyle(
       background: palette.surface,
       foreground: palette.textPrimary,
-      accent: isDark ? const Color(0xFFE38B8B) : const Color(0xFF8E3B3B),
+      accent: AppColors.destructiveOf(context),
       icon: Icons.error_outline_rounded,
     ),
     AppFeedbackKind.warning => _FeedbackStyle(
       background: palette.surface,
       foreground: palette.textPrimary,
-      accent: isDark ? const Color(0xFFE2C27A) : const Color(0xFF8A6A24),
+      accent: AppColors.warningOf(context),
       icon: Icons.warning_amber_rounded,
     ),
     AppFeedbackKind.info => _FeedbackStyle(
@@ -293,9 +292,7 @@ class AppDialogActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final destructiveColor =
-        isDark ? const Color(0xFFE38B8B) : const Color(0xFF8E3B3B);
+    final destructiveColor = AppColors.destructiveOf(context);
 
     if (!action.primary && !action.destructive) {
       return TextButton(
@@ -393,6 +390,81 @@ Future<void> showAppInfoDialog(
       );
     },
   );
+}
+
+// Inline notice inside a form (e.g. wrong password). Same colors and icons as
+// the snackbars, but it stays next to the fields until the user edits them,
+// which reads calmer than a floating message. Null [message] collapses it.
+class AppInlineMessage extends StatelessWidget {
+  final String? message;
+  final AppFeedbackKind kind;
+
+  const AppInlineMessage({
+    super.key,
+    required this.message,
+    this.kind = AppFeedbackKind.error,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final text = message;
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        child: text == null
+            ? const SizedBox(width: double.infinity)
+            : _InlineMessageBody(
+                key: ValueKey('$kind$text'),
+                message: text,
+                style: _styleFor(context, kind == AppFeedbackKind.success
+                    ? AppFeedbackKind.info
+                    : kind),
+              ),
+      ),
+    );
+  }
+}
+
+class _InlineMessageBody extends StatelessWidget {
+  final String message;
+  final _FeedbackStyle style;
+
+  const _InlineMessageBody({
+    super.key,
+    required this.message,
+    required this.style,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: style.accent.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: style.accent.withValues(alpha: 0.22)),
+        ),
+        child: Row(
+          children: [
+            Icon(style.icon, size: 18, color: style.accent),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: _feedbackText(style.accent, size: 13.5),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // Keeps the accent token available to dialogs that still paint custom fields.

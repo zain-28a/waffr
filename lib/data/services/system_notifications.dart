@@ -62,7 +62,7 @@ class SystemNotifications {
         title: streakCount >= 2
             ? 'لديك $streakCount أيام متواصلة في وفّر'
             : 'أيامك المتواصلة في وفّر',
-        body: 'سجّل مصاريف اليوم حتى لا تنقطع أيامك المتواصلة.',
+        body: 'سجّل مصروفات اليوم حتى لا تنقطع أيامك المتواصلة.',
         scheduledDate: tomorrow,
         notificationDetails: _details(),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -102,7 +102,7 @@ class SystemNotifications {
         const AndroidNotificationChannel(
           channelId,
           'تنبيهات وفّر',
-          description: 'تنبيهات الرصيد والادخار والأهداف',
+          description: 'تنبيهات الرصيد والتوفير والأهداف',
           importance: Importance.defaultImportance,
         ),
       );
@@ -117,7 +117,7 @@ class SystemNotifications {
       android: AndroidNotificationDetails(
         channelId,
         'تنبيهات وفّر',
-        channelDescription: 'تنبيهات الرصيد والادخار والأهداف',
+        channelDescription: 'تنبيهات الرصيد والتوفير والأهداف',
         importance: Importance.defaultImportance,
         priority: Priority.defaultPriority,
         icon: 'ic_stat_waffer',

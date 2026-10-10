@@ -1,6 +1,8 @@
 // Pick the active currency or add/hide additional currencies.
 
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/button/app_primary_button.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
@@ -83,8 +85,9 @@ class _CurrenciesSheetState extends State<_CurrenciesSheet> {
             ],
             const SizedBox(height: 8),
             if (available.isNotEmpty)
-              SheetSaveButton(
+              AppPrimaryButton(
                 label: 'إضافة عملة',
+                icon: Icons.add_rounded,
                 onTap: () => showAddCurrencySheet(context),
               ),
           ],
@@ -125,14 +128,9 @@ class _AddCurrencySheet extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             if (available.isEmpty)
-              Text(
-                'كل العملات المتاحة مضافة.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                  fontSize: 14,
-                  color: textPrimary,
-                ),
+              const AppEmptyState(
+                icon: Icons.check_circle_outline_rounded,
+                title: 'كل العملات المتاحة مضافة',
               )
             else
               for (final item in available) ...[

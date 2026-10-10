@@ -2,6 +2,7 @@
 // the currency list under the amount field: name, with the code at the end.
 
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/core/theme/app_palette.dart';
 import 'package:waffer/data/models/country.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
@@ -37,7 +38,6 @@ class _CountryPickerSheetState extends State<_CountryPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
     final results = Countries.search(_search.text);
 
     return GlassSheetFixedBody(
@@ -57,18 +57,9 @@ class _CountryPickerSheetState extends State<_CountryPickerSheet> {
         ],
       ),
       body: results.isEmpty
-          ? Padding(
-              padding: const EdgeInsets.only(top: 32),
-              child: Text(
-                'لا توجد دولة بهذا الاسم',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Outfit',
-                  fontFamilyFallback: const ['Tajawal'],
-                  fontSize: 14,
-                  color: palette.textSecondary,
-                ),
-              ),
+          ? const AppEmptyState(
+              icon: Icons.search_off_rounded,
+              title: 'لا توجد دولة بهذا الاسم',
             )
           : ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),

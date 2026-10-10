@@ -182,21 +182,21 @@ class AuthSession {
       }
 
       if (decoded is! Map) {
-        return const AuthResult.failure('تعذر قراءة رد الخادم');
+        return const AuthResult.failure('تعذّر الاتصال بالخادم. حاول مرة أخرى');
       }
       final access = decoded['access_token']?.toString() ?? '';
       if (access.isEmpty) {
-        return const AuthResult.failure('تعذر قراءة رد الخادم');
+        return const AuthResult.failure('تعذّر الاتصال بالخادم. حاول مرة أخرى');
       }
 
       var me = await _fetchMe(access);
       if (me == null) {
-        return const AuthResult.failure('تعذر قراءة رد الخادم');
+        return const AuthResult.failure('تعذّر الاتصال بالخادم. حاول مرة أخرى');
       }
       final dataKey = await _unlockDataKey(access, password, me);
       if (dataKey == null) {
         return const AuthResult.failure(
-          'تعذر فتح بياناتك المشفّرة. حاول مرة أخرى',
+          'تعذّر فتح بياناتك المشفّرة. حاول مرة أخرى',
         );
       }
       me = dataKey.me;
@@ -257,7 +257,7 @@ class AuthSession {
     if (status == 200) return const AuthResult.success();
     if (status == 503) {
       return const AuthResult.failure(
-        'تعذر إرسال البريد الآن. حاول لاحقاً',
+        'تعذّر إرسال البريد الآن. حاول لاحقاً',
       );
     }
     if (status == null) {
@@ -341,14 +341,14 @@ class AuthSession {
       }
       if (response.statusCode != 200) {
         return const AuthResult.failure(
-          'تعذر تغيير كلمة المرور. حاول لاحقاً',
+          'تعذّر تغيير كلمة المرور. حاول لاحقاً',
         );
       }
       final decoded = jsonDecode(response.body);
       final access =
           decoded is Map ? decoded['access_token']?.toString() ?? '' : '';
       if (access.isEmpty) {
-        return const AuthResult.failure('تعذر قراءة رد الخادم');
+        return const AuthResult.failure('تعذّر الاتصال بالخادم. حاول مرة أخرى');
       }
       // Other devices are signed out; this one keeps going on the new token.
       await _storeToken(access);
@@ -397,7 +397,7 @@ class AuthSession {
           .timeout(ApiConfig.timeoutFor(base, local: _timeout));
       if (response.statusCode != 204 && response.statusCode != 401) {
         return const AuthResult.failure(
-          'تعذر حذف الحساب من الخادم. حاول لاحقاً',
+          'تعذّر حذف الحساب من الخادم. حاول لاحقاً',
         );
       }
       return const AuthResult.success();

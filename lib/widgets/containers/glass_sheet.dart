@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
+import 'package:waffer/widgets/button/app_primary_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
 /// Modal barrier tint. Dims the page behind the sheet without blurring it.
@@ -174,52 +176,57 @@ class GlassSheetHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 52),
-              child: Column(
-                children: [
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: accent,
+        // Full width so the close / next buttons stay at the sheet edges even
+        // when the title is short.
+        SizedBox(
+          width: double.infinity,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 52),
+                child: Column(
+                  children: [
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: accent,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    subtitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      fontSize: 13,
-                      color: textSecondary,
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontSize: 13,
+                        color: textSecondary,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              left: 0,
-              child: SheetCircleButton(
-                icon: Icons.close_rounded,
-                onTap: () => Navigator.of(context).maybePop(),
-              ),
-            ),
-            if (onNext != null)
-              Positioned(
-                right: 0,
-                child: SheetCircleButton(
-                  icon: Icons.chevron_right_rounded,
-                  onTap: onNext!,
+                  ],
                 ),
               ),
-          ],
+              Positioned(
+                left: 0,
+                child: SheetCircleButton(
+                  icon: Icons.close_rounded,
+                  onTap: () => Navigator.of(context).maybePop(),
+                ),
+              ),
+              if (onNext != null)
+                Positioned(
+                  right: 0,
+                  child: SheetCircleButton(
+                    icon: Icons.chevron_right_rounded,
+                    onTap: onNext!,
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     );
@@ -316,6 +323,123 @@ class SheetFieldLabel extends StatelessWidget {
             action!,
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Small (i) button next to a field label; opens a short explanation.
+/// Every inline help in the app uses this so they look and behave the same.
+class SheetInfoButton extends StatelessWidget {
+  final String title;
+  final String message;
+
+  const SheetInfoButton({
+    super.key,
+    required this.title,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+
+    return Semantics(
+      button: true,
+      label: 'شرح: $title',
+      child: InkResponse(
+        radius: 18,
+        onTap: () => showAppInfoDialog(context, title: title, message: message),
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: Icon(Icons.info_outline_rounded, size: 18, color: accent),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tappable row inside a sheet: icon, label, optional hint. Used for lists of
+/// choices (e.g. photo source) so every option row looks the same.
+class SheetOptionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? hint;
+  final VoidCallback onTap;
+  final bool destructive;
+
+  const SheetOptionTile({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.hint,
+    this.destructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final destructiveColor = AppColors.destructiveOf(context);
+    final tint = destructive ? destructiveColor : accent;
+
+    return Material(
+      color: sheetFieldColor(context),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: tint.withValues(alpha: 0.12),
+                ),
+                child: Icon(icon, size: 20, color: tint),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: destructive ? destructiveColor : textPrimary,
+                      ),
+                    ),
+                    if (hint != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        hint!,
+                        style: TextStyle(
+                          fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                          fontSize: 12,
+                          color: textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1197,35 +1321,53 @@ class SheetSaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return AppPrimaryButton(
+      label: label,
+      onTap: onTap,
+      enabled: enabled,
+      icon: Icons.check_rounded,
+    );
+  }
+}
 
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+/// Secondary "remove / delete" action under a sheet's main button. Every
+/// sheet that deletes or clears something uses it, so removal always looks
+/// the same and stays visually below the primary action.
+class SheetDestructiveButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onTap;
+  final IconData icon;
 
-    return Material(
-      color: enabled ? accent : textSecondary.withValues(alpha: 0.35),
-      borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: enabled ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.check_rounded, size: 20, color: Colors.white),
-            ],
+  const SheetDestructiveButton({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.icon = Icons.delete_outline_rounded,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = AppColors.destructiveOf(context);
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton.icon(
+        onPressed: onTap,
+        style: TextButton.styleFrom(
+          foregroundColor: color,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+        icon: Icon(icon, size: 20, color: color),
+        label: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Outfit',
+            fontFamilyFallback: const ['Tajawal'],
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: color,
           ),
         ),
       ),

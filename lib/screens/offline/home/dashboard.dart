@@ -1,22 +1,29 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/data/models/expense_categories.dart';
+import 'package:waffer/data/models/recurring_expense.dart';
 import 'package:waffer/data/models/savings_goal.dart';
 import 'package:waffer/data/models/transaction.dart';
+import 'package:waffer/data/stores/recurring_expense_store.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
+import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffer/screens/offline/home/sheets/add_income_sheet.dart';
+import 'package:waffer/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffer/screens/offline/report/reportscreen.dart';
 import 'package:waffer/screens/offline/savings/sheets/shopping_list_sheet.dart';
+import 'package:waffer/screens/shell/app_shell_scope.dart';
 import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
 // Offline home tab: balance, add actions, spending distribution, recent
-// expenses, and active savings goals — all from TransactionStore.
+// expenses / obligations, and active savings goals. Each card opens the
+// screen that holds its full details.
 
 const double kBalanceCardActionTop = 14;
 const double kBalanceCardActionEnd = 14;
@@ -38,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen>
     _store,
     CategoryStore.instance,
     CurrencyStore.instance,
+    RecurringExpenseStore.instance,
   ]);
 
   @override
@@ -49,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen>
     _store.ensureLoaded();
     CategoryStore.instance.ensureLoaded();
     CurrencyStore.instance.ensureLoaded();
+    RecurringExpenseStore.instance.ensureLoaded();
   }
 
   @override
@@ -101,6 +110,10 @@ class _HomeScreenState extends State<HomeScreen>
               _DistributionCard(
                 totals: _store.expensesByCategory(),
                 totalExpense: _store.totalExpense,
+                onTap: () => AppShellScope.selectTabOf(
+                  context,
+                  AppShellTabs.report,
+                ),
               ),
               const SizedBox(height: 6),
               IntrinsicHeight(
@@ -109,8 +122,11 @@ class _HomeScreenState extends State<HomeScreen>
                   children: [
                     Expanded(
                       flex: 7,
-                      child: _RecentExpensesCard(
+                      child: _ExpensesAndObligationsCard(
                         expenses: _store.expenses,
+                        obligations: RecurringExpenseStore.instance.itemsFor(
+                          CurrencyStore.instance.activeCode,
+                        ),
                         compact: true,
                       ),
                     ),
@@ -121,6 +137,10 @@ class _HomeScreenState extends State<HomeScreen>
                         compact: true,
                         goals: _store.activeGoals,
                         store: _store,
+                        onTap: () => AppShellScope.selectTabOf(
+                          context,
+                          AppShellTabs.savings,
+                        ),
                       ),
                     ),
                   ],
@@ -486,13 +506,19 @@ class _ActionButton extends StatelessWidget {
 class _DistributionCard extends StatelessWidget {
   final List<({String category, double amount})> totals;
   final double totalExpense;
+  final VoidCallback onTap;
 
-  const _DistributionCard({required this.totals, required this.totalExpense});
+  const _DistributionCard({
+    required this.totals,
+    required this.totalExpense,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return _SectionCard(
       title: 'توزيع المصروفات',
+      onTap: onTap,
       caption: 'النسبة من إجمالي الصرف وليس الرصيد',
       child: totals.isEmpty || totalExpense <= 0
           ? const _EmptyState(
@@ -676,11 +702,13 @@ class _SavingGoalCard extends StatefulWidget {
   final bool compact;
   final List<SavingsGoal> goals;
   final TransactionStore store;
+  final VoidCallback onTap;
 
   const _SavingGoalCard({
     this.compact = false,
     required this.goals,
     required this.store,
+    required this.onTap,
   });
 
   @override
@@ -770,6 +798,7 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
         title: 'هدف التوفير',
         compact: compact,
         centerChild: compact,
+        onTap: widget.onTap,
         child: Text(
           'لا يوجد هدف حالياً',
           textAlign: TextAlign.center,
@@ -789,6 +818,7 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
       title: 'هدف التوفير',
       compact: compact,
       centerChild: compact,
+      onTap: widget.onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -829,7 +859,7 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
             ),
           ),
           SizedBox(height: compact ? 6 : 8),
-          _GoalPageDots(
+          _PageDots(
             controller: _controller,
             count: goals.length,
             activeColor: accent,
@@ -841,15 +871,15 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
   }
 }
 
-// Page dots under the goals pager. Follows the same direction as the
+// Page dots under a dashboard pager. Follows the same direction as the
 // PageView, so the highlighted dot stays aligned in RTL.
-class _GoalPageDots extends StatelessWidget {
+class _PageDots extends StatelessWidget {
   final PageController controller;
   final int count;
   final Color activeColor;
   final Color inactiveColor;
 
-  const _GoalPageDots({
+  const _PageDots({
     required this.controller,
     required this.count,
     required this.activeColor,
@@ -869,7 +899,7 @@ class _GoalPageDots extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             for (var index = 0; index < count; index++)
-              _GoalPageDot(
+              _PageDot(
                 selected: 1 - (page - index).abs().clamp(0.0, 1.0),
                 activeColor: activeColor,
                 inactiveColor: inactiveColor,
@@ -881,12 +911,12 @@ class _GoalPageDots extends StatelessWidget {
   }
 }
 
-class _GoalPageDot extends StatelessWidget {
+class _PageDot extends StatelessWidget {
   final double selected;
   final Color activeColor;
   final Color inactiveColor;
 
-  const _GoalPageDot({
+  const _PageDot({
     required this.selected,
     required this.activeColor,
     required this.inactiveColor,
@@ -1023,12 +1053,115 @@ class _VerticalProgress extends StatelessWidget {
   }
 }
 
-// Last few expenses from the store (up to three rows).
-class _RecentExpensesCard extends StatelessWidget {
+// Two pages in one card: the last expenses and the obligations. Swiping
+// switches pages; a tap opens the full screen of the visible page.
+class _ExpensesAndObligationsCard extends StatefulWidget {
+  final List<WafferTransaction> expenses;
+  final List<RecurringExpense> obligations;
+  final bool compact;
+
+  const _ExpensesAndObligationsCard({
+    required this.expenses,
+    required this.obligations,
+    this.compact = false,
+  });
+
+  @override
+  State<_ExpensesAndObligationsCard> createState() =>
+      _ExpensesAndObligationsCardState();
+}
+
+class _ExpensesAndObligationsCardState
+    extends State<_ExpensesAndObligationsCard> {
+  final PageController _controller = PageController();
+  int _page = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _open() {
+    if (_page == 0) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const TransactionHistoryScreen.expenses(),
+        ),
+      );
+    } else {
+      showObligationsSheet(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final compact = widget.compact;
+
+    List<Widget> pages() => [
+          _RecentExpensesPage(expenses: widget.expenses, compact: compact),
+          _ObligationsPage(obligations: widget.obligations, compact: compact),
+        ];
+
+    return _SectionCard(
+      onTap: _open,
+      compact: compact,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // The hidden stack sizes the card to the taller page, so swiping
+          // never changes the card's height.
+          Stack(
+            children: [
+              Visibility(
+                visible: false,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: IndexedStack(children: pages()),
+              ),
+              Positioned.fill(
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    return notification.metrics.axis == Axis.horizontal;
+                  },
+                  child: PageView(
+                    controller: _controller,
+                    physics: const PageScrollPhysics(
+                      parent: ClampingScrollPhysics(),
+                    ),
+                    onPageChanged: (index) => _page = index,
+                    children: pages(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: compact ? 8 : 10),
+          _PageDots(
+            controller: _controller,
+            count: 2,
+            activeColor: accent,
+            inactiveColor: textPrimary.withValues(alpha: 0.22),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Last three expenses from the store.
+class _RecentExpensesPage extends StatelessWidget {
   final List<WafferTransaction> expenses;
   final bool compact;
 
-  const _RecentExpensesCard({required this.expenses, this.compact = false});
+  const _RecentExpensesPage({required this.expenses, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1040,7 +1173,7 @@ class _RecentExpensesCard extends StatelessWidget {
 
     final latest = expenses.take(3).toList();
 
-    return _SectionCard(
+    return _CardPage(
       title: 'آخر المصروفات',
       compact: compact,
       child: latest.isEmpty
@@ -1062,6 +1195,88 @@ class _RecentExpensesCard extends StatelessWidget {
                 ],
               ],
             ),
+    );
+  }
+}
+
+// Up to three obligations: those waiting for the user first, then the
+// nearest charge dates.
+class _ObligationsPage extends StatelessWidget {
+  final List<RecurringExpense> obligations;
+  final bool compact;
+
+  const _ObligationsPage({required this.obligations, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final now = deviceNow();
+    final active = obligations.where((item) => item.enabled).toList()
+      ..sort((a, b) {
+        final aFirst = obligationNeedsAttention(a, now: now) ? 0 : 1;
+        final bFirst = obligationNeedsAttention(b, now: now) ? 0 : 1;
+        if (aFirst != bFirst) return aFirst.compareTo(bFirst);
+        return a.nextDueAt.compareTo(b.nextDueAt);
+      });
+    final shown = active.take(3).toList();
+
+    return _CardPage(
+      title: 'الالتزامات',
+      compact: compact,
+      child: shown.isEmpty
+          ? _EmptyState(
+              icon: Icons.event_repeat_outlined,
+              message: 'لا توجد التزامات بعد',
+              compact: compact,
+            )
+          : Column(
+              children: [
+                for (int index = 0; index < shown.length; index++) ...[
+                  if (index > 0)
+                    Divider(
+                      height: compact ? 11 : 16,
+                      thickness: 1,
+                      color: textPrimary.withValues(alpha: 0.08),
+                    ),
+                  _ObligationRow(
+                    item: shown[index],
+                    now: now,
+                    compact: compact,
+                  ),
+                ],
+              ],
+            ),
+    );
+  }
+}
+
+// Title plus body, laid out like [_SectionCard] for pages inside a card.
+class _CardPage extends StatelessWidget {
+  final String title;
+  final Widget child;
+  final bool compact;
+
+  const _CardPage({
+    required this.title,
+    required this.child,
+    this.compact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _SectionTitle(title: title, compact: compact),
+        SizedBox(height: compact ? 14 : 16),
+        child,
+      ],
     );
   }
 }
@@ -1176,9 +1391,106 @@ class _ExpenseRow extends StatelessWidget {
   }
 }
 
+// One obligation, styled like [_ExpenseRow].
+class _ObligationRow extends StatelessWidget {
+  final RecurringExpense item;
+  final DateTime now;
+  final bool compact;
+
+  const _ObligationRow({
+    required this.item,
+    required this.now,
+    this.compact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final warning = AppColors.warningOf(context);
+
+    final category = categoryFor(item.category);
+    final attention = obligationNeedsAttention(item, now: now);
+    final iconSize = compact ? 26.0 : 44.0;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: iconSize,
+          height: iconSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: accent.withValues(alpha: 0.12),
+          ),
+          child: Icon(category.icon, size: compact ? 14 : 21, color: accent),
+        ),
+        SizedBox(width: compact ? 6 : 12),
+        Expanded(
+          flex: compact ? 6 : 1,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                obligationTitle(item),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontSize: compact ? 12.5 : 15.5,
+                  fontWeight: FontWeight.bold,
+                  color: textPrimary,
+                ),
+              ),
+              SizedBox(height: compact ? 1 : 2),
+              Text(
+                obligationStatus(item, now: now, short: compact),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontSize: compact ? 10.5 : 12.5,
+                  fontWeight: attention ? FontWeight.w700 : FontWeight.w400,
+                  color: attention ? warning : textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(width: compact ? 4 : 8),
+        Expanded(
+          flex: compact ? 5 : 2,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerEnd,
+            child: Text(
+              '${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}',
+              maxLines: 1,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontSize: compact ? 11.5 : 14,
+                fontWeight: FontWeight.bold,
+                color: accent,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // Shared glass card shell used by the dashboard sections.
 class _SectionCard extends StatelessWidget {
-  final String title;
+  final String? title;
   final String? caption;
   final Widget child;
   final bool compact;
@@ -1186,12 +1498,64 @@ class _SectionCard extends StatelessWidget {
   // Centers [child] in the leftover height; used in fixed-height rows.
   final bool centerChild;
 
+  // Opens the screen with the card's full details.
+  final VoidCallback? onTap;
+
   const _SectionCard({
-    required this.title,
     required this.child,
+    this.title,
     this.caption,
     this.compact = false,
     this.centerChild = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final padding = compact
+        ? const EdgeInsets.fromLTRB(16, 15, 16, 16)
+        : const EdgeInsets.fromLTRB(20, 18, 20, 20);
+
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (title != null) ...[
+          _SectionTitle(title: title!, caption: caption, compact: compact),
+          SizedBox(height: compact ? 14 : 16),
+        ],
+        if (centerChild) Expanded(child: Center(child: child)) else child,
+      ],
+    );
+
+    if (onTap == null) {
+      return GlassContainer(
+        colorType: GlassColorType.surface,
+        borderRadius: 28,
+        padding: padding,
+        child: content,
+      );
+    }
+
+    return GlassButton(
+      onTap: onTap!,
+      colorType: GlassColorType.surface,
+      borderRadius: 28,
+      padding: padding,
+      child: content,
+    );
+  }
+}
+
+// Card title with an optional caption beside it.
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  final String? caption;
+  final bool compact;
+
+  const _SectionTitle({
+    required this.title,
+    this.caption,
+    this.compact = false,
   });
 
   @override
@@ -1205,63 +1569,40 @@ class _SectionCard extends StatelessWidget {
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
 
-    return GlassContainer(
-      colorType: GlassColorType.surface,
-      borderRadius: 28,
-      padding: compact
-          ? const EdgeInsets.fromLTRB(16, 15, 16, 16)
-          : const EdgeInsets.fromLTRB(20, 18, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (caption == null)
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                fontSize: compact ? 14.5 : 16,
-                fontWeight: FontWeight.bold,
-                color: textPrimary,
-              ),
-            )
-          else
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                    fontSize: compact ? 14.5 : 16,
-                    fontWeight: FontWeight.bold,
-                    color: textPrimary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    caption!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      fontSize: compact ? 10.5 : 11,
-                      fontWeight: FontWeight.w500,
-                      color: textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          SizedBox(height: compact ? 14 : 16),
-          if (centerChild) Expanded(child: Center(child: child)) else child,
-        ],
+    final titleText = Text(
+      title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+        fontSize: compact ? 14.5 : 16,
+        fontWeight: FontWeight.bold,
+        color: textPrimary,
       ),
+    );
+
+    if (caption == null) return titleText;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        titleText,
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            caption!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontSize: compact ? 10.5 : 11,
+              fontWeight: FontWeight.w500,
+              color: textSecondary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1279,33 +1620,6 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: compact ? 12 : 18),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            size: compact ? 30 : 38,
-            color: textPrimary.withValues(alpha: 0.3),
-          ),
-          SizedBox(height: compact ? 8 : 10),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-              fontSize: compact ? 12 : 13.5,
-              color: textPrimary.withValues(alpha: 0.55),
-            ),
-          ),
-        ],
-      ),
-    );
+    return AppEmptyState(icon: icon, title: message, compact: compact);
   }
 }

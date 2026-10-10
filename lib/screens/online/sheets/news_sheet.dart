@@ -1,6 +1,7 @@
 // Full news list sheet opened from the online preview card.
 
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/data/models/news_article.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
@@ -37,27 +38,9 @@ class _NewsSheet extends StatelessWidget {
         subtitle: 'آخر العناوين',
       ),
       body: articles.isEmpty
-          ? Padding(
-              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.newspaper_outlined,
-                    size: 38,
-                    color: textPrimary.withValues(alpha: 0.3),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'لا توجد أخبار حالياً',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      fontSize: 14,
-                      color: textPrimary.withValues(alpha: 0.55),
-                    ),
-                  ),
-                ],
-              ),
+          ? const AppEmptyState(
+              icon: Icons.newspaper_outlined,
+              title: 'لا توجد أخبار حالياً',
             )
           : ListView.separated(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),

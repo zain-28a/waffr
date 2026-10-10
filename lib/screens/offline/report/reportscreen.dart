@@ -5,6 +5,7 @@ import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/models/expense_categories.dart';
 import 'package:waffer/data/models/recurring_expense.dart';
@@ -374,7 +375,7 @@ class _SpendingChartCard extends StatelessWidget {
             child: report.expenses.isEmpty
                 ? const _EmptyState(
                     icon: Icons.show_chart_rounded,
-                    message: 'لا توجد مصاريف في هذه الفترة',
+                    message: 'لا توجد مصروفات في هذه الفترة',
                   )
                 : Directionality(
                     textDirection: TextDirection.ltr,
@@ -693,7 +694,7 @@ class _SpendingSummary extends StatelessWidget {
                   ),
                   const SizedBox(width: 7),
                   Text(
-                    'سجل المصاريف',
+                    'سجل المصروفات',
                     style: TextStyle(
                       fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                       fontSize: 13,
@@ -743,7 +744,7 @@ class _ExpenseDistribution extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '<النسبة من إجمالي الصرف وليس الرصيد>',
+                  'النسبة من إجمالي الصرف وليس الرصيد',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -974,7 +975,12 @@ class _ImprovementCard extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           GlassButton(
-            onTap: () {},
+            onTap: () => showAppInfoDialog(
+              context,
+              title: 'التحليل الذكي',
+              message:
+                  'نعمل على ميزة تحلّل مصروفاتك وتقترح عليك طرقاً للتوفير. ستتوفر في تحديث قادم.',
+            ),
             colorType: GlassColorType.background,
             borderRadius: 20,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
@@ -984,7 +990,7 @@ class _ImprovementCard extends StatelessWidget {
                 Icon(Icons.auto_graph_rounded, size: 17, color: colors.accent),
                 const SizedBox(width: 6),
                 Text(
-                  "بس اعمل الai",
+                  'التحليل الذكي',
                   style: TextStyle(
                     fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 12.5,
@@ -1162,7 +1168,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       }
     } catch (_) {
       if (mounted) {
-        showAppSnackBar(context, 'تعذر مشاركة السجل.');
+        showAppSnackBar(context, 'تعذّر مشاركة السجل.');
       }
     } finally {
       if (mounted) setState(() => _sharing = false);
@@ -1173,8 +1179,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
     final isIncome = widget.isIncome;
-    final title = isIncome ? 'سجل الدخل' : 'سجل المصاريف';
-    final summaryLabel = isIncome ? 'كل الدخل' : 'كل المصاريف';
+    final title = isIncome ? 'سجل الدخل' : 'سجل المصروفات';
+    final summaryLabel = isIncome ? 'كل الدخل' : 'كل المصروفات';
     final emptyMessage = isIncome
         ? 'لا يوجد دخل مسجّل بعد'
         : 'لا يوجد مصروف مسجّل بعد';
@@ -1184,19 +1190,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: WafferPageHeader(
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_forward_ios_rounded,
-            color: colors.textPrimary,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          title,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+      appBar: WafferBackHeader(
+        title: title,
       ),
       floatingActionButton: isIncome
           ? null
@@ -1371,7 +1366,7 @@ class _ShareFormatDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppDialogFrame(
       title: 'مشاركة السجل',
-      message: 'اختر طريقة تصدير المصاريف المحددة.',
+      message: 'اختر طريقة تصدير المصروفات المحددة.',
       kind: AppFeedbackKind.info,
       child: Row(
         children: [
@@ -1559,7 +1554,7 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
   if (!context.mounted) return;
 
   if (!undone) {
-    showAppSnackBar(context, 'تعذر التراجع عن هذا المصروف.');
+    showAppSnackBar(context, 'تعذّر التراجع عن هذا المصروف.');
     return;
   }
 
@@ -1585,7 +1580,7 @@ Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
   if (!context.mounted) return;
 
   if (!undone) {
-    showAppSnackBar(context, 'تعذر التراجع عن هذا الدخل.');
+    showAppSnackBar(context, 'تعذّر التراجع عن هذا الدخل.');
     return;
   }
 
@@ -1941,32 +1936,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppPalette.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 36,
-              color: colors.textPrimary.withValues(alpha: 0.28),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                fontSize: 13,
-                color: colors.textPrimary.withValues(alpha: 0.55),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return Center(child: AppEmptyState(icon: icon, title: message));
   }
 }
 

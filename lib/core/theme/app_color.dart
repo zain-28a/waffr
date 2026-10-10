@@ -16,5 +16,22 @@ class AppColors {
   static const Color darkTextPrimary   = Color.fromARGB(255, 255, 255, 255); 
   static const Color darkTextSecondary = Color.fromARGB(255, 131, 131, 131);
   static const Color darkAccent        = Color.fromARGB(255, 91, 136, 88);
-  
+
+  // Delete / remove / errors. One red for every destructive control.
+  static const Color lightDestructive  = Color(0xFF8E3B3B);
+  static const Color darkDestructive   = Color(0xFFE38B8B);
+
+  // Needs attention (low balance, charge waiting for approval).
+  static const Color lightWarning      = Color(0xFF8A6A24);
+  static const Color darkWarning       = Color(0xFFE2C27A);
+
+  static Color warningOf(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkWarning
+          : lightWarning;
+
+  static Color destructiveOf(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkDestructive
+          : lightDestructive;
 }

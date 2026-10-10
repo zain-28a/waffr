@@ -37,19 +37,8 @@ class PrivacyInfoScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: bg,
 
-      appBar: WafferPageHeader(
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_forward_ios_rounded,
-            color: textPrimary,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'الخصوصية والبيانات',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+      appBar: WafferBackHeader(
+        title: 'الخصوصية والبيانات',
       ),
 
       body: ListView(
@@ -61,7 +50,7 @@ class PrivacyInfoScreen extends StatelessWidget {
             icon: Icons.visibility_off_outlined,
             title: 'خصوصيتك المالية',
             description:
-                'وفر لا يطّلع على بياناتك المالية ولا يقرأها ولا يشاركها مع أي جهة. رصيدك، أهدافك، تفاصيل مصروفاتك، ونشاط حسابك المالي تبقى خاصة بك وحدك على جهازك.',
+                'وفّر لا يطّلع على بياناتك المالية ولا يقرأها ولا يشاركها مع أي جهة. رصيدك، أهدافك، تفاصيل مصروفاتك، ونشاط حسابك المالي تبقى خاصة بك وحدك على جهازك.',
             accent: accent,
             surface: surface,
             textPrimary: textPrimary,
@@ -113,7 +102,7 @@ class PrivacyInfoScreen extends StatelessWidget {
             icon: Icons.phone_android_rounded,
             title: 'التشغيل دون اتصال',
             description:
-                'عندما يعمل التطبيق في وضع عدم الاتصال بالإنترنت (Offline)، تبقى جميع بياناتك على جهازك. لا يحتاج التطبيق إلى الإنترنت للعمل، وبياناتك محفوظة محلياً فقط.',
+                'عندما يعمل التطبيق دون اتصال بالإنترنت، تبقى جميع بياناتك على جهازك. لا يحتاج التطبيق إلى الإنترنت للعمل، وبياناتك محفوظة محلياً فقط.',
             accent: accent,
             surface: surface,
             textPrimary: textPrimary,
@@ -126,7 +115,7 @@ class PrivacyInfoScreen extends StatelessWidget {
             icon: Icons.lock_outline_rounded,
             title: 'حماية الوصول',
             description:
-                'عند تفعيل "قفل التطبيق"، يتم حماية الوصول إلى التطبيق باستخدام مصادقة الجهاز (البصمة، التعرف على الوجه، رمز PIN، أو النمط). هذا يمنع أي شخص من فتح التطبيق دون إذنك.',
+                'عند تفعيل «قفل التطبيق» تُحمى الوصول إلى التطبيق باستخدام مصادقة الجهاز (البصمة، التعرف على الوجه، رمز الجهاز، أو النمط). هذا يمنع أي شخص من فتح التطبيق دون إذنك.',
             accent: accent,
             surface: surface,
             textPrimary: textPrimary,
@@ -139,7 +128,7 @@ class PrivacyInfoScreen extends StatelessWidget {
             icon: Icons.delete_outline_rounded,
             title: 'إعادة ضبط التطبيق',
             description:
-                'عند إعادة ضبط التطبيق من الإعدادات، يتم حذف جميع بياناتك المحلية بشكل دائم من جهازك: معلوماتك الشخصية، الرصيد، سجل المصاريف والدخل، أهداف التوفير، والإشعارات. هذا الإجراء لا يمكن التراجع عنه.',
+                'عند إعادة ضبط التطبيق من الإعدادات، يتم حذف جميع بياناتك المحلية بشكل دائم من جهازك: معلوماتك الشخصية، الرصيد، سجل المصروفات والدخل، أهداف التوفير، والإشعارات. هذا الإجراء لا يمكن التراجع عنه.',
             accent: accent,
             surface: surface,
             textPrimary: textPrimary,

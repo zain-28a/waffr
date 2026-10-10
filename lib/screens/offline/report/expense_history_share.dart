@@ -67,7 +67,7 @@ String expenseShareDayLabel(DateTime date) {
 
 String buildExpenseHistoryText(List<WafferTransaction> expenses) {
   final days = groupExpensesForShare(expenses);
-  final buffer = StringBuffer('سجل المصاريف\n');
+  final buffer = StringBuffer('سجل المصروفات\n');
   for (final day in days) {
     buffer.writeln();
     buffer.writeln(expenseShareDayLabel(day.date));
@@ -122,7 +122,7 @@ Future<Uint8List> buildExpenseHistoryPdfBytes(
   );
   final days = groupExpensesForShare(expenses);
   final generatedAt = DateTime.now();
-  final document = pw.Document(title: 'سجل المصاريف', author: 'WAFFR');
+  final document = pw.Document(title: 'سجل المصروفات', author: 'WAFFR');
 
   document.addPage(
     pw.MultiPage(
@@ -187,14 +187,14 @@ pw.Widget _pdfHeader({
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text(
-                  'سجل المصاريف',
+                  'سجل المصروفات',
                   style: pw.TextStyle(font: bold, fontSize: 20),
                 ),
                 pw.SizedBox(height: 3),
                 pw.Text(
                   [
                     if (range.isNotEmpty) range,
-                    '$count ${count == 1 ? 'مصروف' : 'مصاريف'}',
+                    '$count ${count == 1 ? 'مصروف' : 'مصروفات'}',
                   ].join('  ·  '),
                   style: pw.TextStyle(
                     font: regular,
