@@ -542,7 +542,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             title: 'أذونات الذكاء الاصطناعي',
 
-            subtitle: 'لا توجد أذونات متاحة حالياً',
+            subtitle: 'تحليلات واقتراحات وتصنيف تلقائي',
 
             accent: accent,
             surface: surface,
