@@ -59,5 +59,8 @@ void main() {
     expect(data['goal_empty'], false);
     expect(data['streak_label'], 'يوماً متتالياً');
     expect(build(streak: 4)['streak_label'], 'أيام متتالية');
+    expect(data['streak_word'], 'يوماً');
+    expect(data['streak_percent'], '86'); // 12 of 14
+    expect(build(streak: 1)['streak_word'], 'يوم');
   });
 }
