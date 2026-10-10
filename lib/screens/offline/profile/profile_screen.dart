@@ -1,6 +1,8 @@
 // Usage profile. Account editing stays in Settings.
 
 import 'package:flutter/material.dart';
+import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/core/insights/profile_snapshot.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/usage/usage_duration.dart';
@@ -77,8 +79,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         final started = streak.startedAt;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
-          children: [
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
+          children: staggered([
             _ProfileHeader(identity: identity, palette: palette),
             const SizedBox(height: 18),
             StreakCard(
@@ -131,7 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ],
               ),
             ),
-          ],
+          ]),
         );
       },
     );

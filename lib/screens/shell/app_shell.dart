@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/services/home_widget_sync.dart';
@@ -27,8 +30,11 @@ import 'package:waffr/screens/offline/settings/settings_screen.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/brand/streak_celebration.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/widgets/containers/glass.dart';
 
 // Bottom navigation shell. Five tabs: home, report, savings, online, profile.
+// The tab bar floats over the pages; each tab keeps kFloatingNavClearance
+// free at the bottom of its scroll content.
 // Settings and notifications are pushed from the header, not tabs.
 class AppShell extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeNotifier;
@@ -224,7 +230,6 @@ class _AppShellState extends State<AppShell>
         ? (_pageController.page?.round() ?? _tabIndex.value)
         : _tabIndex.value;
 
-    AppHaptics.selection();
     _tabIndex.value = index;
     if (!_pageController.hasClients) return;
     _animatingToPage = index;
@@ -374,12 +379,21 @@ class _AppShellState extends State<AppShell>
                       ),
                     ),
                   ),
-                  _BottomNavBar(
-                    tabIndex: _tabIndex,
-                    tabCount: _tabCount,
-                    onTap: _onTabTapped,
-                  ),
                 ],
+              ),
+            ),
+            // Floats over the pages so content scrolls under its blur.
+            // Hidden while the keyboard is up so it never covers a field.
+            if (MediaQuery.viewInsetsOf(context).bottom == 0)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: MediaQuery.paddingOf(context).bottom + 10,
+              child: _BottomNavBar(
+                tabIndex: _tabIndex,
+                tabCount: _tabCount,
+                pageController: _pageController,
+                onTap: _onTabTapped,
               ),
             ),
             if (increase != null)
@@ -400,103 +414,21 @@ class _AppShellState extends State<AppShell>
   }
 }
 
-// Icon row under the PageView; the selected icon grows and a pill slides
-// under it.
+// Floating "liquid glass" tab bar: a blurred, translucent pill over the
+// pages. The highlight follows the pager position, stretching while it moves
+// between tabs and settling round under the selected icon.
 class _BottomNavBar extends StatelessWidget {
   final ValueNotifier<int> tabIndex;
   final int tabCount;
+  final PageController pageController;
   final ValueChanged<int> onTap;
 
   const _BottomNavBar({
     required this.tabIndex,
     required this.tabCount,
+    required this.pageController,
     required this.onTap,
   });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final surface =
-        isDark ? AppColors.darkSurface : AppColors.lightBackground;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-
-    return ValueListenableBuilder<int>(
-      valueListenable: tabIndex,
-      builder: (context, currentIndex, _) {
-        return Container(
-          decoration: BoxDecoration(
-            color: surface,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 12,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final slotWidth = constraints.maxWidth / tabCount;
-              const pillWidth = 18.0;
-
-              return Stack(
-                children: [
-                  Row(
-                    children: List.generate(tabCount, (index) {
-                      final isSelected = index == currentIndex;
-
-                      return Expanded(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => onTap(index),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            child: Center(
-                              child: AnimatedScale(
-                                scale: isSelected ? 1.25 : 1.0,
-                                duration: AppMotion.of(context, AppMotion.medium),
-                                curve: AppMotion.enter,
-                                child: Icon(
-                                  _icons[index],
-                                  size: 26,
-                                  color: isSelected
-                                      ? accent
-                                      : textPrimary.withValues(alpha: 0.35),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                  AnimatedPositionedDirectional(
-                    duration: AppMotion.of(context, AppMotion.slow),
-                    curve: AppMotion.enter,
-                    start: slotWidth * currentIndex + (slotWidth - pillWidth) / 2,
-                    bottom: 3,
-                    width: pillWidth,
-                    height: 3,
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: accent,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
 
   static const List<IconData> _icons = [
     Icons.home_rounded,
@@ -505,6 +437,139 @@ class _BottomNavBar extends StatelessWidget {
     Icons.public_rounded,
     Icons.person_rounded,
   ];
+
+  static const double _height = 64;
+  static const BorderRadius _radius = BorderRadius.all(Radius.circular(32));
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: _radius,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
+            blurRadius: 26,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: _radius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: CustomPaint(
+            foregroundPainter: LiquidGlassPainter(
+              radius: _radius,
+              isDark: isDark,
+            ),
+            child: Container(
+              height: _height,
+              decoration: BoxDecoration(
+                gradient: liquidGlassFill(
+                  surface.withValues(alpha: isDark ? 0.62 : 0.6),
+                  isDark: isDark,
+                ),
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final slot = constraints.maxWidth / tabCount;
+                  return AnimatedBuilder(
+                    animation: Listenable.merge([pageController, tabIndex]),
+                    builder: (context, _) {
+                      final page = pageController.hasClients &&
+                              pageController.position.haveDimensions
+                          ? (pageController.page ?? tabIndex.value.toDouble())
+                          : tabIndex.value.toDouble();
+                      return Stack(
+                        children: [
+                          _indicator(page, slot, rtl, accent),
+                          Row(
+                            children: [
+                              for (var i = 0; i < tabCount; i++)
+                                Expanded(
+                                  child: _tab(i, page, accent, textPrimary),
+                                ),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _indicator(double page, double slot, bool rtl, Color accent) {
+    final frac = page - page.floorToDouble();
+    final stretch = math.sin(frac * math.pi);
+    final width = slot * 0.66 * (1 + 0.55 * stretch);
+    final height = 44 - 6 * stretch;
+    final center = (rtl ? tabCount - 1 - page : page) * slot + slot / 2;
+
+    return Positioned(
+      left: center - width / 2,
+      top: (_height - height) / 2,
+      width: width,
+      height: height,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(height / 2),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              accent.withValues(alpha: 0.24),
+              accent.withValues(alpha: 0.14),
+            ],
+          ),
+          border: Border.all(color: accent.withValues(alpha: 0.18)),
+        ),
+      ),
+    );
+  }
+
+  Widget _tab(int index, double page, Color accent, Color textPrimary) {
+    // 1 under the highlight, 0 one tab away.
+    final t = (1 - (page - index).abs()).clamp(0.0, 1.0);
+    return Semantics(
+      button: true,
+      selected: index == tabIndex.value,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap(index);
+        },
+        child: Center(
+          child: Transform.scale(
+            scale: 1 + 0.18 * Curves.easeOut.transform(t),
+            child: Icon(
+              _icons[index],
+              size: 25,
+              color: Color.lerp(
+                textPrimary.withValues(alpha: 0.38),
+                accent,
+                t,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // Header bell. Unread dot comes from NotificationService, not a tab.

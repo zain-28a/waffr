@@ -283,7 +283,7 @@ class _WaffrDatePickerDialogState extends State<_WaffrDatePickerDialog> {
                 data: theme.copyWith(
                   colorScheme: theme.colorScheme.copyWith(
                     primary: palette.accent,
-                    onPrimary: Colors.white,
+                    onPrimary: palette.onAccent,
                     surface: palette.surface,
                     onSurface: palette.textPrimary,
                   ),

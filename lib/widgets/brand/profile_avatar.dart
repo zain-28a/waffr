@@ -2,6 +2,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/data/services/profile_photo.dart';
 
 /// Avatar from a local photo path, or a person icon placeholder.
@@ -69,7 +70,7 @@ class ProfileAvatar extends StatelessWidget {
                   child: Icon(
                     Icons.camera_alt_rounded,
                     size: radius * 0.34,
-                    color: Colors.white,
+                    color: AppColors.onAccentOf(context),
                   ),
                 ),
               ),

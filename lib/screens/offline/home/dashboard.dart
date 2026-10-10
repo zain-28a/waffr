@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
@@ -21,8 +22,6 @@ import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
-import 'package:waffr/widgets/motion/animated_number_text.dart';
-import 'package:waffr/widgets/motion/fade_slide_in.dart';
 
 // Offline home tab: balance, add actions, spending distribution, recent
 // expenses / obligations, and active savings goals. Each card opens the
@@ -70,10 +69,10 @@ class _HomeScreenState extends State<HomeScreen>
       animation: _listenables,
       builder: (context, _) {
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+            children: staggered([
               _BalanceCard(
                 balance: _store.balance,
                 spent: _store.cycleSpent,
@@ -149,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
               ),
-            ],
+            ]),
           ),
         );
       },
@@ -287,9 +286,8 @@ class _BalanceCard extends StatelessWidget {
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: AlignmentDirectional.centerStart,
-                            child: AnimatedNumberText(
+                            child: RollingMoney(
                               value: balance,
-                              format: formatMoney,
                               style: TextStyle(
                                 fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 36,
@@ -311,24 +309,31 @@ class _BalanceCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 0),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: AnimatedNumberText(
-                        value: ratio * 100,
-                        format: (value) => '${value.round()}%',
-                        style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: textSecondary,
-                        ),
+                    AnimatedRatio(
+                      value: ratio,
+                      builder: (context, shown) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${(shown * 100).round()}%',
+                              style: TextStyle(
+                                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: textSecondary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          _HorizontalProgress(
+                            ratio: shown,
+                            trackColor: accent.withValues(alpha: 0.12),
+                            fillColor: accent,
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 3),
-                    _HorizontalProgress(
-                      ratio: ratio,
-                      trackColor: accent.withValues(alpha: 0.12),
-                      fillColor: accent,
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -436,24 +441,28 @@ class _HorizontalProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The fill width itself is tweened; animating the fill's container
-    // would leave the width change instant.
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
       child: Stack(
         children: [
           Container(height: 30, color: trackColor),
           Positioned.fill(
-            child: TweenAnimationBuilder<double>(
-              tween: Tween<double>(end: ratio.clamp(0.0, 1.0)),
-              duration: AppMotion.of(context, AppMotion.countUp),
-              curve: AppMotion.enter,
-              builder: (context, widthFactor, child) => FractionallySizedBox(
-                alignment: AlignmentDirectional.centerStart,
-                widthFactor: widthFactor,
-                child: child,
+            child: FractionallySizedBox(
+              alignment: AlignmentDirectional.centerStart,
+              widthFactor: ratio.clamp(0.0, 1.0),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color.lerp(fillColor, Colors.white, 0.18)!,
+                      fillColor,
+                    ],
+                  ),
+                ),
               ),
-              child: ColoredBox(color: fillColor),
             ),
           ),
         ],
@@ -528,7 +537,7 @@ class _DistributionCard extends StatelessWidget {
     return _SectionCard(
       title: 'توزيع المصروفات',
       onTap: onTap,
-      caption: 'النسبة من إجمالي الصرف وليس الرصيد',
+      caption: 'النسبة من إجمالي الصرف ',
       child: totals.isEmpty || totalExpense <= 0
           ? const _EmptyState(
               icon: Icons.pie_chart_outline_rounded,
@@ -585,24 +594,48 @@ class _DistributionChart extends StatelessWidget {
         children: [
           Directionality(
             textDirection: TextDirection.ltr,
-            child: PieChart(
-              PieChartData(
-                startDegreeOffset: -90,
-                sectionsSpace: 2,
-                centerSpaceRadius: 34,
-                centerSpaceColor: isDark
-                    ? AppColors.darkSurface
-                    : AppColors.lightSurface,
-                sections: [
-                  for (var i = 0; i < totals.length; i++)
-                    PieChartSectionData(
-                      value: totals[i].amount,
-                      color: categoryChartColor(context, totals[i].category),
-                      radius: i == 0 ? 18 : 15,
-                      showTitle: false,
-                    ),
-                ],
-              ),
+            // The ring draws itself in once: a clear filler slice shrinks
+            // while the real slices grow.
+            child: AnimatedRatio(
+              value: 1,
+              duration: const Duration(milliseconds: 900),
+              builder: (context, sweep) {
+                final total =
+                    totals.fold<double>(0, (sum, item) => sum + item.amount);
+                return PieChart(
+                  PieChartData(
+                    startDegreeOffset: -90,
+                    sectionsSpace: sweep < 1 ? 0 : 2,
+                    centerSpaceRadius: 34,
+                    centerSpaceColor: isDark
+                        ? AppColors.darkSurface
+                        : AppColors.lightSurface,
+                    sections: [
+                      for (var i = 0; i < totals.length; i++)
+                        PieChartSectionData(
+                          value: totals[i].amount * sweep,
+                          color: categoryChartColor(
+                            context,
+                            totals[i].category,
+                          ),
+                          radius: i == 0 ? 18 : 15,
+                          showTitle: false,
+                        ),
+                      if (sweep < 1)
+                        PieChartSectionData(
+                          value: total * (1 - sweep),
+                          color: Colors.transparent,
+                          radius: 15,
+                          showTitle: false,
+                        ),
+                    ],
+                  ),
+                  // After the first sweep, data changes glide between values.
+                  swapAnimationDuration:
+                      sweep < 1 ? Duration.zero : AppMotion.slow,
+                  swapAnimationCurve: AppMotion.enter,
+                );
+              },
             ),
           ),
           Column(
@@ -1045,18 +1078,11 @@ class _VerticalProgress extends StatelessWidget {
             Positioned.fill(child: ColoredBox(color: trackColor)),
             Align(
               alignment: Alignment.bottomCenter,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(end: ratio.clamp(0.0, 1.0)),
-                duration: AppMotion.of(context, AppMotion.countUp),
-                curve: AppMotion.enter,
-                builder: (context, heightFactor, child) =>
-                    FractionallySizedBox(
-                  heightFactor: heightFactor,
-                  child: child,
-                ),
-                child: SizedBox(
-                  width: width,
-                  child: ColoredBox(color: fillColor),
+              child: AnimatedRatio(
+                value: ratio,
+                builder: (context, shown) => FractionallySizedBox(
+                  heightFactor: shown,
+                  child: Container(width: width, color: fillColor),
                 ),
               ),
             ),
@@ -1207,9 +1233,9 @@ class _RecentExpensesPage extends StatelessWidget {
                     ),
                   // Keyed by id so only a newly added expense plays the
                   // entrance; rows already shown keep their state.
-                  FadeSlideIn(
+                  Reveal(
                     key: ValueKey(latest[index].id),
-                    delay: FadeSlideIn.staggerFor(index),
+                    index: index,
                     child: _ExpenseRow(expense: latest[index], compact: compact),
                   ),
                 ],

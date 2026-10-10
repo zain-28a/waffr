@@ -8,6 +8,9 @@ class AppPalette {
   final Color background;
   final Color surface;
   final Color accent;
+
+  /// Text and icons on an [accent] fill.
+  final Color onAccent;
   final Color textPrimary;
   final Color textSecondary;
 
@@ -15,27 +18,30 @@ class AppPalette {
     required this.background,
     required this.surface,
     required this.accent,
+    required this.onAccent,
     required this.textPrimary,
     required this.textSecondary,
   });
 
+  static const AppPalette light = AppPalette(
+    background: AppColors.lightBackground,
+    surface: AppColors.lightSurface,
+    accent: AppColors.lightAccent,
+    onAccent: AppColors.lightOnAccent,
+    textPrimary: AppColors.lightTextPrimary,
+    textSecondary: AppColors.lightTextSecondary,
+  );
+
+  static const AppPalette dark = AppPalette(
+    background: AppColors.darkBackground,
+    surface: AppColors.darkSurface,
+    accent: AppColors.darkAccent,
+    onAccent: AppColors.darkOnAccent,
+    textPrimary: AppColors.darkTextPrimary,
+    textSecondary: AppColors.darkTextSecondary,
+  );
+
   factory AppPalette.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (isDark) {
-      return const AppPalette(
-        background: AppColors.darkBackground,
-        surface: AppColors.darkSurface,
-        accent: AppColors.darkAccent,
-        textPrimary: AppColors.darkTextPrimary,
-        textSecondary: AppColors.darkTextSecondary,
-      );
-    }
-    return const AppPalette(
-      background: AppColors.lightBackground,
-      surface: AppColors.lightSurface,
-      accent: AppColors.lightAccent,
-      textPrimary: AppColors.lightTextPrimary,
-      textSecondary: AppColors.lightTextSecondary,
-    );
+    return Theme.of(context).brightness == Brightness.dark ? dark : light;
   }
 }

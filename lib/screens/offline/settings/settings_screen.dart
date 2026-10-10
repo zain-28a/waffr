@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/data/stores/expense_preset_store.dart';
 import 'package:waffr/data/stores/category_store.dart';
@@ -385,7 +386,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: ListView(
         padding: const EdgeInsets.all(20),
 
-        children: [
+        children: staggered([
           _SectionTitle(title: 'الحساب', color: textSecondary),
 
           GestureDetector(
@@ -478,8 +479,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             trailing: Switch(
               value: isDark,
-              activeThumbColor: accent,
-
               onChanged: (_) {
                 widget.onThemeChanged();
               },
@@ -527,8 +526,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             trailing: Switch(
               value: _appLock,
-              activeThumbColor: accent,
-
               onChanged: _toggleAppLock,
             ),
 
@@ -668,7 +665,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
 
           const SizedBox(height: 20),
-        ],
+        ]),
                 ),
               ),
             ),

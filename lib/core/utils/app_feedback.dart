@@ -30,8 +30,8 @@ _FeedbackStyle _styleFor(BuildContext context, AppFeedbackKind kind) {
   return switch (kind) {
     AppFeedbackKind.success => _FeedbackStyle(
       background: palette.accent,
-      foreground: Colors.white,
-      accent: Colors.white,
+      foreground: palette.onAccent,
+      accent: palette.onAccent,
       icon: Icons.check_rounded,
     ),
     AppFeedbackKind.error => _FeedbackStyle(
@@ -325,9 +325,9 @@ class AppDialogActionButton extends StatelessWidget {
       onPressed: action.enabled ? action.onPressed : null,
       style: FilledButton.styleFrom(
         backgroundColor: background,
-        foregroundColor: Colors.white,
+        foregroundColor: palette.onAccent,
         disabledBackgroundColor: background.withValues(alpha: 0.35),
-        disabledForegroundColor: Colors.white,
+        disabledForegroundColor: palette.onAccent,
         elevation: 0,
         padding: const EdgeInsets.symmetric(vertical: 12),
         shape: RoundedRectangleBorder(
@@ -336,7 +336,7 @@ class AppDialogActionButton extends StatelessWidget {
       ),
       child: Text(
         action.label,
-        style: _feedbackText(Colors.white, weight: FontWeight.w700),
+        style: _feedbackText(palette.onAccent, weight: FontWeight.w700),
       ),
     );
   }
