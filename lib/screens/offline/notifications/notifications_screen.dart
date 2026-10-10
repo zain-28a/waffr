@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/app_notification.dart';
 import 'package:waffr/data/services/notification_service.dart';
+import 'package:waffr/data/services/system_notifications.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 
 // Notifications page: mute toggle, mark-all-read, clear history, grouped list.
@@ -18,13 +20,50 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen>
+    with WidgetsBindingObserver {
   final NotificationService _service = NotificationService.instance;
+
+  // False when the phone blocks Waffr's notifications; null when unknown.
+  bool? _deviceAllowed;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _service.ensureLoaded();
+    _refreshDevicePermission();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Re-check after the user comes back from the phone settings.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshDevicePermission();
+  }
+
+  Future<void> _refreshDevicePermission() async {
+    final allowed =
+        await SystemNotifications.instance.deviceNotificationsEnabled();
+    if (mounted) setState(() => _deviceAllowed = allowed);
+  }
+
+  Future<void> _allowDeviceNotifications() async {
+    final granted = await SystemNotifications.instance.requestPermission();
+    await _refreshDevicePermission();
+    if (!mounted || granted) return;
+    // Android stops showing the prompt after it was refused twice.
+    await showAppInfoDialog(
+      context,
+      title: 'إشعارات الجهاز متوقفة',
+      message:
+          'لم يعد الهاتف يعرض طلب الإذن. لتفعيل الإشعارات افتح إعدادات الهاتف، ثم التطبيقات، ثم وفّر، ثم الإشعارات، وفعّلها.',
+    );
   }
 
   // Clears history only — balance, savings, goals, and mute stay intact.
@@ -107,6 +146,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     muted: _service.isMuted,
                     onTap: _service.toggleMuted,
                   ),
+                  if (_deviceAllowed == false) ...[
+                    const SizedBox(height: 10),
+                    AppListTile(
+                      icon: Icons.notifications_off_outlined,
+                      title: 'إشعارات الجهاز متوقفة',
+                      subtitle: 'اسمح لوفّر بإرسال التنبيهات إلى هاتفك',
+                      status: 'سماح',
+                      statusOn: true,
+                      onTap: _allowDeviceNotifications,
+                    ),
+                  ],
                 ],
               ),
             ),
