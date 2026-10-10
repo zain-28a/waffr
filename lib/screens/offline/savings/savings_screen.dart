@@ -602,7 +602,7 @@ class _SavingsGoalsHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        const SmartAnalysisButton(scope: InsightScope.savings),
+        
       ],
     );
   }
@@ -690,7 +690,7 @@ class _TotalSavingsCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'إجمالي المبالغ الموفَّرة',
+                  'إجمالي المبالغ الموفرة',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -753,18 +753,7 @@ class _TotalSavingsCard extends StatelessWidget {
 
           const SizedBox(height: 7),
 
-          Text(
-            total > 0
-                ? 'إجمالي المبلغ الموفَّر حالياً'
-                : 'وفّر أول مبلغ ليظهر هنا',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-              fontSize: 10.5,
-              color: colors.textSecondary,
-            ),
-          ),
+          
         ],
       ),
     );
