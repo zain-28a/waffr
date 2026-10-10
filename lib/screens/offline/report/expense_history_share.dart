@@ -9,10 +9,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/data/models/expense_categories.dart';
-import 'package:waffer/data/models/recurring_expense.dart';
-import 'package:waffer/data/models/transaction.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
+import 'package:waffr/data/models/transaction.dart';
 
 const List<String> _months = [
   'كانون الثاني',
@@ -31,13 +31,13 @@ const List<String> _months = [
 
 class ExpenseShareDay {
   final DateTime date;
-  final List<WafferTransaction> expenses;
+  final List<WaffrTransaction> expenses;
 
   const ExpenseShareDay(this.date, this.expenses);
 }
 
-List<ExpenseShareDay> groupExpensesForShare(List<WafferTransaction> expenses) {
-  final grouped = <DateTime, List<WafferTransaction>>{};
+List<ExpenseShareDay> groupExpensesForShare(List<WaffrTransaction> expenses) {
+  final grouped = <DateTime, List<WaffrTransaction>>{};
   for (final expense in expenses) {
     final local = expense.dateTime.toLocal();
     final date = DateTime(local.year, local.month, local.day);
@@ -65,7 +65,7 @@ String expenseShareDayLabel(DateTime date) {
   return '${date.day} ${_months[date.month - 1]} ${date.year}';
 }
 
-String buildExpenseHistoryText(List<WafferTransaction> expenses) {
+String buildExpenseHistoryText(List<WaffrTransaction> expenses) {
   final days = groupExpensesForShare(expenses);
   final buffer = StringBuffer('سجل المصروفات\n');
   for (final day in days) {
@@ -85,13 +85,13 @@ String buildExpenseHistoryText(List<WafferTransaction> expenses) {
   return buffer.toString().trimRight();
 }
 
-Future<void> shareExpenseHistoryText(List<WafferTransaction> expenses) {
+Future<void> shareExpenseHistoryText(List<WaffrTransaction> expenses) {
   return SharePlus.instance.share(
     ShareParams(text: buildExpenseHistoryText(expenses)),
   );
 }
 
-// Brand and table colors for the PDF (Waffer light theme tokens).
+// Brand and table colors for the PDF (Waffr light theme tokens).
 final PdfColor _brandGreen = PdfColor.fromInt(0xFF254A23);
 final PdfColor _rowTint = PdfColor.fromInt(0xFFF6F8F4);
 final PdfColor _headerTint = PdfColor.fromInt(0xFFE9EFE6);
@@ -107,7 +107,7 @@ const Map<int, pw.TableColumnWidth> _columnWidths = {
 };
 
 Future<Uint8List> buildExpenseHistoryPdfBytes(
-  List<WafferTransaction> expenses,
+  List<WaffrTransaction> expenses,
 ) async {
   final regular = pw.Font.ttf(
     await rootBundle.load('fonts/Tajawal-Regular.ttf'),
@@ -118,7 +118,7 @@ Future<Uint8List> buildExpenseHistoryPdfBytes(
     await rootBundle.load('fonts/BebasNeue-Regular.ttf'),
   );
   final logo = pw.MemoryImage(
-    (await rootBundle.load('assets/brand/waffer_logo.png')).buffer.asUint8List(),
+    (await rootBundle.load('assets/brand/waffr_logo.png')).buffer.asUint8List(),
   );
   final days = groupExpensesForShare(expenses);
   final generatedAt = DateTime.now();
@@ -375,7 +375,7 @@ pw.Widget _pdfDayTable(
 }
 
 pw.Widget _pdfCategoryCell(
-  WafferTransaction expense, {
+  WaffrTransaction expense, {
   required pw.Font bold,
   required pw.Font regular,
 }) {
@@ -425,7 +425,7 @@ pw.Widget _pdfCategoryCell(
 }
 
 pw.Widget _pdfGrandTotal(
-  List<WafferTransaction> expenses, {
+  List<WaffrTransaction> expenses, {
   required pw.Font bold,
   required pw.Font regular,
 }) {
@@ -453,11 +453,11 @@ pw.Widget _pdfGrandTotal(
   );
 }
 
-String _amountText(WafferTransaction expense) {
+String _amountText(WaffrTransaction expense) {
   return '${formatMoney(expense.amount)} ${currencyLabelFor(expense.currencyCode)}';
 }
 
-Future<void> shareExpenseHistoryPdf(List<WafferTransaction> expenses) async {
+Future<void> shareExpenseHistoryPdf(List<WaffrTransaction> expenses) async {
   try {
     final bytes = await buildExpenseHistoryPdfBytes(expenses);
     final folder = Directory(
@@ -465,7 +465,7 @@ Future<void> shareExpenseHistoryPdf(List<WafferTransaction> expenses) async {
     );
     await folder.create(recursive: true);
     final file = File(
-      '${folder.path}/waffer-expenses-${DateTime.now().millisecondsSinceEpoch}.pdf',
+      '${folder.path}/waffr-expenses-${DateTime.now().millisecondsSinceEpoch}.pdf',
     );
     await file.writeAsBytes(bytes, flush: true);
     final saved = await file.length();
@@ -474,13 +474,13 @@ Future<void> shareExpenseHistoryPdf(List<WafferTransaction> expenses) async {
     }
     developer.log(
       'PDF saved path=${file.path} bytes=$saved',
-      name: 'waffer.pdf',
+      name: 'waffr.pdf',
     );
     await _sharePdfFile(file);
   } catch (error, stack) {
     developer.log(
       'PDF share failed',
-      name: 'waffer.pdf',
+      name: 'waffr.pdf',
       error: error,
       stackTrace: stack,
     );
@@ -491,13 +491,13 @@ Future<void> shareExpenseHistoryPdf(List<WafferTransaction> expenses) async {
 Future<void> _sharePdfFile(File file) async {
   if (Platform.isAndroid) {
     try {
-      const channel = MethodChannel('waffer/share_pdf');
+      const channel = MethodChannel('waffr/share_pdf');
       await channel.invokeMethod<void>('share', {'path': file.path});
       return;
     } catch (error, stack) {
       developer.log(
         'Android PDF channel failed, falling back to share_plus',
-        name: 'waffer.pdf',
+        name: 'waffr.pdf',
         error: error,
         stackTrace: stack,
       );
@@ -509,15 +509,15 @@ Future<void> _sharePdfFile(File file) async {
         XFile(
           file.path,
           mimeType: 'application/pdf',
-          name: 'waffer-expenses.pdf',
+          name: 'waffr-expenses.pdf',
         ),
       ],
-      fileNameOverrides: const ['waffer-expenses.pdf'],
+      fileNameOverrides: const ['waffr-expenses.pdf'],
     ),
   );
 }
 
-String _expenseLine(WafferTransaction expense) {
+String _expenseLine(WaffrTransaction expense) {
   final category = categoryFor(expense.category).label;
   final amount = formatMoney(expense.amount);
   final currency = currencyLabelFor(expense.currencyCode);
@@ -525,12 +525,12 @@ String _expenseLine(WafferTransaction expense) {
   return '$category  •  $time  •  $amount $currency';
 }
 
-String _totalsLine(String label, List<WafferTransaction> expenses) {
+String _totalsLine(String label, List<WaffrTransaction> expenses) {
   return '$label: ${_totalsAmount(expenses)}';
 }
 
 // Sum per currency, joined with dots ("1,500 ل.س  •  20 \$").
-String _totalsAmount(List<WafferTransaction> expenses) {
+String _totalsAmount(List<WaffrTransaction> expenses) {
   final totals = <String, double>{};
   for (final expense in expenses) {
     totals.update(

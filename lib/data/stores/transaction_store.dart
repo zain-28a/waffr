@@ -4,17 +4,17 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/data/models/calendar_period.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/models/savings_goal.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/core/sync/profile_sync.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/sync/sync_mapper.dart';
-import 'package:waffer/core/sync/sync_merge.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/data/models/calendar_period.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/core/sync/profile_sync.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/sync/sync_mapper.dart';
+import 'package:waffr/core/sync/sync_merge.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 // Ledger in prefs as JSON. Operating balance is always income − expense − net savings.
 class TransactionStore extends ChangeNotifier {
@@ -37,10 +37,10 @@ class TransactionStore extends ChangeNotifier {
   // Pre-JSON expense rows: amount|description|isoDate.
   static const String legacyExpensesKey = 'expenses';
 
-  final List<WafferTransaction> _transactions = [];
+  final List<WaffrTransaction> _transactions = [];
   final List<SavingsGoal> _goals = [];
   final Set<String> _processedPeriods = {};
-  final Map<String, Future<WafferTransaction?>> _pendingExpenseSources = {};
+  final Map<String, Future<WaffrTransaction?>> _pendingExpenseSources = {};
 
   Future<void>? _loader;
   bool _loaded = false;
@@ -81,30 +81,30 @@ class TransactionStore extends ChangeNotifier {
   }
 
   // Newest first.
-  List<WafferTransaction> get transactions => List.unmodifiable(_transactions);
+  List<WaffrTransaction> get transactions => List.unmodifiable(_transactions);
 
-  List<WafferTransaction> get expenses => expensesFor(_activeCode);
+  List<WaffrTransaction> get expenses => expensesFor(_activeCode);
 
-  List<WafferTransaction> get incomes => incomesFor(_activeCode);
+  List<WaffrTransaction> get incomes => incomesFor(_activeCode);
 
-  List<WafferTransaction> get savingsTransfers =>
+  List<WaffrTransaction> get savingsTransfers =>
       savingsTransfersFor(_activeCode);
 
-  List<WafferTransaction> expensesFor(String currencyCode) {
+  List<WaffrTransaction> expensesFor(String currencyCode) {
     final code = Currencies.normalize(currencyCode);
     return _transactions
         .where((item) => item.isExpense && item.currencyCode == code)
         .toList(growable: false);
   }
 
-  List<WafferTransaction> incomesFor(String currencyCode) {
+  List<WaffrTransaction> incomesFor(String currencyCode) {
     final code = Currencies.normalize(currencyCode);
     return _transactions
         .where((item) => item.isIncome && item.currencyCode == code)
         .toList(growable: false);
   }
 
-  List<WafferTransaction> savingsTransfersFor(String currencyCode) {
+  List<WaffrTransaction> savingsTransfersFor(String currencyCode) {
     final code = Currencies.normalize(currencyCode);
     return _transactions
         .where(
@@ -406,7 +406,7 @@ class TransactionStore extends ChangeNotifier {
 
   // Weekly vs monthly plan cadence from the latest recurring income row.
   RecurringFrequency preferredIncomeFrequencyFor(String currencyCode) {
-    WafferTransaction? latestRecurringIncome;
+    WaffrTransaction? latestRecurringIncome;
 
     for (final income in incomesFor(currencyCode)) {
       if (income.frequency == RecurringFrequency.weekly ||
@@ -461,8 +461,8 @@ class TransactionStore extends ChangeNotifier {
 
     if (moveBalanceToSavings && currentBalance > 0) {
       await _add(
-        WafferTransaction(
-          id: WafferTransaction.newId(),
+        WaffrTransaction(
+          id: WaffrTransaction.newId(),
           type: TransactionType.savingsIn,
           amount: currentBalance,
           currencyCode: code,
@@ -479,8 +479,8 @@ class TransactionStore extends ChangeNotifier {
     final now = deviceNow();
 
     await _add(
-      WafferTransaction(
-        id: WafferTransaction.newId(),
+      WaffrTransaction(
+        id: WaffrTransaction.newId(),
         type: TransactionType.income,
         amount: amount,
         currencyCode: code,
@@ -606,7 +606,7 @@ class TransactionStore extends ChangeNotifier {
   }
 
   // Returns the expense on success, or null when amount exceeds balance.
-  Future<WafferTransaction?> addExpense({
+  Future<WaffrTransaction?> addExpense({
     required double amount,
     required String category,
     required String paymentMethod,
@@ -711,8 +711,8 @@ class TransactionStore extends ChangeNotifier {
         : activeGoalsFor(code).first;
 
     await _add(
-      WafferTransaction(
-        id: WafferTransaction.newId(),
+      WaffrTransaction(
+        id: WaffrTransaction.newId(),
         type: TransactionType.savingsIn,
         amount: amount,
         currencyCode: code,
@@ -736,8 +736,8 @@ class TransactionStore extends ChangeNotifier {
     }
 
     await _add(
-      WafferTransaction(
-        id: WafferTransaction.newId(),
+      WaffrTransaction(
+        id: WaffrTransaction.newId(),
         type: TransactionType.savingsOut,
         amount: amount,
         currencyCode: code,
@@ -972,7 +972,7 @@ class TransactionStore extends ChangeNotifier {
   }) async {
     await ensureLoaded();
 
-    var changed = mergeRemoteRecords<WafferTransaction>(
+    var changed = mergeRemoteRecords<WaffrTransaction>(
       items: _transactions,
       upserts: [
         for (final raw in transactions)
@@ -985,7 +985,7 @@ class TransactionStore extends ChangeNotifier {
       updatedOf: (item) => item.syncUpdatedAt,
     );
 
-    changed |= mergeRemoteRecords<WafferTransaction>(
+    changed |= mergeRemoteRecords<WaffrTransaction>(
       items: _transactions,
       upserts: [
         for (final raw in transfers)
@@ -1080,7 +1080,7 @@ class TransactionStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<WafferTransaction?> _createExpense({
+  Future<WaffrTransaction?> _createExpense({
     required double amount,
     required String category,
     required String paymentMethod,
@@ -1094,8 +1094,8 @@ class TransactionStore extends ChangeNotifier {
       return null;
     }
 
-    final transaction = WafferTransaction(
-      id: WafferTransaction.newId(),
+    final transaction = WaffrTransaction(
+      id: WaffrTransaction.newId(),
       type: TransactionType.expense,
       amount: amount,
       currencyCode: code,
@@ -1123,7 +1123,7 @@ class TransactionStore extends ChangeNotifier {
   }
 
   Future<void> _add(
-    WafferTransaction transaction, {
+    WaffrTransaction transaction, {
     bool persist = true,
     bool notify = true,
   }) async {
@@ -1165,7 +1165,7 @@ class TransactionStore extends ChangeNotifier {
 
     if (stored != null) {
       _transactions.addAll(
-        stored.map(WafferTransaction.decode).whereType<WafferTransaction>(),
+        stored.map(WaffrTransaction.decode).whereType<WaffrTransaction>(),
       );
 
       _sort();
@@ -1387,8 +1387,8 @@ class TransactionStore extends ChangeNotifier {
     }
 
     _transactions.add(
-      WafferTransaction(
-        id: WafferTransaction.newId(),
+      WaffrTransaction(
+        id: WaffrTransaction.newId(),
         type: TransactionType.savingsIn,
         amount: amount,
         currencyCode: goal.currencyCode,
@@ -1459,8 +1459,8 @@ class TransactionStore extends ChangeNotifier {
         : activeGoalsFor(code).first;
 
     _transactions.add(
-      WafferTransaction(
-        id: WafferTransaction.newId(),
+      WaffrTransaction(
+        id: WaffrTransaction.newId(),
         type: TransactionType.savingsIn,
         amount: leftover,
         currencyCode: code,
@@ -1512,7 +1512,7 @@ class TransactionStore extends ChangeNotifier {
     return changed;
   }
 
-  bool _countsTowardGoal(WafferTransaction item, SavingsGoal goal) {
+  bool _countsTowardGoal(WaffrTransaction item, SavingsGoal goal) {
     if (!item.isSavingsIn && !item.isSavingsOut) {
       return false;
     }
@@ -1725,7 +1725,7 @@ class TransactionStore extends ChangeNotifier {
   }
 
   // Keeps the earlier local event time when merging a remote duplicate id.
-  WafferTransaction _preserveEventTime(WafferTransaction incoming) {
+  WaffrTransaction _preserveEventTime(WaffrTransaction incoming) {
     for (final local in _transactions) {
       if (local.id != incoming.id) continue;
       return incoming.copyWith(
@@ -1835,12 +1835,12 @@ class TransactionStore extends ChangeNotifier {
     });
   }
 
-  List<WafferTransaction> _migrateLegacyExpenses(List<String>? legacy) {
+  List<WaffrTransaction> _migrateLegacyExpenses(List<String>? legacy) {
     if (legacy == null || legacy.isEmpty) {
       return const [];
     }
 
-    final migrated = <WafferTransaction>[];
+    final migrated = <WaffrTransaction>[];
 
     for (final entry in legacy) {
       final parts = entry.split('|');
@@ -1858,8 +1858,8 @@ class TransactionStore extends ChangeNotifier {
       final date = parts.length > 2 ? DateTime.tryParse(parts[2]) : null;
 
       migrated.add(
-        WafferTransaction(
-          id: WafferTransaction.newId() + migrated.length.toString(),
+        WaffrTransaction(
+          id: WaffrTransaction.newId() + migrated.length.toString(),
           type: TransactionType.expense,
           amount: amount,
           category: 'أخرى',

@@ -1,7 +1,7 @@
 // Dirty flag: tracks whether local data changed since the last successful sync.
 
 import 'package:flutter/foundation.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 // Persists a "needs push" bit and optional settings timestamp so SyncService
 // knows when to send a full or incremental payload.

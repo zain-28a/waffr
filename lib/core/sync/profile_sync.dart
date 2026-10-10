@@ -1,10 +1,10 @@
 // Profile fields in prefs that travel with /sync settings (name, address, theme).
 
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
-import 'package:waffer/data/services/usage_streak_service.dart';
-import 'package:waffer/data/stores/category_store.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/data/services/usage_streak_service.dart';
+import 'package:waffr/data/stores/category_store.dart';
 
 // Reads and writes the on-device user profile used during login and sync push.
 class ProfileSync {

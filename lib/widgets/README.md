@@ -10,12 +10,12 @@ their screen.
 | `button/app_primary_button.dart` | The app's single primary action button (forms, screens, and sheets via `SheetSaveButton`). |
 | `containers/glass_sheet.dart` | Modal sheet shell, labels, amount field, chips, option rows, the (i) `SheetInfoButton`, save button. |
 | `dialogs/edit_amount_dialog.dart` | Edit a single amount. |
-| `dialogs/waffer_date_picker.dart` | Date and date-range picker with a typed field above the calendar. |
+| `dialogs/waffr_date_picker.dart` | Date and date-range picker with a typed field above the calendar. |
 | `dialogs/edit_delete_menu.dart` | The long-press edit / delete menu for tiles. |
 | `sheets/monthly_income_required_sheet.dart` | Prompt when a flow needs a monthly income first. |
-| `brand/waffer_logo.dart` | Logo and the startup splash. |
+| `brand/waffr_logo.dart` | Logo and the startup splash. |
 | `brand/streak_celebration.dart` | The overlay shown when the streak grows on app open. |
-| `brand/waffer_page_header.dart` | The top bar. Pushed screens use `WafferBackHeader` (back arrow + centered title). |
+| `brand/waffr_page_header.dart` | The top bar. Pushed screens use `WaffrBackHeader` (back arrow + centered title). |
 | `brand/profile_avatar.dart` | Circular avatar, with an optional camera badge. |
 
 New sheets should start from `glass_sheet.dart` instead of copying the

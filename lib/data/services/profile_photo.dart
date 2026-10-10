@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 /// Local profile photo file plus prefs for path, sync time, and pending action.
 class ProfilePhoto {

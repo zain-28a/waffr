@@ -8,7 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
-import 'package:waffer/core/utils/date_input.dart';
+import 'package:waffr/core/utils/date_input.dart';
 
 const String _arabicIndicDigits = '٠١٢٣٤٥٦٧٨٩';
 const String _easternArabicIndicDigits = '۰۱۲۳۴۵۶۷۸۹';
@@ -48,8 +48,8 @@ String _appDate(String input) {
   return text;
 }
 
-class WafferMaterialLocalizations extends MaterialLocalizationAr {
-  const WafferMaterialLocalizations._({
+class WaffrMaterialLocalizations extends MaterialLocalizationAr {
+  const WaffrMaterialLocalizations._({
     required super.fullYearFormat,
     required super.compactDateFormat,
     required super.shortDateFormat,
@@ -62,7 +62,7 @@ class WafferMaterialLocalizations extends MaterialLocalizationAr {
   });
 
   static const LocalizationsDelegate<MaterialLocalizations> delegate =
-      _WafferMaterialLocalizationsDelegate();
+      _WaffrMaterialLocalizationsDelegate();
 
   // The global delegate answers synchronously, so `then` keeps this
   // synchronous too and the first frame is not held back.
@@ -82,7 +82,7 @@ class WafferMaterialLocalizations extends MaterialLocalizationAr {
       return format;
     }
 
-    return WafferMaterialLocalizations._(
+    return WaffrMaterialLocalizations._(
       fullYearFormat: latin(intl.DateFormat.y(name)),
       compactDateFormat: latin(intl.DateFormat.yMd(name)),
       shortDateFormat: latin(intl.DateFormat.yMMMd(name)),
@@ -135,17 +135,17 @@ class WafferMaterialLocalizations extends MaterialLocalizationAr {
   String get dateHelpText => dateInputHint;
 }
 
-class _WafferMaterialLocalizationsDelegate
+class _WaffrMaterialLocalizationsDelegate
     extends LocalizationsDelegate<MaterialLocalizations> {
-  const _WafferMaterialLocalizationsDelegate();
+  const _WaffrMaterialLocalizationsDelegate();
 
   @override
   bool isSupported(Locale locale) => locale.languageCode == 'ar';
 
   @override
   Future<MaterialLocalizations> load(Locale locale) =>
-      WafferMaterialLocalizations._load(locale);
+      WaffrMaterialLocalizations._load(locale);
 
   @override
-  bool shouldReload(_WafferMaterialLocalizationsDelegate old) => false;
+  bool shouldReload(_WaffrMaterialLocalizationsDelegate old) => false;
 }

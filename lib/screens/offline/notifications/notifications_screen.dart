@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:waffer/widgets/containers/app_empty_state.dart';
-import 'package:waffer/data/models/app_notification.dart';
-import 'package:waffer/data/services/notification_service.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/screens/offline/obligations/obligations_sheet.dart';
-import 'package:waffer/widgets/brand/waffer_page_header.dart';
-import 'package:waffer/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/app_empty_state.dart';
+import 'package:waffr/data/models/app_notification.dart';
+import 'package:waffr/data/services/notification_service.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
+import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/widgets/containers/glass.dart';
 
 // Notifications page: mute toggle, mark-all-read, clear history, grouped list.
 
@@ -65,7 +65,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            WafferBackHeader(
+            WaffrBackHeader(
               applySafeArea: false,
               title: 'الإشعارات',
             ),

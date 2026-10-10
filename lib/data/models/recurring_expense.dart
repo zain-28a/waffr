@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 
-import 'package:waffer/data/models/currency.dart';
+import 'package:waffr/data/models/currency.dart';
 
 enum RecurringUnit { day, week, month }
 

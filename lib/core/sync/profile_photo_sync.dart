@@ -5,10 +5,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:waffer/data/services/profile_photo.dart';
-import 'package:waffer/core/sync/api_config.dart';
-import 'package:waffer/core/sync/auth_session.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
+import 'package:waffr/data/services/profile_photo.dart';
+import 'package:waffr/core/sync/api_config.dart';
+import 'package:waffr/core/sync/auth_session.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
 
 // Keeps the on-device avatar in sync with the account photo endpoint.
 class ProfilePhotoSync {

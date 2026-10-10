@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:waffer/data/models/registration_profile.dart';
-import 'package:waffer/screens/offline/login/register_screen.dart';
-import 'package:waffer/screens/offline/user_info/user_info_screen.dart';
+import 'package:waffr/data/models/registration_profile.dart';
+import 'package:waffr/screens/offline/login/register_screen.dart';
+import 'package:waffr/screens/offline/user_info/user_info_screen.dart';
 
 // Two-step signup on one route: profile (UserInfoScreen), then credentials.
 

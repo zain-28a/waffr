@@ -1,7 +1,7 @@
 // Builds Material ThemeData for light and dark modes from AppColors and fonts.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_color.dart';
 
 // Central theme: Outfit (mixed-case Latin) with Tajawal fallback for Arabic.
 class AppTheme {

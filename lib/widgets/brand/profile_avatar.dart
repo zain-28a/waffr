@@ -2,7 +2,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:waffer/data/services/profile_photo.dart';
+import 'package:waffr/data/services/profile_photo.dart';
 
 /// Avatar from a local photo path, or a person icon placeholder.
 class ProfileAvatar extends StatelessWidget {

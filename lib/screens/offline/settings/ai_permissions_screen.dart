@@ -1,8 +1,8 @@
 // Placeholder screen for future AI feature permission toggles.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/widgets/brand/waffer_page_header.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/widgets/brand/waffr_page_header.dart';
 
 // Empty state until AI permissions are shipped.
 class AIPermissionsScreen extends StatelessWidget {
@@ -21,7 +21,7 @@ class AIPermissionsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: background,
-      appBar: WafferBackHeader(
+      appBar: WaffrBackHeader(
         title: 'أذونات الذكاء الاصطناعي',
       ),
       body: Center(

@@ -1,7 +1,7 @@
 // Money and date/time formatting helpers for the financial UI.
 
 import 'package:intl/intl.dart';
-import 'package:waffer/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/currency_store.dart';
 
 // Fixed Syrian pound label used where rates are shown online.
 const String sypCurrencyLabel = 'ل.س';

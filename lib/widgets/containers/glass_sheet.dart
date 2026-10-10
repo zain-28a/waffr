@@ -6,12 +6,12 @@
 // translucent GlassContainer fill, same performance choice as glass cards.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/button/app_primary_button.dart';
-import 'package:waffer/widgets/containers/glass.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/widgets/button/app_primary_button.dart';
+import 'package:waffr/widgets/containers/glass.dart';
 
 /// Modal barrier tint. Dims the page behind the sheet without blurring it.
 const Color kSheetBarrierColor = Color.fromARGB(114, 0, 0, 0);
