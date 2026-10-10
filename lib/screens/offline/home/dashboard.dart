@@ -519,7 +519,7 @@ class _DistributionCard extends StatelessWidget {
     return _SectionCard(
       title: 'توزيع المصروفات',
       onTap: onTap,
-      caption: 'النسبة من إجمالي الصرف وليس الرصيد',
+      caption: 'النسبة من إجمالي الصرف ',
       child: totals.isEmpty || totalExpense <= 0
           ? const _EmptyState(
               icon: Icons.pie_chart_outline_rounded,
