@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
@@ -67,10 +68,10 @@ class _HomeScreenState extends State<HomeScreen>
       animation: _listenables,
       builder: (context, _) {
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+            children: staggered([
               _BalanceCard(
                 balance: _store.balance,
                 spent: _store.cycleSpent,
@@ -146,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
               ),
-            ],
+            ]),
           ),
         );
       },
@@ -284,8 +285,8 @@ class _BalanceCard extends StatelessWidget {
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: AlignmentDirectional.centerStart,
-                            child: Text(
-                              formatMoney(balance),
+                            child: RollingMoney(
+                              value: balance,
                               style: TextStyle(
                                 fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 36,
@@ -307,23 +308,31 @@ class _BalanceCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 0),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '${(ratio * 100).round()}%',
-                        style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: textSecondary,
-                        ),
+                    AnimatedRatio(
+                      value: ratio,
+                      builder: (context, shown) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${(shown * 100).round()}%',
+                              style: TextStyle(
+                                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: textSecondary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          _HorizontalProgress(
+                            ratio: shown,
+                            trackColor: accent.withValues(alpha: 0.12),
+                            fillColor: accent,
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 3),
-                    _HorizontalProgress(
-                      ratio: ratio,
-                      trackColor: accent.withValues(alpha: 0.12),
-                      fillColor: accent,
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -440,10 +449,18 @@ class _HorizontalProgress extends StatelessWidget {
             child: FractionallySizedBox(
               alignment: AlignmentDirectional.centerStart,
               widthFactor: ratio.clamp(0.0, 1.0),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 350),
-                curve: Curves.easeOut,
-                color: fillColor,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color.lerp(fillColor, Colors.white, 0.18)!,
+                      fillColor,
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -576,24 +593,48 @@ class _DistributionChart extends StatelessWidget {
         children: [
           Directionality(
             textDirection: TextDirection.ltr,
-            child: PieChart(
-              PieChartData(
-                startDegreeOffset: -90,
-                sectionsSpace: 2,
-                centerSpaceRadius: 34,
-                centerSpaceColor: isDark
-                    ? AppColors.darkSurface
-                    : AppColors.lightSurface,
-                sections: [
-                  for (var i = 0; i < totals.length; i++)
-                    PieChartSectionData(
-                      value: totals[i].amount,
-                      color: categoryChartColor(context, totals[i].category),
-                      radius: i == 0 ? 18 : 15,
-                      showTitle: false,
-                    ),
-                ],
-              ),
+            // The ring draws itself in once: a clear filler slice shrinks
+            // while the real slices grow.
+            child: AnimatedRatio(
+              value: 1,
+              duration: const Duration(milliseconds: 900),
+              builder: (context, sweep) {
+                final total =
+                    totals.fold<double>(0, (sum, item) => sum + item.amount);
+                return PieChart(
+                  PieChartData(
+                    startDegreeOffset: -90,
+                    sectionsSpace: sweep < 1 ? 0 : 2,
+                    centerSpaceRadius: 34,
+                    centerSpaceColor: isDark
+                        ? AppColors.darkSurface
+                        : AppColors.lightSurface,
+                    sections: [
+                      for (var i = 0; i < totals.length; i++)
+                        PieChartSectionData(
+                          value: totals[i].amount * sweep,
+                          color: categoryChartColor(
+                            context,
+                            totals[i].category,
+                          ),
+                          radius: i == 0 ? 18 : 15,
+                          showTitle: false,
+                        ),
+                      if (sweep < 1)
+                        PieChartSectionData(
+                          value: total * (1 - sweep),
+                          color: Colors.transparent,
+                          radius: 15,
+                          showTitle: false,
+                        ),
+                    ],
+                  ),
+                  // After the first sweep, data changes glide between values.
+                  swapAnimationDuration:
+                      sweep < 1 ? Duration.zero : Motion.medium,
+                  swapAnimationCurve: Motion.enter,
+                );
+              },
             ),
           ),
           Column(
@@ -1036,13 +1077,11 @@ class _VerticalProgress extends StatelessWidget {
             Positioned.fill(child: ColoredBox(color: trackColor)),
             Align(
               alignment: Alignment.bottomCenter,
-              child: FractionallySizedBox(
-                heightFactor: ratio.clamp(0.0, 1.0),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeOut,
-                  width: width,
-                  color: fillColor,
+              child: AnimatedRatio(
+                value: ratio,
+                builder: (context, shown) => FractionallySizedBox(
+                  heightFactor: shown,
+                  child: Container(width: width, color: fillColor),
                 ),
               ),
             ),
