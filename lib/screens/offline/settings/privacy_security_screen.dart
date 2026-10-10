@@ -470,7 +470,6 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
               showChevron: false,
               trailing: Switch(
                 value: _enabled,
-                activeThumbColor: colors.accent,
                 onChanged: _busy ? null : _toggle,
               ),
               onTap: _busy ? null : () => _toggle(!_enabled),

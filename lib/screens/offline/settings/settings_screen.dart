@@ -478,8 +478,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             trailing: Switch(
               value: isDark,
-              activeThumbColor: accent,
-
               onChanged: (_) {
                 widget.onThemeChanged();
               },
@@ -527,8 +525,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             trailing: Switch(
               value: _appLock,
-              activeThumbColor: accent,
-
               onChanged: _toggleAppLock,
             ),
 
