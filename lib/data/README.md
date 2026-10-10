@@ -45,6 +45,4 @@ serves memory.
 | `online_feed_service.dart` | Static exchange rates and news from the API. |
 | `profile_photo.dart` | The local profile image. |
 | `local_data_reset.dart` | Wipes restorable local data. |
-| `backup_service.dart` | Google Drive backup. Disabled. Do not strip its comments. |
-| `google_auth_service.dart` | Google sign-in wrapper. Leave it in place. |
-| `drive_backup_client.dart` | Drive file upload/download. Leave it in place. |
+| `backup_service.dart` | Local account data: guest choice, display name, wiping data on account delete or switch. |

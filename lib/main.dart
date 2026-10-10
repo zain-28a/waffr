@@ -29,8 +29,6 @@ Future<void> main() async {
   TransactionStore.instance.onHydrated =
       NotificationService.instance.seedIfNeeded;
 
-  // Drive backup is currently disabled. Harmless no-op until re-enabled.
-  unawaited(BackupService.instance.initialize());
   unawaited(SyncService.instance.initialize());
 
   runApp(const WafarApp());
@@ -81,7 +79,6 @@ class _WafarAppState extends State<WafarApp> {
       mode == ThemeMode.dark,
     );
 
-    BackupService.instance.scheduleBackup();
     unawaited(SyncDirty.mark(settings: true));
   }
 
@@ -268,8 +265,6 @@ class _AppFlowControllerState
       'first_launch',
       false,
     );
-
-    BackupService.instance.scheduleBackup();
 
     if (!mounted) return;
 
