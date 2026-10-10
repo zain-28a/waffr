@@ -203,6 +203,8 @@ def main() -> int:
                         "interval_count": 1,
                         "next_due_at": now,
                         "enabled": True,
+                        "requires_confirmation": True,
+                        "remind_on_income": True,
                         "created_at": now,
                         "updated_at": now,
                     }
@@ -278,6 +280,13 @@ def main() -> int:
     )
     check(item_id in client_ids(first_body["shopping_items"]["upserts"]), "shopping item returned")
     check(rec_id in client_ids(first_body["recurring_expenses"]["upserts"]), "recurring returned")
+    rec = next(
+        item for item in first_body["recurring_expenses"]["upserts"]
+        if item["client_id"] == rec_id
+    )
+    check(rec["requires_confirmation"] is True, "recurring keeps confirm-before-deduct")
+    check(rec["remind_on_income"] is True, "recurring keeps postpone-until-income")
+    check(rec["remind_at"] is None, "recurring remind_at defaults to empty")
     check(note_id in client_ids(first_body["notifications"]["upserts"]), "notification returned")
     check(cat_id in client_ids(first_body["expense_categories"]["upserts"]), "category returned")
     check(first_body["settings"]["notifications_muted"] is True, "muted setting stored")
