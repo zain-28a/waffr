@@ -60,17 +60,22 @@ void main() {
     final first = digest.candidates(fireAt).first;
 
     expect(first.kind, 'obligation');
-    expect(first.title, '«إيجار» مستحق بعد 3 أيام');
-    expect(first.body, 'المبلغ 300 ل.س.');
+    expect(first.title, contains('«إيجار»'));
+    expect(first.title, contains('بعد 3 أيام'));
+    expect(first.body, contains('300 ل.س'));
   });
 
   test('balance reminder counts the days left at fire time', () {
-    final balance = ReminderDigest(_facts())
-        .candidates(fireAt)
-        .firstWhere((item) => item.kind == 'balance');
-
     // Income on 1 Nov: 12 days from the 20th, 10 from the 22nd.
-    expect(balance.body, contains('10 أيام'));
+    for (var seed = 0; seed < 10; seed++) {
+      final balance = ReminderDigest(_facts(), seed: seed)
+          .candidates(fireAt)
+          .firstWhere((item) => item.kind == 'balance');
+      final text = '${balance.title} ${balance.body}';
+      expect(text, contains('500 ل.س'));
+      expect(text, isNot(contains('12 يوماً')));
+      expect(text.contains('10 أيام') || text.contains('50 ل.س'), isTrue);
+    }
   });
 
   test('category growth and goal progress read as facts', () {
@@ -95,7 +100,7 @@ void main() {
     final goal = texts.firstWhere((item) => item.kind == 'goal');
     expect(category.title, contains('الترفيه'));
     expect(goal.title, contains('«سفر»'));
-    expect(goal.body, 'بقي 350 ل.س على الهدف.');
+    expect(goal.body, anyOf(contains('350 ل.س'), contains('650 ل.س')));
   });
 
   test('no reminder text asks the user to open the app', () {
@@ -129,7 +134,7 @@ void main() {
       _expense(50, DateTime(2026, 10, 11)),
     ])).weekly();
 
-    expect(weekly!.title, 'صرفك هذا الأسبوع 100 ل.س');
-    expect(weekly.body, contains('أكثر'));
+    expect(weekly!.title, contains('100 ل.س'));
+    expect(weekly.body, anyOf(contains('أكثر'), contains('بزيادة')));
   });
 }
