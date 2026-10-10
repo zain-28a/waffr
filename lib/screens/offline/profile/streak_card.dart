@@ -417,10 +417,10 @@ class _DayMark extends StatelessWidget {
             child: active
                 ? Opacity(
                     opacity: reveal.clamp(0.0, 1.0),
-                    child: const Icon(
+                    child: Icon(
                       Icons.check_rounded,
                       size: 16,
-                      color: Colors.white,
+                      color: palette.onAccent,
                     ),
                   )
                 : null,

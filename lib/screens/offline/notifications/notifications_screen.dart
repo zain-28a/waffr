@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/app_notification.dart';
 import 'package:waffr/data/services/notification_service.dart';
@@ -11,7 +12,6 @@ import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/widgets/containers/glass.dart';
-import 'package:waffr/widgets/motion/fade_slide_in.dart';
 
 // Notifications page: mute toggle, mark-all-read, clear history, grouped list.
 
@@ -29,14 +29,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   // False when the phone blocks Waffr's notifications; null when unknown.
   bool? _deviceAllowed;
 
-  // Groups built while the page opens play the entrance; ones scrolled into
-  // view later appear at rest.
-  bool _playEntrance = true;
-
   @override
   void initState() {
     super.initState();
-    Future<void>.delayed(AppMotion.countUp, () => _playEntrance = false);
     WidgetsBinding.instance.addObserver(this);
     _service.ensureLoaded();
     _refreshDevicePermission();
@@ -180,15 +175,15 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                       padding: const EdgeInsets.fromLTRB(18, 8, 18, 26),
                       itemCount: groups.length,
                       itemBuilder: (context, index) {
-                        return FadeSlideIn(
-                          enabled: _playEntrance,
-                          delay: FadeSlideIn.staggerFor(index),
-                          child: _NotificationGroupView(
-                            group: groups[index],
-                            onOpen: _open,
-                            onDismiss: _dismiss,
-                          ),
+                        final view = _NotificationGroupView(
+                          group: groups[index],
+                          onOpen: _open,
+                          onDismiss: _dismiss,
                         );
+                        // Only the first screenful animates in.
+                        return index < 6
+                            ? Reveal(index: index, child: view)
+                            : view;
                       },
                     ),
             ),

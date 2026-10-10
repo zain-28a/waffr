@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/data/services/backup_service.dart';
@@ -191,7 +192,7 @@ class _AccountScreenState extends State<AccountScreen> {
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
-        children: [
+        children: staggered([
           Center(
             child: ProfileAvatar(
               photoPath: _photoPath,
@@ -311,7 +312,7 @@ class _AccountScreenState extends State<AccountScreen> {
             busy: _busy,
             onTap: _deleteAccount,
           ),
-        ],
+        ]),
       ),
     );
   }

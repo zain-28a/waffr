@@ -5,6 +5,8 @@ import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/models/expense_categories.dart';
@@ -122,10 +124,10 @@ class _ReportScreenState extends State<ReportScreen>
         );
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 26),
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+            children: staggered([
               SheetChoiceChips(
                 options: [for (final range in _ReportRange.values) range.label],
                 selected: _range.label,
@@ -179,7 +181,7 @@ class _ReportScreenState extends State<ReportScreen>
                 currentTotal: report.total,
                 previousTotal: previousTotal,
               ),
-            ],
+            ]),
           ),
         );
       },
@@ -387,9 +389,17 @@ class _SpendingChartCard extends StatelessWidget {
                   )
                 : Directionality(
                     textDirection: TextDirection.ltr,
-                    child: _SpendingLineChart(
+                    // Each period's line draws itself in from the left.
+                    child: AnimatedRatio(
                       key: ValueKey(report.period.start),
-                      buckets: report.chartBuckets,
+                      value: 1,
+                      duration: const Duration(milliseconds: 900),
+                      builder: (context, shown) => RevealClip(
+                        fraction: shown,
+                        child: _SpendingLineChart(
+                          buckets: report.chartBuckets,
+                        ),
+                      ),
                     ),
                   ),
           ),
@@ -436,7 +446,7 @@ class _PeriodArrow extends StatelessWidget {
 class _SpendingLineChart extends StatelessWidget {
   final List<_ChartBucket> buckets;
 
-  const _SpendingLineChart({super.key, required this.buckets});
+  const _SpendingLineChart({required this.buckets});
 
   @override
   Widget build(BuildContext context) {
@@ -657,8 +667,8 @@ class _SpendingSummary extends StatelessWidget {
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: AlignmentDirectional.centerStart,
-                        child: Text(
-                          formatMoney(total),
+                        child: RollingMoney(
+                          value: total,
                           style: TextStyle(
                             fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                             fontSize: 28,
@@ -752,7 +762,7 @@ class _ExpenseDistribution extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'النسبة من إجمالي الصرف وليس الرصيد',
+                  'النسبة من إجمالي الصرف ',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -808,6 +818,20 @@ class _DistributionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Grows from the start edge when the card first appears.
+    return AnimatedRatio(
+      value: 1,
+      builder: (context, shown) => Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: FractionallySizedBox(
+          widthFactor: math.max(shown, 0.001),
+          child: _bar(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _bar(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
       child: SizedBox(
@@ -1218,7 +1242,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                   backgroundColor: canShare || !_selecting
                       ? colors.accent
                       : colors.accent.withValues(alpha: 0.35),
-                  foregroundColor: Colors.white,
+                  foregroundColor: colors.onAccent,
                   elevation: canShare || !_selecting ? 4 : 0,
                   child: const Icon(Icons.share_rounded),
                 );
@@ -1313,7 +1337,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                         itemCount: groups.length,
                         itemBuilder: (context, index) {
                           final group = groups[index];
-                          return AnimatedBuilder(
+                          final row = AnimatedBuilder(
                             animation: _selectionReveal,
                             builder: (context, _) {
                           return Padding(
@@ -1349,6 +1373,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                           );
                             },
                           );
+                          // Only the first screenful animates in.
+                          return index < 6
+                              ? Reveal(index: index, child: row)
+                              : row;
                         },
                       ),
               ),
@@ -1524,7 +1552,7 @@ class _SelectMark extends StatelessWidget {
           ),
         ),
         child: state == _SelectState.checked
-            ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+            ? Icon(Icons.check_rounded, size: 14, color: colors.onAccent)
             : state == _SelectState.partial
                 ? Container(
                     width: 10,

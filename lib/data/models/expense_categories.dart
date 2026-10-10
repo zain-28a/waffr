@@ -5,52 +5,67 @@ import 'package:flutter/material.dart';
 class ExpenseCategory {
   final String label;
   final IconData icon;
+
+  /// Chart color on the light theme.
   final Color color;
+
+  /// Chart color on the dark theme: the same hue, a little lighter.
+  final Color darkColor;
 
   const ExpenseCategory({
     required this.label,
     required this.icon,
     required this.color,
+    required this.darkColor,
   });
 }
 
-// Grid order for "add expense". Chart colors come from the Waffr reference
-// palette: sky blue, dusty rose, cream yellow, lavender, peach and sage.
+// Grid order for "add expense". Chart colors are an earthy set that sits
+// with the app's green: terracotta, teal, berry, ochre, leaf green, violet
+// and sky blue. Each hue has its own lightness so neighbouring slices stay
+// apart, also for color-blind readers.
 const List<ExpenseCategory> expenseCategories = [
   ExpenseCategory(
     label: 'طعام',
     icon: Icons.lunch_dining_outlined,
-    color: Color(0xFFFEB599),
+    color: Color(0xFFDD8461),
+    darkColor: Color(0xFFF19773),
   ),
   ExpenseCategory(
     label: 'مواصلات',
     icon: Icons.directions_bus_outlined,
-    color: Color(0xFFA9CFEC),
+    color: Color(0xFF00828D),
+    darkColor: Color(0xFF289DA9),
   ),
   ExpenseCategory(
     label: 'تسوق',
     icon: Icons.shopping_bag_outlined,
-    color: Color(0xFFB67880),
+    color: Color(0xFFAC5371),
+    darkColor: Color(0xFFCA6E8C),
   ),
   ExpenseCategory(
     label: 'فواتير',
     icon: Icons.receipt_long_outlined,
-    color: Color(0xFFFEE1B1),
+    color: Color(0xFFDBB155),
+    darkColor: Color(0xFFE8C773),
   ),
   ExpenseCategory(
     label: 'صحة',
     icon: Icons.favorite_border_rounded,
-    color: Color(0xFF7C9687),
+    color: Color(0xFF4E8841),
+    darkColor: Color(0xFF518B44),
   ),
   ExpenseCategory(
     label: 'ترفيه',
     icon: Icons.sports_esports_outlined,
-    color: Color(0xFF9D90B0),
+    color: Color(0xFF6A57A4),
+    darkColor: Color(0xFF8371C1),
   ),
   ExpenseCategory(
     label: 'تعليم',
     icon: Icons.school_outlined,
-    color: Color(0xFF7FAED3),
+    color: Color(0xFF7CAFE8),
+    darkColor: Color(0xFF88BCF6),
   ),
 ];
 
@@ -60,12 +75,14 @@ const ExpenseCategory customCategoryAction = ExpenseCategory(
   label: customCategoryActionLabel,
   icon: Icons.add_rounded,
   color: Color(0xFF9A9388),
+  darkColor: Color(0xFFA39D91),
 );
 
 const ExpenseCategory fallbackCategory = ExpenseCategory(
   label: 'أخرى',
   icon: Icons.more_horiz_rounded,
   color: Color(0xFF9A9388),
+  darkColor: Color(0xFFA39D91),
 );
 
 const List<String> paymentMethods = ['نقداً', 'بطاقة'];
@@ -113,21 +130,37 @@ const List<IconData> customCategoryIconChoices = [
   Icons.celebration_outlined,
 ];
 
-// Chart slices for added categories: deeper and lighter shades of the same
-// reference palette. Saved categories keep their slot index.
+// Chart slices for added categories: more hues from the same earthy
+// family. Saved categories keep their slot index, so the order is fixed.
 const List<Color> customCategoryColors = [
-  Color(0xFF5B7B69),
-  Color(0xFF93585F),
-  Color(0xFFF2C97E),
-  Color(0xFF7A6C95),
-  Color(0xFFF08F6E),
-  Color(0xFFCFE5F6),
-  Color(0xFFA9C2B3),
-  Color(0xFFD7A3AA),
-  Color(0xFFC2B8D3),
-  Color(0xFFFFD3C2),
-  Color(0xFF5E8FB8),
-  Color(0xFFD9B97A),
+  Color(0xFF848D42),
+  Color(0xFFA24B36),
+  Color(0xFF4EA4CA),
+  Color(0xFFD48490),
+  Color(0xFF41A083),
+  Color(0xFF6D4177),
+  Color(0xFFC9A471),
+  Color(0xFF596DB2),
+  Color(0xFFDD766F),
+  Color(0xFF4C682E),
+  Color(0xFFAD98D5),
+  Color(0xFF57B6B6),
+];
+
+// [customCategoryColors] for the dark theme, slot for slot.
+const List<Color> customCategoryDarkColors = [
+  Color(0xFF90994E),
+  Color(0xFFBC634D),
+  Color(0xFF5BB0D7),
+  Color(0xFFE2909C),
+  Color(0xFF4FAC8F),
+  Color(0xFF855890),
+  Color(0xFFD6B17D),
+  Color(0xFF6F85CC),
+  Color(0xFFEB827B),
+  Color(0xFF637F45),
+  Color(0xFFBAA4E2),
+  Color(0xFF64C3C3),
 ];
 
 // Wired by CategoryStore so charts/reports resolve saved custom icons.
@@ -171,6 +204,7 @@ ExpenseCategory customCategoryNamed(
     label: label,
     icon: customCategoryIconChoices[resolvedIcon],
     color: customCategoryColors[resolvedColor],
+    darkColor: customCategoryDarkColors[resolvedColor],
   );
 }
 
@@ -190,7 +224,9 @@ ExpenseCategory categoryFor(String? label) {
   return customCategoryNamed(label);
 }
 
-// The palette is already soft, so light and dark mode use the same swatch.
 Color categoryChartColor(BuildContext context, String? label) {
-  return categoryFor(label).color;
+  final category = categoryFor(label);
+  return Theme.of(context).brightness == Brightness.dark
+      ? category.darkColor
+      : category.color;
 }

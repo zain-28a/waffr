@@ -23,7 +23,7 @@ import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
-import 'package:waffr/widgets/motion/fade_slide_in.dart';
+import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/smart/smart_glow.dart';
 
 String smartSparkHeroTag(InsightScope scope) => 'smart-spark-${scope.name}';
@@ -386,7 +386,7 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
       children: [
         if (report.healthScore != null && _revealed > summaryAt) ...[
           const SizedBox(height: 8),
-          FadeSlideIn(
+          Reveal(
             child: _HealthGauge(
               score: report.healthScore!,
               title: health?.title ?? 'مؤشر الصحة المالية',
@@ -423,7 +423,7 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
               (_revealed > bodyOffsets[i] || insights[i].body.isEmpty || _phase == _Phase.done))
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: FadeSlideIn(
+              child: Reveal(
                 key: ValueKey('${_run}_${insights[i].id}'),
                 child: _InsightCard(
                   insight: insights[i],

@@ -1,6 +1,7 @@
 // Reorder, delete, or add active savings goals.
 
 import 'package:flutter/material.dart';
+import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/savings_goal.dart';
@@ -213,11 +214,14 @@ class _ManageGoalRow extends StatelessWidget {
                 const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
+                  child: AnimatedRatio(
                     value: ratio,
-                    minHeight: 8,
-                    backgroundColor: textPrimary.withValues(alpha: 0.08),
-                    color: accent,
+                    builder: (context, shown) => LinearProgressIndicator(
+                      value: shown,
+                      minHeight: 8,
+                      backgroundColor: textPrimary.withValues(alpha: 0.08),
+                      color: accent,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),

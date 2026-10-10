@@ -17,8 +17,7 @@ their screen.
 | `brand/streak_celebration.dart` | The overlay shown when the streak grows on app open. |
 | `brand/waffr_page_header.dart` | The top bar. Pushed screens use `WaffrBackHeader` (back arrow + centered title). |
 | `brand/profile_avatar.dart` | Circular avatar, with an optional camera badge. |
-| `motion/animated_number_text.dart` | Numbers that count to a new value (balances, percentages). |
-| `motion/fade_slide_in.dart` | One-time fade-and-rise entrance for list rows, with a stagger helper. |
+| `motion/motion.dart` | `Reveal` entrance, `RollingMoney`, `AnimatedRatio`, `staggered()` and `RevealClip`. Timings come from `AppMotion`. |
 | `smart/smart_analysis_button.dart` | The "تحليل ذكي" pill and the reports banner that open the smart analysis. |
 | `smart/smart_glow.dart` | The moving color glow and the spinning spark used while the analysis writes. |
 

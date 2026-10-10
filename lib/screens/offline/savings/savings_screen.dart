@@ -2,6 +2,8 @@
 // points that open create / manual save / withdraw / shopping / recurring sheets.
 
 import 'package:flutter/material.dart';
+import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/calendar_period.dart';
 import 'package:waffr/data/models/savings_goal.dart';
@@ -96,9 +98,9 @@ class _SavingsScreenState extends State<SavingsScreen>
         final goals = _store.activeGoals;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 26),
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
           child: Column(
-            children: [
+            children: staggered([
               SheetChoiceChips(
                 options: [for (final range in SavingsRange.values) range.label],
                 selected: _range.label,
@@ -187,7 +189,7 @@ class _SavingsScreenState extends State<SavingsScreen>
               const ShoppingListPreviewCard(),
 
               const SizedBox(height: 12),
-            ],
+            ]),
           ),
         );
       },
@@ -305,8 +307,8 @@ class _PeriodSavingsCard extends StatelessWidget {
                 Flexible(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text(
-                      formatMoney(amount),
+                    child: RollingMoney(
+                      value: amount,
                       style: TextStyle(
                         fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 26,
@@ -722,8 +724,8 @@ class _TotalSavingsCard extends StatelessWidget {
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      formatMoney(total),
+                    child: RollingMoney(
+                      value: total,
                       style: TextStyle(
                         fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 27,
@@ -841,7 +843,7 @@ class _CreateGoalCard extends StatelessWidget {
             fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
             fontSize: 13.5,
             fontWeight: FontWeight.bold,
-            color: Color.fromARGB(255, 255, 255, 255),
+            color: AppPalette.of(context).onAccent,
           ),
         ),
       ),
@@ -968,20 +970,23 @@ class _HorizontalProgress extends StatelessWidget {
 
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(end: ratio.clamp(0.0, 1.0)),
-                duration: AppMotion.of(context, AppMotion.countUp),
-                curve: AppMotion.enter,
-                builder: (context, widthFactor, child) =>
-                    FractionallySizedBox(
-                  widthFactor: widthFactor,
-                  child: child,
-                ),
-                child: Container(
-                  height: height,
-                  decoration: BoxDecoration(
-                    color: fillColor,
-                    borderRadius: BorderRadius.circular(999),
+              child: AnimatedRatio(
+                value: ratio,
+                builder: (context, shown) => FractionallySizedBox(
+                  widthFactor: shown,
+                  child: Container(
+                    height: height,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color.lerp(fillColor, Colors.white, 0.18)!,
+                          fillColor,
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),

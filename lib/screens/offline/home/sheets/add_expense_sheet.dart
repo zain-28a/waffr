@@ -831,7 +831,7 @@ class _IconChoice extends StatelessWidget {
               child: Icon(
                 icon,
                 size: 20,
-                color: selected ? Colors.white : accent,
+                color: selected ? AppColors.onAccentOf(context) : accent,
               ),
             ),
           );
@@ -866,8 +866,9 @@ class _CategoryTile extends StatelessWidget {
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
 
-    final foreground = isSelected ? Colors.white : textPrimary;
-    final iconColor = isSelected ? Colors.white : accent;
+    final onAccent = AppColors.onAccentOf(context);
+    final foreground = isSelected ? onAccent : textPrimary;
+    final iconColor = isSelected ? onAccent : accent;
 
     return GestureDetector(
       onTap: onTap,

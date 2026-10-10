@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/data/services/local_data_reset.dart';
@@ -94,7 +95,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                       },
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
-                        children: [
+                        children: staggered([
                           _SectionLabel(
                             title: 'بياناتك',
                             color: colors.textSecondary,
@@ -175,7 +176,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                               ),
                             ],
                           ),
-                        ],
+                        ]),
                       ),
                     ),
             ),
@@ -470,7 +471,6 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
               showChevron: false,
               trailing: Switch(
                 value: _enabled,
-                activeThumbColor: colors.accent,
                 onChanged: _busy ? null : _toggle,
               ),
               onTap: _busy ? null : () => _toggle(!_enabled),
