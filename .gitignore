@@ -50,3 +50,9 @@ backend/uploads/avatars/
 # Local secrets. Render gets DATABASE_URL from the dashboard, not this file.
 backend/.env
 .env
+
+# Google OAuth client files (client IDs/secrets) stay on your machine only.
+cleint id google/
+client_secret*.json
+google-services.json
+GoogleService-Info.plist
