@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/services/home_widget_sync.dart';
 import 'package:waffr/data/services/notification_service.dart';
 import 'package:waffr/data/services/profile_identity.dart';
 import 'package:waffr/data/services/system_notifications.dart';
@@ -12,6 +14,10 @@ import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/screens/offline/home/dashboard.dart';
+import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
+import 'package:waffr/screens/offline/home/sheets/add_income_sheet.dart';
+import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
 import 'package:waffr/screens/offline/notifications/notifications_screen.dart';
 import 'package:waffr/screens/offline/profile/profile_screen.dart';
 import 'package:waffr/screens/online/online_screen.dart';
@@ -57,6 +63,7 @@ class _AppShellState extends State<AppShell>
 
   Timer? _dueTimer;
   bool _syncingEvents = false;
+  StreamSubscription<Uri?>? _widgetTaps;
 
   // Set when today's open extended the streak; drives the overlay once.
   StreakIncrease? _streakIncrease;
@@ -90,6 +97,47 @@ class _AppShellState extends State<AppShell>
     WidgetsBinding.instance.addObserver(this);
     _startDueTimer();
     _syncFinancialEvents();
+    unawaited(HomeWidgetSync.instance.start());
+    _listenToWidgetTaps();
+  }
+
+  // A tap on a home screen widget opens the app on the matching place.
+  void _listenToWidgetTaps() {
+    if (!HomeWidgetSync.supported) return;
+    HomeWidget.initiallyLaunchedFromHomeWidget()
+        .then(_openFromWidget)
+        .catchError((Object _) {});
+    _widgetTaps = HomeWidget.widgetClicked.listen(
+      _openFromWidget,
+      onError: (Object _) {},
+    );
+  }
+
+  void _openFromWidget(Uri? uri) {
+    if (uri == null || uri.host.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      switch (uri.host) {
+        case 'add-expense':
+          _onTabTapped(0);
+          showAddExpenseSheet(context);
+        case 'add-income':
+          _onTabTapped(0);
+          showAddIncomeSheet(context);
+        case 'savings':
+          _onTabTapped(2);
+        case 'create-goal':
+          _onTabTapped(2);
+          showCreateGoalSheet(context);
+        case 'obligations':
+          showObligationsSheet(context);
+        case 'profile':
+          _onTabTapped(4);
+        default:
+          _onTabTapped(0);
+      }
+    });
   }
 
   void _startDueTimer() {
@@ -246,6 +294,7 @@ class _AppShellState extends State<AppShell>
   @override
   void dispose() {
     _dueTimer?.cancel();
+    _widgetTaps?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     _pagerFade.dispose();

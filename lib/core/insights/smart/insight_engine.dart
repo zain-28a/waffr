@@ -99,15 +99,33 @@ class InsightEngine {
 
   // A body built from one core sentence, sometimes with an opener and a
   // closing remark, so repeated runs read like newly written text.
+  // Openers and closers are used at most once per report, so two cards
+  // never end with the same remark.
   String _say(InsightTone tone, List<String> cores) {
     final core = _pick(cores);
     final parts = <String>[];
-    if (_random.nextDouble() < 0.35) parts.add(_pick(_openers));
+    final opener = _fresh(_openers);
+    if (opener != null && _random.nextDouble() < 0.35) {
+      parts.add(opener);
+      _usedPhrases.add(opener);
+    }
     parts.add(core);
-    if (core.length < 110 && _random.nextDouble() < 0.5) {
-      parts.add(_pick(_closers[tone]!));
+    final closer = _fresh(_closers[tone]!);
+    if (closer != null && core.length < 110 && _random.nextDouble() < 0.5) {
+      parts.add(closer);
+      _usedPhrases.add(closer);
     }
     return parts.join(' ');
+  }
+
+  final Set<String> _usedPhrases = {};
+
+  String? _fresh(List<String> options) {
+    final unused = [
+      for (final item in options)
+        if (!_usedPhrases.contains(item)) item,
+    ];
+    return unused.isEmpty ? null : _pick(unused);
   }
 
   // ---------------------------------------------------------------------

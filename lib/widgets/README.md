@@ -19,6 +19,8 @@ their screen.
 | `brand/profile_avatar.dart` | Circular avatar, with an optional camera badge. |
 | `motion/animated_number_text.dart` | Numbers that count to a new value (balances, percentages). |
 | `motion/fade_slide_in.dart` | One-time fade-and-rise entrance for list rows, with a stagger helper. |
+| `smart/smart_analysis_button.dart` | The "تحليل ذكي" pill and the reports banner that open the smart analysis. |
+| `smart/smart_glow.dart` | The moving color glow and the spinning spark used while the analysis writes. |
 
 New sheets should start from `glass_sheet.dart` instead of copying the
 padding and the header row. Short explanations open through
