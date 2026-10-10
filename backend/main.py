@@ -31,6 +31,7 @@ from online_model import ExchangeRate, NewsArticle
 from shopping_model import ShoppingItem, ShoppingList
 from transaction_model import RecurringExpense, Transaction
 from news_service import news_refresh_loop
+from routers.ai import router as ai_router
 from routers.notifications import router as notifications_router
 from routers.online import router as online_router
 from routers.recurring import router as recurring_router
@@ -80,6 +81,7 @@ app.include_router(recurring_router)
 app.include_router(notifications_router)
 app.include_router(settings_router)
 app.include_router(sync_router)
+app.include_router(ai_router)
 
 
 @app.get("/")

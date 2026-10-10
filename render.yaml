@@ -31,3 +31,7 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
+      # AI insights and expense categories (Claude). Paste an Anthropic API
+      # key on Render; without it the app hides its AI features.
+      - key: ANTHROPIC_API_KEY
+        sync: false
