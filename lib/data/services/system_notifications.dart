@@ -1,5 +1,6 @@
 // Device notifications for real Waffr events. In-app history stays in
-// NotificationService; this only mirrors new alerts and one daily streak nudge.
+// NotificationService; this mirrors new alerts, the daily streak nudge and
+// short comeback reminders.
 
 import 'dart:async';
 
@@ -7,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:waffr/core/insights/smart/reminder_digest.dart';
 
 class SystemNotifications {
   SystemNotifications._();
@@ -15,6 +17,17 @@ class SystemNotifications {
 
   static const String channelId = 'waffr_alerts';
   static const int _streakId = 41021;
+  static const int _comebackSoonId = 41022;
+  static const int _comebackLaterId = 41023;
+  static const int _weeklyId = 41024;
+
+  /// Payload of reminders that open the smart analysis when tapped.
+  static const String smartPayload = 'smart';
+
+  final StreamController<String> _taps = StreamController<String>.broadcast();
+
+  /// Payloads of notifications tapped while the app is running.
+  Stream<String> get taps => _taps.stream;
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -54,20 +67,85 @@ class SystemNotifications {
     try {
       await _plugin.cancel(id: _streakId);
       if (!enabled || !_timeZoneReady) return;
-
-      final tomorrow = _tomorrowEvening();
-
-      await _plugin.zonedSchedule(
-        id: _streakId,
-        title: streakCount >= 2
-            ? 'لديك $streakCount أيام متواصلة في وفّر'
-            : 'أيامك المتواصلة في وفّر',
-        body: 'سجّل مصروفات اليوم حتى لا تنقطع أيامك المتواصلة.',
-        scheduledDate: tomorrow,
-        notificationDetails: _details(),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      );
+      final text = ReminderDigest.streakText(streakCount);
+      await _schedule(_streakId, (text.title, text.body), _tomorrowEvening());
     } catch (_) {}
+  }
+
+  /// Factual reminders for a user who stays away. Rescheduled on every
+  /// open, so they only fire after days without the app: [soon] after two
+  /// days, [later] after five, and [weekly] on Friday evening. Each is a
+  /// title and body; null skips that slot.
+  Future<void> syncComebackReminders({
+    required bool enabled,
+    (String, String)? soon,
+    (String, String)? later,
+    (String, String)? weekly,
+  }) async {
+    await initialize();
+    if (!_ready) return;
+    try {
+      for (final id in const [_comebackSoonId, _comebackLaterId, _weeklyId]) {
+        await _plugin.cancel(id: id);
+      }
+      if (!enabled || !_timeZoneReady) return;
+      if (soon != null) {
+        await _schedule(
+          _comebackSoonId,
+          soon,
+          _localAt(daysFromNow: 2, hour: 20, minute: 30),
+          payload: smartPayload,
+        );
+      }
+      if (later != null) {
+        await _schedule(
+          _comebackLaterId,
+          later,
+          _localAt(daysFromNow: 5, hour: 20, minute: 30),
+          payload: smartPayload,
+        );
+      }
+      if (weekly != null) {
+        await _schedule(_weeklyId, weekly, _nextFridayEvening(), payload: smartPayload);
+      }
+    } catch (_) {}
+  }
+
+  /// When the comeback reminders fire, for writing their text ahead.
+  static DateTime soonAt(DateTime now) =>
+      DateTime(now.year, now.month, now.day + 2, 20, 30);
+
+  static DateTime laterAt(DateTime now) =>
+      DateTime(now.year, now.month, now.day + 5, 20, 30);
+
+  Future<void> _schedule(
+    int id,
+    (String, String) text,
+    tz.TZDateTime when, {
+    String? payload,
+  }) {
+    return _plugin.zonedSchedule(
+      id: id,
+      title: text.$1,
+      body: text.$2,
+      scheduledDate: when,
+      notificationDetails: _details(),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: payload,
+    );
+  }
+
+  /// Payload of the notification that launched the app, if one did.
+  Future<String?> launchPayload() async {
+    await initialize();
+    if (!_ready) return null;
+    try {
+      final details = await _plugin.getNotificationAppLaunchDetails();
+      if (details?.didNotificationLaunchApp != true) return null;
+      return details?.notificationResponse?.payload;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> cancelAll() async {
@@ -94,6 +172,10 @@ class SystemNotifications {
         settings: const InitializationSettings(
           android: AndroidInitializationSettings('ic_stat_waffr'),
         ),
+        onDidReceiveNotificationResponse: (response) {
+          final payload = response.payload;
+          if (payload != null && payload.isNotEmpty) _taps.add(payload);
+        },
       );
       _ready = granted != false;
       await _android?.createNotificationChannel(
@@ -159,10 +241,35 @@ class SystemNotifications {
 
   /// Local 19:30 tomorrow, stored as a UTC instant so no timezone database
   /// lookup is required.
-  tz.TZDateTime _tomorrowEvening() {
+  tz.TZDateTime _tomorrowEvening() =>
+      _localAt(daysFromNow: 1, hour: 19, minute: 30);
+
+  /// A local wall-clock time [daysFromNow] days ahead, as a UTC instant.
+  tz.TZDateTime _localAt({
+    required int daysFromNow,
+    required int hour,
+    required int minute,
+  }) {
     final now = DateTime.now();
-    final local = DateTime(now.year, now.month, now.day, 19, 30)
-        .add(const Duration(days: 1));
+    final local = DateTime(now.year, now.month, now.day + daysFromNow, hour, minute);
+    return _utc(local);
+  }
+
+  tz.TZDateTime _nextFridayEvening() => _utc(nextFridayEvening(DateTime.now()));
+
+  /// Friday 18:00 local after [now], at least half a day away.
+  @visibleForTesting
+  static DateTime nextFridayEvening(DateTime now) {
+    var days = (DateTime.friday - now.weekday) % 7;
+    var local = DateTime(now.year, now.month, now.day + days, 18);
+    if (local.difference(now).inHours < 12) {
+      days += 7;
+      local = DateTime(now.year, now.month, now.day + days, 18);
+    }
+    return local;
+  }
+
+  tz.TZDateTime _utc(DateTime local) {
     final utc = local.toUtc();
     return tz.TZDateTime.utc(utc.year, utc.month, utc.day, utc.hour, utc.minute);
   }

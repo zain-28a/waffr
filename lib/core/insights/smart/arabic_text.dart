@@ -100,6 +100,15 @@ class Ar {
     hundred: 'عنصر',
   );
 
+  // Dual in the nominative ("لديك دفعتان"), the case it is used in.
+  static const payments = ArabicCount(
+    one: 'دفعة واحدة',
+    two: 'دفعتان',
+    few: 'دفعات',
+    many: 'دفعة',
+    hundred: 'دفعة',
+  );
+
   static const months = ArabicCount(
     one: 'شهر واحد',
     two: 'شهرين',
