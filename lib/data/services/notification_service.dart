@@ -2,21 +2,21 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:waffer/data/models/app_notification.dart';
-import 'package:waffer/data/models/calendar_period.dart';
-import 'package:waffer/data/models/expense_categories.dart';
-import 'package:waffer/data/models/recurring_expense.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/sync/sync_mapper.dart';
-import 'package:waffer/core/sync/sync_merge.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
-import 'package:waffer/data/services/system_notifications.dart';
-import 'package:waffer/data/services/usage_streak_service.dart';
+import 'package:waffr/data/models/app_notification.dart';
+import 'package:waffr/data/models/calendar_period.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/sync/sync_mapper.dart';
+import 'package:waffr/core/sync/sync_merge.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/data/services/system_notifications.dart';
+import 'package:waffr/data/services/usage_streak_service.dart';
 
 /// In-app notification engine for balance, spending, goals, savings, and periods.
 ///
@@ -612,7 +612,7 @@ class NotificationService extends ChangeNotifier {
   }
 
   /// Arabic weekly/monthly adjective from period key or recurring frequency.
-  String? _periodAdjective(WafferTransaction item) {
+  String? _periodAdjective(WaffrTransaction item) {
     final key = item.processedPeriodKey;
     if (key != null) {
       if (key.startsWith('w:')) return 'الأسبوعية';

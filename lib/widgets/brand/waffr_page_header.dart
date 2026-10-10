@@ -1,10 +1,10 @@
 // Shared top app bar for the shell and settings-style screens.
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_color.dart';
 
 /// Fixed-height page header with optional scroll-elevation shadow.
-class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
+class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
   static const double height = 68;
 
   final Widget title;
@@ -14,7 +14,7 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
   final ValueListenable<bool>? elevated;
   final bool applySafeArea;
 
-  const WafferPageHeader({
+  const WaffrPageHeader({
     super.key,
     required this.title,
     this.leading,
@@ -57,8 +57,8 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
 }
 
 /// Header of every pushed screen: back arrow and centered title. Use this
-/// instead of building a [WafferPageHeader] by hand so all screens match.
-class WafferBackHeader extends StatelessWidget implements PreferredSizeWidget {
+/// instead of building a [WaffrPageHeader] by hand so all screens match.
+class WaffrBackHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
 
   /// Defaults to popping the current route.
@@ -72,7 +72,7 @@ class WafferBackHeader extends StatelessWidget implements PreferredSizeWidget {
   final ValueListenable<bool>? elevated;
   final bool applySafeArea;
 
-  const WafferBackHeader({
+  const WaffrBackHeader({
     super.key,
     required this.title,
     this.onBack,
@@ -83,7 +83,7 @@ class WafferBackHeader extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(WafferPageHeader.height);
+  Size get preferredSize => const Size.fromHeight(WaffrPageHeader.height);
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +91,7 @@ class WafferBackHeader extends StatelessWidget implements PreferredSizeWidget {
     final textPrimary =
         isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
 
-    return WafferPageHeader(
+    return WaffrPageHeader(
       centerTitle: true,
       elevated: elevated,
       applySafeArea: applySafeArea,
@@ -173,7 +173,7 @@ class _HeaderChrome extends StatelessWidget {
 
   Widget get _bar {
     return SizedBox(
-      height: WafferPageHeader.height,
+      height: WaffrPageHeader.height,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Row(

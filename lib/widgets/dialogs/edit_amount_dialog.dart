@@ -1,9 +1,9 @@
 // Alert dialog for editing a money amount (same validation as monthly income).
 import 'package:flutter/material.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 /// Returned when the user clears a previously set amount (allowClear path).
 class AmountDialogCleared {

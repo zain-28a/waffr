@@ -1,9 +1,9 @@
 // Name, email, and photo shown on Profile. Not an account editor.
 
 import 'package:flutter/foundation.dart';
-import 'package:waffer/core/sync/auth_session.dart';
-import 'package:waffer/data/services/profile_photo.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/core/sync/auth_session.dart';
+import 'package:waffr/data/services/profile_photo.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 class ProfileIdentity extends ChangeNotifier {
   ProfileIdentity._();

@@ -2,7 +2,7 @@
 // so the number pad is enough. Parsing rejects dates that do not exist.
 
 import 'package:flutter/services.dart';
-import 'package:waffer/core/utils/money.dart';
+import 'package:waffr/core/utils/money.dart';
 
 /// Shape shown as the field hint and in the picker help text.
 const String dateInputHint = 'DD/MM/YYYY';

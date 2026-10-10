@@ -1,8 +1,8 @@
 // Privacy policy style copy: what stays on-device vs what account fields are kept.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/widgets/brand/waffer_page_header.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/widgets/brand/waffr_page_header.dart';
 
 // Scrollable info sections about financial privacy and stored profile fields.
 class PrivacyInfoScreen extends StatelessWidget {
@@ -37,7 +37,7 @@ class PrivacyInfoScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: bg,
 
-      appBar: WafferBackHeader(
+      appBar: WaffrBackHeader(
         title: 'الخصوصية والبيانات',
       ),
 

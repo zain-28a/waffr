@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:waffer/core/security/data_key.dart';
-import 'package:waffer/core/sync/sync_crypto.dart';
+import 'package:waffr/core/security/data_key.dart';
+import 'package:waffr/core/sync/sync_crypto.dart';
 
 void main() {
   final cipher = DataCipher(List<int>.generate(32, (i) => i));

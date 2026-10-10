@@ -1,6 +1,6 @@
 // Week/month (and savings-range) windows used for income periods and reports.
 
-import 'package:waffer/data/models/transaction.dart';
+import 'package:waffr/data/models/transaction.dart';
 
 enum SavingsRange { week, month, threeMonths, sixMonths, year }
 

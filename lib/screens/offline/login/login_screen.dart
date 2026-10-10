@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:waffer/widgets/button/app_primary_button.dart';
-import 'package:waffer/data/services/backup_service.dart';
-import 'package:waffer/core/sync/auth_session.dart';
-import 'package:waffer/core/sync/sync_service.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/screens/offline/login/account_creation_flow.dart';
-import 'package:waffer/screens/offline/login/auth_fields.dart';
-import 'package:waffer/screens/offline/login/forgot_password_screen.dart';
-import 'package:waffer/widgets/brand/waffer_logo.dart';
-import 'package:waffer/widgets/containers/glass.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/widgets/button/app_primary_button.dart';
+import 'package:waffr/data/services/backup_service.dart';
+import 'package:waffr/core/sync/auth_session.dart';
+import 'package:waffr/core/sync/sync_service.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/screens/offline/login/account_creation_flow.dart';
+import 'package:waffr/screens/offline/login/auth_fields.dart';
+import 'package:waffr/screens/offline/login/forgot_password_screen.dart';
+import 'package:waffr/widgets/brand/waffr_logo.dart';
+import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 // Sign-in with email/password, register, or continue as a local guest.
 
@@ -168,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
-              const Center(child: WafferLogo(size: 72)),
+              const Center(child: WaffrLogo(size: 72)),
               const SizedBox(height: 16),
               Text.rich(
                 TextSpan(

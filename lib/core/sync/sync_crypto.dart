@@ -1,7 +1,7 @@
 // Seals private text in the /sync request and opens it in the reply.
 // Amounts, dates, ids and the profile stay readable on the server.
 
-import 'package:waffer/core/security/data_key.dart';
+import 'package:waffr/core/security/data_key.dart';
 
 const Map<String, List<String>> privateSyncFields = {
   'transactions': ['category', 'payment_method', 'note'],

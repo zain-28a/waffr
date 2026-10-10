@@ -2,10 +2,10 @@
 // the currency list under the amount field: name, with the code at the end.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/widgets/containers/app_empty_state.dart';
-import 'package:waffer/core/theme/app_palette.dart';
-import 'package:waffer/data/models/country.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/containers/app_empty_state.dart';
+import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/data/models/country.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 Future<CountryInfo?> showCountryPickerSheet(
   BuildContext context, {

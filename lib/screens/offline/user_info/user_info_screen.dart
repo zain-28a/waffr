@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:waffer/widgets/button/app_primary_button.dart';
-import 'package:waffer/screens/offline/login/auth_fields.dart';
-import 'package:waffer/widgets/brand/waffer_page_header.dart';
-import 'package:waffer/data/models/country.dart';
-import 'package:waffer/data/models/registration_profile.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/screens/offline/user_info/country_picker_sheet.dart';
-import 'package:waffer/widgets/dialogs/waffer_date_picker.dart';
+import 'package:waffr/widgets/button/app_primary_button.dart';
+import 'package:waffr/screens/offline/login/auth_fields.dart';
+import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/data/models/country.dart';
+import 'package:waffr/data/models/registration_profile.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/screens/offline/user_info/country_picker_sheet.dart';
+import 'package:waffr/widgets/dialogs/waffr_date_picker.dart';
 
 // Collects name, birth date, optional gender, country with an optional phone
 // number, and one optional address line for RegistrationProfile.
@@ -75,7 +75,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
   Future<void> _pickBirthDate() async {
     FocusScope.of(context).unfocus();
-    final picked = await showWafferDatePicker(
+    final picked = await showWaffrDatePicker(
       context: context,
       title: 'تاريخ الميلاد',
       initialDate: _birthDate,
@@ -135,7 +135,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: WafferBackHeader(
+      appBar: WaffrBackHeader(
         title: 'الملف الشخصي',
         showBack: widget.onBack != null,
         onBack: widget.onBack,

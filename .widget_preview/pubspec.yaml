@@ -14,7 +14,7 @@ dependencies:
   path: ^1.9.1
   stack_trace: ^1.12.2
   url_launcher: ^6.3.2
-  waffer:
+  waffr:
     path: C:\Users\lenovo\waffer
   web: ^1.1.1
   webview_flutter: ^4.14.1
@@ -22,5 +22,5 @@ dependencies:
 flutter:
   uses-material-design: true
 dependency_overrides:
-  waffer:
+  waffr:
     path: C:\Users\lenovo\waffer

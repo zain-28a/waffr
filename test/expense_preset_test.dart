@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
-import 'package:waffer/data/models/expense_categories.dart';
-import 'package:waffer/data/models/expense_preset.dart';
-import 'package:waffer/data/models/recurring_expense.dart';
-import 'package:waffer/data/stores/category_store.dart';
-import 'package:waffer/data/stores/expense_preset_store.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/data/models/expense_preset.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/stores/expense_preset_store.dart';
 
 ExpensePreset _preset({String id = 'p1', String? note = 'خبز'}) {
   return ExpensePreset(

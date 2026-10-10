@@ -2,7 +2,7 @@
 // one card per row with an icon box, title, optional subtitle or status,
 // and a chevron. Section titles above groups of rows use AppSectionTitle.
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_color.dart';
 
 TextStyle _tileText(Color color, double size, FontWeight weight) => TextStyle(
       fontFamily: 'Outfit',

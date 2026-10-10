@@ -1,6 +1,6 @@
 // Resolves the FastAPI base URL for sync and auth HTTP calls.
 
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 // Default backend host, overridable via a SharedPreferences key for debug.
 class ApiConfig {

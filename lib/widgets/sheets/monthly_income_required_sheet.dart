@@ -1,8 +1,8 @@
 // Bottom sheet shown when the user tries to create a periodic savings plan
 // without a monthly income set.
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 /// Explains that monthly income must be set in settings, then dismisses.
 Future<void> showMonthlyIncomeRequiredSheet(BuildContext context) {

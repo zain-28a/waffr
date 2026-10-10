@@ -1,19 +1,19 @@
 // Shopping list preview card plus sheets to add items and record purchases as expenses.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/widgets/containers/app_empty_state.dart';
-import 'package:waffer/data/stores/category_store.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/stores/shopping_list_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/screens/offline/home/sheets/add_expense_sheet.dart';
-import 'package:waffer/widgets/button/glass_button.dart';
-import 'package:waffer/widgets/containers/glass.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
-import 'package:waffer/widgets/dialogs/edit_delete_menu.dart';
+import 'package:waffr/widgets/containers/app_empty_state.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/shopping_list_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
+import 'package:waffr/widgets/button/glass_button.dart';
+import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/dialogs/edit_delete_menu.dart';
 
 Future<void> showShoppingListSheet(BuildContext context) {
   return showGlassSheet<void>(

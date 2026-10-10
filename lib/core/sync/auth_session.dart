@@ -4,15 +4,15 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:waffer/data/services/backup_service.dart';
-import 'package:waffer/data/models/registration_profile.dart';
-import 'package:waffer/core/sync/api_config.dart';
-import 'package:waffer/core/sync/auth_errors.dart';
-import 'package:waffer/core/sync/profile_sync.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
-import 'package:waffer/core/security/data_key.dart';
+import 'package:waffr/data/services/backup_service.dart';
+import 'package:waffr/data/models/registration_profile.dart';
+import 'package:waffr/core/sync/api_config.dart';
+import 'package:waffr/core/sync/auth_errors.dart';
+import 'package:waffr/core/sync/profile_sync.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/core/security/data_key.dart';
 
-export 'package:waffer/core/sync/auth_errors.dart';
+export 'package:waffr/core/sync/auth_errors.dart';
 
 // Simple success/failure wrapper for login and register UI.
 class AuthResult {

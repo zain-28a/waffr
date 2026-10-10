@@ -1,7 +1,7 @@
 // Full-screen moment shown once when the daily streak grows on app open.
 //
 // One controller drives the whole sequence: the screen behind blurs in, the
-// Waffer logo rises into place, the day count rolls from the old value to the
+// Waffr logo rises into place, the day count rolls from the old value to the
 // new one, holds, then everything fades and the blur clears. Tapping skips to
 // the fade. When it ends the widget calls [onFinished] and is removed, so it
 // never stays over the home screen.
@@ -11,8 +11,8 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:waffer/core/theme/app_palette.dart';
-import 'package:waffer/widgets/brand/waffer_logo.dart';
+import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/widgets/brand/waffr_logo.dart';
 
 class StreakCelebrationOverlay extends StatefulWidget {
   final int from;
@@ -206,7 +206,7 @@ class _CelebrationContent extends StatelessWidget {
                     colors: [glow, glow.withValues(alpha: 0)],
                   ),
                 ),
-                child: const WafferLogo(size: 96),
+                child: const WaffrLogo(size: 96),
               ),
             ),
           ),

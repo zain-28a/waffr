@@ -1,6 +1,6 @@
-# Waffer architecture
+# Waffr architecture
 
-Waffer is an offline-first personal and family finance app. The ledger
+Waffr is an offline-first personal and family finance app. The ledger
 (income, expenses, savings goals, shopping list, recurring bills) lives on
 the device. A FastAPI sync path can push and merge that data when the user
 is signed in. Google Drive backup exists in the tree but is switched off
@@ -41,7 +41,7 @@ sheets. Shared sheet pieces (glass body, amount field, save button) live in
 | Transactions, balance, savings goals | `lib/data/models/transaction.dart`, `lib/data/models/savings_goal.dart`, and `lib/data/stores/transaction_store.dart`. |
 | Expense categories | `lib/data/models/expense_categories.dart` (built-ins and chart colors) and `lib/data/stores/category_store.dart` (custom categories, removed built-ins, archive of removed ones so old expenses keep their icon). |
 | Saved expenses (star on the expense sheet) | `lib/data/models/expense_preset.dart`, `lib/data/stores/expense_preset_store.dart`, `lib/screens/offline/home/sheets/expense_presets_dialog.dart`. Synced as `expense_presets`. |
-| Date pickers and typed dates | `lib/widgets/dialogs/waffer_date_picker.dart` and `lib/core/utils/date_input.dart`. Arabic picker text with 0-9 digits comes from `lib/core/l10n/waffer_material_localizations.dart`. |
+| Date pickers and typed dates | `lib/widgets/dialogs/waffr_date_picker.dart` and `lib/core/utils/date_input.dart`. Arabic picker text with 0-9 digits comes from `lib/core/l10n/waffr_material_localizations.dart`. |
 | Streak | `lib/core/usage/streak_math.dart`, `lib/data/services/usage_streak_service.dart`, the profile card `lib/screens/offline/profile/streak_card.dart`, and the launch overlay `lib/widgets/brand/streak_celebration.dart` (shown from `app_shell.dart`). |
 | Countries and calling codes | `lib/data/models/country.dart`, picked in `lib/screens/offline/user_info/country_picker_sheet.dart`. |
 | Shopping list and recurring bills | `lib/data/stores/shopping_list_store.dart`, `lib/data/stores/recurring_expense_store.dart`. |

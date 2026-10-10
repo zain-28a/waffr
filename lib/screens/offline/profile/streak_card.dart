@@ -1,14 +1,14 @@
 // Streak card on the profile tab: the day count, a ring that fills toward the
-// next milestone with the Waffer mark inside, and the last seven days lighting
+// next milestone with the Waffr mark inside, and the last seven days lighting
 // up one after another. Plays when the tab opens.
 
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_palette.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/brand/waffer_logo.dart';
-import 'package:waffer/widgets/containers/glass.dart';
+import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/widgets/brand/waffr_logo.dart';
+import 'package:waffr/widgets/containers/glass.dart';
 
 const List<int> _milestones = [3, 7, 14, 30, 60, 100, 180, 365];
 
@@ -235,7 +235,7 @@ class _StreakRing extends StatelessWidget {
           track: palette.accent.withValues(alpha: 0.12),
           fill: palette.accent,
         ),
-        child: const Center(child: WafferLogo(size: 46)),
+        child: const Center(child: WaffrLogo(size: 46)),
       ),
     );
   }
