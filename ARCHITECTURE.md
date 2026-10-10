@@ -37,6 +37,8 @@ sheets. Shared sheet pieces (glass body, amount field, save button) live in
 | Glass cards and buttons | `lib/widgets/containers/glass.dart` and `lib/widgets/button/glass_button.dart`. They are translucent fills, not backdrop blurs. |
 | Bottom sheet chrome | `lib/widgets/containers/glass_sheet.dart`. |
 | Motion and haptics | `lib/core/theme/app_motion.dart`: duration and curve tokens, reduced-motion handling (`AppMotion.of`), and `AppHaptics`. Shared animated widgets live in `lib/widgets/motion/`. |
+| Smart analysis | `lib/core/insights/smart/`: `SmartFacts` (numbers), `InsightEngine` (rules and phrasing), `arabic_text.dart` (grammar helpers), `category_suggester.dart` (note → category). Runs on the device only. UI: `lib/screens/offline/smart/smart_analysis_screen.dart` and `lib/widgets/smart/`. Switches: `lib/data/services/smart_settings.dart`. |
+| Home screen widgets | Data: `lib/data/services/home_widget_sync.dart`. Android: `android/app/src/main/kotlin/com/waffr/app/widgets/` and `res/layout/widget_*.xml`. iOS: `ios/WaffrWidgets/` (needs a one-time Xcode target, see its README). Taps open `waffr://` links handled in `app_shell.dart`. |
 | Money formatting and the active currency symbol | `lib/core/utils/money.dart`. |
 | The currency list and the active currency | Catalog: `lib/data/models/currency.dart`. Saved selection: `lib/data/stores/currency_store.dart`. |
 | Transactions, balance, savings goals | `lib/data/models/transaction.dart`, `lib/data/models/savings_goal.dart`, and `lib/data/stores/transaction_store.dart`. |
