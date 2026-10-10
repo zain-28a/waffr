@@ -24,6 +24,8 @@ import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/dialogs/waffr_date_picker.dart';
 import 'package:waffr/screens/offline/report/expense_history_share.dart';
 import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/widgets/smart/smart_analysis_button.dart';
 
 // Picks a range (day / week / month / 3 months / 6 months / year) via chips.
 // A horizontal PageView pages between older and newer periods; itemBuilder
@@ -132,6 +134,11 @@ class _ReportScreenState extends State<ReportScreen>
                     _ReportRange.values.firstWhere((range) => range.label == label),
                   );
                 },
+              ),
+              const SizedBox(height: 10),
+              const SmartAnalysisButton(
+                scope: InsightScope.reports,
+                banner: true,
               ),
               const SizedBox(height: 6),
               SizedBox(

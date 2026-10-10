@@ -540,9 +540,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SettingsTile(
             icon: Icons.auto_graph_rounded,
 
-            title: 'أذونات الذكاء الاصطناعي',
+            title: 'التحليل الذكي',
 
-            subtitle: 'تحليلات واقتراحات وتصنيف تلقائي',
+            subtitle: 'ملاحظات واقتراحات وتنبيهات ذكية',
 
             accent: accent,
             surface: surface,
