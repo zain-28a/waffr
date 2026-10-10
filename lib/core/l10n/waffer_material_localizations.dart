@@ -25,6 +25,29 @@ String westernDigits(String input) {
   return buffer.toString();
 }
 
+// intl's Arabic month names → the Levantine names used across the app
+// (CalendarPeriod.monthNames), so the pickers match reports and lists.
+const Map<String, String> _levantineMonths = {
+  'يناير': 'كانون الثاني',
+  'فبراير': 'شباط',
+  'مارس': 'آذار',
+  'أبريل': 'نيسان',
+  'مايو': 'أيار',
+  'يونيو': 'حزيران',
+  'يوليو': 'تموز',
+  'أغسطس': 'آب',
+  'سبتمبر': 'أيلول',
+  'أكتوبر': 'تشرين الأول',
+  'نوفمبر': 'تشرين الثاني',
+  'ديسمبر': 'كانون الأول',
+};
+
+String _appDate(String input) {
+  var text = westernDigits(input);
+  _levantineMonths.forEach((from, to) => text = text.replaceAll(from, to));
+  return text;
+}
+
 class WafferMaterialLocalizations extends MaterialLocalizationAr {
   const WafferMaterialLocalizations._({
     required super.fullYearFormat,
@@ -73,27 +96,27 @@ class WafferMaterialLocalizations extends MaterialLocalizationAr {
   }
 
   @override
-  String formatYear(DateTime date) => westernDigits(super.formatYear(date));
+  String formatYear(DateTime date) => _appDate(super.formatYear(date));
 
   @override
   String formatMonthYear(DateTime date) =>
-      westernDigits(super.formatMonthYear(date));
+      _appDate(super.formatMonthYear(date));
 
   @override
   String formatMediumDate(DateTime date) =>
-      westernDigits(super.formatMediumDate(date));
+      _appDate(super.formatMediumDate(date));
 
   @override
   String formatFullDate(DateTime date) =>
-      westernDigits(super.formatFullDate(date));
+      _appDate(super.formatFullDate(date));
 
   @override
   String formatShortDate(DateTime date) =>
-      westernDigits(super.formatShortDate(date));
+      _appDate(super.formatShortDate(date));
 
   @override
   String formatShortMonthDay(DateTime date) =>
-      westernDigits(super.formatShortMonthDay(date));
+      _appDate(super.formatShortMonthDay(date));
 
   @override
   String formatDecimal(int number) => westernDigits(super.formatDecimal(number));

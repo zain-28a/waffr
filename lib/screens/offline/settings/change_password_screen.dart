@@ -1,6 +1,7 @@
 // Change the account password. Other devices are signed out; data stays.
 
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/button/app_primary_button.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
@@ -20,6 +21,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TextEditingController _confirmController = TextEditingController();
 
   bool _busy = false;
+  // Shown above the main button; cleared as soon as a field changes.
+  String? _message;
+  AppFeedbackKind _messageKind = AppFeedbackKind.error;
   bool _obscure = true;
 
   @override
@@ -49,11 +53,28 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (!mounted) return;
     if (!result.ok) {
       setState(() => _busy = false);
-      showAppSnackBar(context, result.message);
+      _show(result.message);
       return;
     }
     showAppSnackBar(context, 'تم تغيير كلمة المرور', success: true);
     Navigator.of(context).pop();
+  }
+
+  void _show(String? message, {bool success = false}) {
+    setState(() {
+      _message = message;
+      _messageKind = success ? AppFeedbackKind.success : AppFeedbackKind.error;
+    });
+  }
+
+  // Why the main button is disabled, in plain words.
+  String? get _missingReason {
+    final next = _newController.text;
+    if (_currentController.text.isEmpty) return 'أدخل كلمة المرور الحالية';
+    if (next.length < 8) return 'كلمة المرور الجديدة يجب أن تتكون من 8 أحرف على الأقل';
+    if (next != _confirmController.text) return 'كلمتا المرور غير متطابقتين';
+    if (next == _currentController.text) return 'اختر كلمة مرور جديدة تختلف عن الحالية';
+    return null;
   }
 
   @override
@@ -65,7 +86,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary =
         isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
     Widget field(
       String label,
@@ -82,7 +102,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             controller: controller,
             enabled: !_busy,
             obscureText: _obscure,
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) => setState(() => _message = null),
             style: TextStyle(color: textPrimary, fontSize: 16),
             decoration: authFieldDecoration(
               hint: hint,
@@ -98,16 +118,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: WafferPageHeader(
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
-          onPressed: _busy ? null : () => Navigator.pop(context),
-        ),
-        title: Text(
-          'تغيير كلمة المرور',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+      appBar: WafferBackHeader(
+        enabled: !_busy,
+        title: 'تغيير كلمة المرور',
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -137,33 +150,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             style: TextStyle(color: textSecondary, fontSize: 13, height: 1.5),
           ),
           const SizedBox(height: 20),
-          FilledButton(
-            onPressed: _canSave ? _save : null,
-            style: FilledButton.styleFrom(
-              backgroundColor: accent,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: _busy
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text(
-                    'حفظ',
-                    style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
+          AppInlineMessage(message: _message, kind: _messageKind),
+          AppPrimaryButton(
+            label: 'حفظ',
+            enabled: _canSave,
+            onDisabledTap: () => _show(_missingReason),
+            busy: _busy,
+            onTap: _save,
           ),
         ],
       ),

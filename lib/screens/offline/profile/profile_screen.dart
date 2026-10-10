@@ -275,7 +275,7 @@ class _UsageStats extends StatelessWidget {
         Expanded(
           child: _StatTile(
             value: snapshot.savingsCount,
-            label:  'عمليات الادخار',
+            label:  'عمليات التوفير',
             palette: palette,
           ),
         ),

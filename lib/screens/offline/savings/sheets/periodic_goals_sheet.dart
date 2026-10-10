@@ -95,7 +95,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
     return GlassSheetBody(
       children: [
         GlassSheetHeader(
-          title: _preview ? 'معاينة الخطة' : 'أهداف ادخار دورية',
+          title: _preview ? 'معاينة الخطة' : 'خطط التوفير الدورية',
           subtitle: _preview
               ? 'راجع النتيجة قبل التأكيد.'
               : 'اختر النسبة والمدة حسب دخلك.',
@@ -160,7 +160,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
         ),
       ),
       const SizedBox(height: 18),
-      const SheetFieldLabel(text: 'نسبة الادخار'),
+      const SheetFieldLabel(text: 'نسبة التوفير'),
       SheetChoiceChips(
         options: _percents.map((item) => '$item٪').toList(),
         selected: '$_percent٪',
@@ -209,7 +209,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
               textSecondary: textSecondary,
             ),
             _PreviewRow(
-              label: 'نسبة الادخار',
+              label: 'نسبة التوفير',
               value: '$_percent٪',
               textPrimary: textPrimary,
               textSecondary: textSecondary,
@@ -364,7 +364,7 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
               ),
               if (percent != null && percent > 0)
                 _PreviewRow(
-                  label: 'نسبة الادخار',
+                  label: 'نسبة التوفير',
                   value: '${percent.round()}٪',
                   textPrimary: textPrimary,
                   textSecondary: textSecondary,
@@ -377,7 +377,7 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
                   textSecondary: textSecondary,
                 ),
               _PreviewRow(
-                label: 'التردد',
+                label: 'التكرار',
                 value: periodWord,
                 textPrimary: textPrimary,
                 textSecondary: textSecondary,

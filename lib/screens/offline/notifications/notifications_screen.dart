@@ -47,7 +47,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       context,
       title: 'مسح سجل الإشعارات',
       message:
-          'سيتم حذف سجل الإشعارات فقط. لن يتأثر رصيدك أو ادخارك أو أهدافك، ولن يتغيّر إعداد الكتم.',
+          'سيتم حذف سجل الإشعارات فقط. لن يتأثر رصيدك أو مبالغك الموفَّرة أو أهدافك، ولن يتغيّر إعداد الكتم.',
       confirmLabel: 'مسح السجل',
       destructive: true,
     );
@@ -59,26 +59,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _NotificationColors.of(context);
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            WafferPageHeader(
+            WafferBackHeader(
               applySafeArea: false,
-              centerTitle: true,
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: colors.textPrimary,
-                ),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: Text(
-                'الإشعارات',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              title: 'الإشعارات',
             ),
             Expanded(
               child: AnimatedBuilder(
@@ -194,7 +182,7 @@ class _MuteControl extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      muted ? 'الإشعارات مكتومة' : 'الإشعارات مفعلة',
+                      muted ? 'الإشعارات مكتومة' : 'الإشعارات مفعّلة',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -299,7 +287,7 @@ class _EmptyNotifications extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'ستظهر هنا تنبيهات الرصيد والأهداف والادخار عند حدوثها',
+              'ستظهر هنا تنبيهات الرصيد والأهداف والتوفير عند حدوثها',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],

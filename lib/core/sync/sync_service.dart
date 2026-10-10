@@ -89,7 +89,7 @@ class SyncService with WidgetsBindingObserver {
 
     if (_syncing) {
       _pending = true;
-      return const SyncResult(SyncStatus.skipped, 'المزامنة قيد التنفيذ');
+      return const SyncResult(SyncStatus.skipped, 'جارٍ المزامنة');
     }
 
     _syncing = true;
@@ -99,7 +99,7 @@ class SyncService with WidgetsBindingObserver {
       if (!await AuthSession.instance.isLoggedIn()) {
         return const SyncResult(
           SyncStatus.noAccount,
-          'وضع الضيف محلي فقط. سجّل الدخول للمزامنة',
+          'في وضع الضيف تبقى بياناتك على جهازك فقط. سجّل الدخول للمزامنة',
         );
       }
 
@@ -187,7 +187,7 @@ class SyncService with WidgetsBindingObserver {
       if (response.statusCode != 200) {
         return const SyncResult(
           SyncStatus.failed,
-          'تعذر المزامنة. يمكنك المحاولة لاحقاً',
+          'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
         );
       }
 
@@ -197,14 +197,14 @@ class SyncService with WidgetsBindingObserver {
         if (decoded is! Map) {
           return const SyncResult(
             SyncStatus.failed,
-            'تعذر المزامنة. يمكنك المحاولة لاحقاً',
+            'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
           );
         }
         body = Map<String, dynamic>.from(decoded);
       } catch (_) {
         return const SyncResult(
           SyncStatus.failed,
-          'تعذر المزامنة. يمكنك المحاولة لاحقاً',
+          'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
         );
       }
 
@@ -213,7 +213,7 @@ class SyncService with WidgetsBindingObserver {
       if (!applied) {
         return const SyncResult(
           SyncStatus.failed,
-          'تعذر دمج البيانات. بقيت النسخة المحلية',
+          'تعذّر تحديث بياناتك من الحساب، فبقيت النسخة المحفوظة على جهازك',
         );
       }
 
@@ -241,7 +241,7 @@ class SyncService with WidgetsBindingObserver {
     } catch (_) {
       return const SyncResult(
         SyncStatus.failed,
-        'تعذر المزامنة. يمكنك المحاولة لاحقاً',
+        'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
       );
     } finally {
       _syncing = false;

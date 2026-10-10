@@ -31,7 +31,7 @@ class SpendingImprovement {
       return const SpendingImprovement(
         SpendingChange.neutral,
         '—',
-        'لا توجد مصاريف في الفترة السابقة',
+        'لا توجد مصروفات في الفترة السابقة',
         false,
       );
     }

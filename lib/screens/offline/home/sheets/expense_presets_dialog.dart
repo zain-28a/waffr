@@ -64,8 +64,8 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
     final confirmed = await showAppConfirmDialog(
       context,
       title: 'حذف المصروف المحفوظ',
-      message: 'سيُحذف "${_titleOf(preset)}" من المصاريف المحفوظة. '
-          'المصاريف المسجّلة لا تتأثر.',
+      message: 'سيُحذف «${_titleOf(preset)}» من المصروفات المحفوظة. '
+          'المصروفات المسجّلة لا تتأثر.',
       confirmLabel: 'حذف',
       destructive: true,
     );
@@ -88,7 +88,7 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
         width: size.width > 460 ? 400 : size.width - 40,
         constraints: BoxConstraints(maxHeight: size.height * 0.72),
         margin: const EdgeInsets.symmetric(horizontal: 20),
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
         decoration: BoxDecoration(
           color: surface,
           borderRadius: BorderRadius.circular(28),
@@ -103,13 +103,12 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Stack(
-              alignment: Alignment.center,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                Flexible(
                   child: Text(
-                    'المصاريف المحفوظة',
+                    'المصروفات المحفوظة',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Outfit',
@@ -120,12 +119,10 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
                     ),
                   ),
                 ),
-                Positioned(
-                  left: 0,
-                  child: SheetCircleButton(
-                    icon: Icons.info_outline_rounded,
-                    onTap: () => _showHelp(context),
-                  ),
+                const SizedBox(width: 8),
+                const SheetInfoButton(
+                  title: _helpTitle,
+                  message: _helpMessage,
                 ),
               ],
             ),
@@ -167,31 +164,23 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
             Row(
               children: [
                 Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text(
-                      'إلغاء',
-                      style: TextStyle(
-                        fontFamily: 'Outfit',
-                        fontFamilyFallback: ['Tajawal'],
-                      ),
+                  child: AppDialogActionButton(
+                    action: AppDialogAction(
+                      label: 'إلغاء',
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(
-                      widget.marked
-                          ? const ExpensePresetUnmark()
-                          : const ExpensePresetMark(),
-                    ),
-                    child: Text(
-                      widget.marked ? 'إلغاء الإضافة' : 'إضافة',
-                      style: TextStyle(
-                        fontFamily: 'Outfit',
-                        fontFamilyFallback: const ['Tajawal'],
-                        fontWeight: FontWeight.w800,
-                        color: accent,
+                  child: AppDialogActionButton(
+                    action: AppDialogAction(
+                      label: widget.marked ? 'إلغاء الإضافة' : 'إضافة',
+                      primary: true,
+                      onPressed: () => Navigator.of(context).pop(
+                        widget.marked
+                            ? const ExpensePresetUnmark()
+                            : const ExpensePresetMark(),
                       ),
                     ),
                   ),
@@ -206,22 +195,17 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
 }
 
 // What the star does, in plain Arabic, opened from the (i) button.
-Future<void> _showHelp(BuildContext context) {
-  return showAppInfoDialog(
-    context,
-    title: 'ما هي المصاريف المحفوظة؟',
-    message: 'المصاريف المحفوظة توفّر عليك إعادة كتابة المصاريف التي تتكرر '
-        'عندك، مثل الخبز أو أجرة المواصلات.\n\n'
-        'لحفظ مصروف: أدخل المبلغ والتصنيف والملاحظة كالمعتاد، ثم اضغط النجمة '
-        'واختر "إضافة". تصبح النجمة خضراء، وعند الضغط على "حفظ المصروف" يُسجَّل '
-        'المصروف ويُحفظ معه نسخة هنا.\n\n'
-        'لاستخدام مصروف محفوظ: اضغط النجمة واختر البطاقة المناسبة، فتُملأ '
-        'الحقول تلقائياً، ويمكنك تعديلها قبل الحفظ.\n\n'
-        'لحذف مصروف محفوظ: اضغط على بطاقته مطولاً. حذفه لا يؤثر على '
-        'المصاريف المسجّلة سابقاً.',
-    actionLabel: 'فهمت',
-  );
-}
+const String _helpTitle = 'ما هي المصروفات المحفوظة؟';
+const String _helpMessage =
+    'المصروفات المحفوظة توفّر عليك إعادة كتابة المصروفات التي تتكرر '
+    'عندك، مثل الخبز أو أجرة المواصلات.\n\n'
+    'لحفظ مصروف: أدخل المبلغ والتصنيف والملاحظة كالمعتاد، ثم اضغط النجمة '
+    'واختر «إضافة». تصبح النجمة خضراء، وعند الضغط على «حفظ المصروف» يُسجَّل '
+    'المصروف وتُحفظ معه نسخة هنا.\n\n'
+    'لاستخدام مصروف محفوظ: اضغط النجمة واختر البطاقة المناسبة، فتُملأ '
+    'الحقول تلقائياً، ويمكنك تعديلها قبل الحفظ.\n\n'
+    'لحذف مصروف محفوظ: اضغط على بطاقته مطولاً. حذفه لا يؤثر على '
+    'المصروفات المسجّلة سابقاً.';
 
 String _titleOf(ExpensePreset preset) {
   final note = preset.note?.trim();
@@ -247,7 +231,7 @@ class _EmptyPresets extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'لا توجد مصاريف محفوظة بعد',
+            'لا توجد مصروفات محفوظة بعد',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Outfit',

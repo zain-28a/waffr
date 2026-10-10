@@ -25,7 +25,7 @@ class _AddIncomeSheet extends StatefulWidget {
 }
 
 class _AddIncomeSheetState extends State<_AddIncomeSheet> {
-  static const String _freqNone = 'بدون مدة';
+  static const String _freqNone = 'مرة واحدة';
   static const String _freqWeekly = 'أسبوعي';
   static const String _freqMonthly = 'شهري';
   // Weekly income still works in the store; the chip is hidden for now.
@@ -139,7 +139,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 18),
-        const SheetFieldLabel(text: 'مدة المبلغ'),
+        const SheetFieldLabel(text: 'نوع الدخل'),
         SheetChoiceChips(
           options: _frequencyOptions,
           selected: _frequencyLabel,

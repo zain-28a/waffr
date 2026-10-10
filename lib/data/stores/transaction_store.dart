@@ -716,7 +716,7 @@ class TransactionStore extends ChangeNotifier {
         type: TransactionType.savingsIn,
         amount: amount,
         currencyCode: code,
-        note: 'ادخار يدوي',
+        note: 'توفير يدوي',
         dateTime: deviceNow(),
         transferKind: SavingsTransferKind.manual,
         goalId: currentGoal?.id,
@@ -869,7 +869,7 @@ class TransactionStore extends ChangeNotifier {
       _goals.add(
         SavingsGoal(
           id: SavingsGoal.newId(),
-          name: 'ادخار ${cappedPercent.round()}٪',
+          name: 'توفير ${cappedPercent.round()}٪',
           targetAmount: target,
           currencyCode: code,
           createdAt: deviceNow(),
@@ -1392,7 +1392,7 @@ class TransactionStore extends ChangeNotifier {
         type: TransactionType.savingsIn,
         amount: amount,
         currencyCode: goal.currencyCode,
-        note: 'ادخار دوري: ${goal.name}',
+        note: 'توفير دوري: ${goal.name}',
         dateTime: deviceNow(),
         transferKind: SavingsTransferKind.goalPeriodic,
         goalId: goal.id,

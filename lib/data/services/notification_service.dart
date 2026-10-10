@@ -321,7 +321,7 @@ class NotificationService extends ChangeNotifier {
       title: percent <= 10 ? 'رصيدك على وشك النفاد' : 'بقي ربع رصيدك',
       message: percent <= 10
           ? 'بقي $left فقط من أصل $income.'
-          : 'المتاح الآن $left من أصل $income. راجع مصاريفك حتى الدخل القادم.',
+          : 'المتاح الآن $left من أصل $income. راجع مصروفاتك حتى الدخل القادم.',
       eventKey: 'balanceWarning:$percent:$cycle',
       metadata: {
         'percent': '$percent',
@@ -404,7 +404,7 @@ class NotificationService extends ChangeNotifier {
       changed |= _tryAdd(
         type: NotificationType.goalProgress,
         title: 'هدف ${goal.name}: $percent%',
-        message: 'ادّخرت ${formatMoney(store.currentSaved(goal))} من '
+        message: 'وفّرت ${formatMoney(store.currentSaved(goal))} من '
             '${formatMoney(goal.targetAmount)} $symbol.',
         eventKey: _goalProgressKey(goal.id, percent),
         relatedId: goal.id,
@@ -440,7 +440,7 @@ class NotificationService extends ChangeNotifier {
 
       changed |= _tryAdd(
         type: NotificationType.savingsTransferred,
-        title: 'أُضيف $amount إلى الادخار',
+        title: 'أُضيف $amount إلى التوفير',
         message: kind == SavingsTransferKind.goalPeriodic
             ? 'الدفعة الدورية${goalName == null ? '' : ' لهدف $goalName'}.'
             : 'المتبقي من دخل ${weekly ? 'الأسبوع' : 'الشهر'} الماضي'
@@ -494,8 +494,8 @@ class NotificationService extends ChangeNotifier {
       final span = weekly ? 'الأسبوع' : 'الشهر';
       changed |= _tryAdd(
         type: NotificationType.recurringPeriodCompleted,
-        title: 'انتهى $span دون ادخار',
-        message: 'لم يتبقَّ من دخل $span الماضي مبلغ يُنقل إلى الادخار.',
+        title: 'انتهى $span دون توفير',
+        message: 'لم يتبقَّ من دخل $span الماضي مبلغ يُنقل إلى التوفير.',
         eventKey: 'periodCompleted:$periodKey',
         relatedId: periodKey,
         metadata: {
@@ -539,7 +539,7 @@ class NotificationService extends ChangeNotifier {
         title: 'مصروف أعلى من المعتاد',
         message: '${formatMoney(expense.amount)} '
             '${currencyLabelFor(expense.currencyCode)} على '
-            '${categoryFor(expense.category).label}، أي ضعف متوسط مصاريفك أو أكثر.',
+            '${categoryFor(expense.category).label}، أي ضعف متوسط مصروفاتك أو أكثر.',
         eventKey: 'largeExpense:${expense.id}',
         relatedId: expense.id,
         metadata: {

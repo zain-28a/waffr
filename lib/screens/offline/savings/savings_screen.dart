@@ -149,7 +149,7 @@ class _SavingsScreenState extends State<SavingsScreen>
               _SplitActionRow(
                 leading: _TotalSavingsCard(total: _store.savingsBalance),
                 first: _ActionButton(
-                  label: 'ادخار مبلغ',
+                  label: 'توفير مبلغ',
                   onTap: () => showManualSaveSheet(context),
                 ),
                 second: _ActionButton(
@@ -172,7 +172,7 @@ class _SavingsScreenState extends State<SavingsScreen>
               _PlanButtonsRow(
                 periodicLabel: _store.hasActivePeriodicPlan
                     ? 'خطة جارية'
-                    : 'خطط دورية',
+                    : 'خطط التوفير',
                 periodicActive: _store.hasActivePeriodicPlan,
                 onPeriodic: () => showPeriodicGoalsSheet(context),
                 onCompleted: () => showCompletedGoalsSheet(context),
@@ -243,7 +243,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      'المبلغ الموفر',
+                      'المبلغ الموفَّر',
                       style: TextStyle(
                         fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 12,
@@ -491,7 +491,7 @@ class _ActiveGoalsPanel extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 15),
               child: Text(
-                "لايوجد اهداف محددة حاليا",
+                'لا توجد أهداف محددة حالياً',
                 textAlign: TextAlign.start,
                 style: TextStyle(
                   fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
@@ -692,7 +692,7 @@ class _TotalSavingsCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'إجمالي المبالغ الموفرة',
+                  'إجمالي المبالغ الموفَّرة',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -710,7 +710,7 @@ class _TotalSavingsCard extends StatelessWidget {
 
           if (total <= 0)
             Text(
-              'لا توجد مبالغ موفرة بعد',
+              'لا توجد مبالغ موفَّرة بعد',
               style: TextStyle(
                 fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 14,
@@ -757,8 +757,8 @@ class _TotalSavingsCard extends StatelessWidget {
 
           Text(
             total > 0
-                ? 'إجمالي المبلغ المدخر حالياً'
-                : 'ادخر أول مبلغ ليظهر هنا',
+                ? 'إجمالي المبلغ الموفَّر حالياً'
+                : 'وفّر أول مبلغ ليظهر هنا',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(

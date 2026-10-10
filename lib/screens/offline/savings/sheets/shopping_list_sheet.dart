@@ -87,7 +87,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                         Text(
                           preview.isEmpty
                               ? 'أضف ما تحتاج إلى شرائه'
-                              : '${_store.items.length} عناصر محفوظة',
+                              : itemsCountLabel(_store.items.length),
                           style: TextStyle(
                             fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                             fontSize: 11.5,
@@ -108,7 +108,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      '+ ${_store.items.length - preview.length} عناصر أخرى',
+                      '+ ${itemsCountLabel(_store.items.length - preview.length, other: true)}',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
@@ -218,7 +218,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
     final confirmed = await showAppConfirmDialog(
       context,
       title: 'إفراغ قائمة المشتريات',
-      message: 'سيتم حذف كل العناصر من القائمة. المصروفات المسجّلة لن تتأثر.',
+      message: 'ستُحذف كل العناصر من القائمة. المصروفات المسجّلة لن تتأثر.',
       confirmLabel: 'إفراغ',
       destructive: true,
     );
@@ -265,7 +265,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
   Future<void> _removeItem(ShoppingItem item) async {
     final confirmed = await showAppConfirmDialog(
       context,
-      title: 'حذف "${item.name}"',
+      title: 'حذف «${item.name}»',
       message: item.isPurchased
           ? 'سيُحذف العنصر من القائمة. المصروف المسجّل لشرائه لن يتأثر.'
           : 'سيُحذف العنصر من قائمة المشتريات.',
@@ -621,7 +621,7 @@ class _PurchaseShoppingItemSheetState
       return;
     }
 
-    showAppSnackBar(context, 'تعذر حفظ المصروف. حاول مرة أخرى.');
+    showAppSnackBar(context, 'تعذّر حفظ المصروف. حاول مرة أخرى.');
   }
 
   @override
@@ -645,7 +645,7 @@ class _PurchaseShoppingItemSheetState
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 18),
-        const SheetFieldLabel(text: 'الصنف'),
+        const SheetFieldLabel(text: 'التصنيف'),
         ExpenseCategoryGrid(
           selected: _category,
           onSelected: (value) => setState(() => _category = value),
@@ -689,4 +689,12 @@ class _ShoppingColors {
           : AppColors.lightTextSecondary,
     );
   }
+}
+
+// "عنصر واحد محفوظ", "عنصران محفوظان", "3 عناصر محفوظة", "11 عنصراً محفوظاً".
+String itemsCountLabel(int count, {bool other = false}) {
+  if (count == 1) return other ? 'عنصر آخر' : 'عنصر واحد محفوظ';
+  if (count == 2) return other ? 'عنصران آخران' : 'عنصران محفوظان';
+  if (count <= 10) return other ? '$count عناصر أخرى' : '$count عناصر محفوظة';
+  return other ? '$count عنصراً آخر' : '$count عنصراً محفوظاً';
 }

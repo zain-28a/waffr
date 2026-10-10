@@ -265,7 +265,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
       children: [
         GlassSheetHeader(
           title: 'إنشاء هدف',
-          subtitle: 'حدّد هدفك واختر طريقة الادخار.',
+          subtitle: 'حدّد هدفك واختر طريقة التوفير.',
           onNext: _isValid && !_saving ? _save : null,
         ),
 
@@ -344,7 +344,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (_type == _ContributionType.percent) ...[
-                const SheetFieldLabel(text: 'نسبة الادخار'),
+                const SheetFieldLabel(text: 'نسبة التوفير'),
                 Stack(
                   children: [
                     SheetTextField(
@@ -377,7 +377,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                   ),
                 ),
               ] else if (_type == _ContributionType.fixed) ...[
-                const SheetFieldLabel(text: 'مبلغ الادخار لكل شهر'),
+                const SheetFieldLabel(text: 'مبلغ التوفير كل شهر'),
                 Stack(
                   children: [
                     SheetTextField(
@@ -409,7 +409,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                 if (_income > 0 && _fixedAmount > _income) ...[
                   const SizedBox(height: 8),
                   Text(
-                    'لا يمكن أن يتجاوز مبلغ الادخار الدخل.',
+                    'لا يمكن أن يتجاوز مبلغ التوفير الدخل.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
@@ -431,7 +431,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                 ),
               ] else
                 Text(
-                  'الادخار هنا ليس تلقائيا. انقل بنفسك من رصيدك إلى الهدف متى شئت عبر «ادخار مبلغ».',
+                  'التوفير هنا ليس تلقائياً. انقل المبلغ بنفسك من رصيدك إلى الهدف متى شئت عبر «توفير مبلغ».',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
