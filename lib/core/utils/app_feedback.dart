@@ -1,8 +1,8 @@
 // Shared snackbars and dialogs: one visual language for the whole app.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/theme/app_palette.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 const String insufficientBalanceMessage =
     'المبلغ أكبر من رصيدك الحالي، لا يمكن إتمام العملية.';

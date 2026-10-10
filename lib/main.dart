@@ -2,20 +2,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/data/services/backup_service.dart';
-import 'package:waffer/data/services/notification_service.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/sync/auth_session.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/sync/sync_service.dart';
-import 'package:waffer/core/l10n/waffer_material_localizations.dart';
-import 'package:waffer/core/theme/app_theme.dart';
-import 'package:waffer/screens/offline/applock/applockscreen.dart';
-import 'package:waffer/screens/offline/login/login_screen.dart';
-import 'package:waffer/screens/offline/theme_select_screen.dart';
-import 'package:waffer/screens/shell/app_shell.dart';
-import 'package:waffer/widgets/brand/waffer_logo.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/data/services/backup_service.dart';
+import 'package:waffr/data/services/notification_service.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/sync/auth_session.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/sync/sync_service.dart';
+import 'package:waffr/core/l10n/waffr_material_localizations.dart';
+import 'package:waffr/core/theme/app_theme.dart';
+import 'package:waffr/screens/offline/applock/applockscreen.dart';
+import 'package:waffr/screens/offline/login/login_screen.dart';
+import 'package:waffr/screens/offline/theme_select_screen.dart';
+import 'package:waffr/screens/shell/app_shell.dart';
+import 'package:waffr/widgets/brand/waffr_logo.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 /// App entry: theme, first-launch flow, and the signed-in shell.
 ///
@@ -105,7 +105,7 @@ class _WafarAppState extends State<WafarApp> {
     if (!_themeLoaded) {
       return const MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: WafferSplash(followPlatformBrightness: true),
+        home: WaffrSplash(followPlatformBrightness: true),
       );
     }
 
@@ -120,7 +120,7 @@ class _WafarAppState extends State<WafarApp> {
           supportedLocales: const [Locale('ar')],
           localizationsDelegates: const [
             // Arabic strings with 0-9 digits; must come before the global one.
-            WafferMaterialLocalizations.delegate,
+            WaffrMaterialLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
@@ -311,7 +311,7 @@ class _AppFlowControllerState
     if (_authChoiceMade == null ||
         _isFirstLaunch == null ||
         _appLockEnabled == null) {
-      return const WafferSplash();
+      return const WaffrSplash();
     }
 
     // User has not chosen an account or guest mode yet.

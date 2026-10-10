@@ -1,8 +1,8 @@
 // In-app FAQ grouped by topic (balance, expenses, savings, sync, etc.).
 
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/widgets/brand/waffer_page_header.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/widgets/brand/waffr_page_header.dart';
 
 // Expandable help sections with Arabic Q&A copy.
 class HelpScreen extends StatelessWidget {
@@ -211,7 +211,7 @@ class HelpScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: WafferBackHeader(
+      appBar: WaffrBackHeader(
         title: 'المساعدة',
       ),
       body: ListView(

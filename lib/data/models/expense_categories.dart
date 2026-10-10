@@ -14,7 +14,7 @@ class ExpenseCategory {
   });
 }
 
-// Grid order for "add expense". Chart colors come from the Waffer reference
+// Grid order for "add expense". Chart colors come from the Waffr reference
 // palette: sky blue, dusty rose, cream yellow, lavender, peach and sage.
 const List<ExpenseCategory> expenseCategories = [
   ExpenseCategory(

@@ -84,7 +84,7 @@ app.include_router(sync_router)
 
 @app.get("/")
 def root():
-    return {"message": "Waffer API is running"}
+    return {"message": "Waffr API is running"}
 
 
 @app.post("/auth/register", response_model=AuthResponse)

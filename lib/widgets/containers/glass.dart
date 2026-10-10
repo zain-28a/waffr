@@ -1,7 +1,7 @@
 // Translucent "glass" card surface. Uses a tinted fill only — no BackdropFilter —
 // so scrolling stays smooth; glass is a translucent color, not a live blur.
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_palette.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 /// Which palette token tints the glass fill.
 enum GlassColorType { accent, background, surface, textPrimary, textSecondary }

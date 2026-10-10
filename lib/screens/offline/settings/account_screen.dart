@@ -2,18 +2,18 @@
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:waffer/widgets/containers/app_list_tile.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
-import 'package:waffer/data/services/backup_service.dart';
-import 'package:waffer/data/services/profile_photo.dart';
-import 'package:waffer/core/sync/auth_session.dart';
-import 'package:waffer/core/sync/profile_photo_sync.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/widgets/brand/profile_avatar.dart';
-import 'package:waffer/widgets/brand/waffer_page_header.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
-import 'package:waffer/screens/offline/settings/change_password_screen.dart';
+import 'package:waffr/widgets/containers/app_list_tile.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/data/services/backup_service.dart';
+import 'package:waffr/data/services/profile_photo.dart';
+import 'package:waffr/core/sync/auth_session.dart';
+import 'package:waffr/core/sync/profile_photo_sync.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/widgets/brand/profile_avatar.dart';
+import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/screens/offline/settings/change_password_screen.dart';
 
 // Edit display name and photo, or sign out of the synced account.
 class AccountScreen extends StatefulWidget {
@@ -186,7 +186,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: WafferBackHeader(
+      appBar: WaffrBackHeader(
         title: 'الحساب',
       ),
       body: ListView(

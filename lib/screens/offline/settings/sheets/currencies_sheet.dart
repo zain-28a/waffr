@@ -1,12 +1,12 @@
 // Pick the active currency or add/hide additional currencies.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/widgets/button/app_primary_button.dart';
-import 'package:waffer/widgets/containers/app_empty_state.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/button/app_primary_button.dart';
+import 'package:waffr/widgets/containers/app_empty_state.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 Future<void> showCurrenciesSheet(BuildContext context) {
   return showGlassSheet<void>(

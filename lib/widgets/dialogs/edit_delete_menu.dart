@@ -2,7 +2,7 @@
 // and shopping-list items so both long-press menus look the same.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_color.dart';
 
 enum EditDeleteAction { edit, delete }
 

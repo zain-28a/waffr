@@ -2,9 +2,9 @@
 
 import 'dart:convert';
 
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/data/models/currency.dart';
-import 'package:waffer/data/models/recurring_expense.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/data/models/currency.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
 
 class ExpensePreset {
   final String id;

@@ -1,7 +1,7 @@
 // Resolves AppColors tokens for the current Theme brightness.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_color.dart';
 
 // Picks the light or dark token set so screens do not repeat brightness checks.
 class AppPalette {

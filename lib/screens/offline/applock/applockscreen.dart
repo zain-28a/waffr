@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:waffer/widgets/button/app_primary_button.dart';
-import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffr/widgets/button/app_primary_button.dart';
+import 'package:waffr/core/theme/app_color.dart';
 
 // Blocks the app until device auth (biometrics or PIN) succeeds.
 

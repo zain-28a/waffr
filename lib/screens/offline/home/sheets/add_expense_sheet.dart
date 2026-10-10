@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:waffer/data/stores/category_store.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/stores/expense_preset_store.dart';
-import 'package:waffer/data/models/expense_categories.dart';
-import 'package:waffer/data/models/expense_preset.dart';
-import 'package:waffer/data/models/recurring_expense.dart';
-import 'package:waffer/data/stores/recurring_expense_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/screens/offline/home/sheets/expense_presets_dialog.dart';
-import 'package:waffer/screens/offline/obligations/obligations_sheet.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
-import 'package:waffer/widgets/dialogs/edit_delete_menu.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/expense_preset_store.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/data/models/expense_preset.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/screens/offline/home/sheets/expense_presets_dialog.dart';
+import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/dialogs/edit_delete_menu.dart';
 
 // Glass bottom sheet for one-off or recurring expenses, plus category picks.
 

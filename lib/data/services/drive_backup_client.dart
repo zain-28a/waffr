@@ -120,7 +120,7 @@ class DriveBackupClient {
     Map<String, String> headers,
     String content,
   ) async {
-    const boundary = 'waffer-backup-boundary';
+    const boundary = 'waffr-backup-boundary';
 
     final metadata = jsonEncode(<String, dynamic>{
       'name': backupFileName,

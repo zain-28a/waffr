@@ -2,14 +2,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/models/savings_goal.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
-import 'package:waffer/widgets/sheets/monthly_income_required_sheet.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/sheets/monthly_income_required_sheet.dart';
 
 Future<void> showCreateGoalSheet(BuildContext context) {
   return showGlassSheet<void>(

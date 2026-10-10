@@ -3,22 +3,22 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/data/stores/expense_preset_store.dart';
-import 'package:waffer/data/stores/category_store.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/services/drive_backup_client.dart';
-import 'package:waffer/data/services/google_auth_service.dart';
-import 'package:waffer/data/services/notification_service.dart';
-import 'package:waffer/data/services/profile_identity.dart';
-import 'package:waffer/data/services/profile_photo.dart';
-import 'package:waffer/data/services/usage_streak_service.dart';
-import 'package:waffer/data/stores/recurring_expense_store.dart';
-import 'package:waffer/data/stores/shopping_list_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/sync/api_config.dart';
-import 'package:waffer/core/sync/auth_session.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/data/stores/expense_preset_store.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/services/drive_backup_client.dart';
+import 'package:waffr/data/services/google_auth_service.dart';
+import 'package:waffr/data/services/notification_service.dart';
+import 'package:waffr/data/services/profile_identity.dart';
+import 'package:waffr/data/services/profile_photo.dart';
+import 'package:waffr/data/services/usage_streak_service.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
+import 'package:waffr/data/stores/shopping_list_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/sync/api_config.dart';
+import 'package:waffr/core/sync/auth_session.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 /// نتيجة محاولة ربط Google Drive للنسخة الاحتياطية فقط.
 enum GoogleLinkResult {

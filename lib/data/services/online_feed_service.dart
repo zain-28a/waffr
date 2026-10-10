@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:waffer/data/models/currency.dart';
-import 'package:waffer/data/models/exchange_rate.dart';
-import 'package:waffer/data/models/news_article.dart';
-import 'package:waffer/core/sync/api_config.dart';
+import 'package:waffr/data/models/currency.dart';
+import 'package:waffr/data/models/exchange_rate.dart';
+import 'package:waffr/data/models/news_article.dart';
+import 'package:waffr/core/sync/api_config.dart';
 
 /// Online feed helpers: hardcoded exchange rates plus news from the API.
 class OnlineFeedService {

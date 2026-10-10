@@ -1,15 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/screens/offline/report/expense_history_share.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/screens/offline/report/expense_history_share.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('builds a non-empty Arabic PDF with day tables and totals', () async {
     final bytes = await buildExpenseHistoryPdfBytes([
-      WafferTransaction(
+      WaffrTransaction(
         id: 'e1',
         type: TransactionType.expense,
         amount: 1500,
@@ -18,7 +18,7 @@ void main() {
         note: 'غداء مع العائلة',
         dateTime: DateTime(2026, 9, 30, 14, 5),
       ),
-      WafferTransaction(
+      WaffrTransaction(
         id: 'e2',
         type: TransactionType.expense,
         amount: 40000,
@@ -27,7 +27,7 @@ void main() {
         sourceId: 'recurring:r1_0:202609300900',
         dateTime: DateTime(2026, 9, 30, 9),
       ),
-      WafferTransaction(
+      WaffrTransaction(
         id: 'e3',
         type: TransactionType.expense,
         amount: 20,
@@ -41,7 +41,7 @@ void main() {
     expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
 
     final file = File(
-      '${Directory.systemTemp.path}/waffer-expenses-test.pdf',
+      '${Directory.systemTemp.path}/waffr-expenses-test.pdf',
     );
     await file.writeAsBytes(bytes, flush: true);
     expect(await file.exists(), isTrue);

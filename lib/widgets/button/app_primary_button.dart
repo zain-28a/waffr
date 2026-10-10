@@ -2,7 +2,7 @@
 // bold label. Sheets (SheetSaveButton), forms and screens all use it so the
 // main action looks and behaves the same everywhere.
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_color.dart';
 
 class AppPrimaryButton extends StatelessWidget {
   final String label;

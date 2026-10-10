@@ -1,10 +1,10 @@
 // Glass sheet for the monthly (or weekly) income amount, same shell as other sheets.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
-import 'package:waffer/widgets/dialogs/edit_amount_dialog.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/dialogs/edit_amount_dialog.dart';
 
 /// Opens the income editor as a sheet. Pops [EditAmountResult] or [AmountDialogCleared].
 Future<Object?> showMonthlyIncomeSheet(

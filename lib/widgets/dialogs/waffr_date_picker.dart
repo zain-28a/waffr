@@ -3,18 +3,18 @@
 // Separators are added while typing, so the number pad is enough. The field
 // and the calendar stay in sync: typing a full date moves the calendar to it,
 // and tapping a day fills the field. Digits are 0-9 (see
-// WafferMaterialLocalizations).
+// WaffrMaterialLocalizations).
 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_palette.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/date_input.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/date_input.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 /// One date. Returns null when the user cancels.
-Future<DateTime?> showWafferDatePicker({
+Future<DateTime?> showWaffrDatePicker({
   required BuildContext context,
   required String title,
   required DateTime firstDate,
@@ -24,7 +24,7 @@ Future<DateTime?> showWafferDatePicker({
 }) async {
   final result = await showAppDialog<List<DateTime>>(
     context: context,
-    builder: (_) => _WafferDatePickerDialog(
+    builder: (_) => _WaffrDatePickerDialog(
       title: title,
       labels: const ['التاريخ'],
       initial: [initialDate],
@@ -37,7 +37,7 @@ Future<DateTime?> showWafferDatePicker({
 }
 
 /// A from/to range. Returns null when the user cancels.
-Future<DateTimeRange?> showWafferDateRangePicker({
+Future<DateTimeRange?> showWaffrDateRangePicker({
   required BuildContext context,
   required String title,
   required DateTime firstDate,
@@ -46,7 +46,7 @@ Future<DateTimeRange?> showWafferDateRangePicker({
 }) async {
   final result = await showAppDialog<List<DateTime>>(
     context: context,
-    builder: (_) => _WafferDatePickerDialog(
+    builder: (_) => _WaffrDatePickerDialog(
       title: title,
       labels: const ['من', 'إلى'],
       initial: [initialRange?.start, initialRange?.end],
@@ -58,7 +58,7 @@ Future<DateTimeRange?> showWafferDateRangePicker({
   return DateTimeRange(start: result[0], end: result[1]);
 }
 
-class _WafferDatePickerDialog extends StatefulWidget {
+class _WaffrDatePickerDialog extends StatefulWidget {
   final String title;
   final List<String> labels;
   final List<DateTime?> initial;
@@ -66,7 +66,7 @@ class _WafferDatePickerDialog extends StatefulWidget {
   final DateTime lastDate;
   final bool startWithYear;
 
-  const _WafferDatePickerDialog({
+  const _WaffrDatePickerDialog({
     required this.title,
     required this.labels,
     required this.initial,
@@ -76,11 +76,11 @@ class _WafferDatePickerDialog extends StatefulWidget {
   });
 
   @override
-  State<_WafferDatePickerDialog> createState() =>
-      _WafferDatePickerDialogState();
+  State<_WaffrDatePickerDialog> createState() =>
+      _WaffrDatePickerDialogState();
 }
 
-class _WafferDatePickerDialogState extends State<_WafferDatePickerDialog> {
+class _WaffrDatePickerDialogState extends State<_WaffrDatePickerDialog> {
   late final List<DateTime?> _dates;
   late final List<TextEditingController> _controllers;
   late final List<FocusNode> _focusNodes;

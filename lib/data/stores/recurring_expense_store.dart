@@ -1,18 +1,18 @@
 // Recurring expenses: CRUD, sync, and due-date catch-up that posts real expenses.
 
 import 'package:flutter/foundation.dart';
-import 'package:waffer/data/models/app_notification.dart';
-import 'package:waffer/data/services/notification_service.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/models/recurring_expense.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/sync/sync_mapper.dart';
-import 'package:waffer/core/sync/sync_merge.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/data/models/app_notification.dart';
+import 'package:waffr/data/services/notification_service.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/sync/sync_mapper.dart';
+import 'package:waffr/core/sync/sync_merge.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 // Schedules checked on launch/resume; posts expenses when nextDueAt is past.
 class RecurringExpenseStore extends ChangeNotifier {

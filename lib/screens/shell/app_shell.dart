@@ -2,24 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
-import 'package:waffer/data/stores/category_store.dart';
-import 'package:waffer/data/services/notification_service.dart';
-import 'package:waffer/data/services/profile_identity.dart';
-import 'package:waffer/data/services/system_notifications.dart';
-import 'package:waffer/data/services/usage_streak_service.dart';
-import 'package:waffer/data/stores/recurring_expense_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/screens/offline/home/dashboard.dart';
-import 'package:waffer/screens/offline/notifications/notifications_screen.dart';
-import 'package:waffer/screens/offline/profile/profile_screen.dart';
-import 'package:waffer/screens/online/online_screen.dart';
-import 'package:waffer/screens/offline/report/reportscreen.dart';
-import 'package:waffer/screens/offline/savings/savings_screen.dart';
-import 'package:waffer/screens/offline/settings/settings_screen.dart';
-import 'package:waffer/screens/shell/app_shell_scope.dart';
-import 'package:waffer/widgets/brand/streak_celebration.dart';
-import 'package:waffer/widgets/brand/waffer_page_header.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/services/notification_service.dart';
+import 'package:waffr/data/services/profile_identity.dart';
+import 'package:waffr/data/services/system_notifications.dart';
+import 'package:waffr/data/services/usage_streak_service.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/screens/offline/home/dashboard.dart';
+import 'package:waffr/screens/offline/notifications/notifications_screen.dart';
+import 'package:waffr/screens/offline/profile/profile_screen.dart';
+import 'package:waffr/screens/online/online_screen.dart';
+import 'package:waffr/screens/offline/report/reportscreen.dart';
+import 'package:waffr/screens/offline/savings/savings_screen.dart';
+import 'package:waffr/screens/offline/settings/settings_screen.dart';
+import 'package:waffr/screens/shell/app_shell_scope.dart';
+import 'package:waffr/widgets/brand/streak_celebration.dart';
+import 'package:waffr/widgets/brand/waffr_page_header.dart';
 
 // Bottom navigation shell. Five tabs: home, report, savings, online, profile.
 // Settings and notifications are pushed from the header, not tabs.
@@ -219,7 +219,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             SafeArea(
               child: Column(
                 children: [
-                  WafferPageHeader(
+                  WaffrPageHeader(
                     applySafeArea: false,
                     leadingWidth: 96,
                     leading: Row(
