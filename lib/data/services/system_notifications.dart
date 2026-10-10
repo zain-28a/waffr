@@ -96,9 +96,7 @@ class SystemNotifications {
         ),
       );
       _ready = granted != false;
-      final android = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
-      await android?.createNotificationChannel(
+      await _android?.createNotificationChannel(
         const AndroidNotificationChannel(
           channelId,
           'تنبيهات وفّر',
@@ -106,9 +104,41 @@ class SystemNotifications {
           importance: Importance.defaultImportance,
         ),
       );
-      await android?.requestNotificationsPermission();
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Notification setup failed: $error');
       _ready = false;
+    }
+
+    // Asked separately so a setup problem never skips the system prompt
+    // (Android 13+; older versions allow notifications by default).
+    await requestPermission();
+  }
+
+  AndroidFlutterLocalNotificationsPlugin? get _android =>
+      _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
+  /// Whether the system lets the app post notifications. Null when unknown
+  /// (not Android).
+  Future<bool?> deviceNotificationsEnabled() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return null;
+    try {
+      return await _android?.areNotificationsEnabled();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Shows the system permission prompt when Android still allows it.
+  /// Returns true when notifications are allowed afterwards.
+  Future<bool> requestPermission() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return false;
+    try {
+      final granted = await _android?.requestNotificationsPermission();
+      return granted ?? (await deviceNotificationsEnabled() ?? false);
+    } catch (error) {
+      debugPrint('Notification permission request failed: $error');
+      return false;
     }
   }
 
