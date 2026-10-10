@@ -1,11 +1,11 @@
 // Saved expense presets: local prefs, sync merge, and tombstones on delete.
 
 import 'package:flutter/foundation.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/sync/sync_merge.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
-import 'package:waffer/data/models/expense_preset.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/sync/sync_merge.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
+import 'package:waffr/data/models/expense_preset.dart';
 
 class ExpensePresetStore extends ChangeNotifier {
   ExpensePresetStore._();

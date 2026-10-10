@@ -1,4 +1,4 @@
-// Device notifications for real Waffer events. In-app history stays in
+// Device notifications for real Waffr events. In-app history stays in
 // NotificationService; this only mirrors new alerts and one daily streak nudge.
 
 import 'dart:async';
@@ -13,7 +13,7 @@ class SystemNotifications {
 
   static final SystemNotifications instance = SystemNotifications._();
 
-  static const String channelId = 'waffer_alerts';
+  static const String channelId = 'waffr_alerts';
   static const int _streakId = 41021;
 
   final FlutterLocalNotificationsPlugin _plugin =
@@ -92,7 +92,7 @@ class SystemNotifications {
     try {
       final granted = await _plugin.initialize(
         settings: const InitializationSettings(
-          android: AndroidInitializationSettings('ic_stat_waffer'),
+          android: AndroidInitializationSettings('ic_stat_waffr'),
         ),
       );
       _ready = granted != false;
@@ -120,7 +120,7 @@ class SystemNotifications {
         channelDescription: 'تنبيهات الرصيد والتوفير والأهداف',
         importance: Importance.defaultImportance,
         priority: Priority.defaultPriority,
-        icon: 'ic_stat_waffer',
+        icon: 'ic_stat_waffr',
       ),
     );
   }

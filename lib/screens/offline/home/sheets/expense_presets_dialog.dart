@@ -2,14 +2,14 @@
 // the custom-category box: a grid of tiles plus Cancel / Add actions.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/widgets/containers/app_empty_state.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/data/models/expense_categories.dart';
-import 'package:waffer/data/models/expense_preset.dart';
-import 'package:waffer/data/stores/expense_preset_store.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/containers/app_empty_state.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/data/models/expense_preset.dart';
+import 'package:waffr/data/stores/expense_preset_store.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 /// What the user chose in the box.
 sealed class ExpensePresetChoice {

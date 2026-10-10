@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
-import 'package:waffer/core/usage/streak_math.dart';
-import 'package:waffer/data/services/usage_streak_service.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/screens/offline/profile/streak_card.dart';
-import 'package:waffer/core/usage/usage_duration.dart';
-import 'package:waffer/core/insights/spending_improvement.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/core/usage/streak_math.dart';
+import 'package:waffr/data/services/usage_streak_service.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/screens/offline/profile/streak_card.dart';
+import 'package:waffr/core/usage/usage_duration.dart';
+import 'package:waffr/core/insights/spending_improvement.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -4,12 +4,12 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/data/models/expense_categories.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/sync/sync_merge.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/sync/sync_merge.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 // One user-defined category with a chosen icon index.
 class CustomCategoryEntry {

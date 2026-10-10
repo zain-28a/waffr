@@ -1,17 +1,17 @@
 // Usage profile. Account editing stays in Settings.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/core/insights/profile_snapshot.dart';
-import 'package:waffer/core/theme/app_palette.dart';
-import 'package:waffer/core/usage/usage_duration.dart';
-import 'package:waffer/data/services/profile_identity.dart';
-import 'package:waffer/data/services/usage_streak_service.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/widgets/brand/profile_avatar.dart';
-import 'package:waffer/screens/offline/profile/streak_card.dart';
-import 'package:waffer/widgets/charts/savings_spending_bar.dart';
-import 'package:waffer/widgets/containers/glass.dart';
+import 'package:waffr/core/insights/profile_snapshot.dart';
+import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/usage/usage_duration.dart';
+import 'package:waffr/data/services/profile_identity.dart';
+import 'package:waffr/data/services/usage_streak_service.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/widgets/brand/profile_avatar.dart';
+import 'package:waffr/screens/offline/profile/streak_card.dart';
+import 'package:waffr/widgets/charts/savings_spending_bar.dart';
+import 'package:waffr/widgets/containers/glass.dart';
 
 class ProfileScreen extends StatefulWidget {
   final ValueNotifier<int> tabIndex;

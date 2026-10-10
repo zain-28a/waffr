@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:waffer/data/models/country.dart';
-import 'package:waffer/data/models/registration_profile.dart';
+import 'package:waffr/data/models/country.dart';
+import 'package:waffr/data/models/registration_profile.dart';
 
 void main() {
   final today = DateTime(2026, 9, 21);

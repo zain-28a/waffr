@@ -1,15 +1,15 @@
 // Create or inspect an automatic % of-income savings plan over a fixed duration.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/data/models/savings_goal.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/containers/glass.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
-import 'package:waffer/widgets/sheets/monthly_income_required_sheet.dart';
+import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/sheets/monthly_income_required_sheet.dart';
 
 // Requires monthly income; opens create UI or details for the active plan.
 Future<void> showPeriodicGoalsSheet(BuildContext context) async {

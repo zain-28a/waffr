@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:waffer/widgets/button/app_primary_button.dart';
-import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffr/widgets/button/app_primary_button.dart';
+import 'package:waffr/core/theme/app_color.dart';
 
 // First-launch light/dark picker before entering the app.
 

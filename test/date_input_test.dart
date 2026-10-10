@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:waffer/core/l10n/waffer_material_localizations.dart';
-import 'package:waffer/core/utils/date_input.dart';
+import 'package:waffr/core/l10n/waffr_material_localizations.dart';
+import 'package:waffr/core/utils/date_input.dart';
 
 void main() {
   const formatter = DateInputFormatter();

@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
-import 'package:waffer/data/models/recurring_expense.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/data/services/notification_service.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/stores/recurring_expense_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/data/services/notification_service.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

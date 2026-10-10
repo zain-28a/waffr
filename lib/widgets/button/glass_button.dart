@@ -1,7 +1,7 @@
 // Tappable glass surface with a brief press-scale animation.
 // Visual chrome comes from GlassContainer (translucent fill, no BackdropFilter).
 import 'package:flutter/material.dart';
-import 'package:waffer/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/glass.dart';
 
 /// Pressable [GlassContainer] that scales slightly on tap.
 ///

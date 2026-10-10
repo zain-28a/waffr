@@ -3,14 +3,14 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:waffer/data/models/expense_categories.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/sync/sync_mapper.dart';
-import 'package:waffer/core/sync/sync_merge.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/sync/sync_mapper.dart';
+import 'package:waffr/core/sync/sync_merge.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 // One list row; [expenseId] links a purchased item to its ledger expense.
 class ShoppingItem {

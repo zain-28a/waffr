@@ -1,25 +1,25 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:waffer/widgets/containers/app_empty_state.dart';
-import 'package:waffer/data/stores/category_store.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/models/expense_categories.dart';
-import 'package:waffer/data/models/recurring_expense.dart';
-import 'package:waffer/data/models/savings_goal.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/data/stores/recurring_expense_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/screens/offline/home/sheets/add_expense_sheet.dart';
-import 'package:waffer/screens/offline/home/sheets/add_income_sheet.dart';
-import 'package:waffer/screens/offline/obligations/obligations_sheet.dart';
-import 'package:waffer/screens/offline/report/reportscreen.dart';
-import 'package:waffer/screens/offline/savings/sheets/shopping_list_sheet.dart';
-import 'package:waffer/screens/shell/app_shell_scope.dart';
-import 'package:waffer/widgets/button/glass_button.dart';
-import 'package:waffer/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/app_empty_state.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
+import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
+import 'package:waffr/screens/offline/home/sheets/add_income_sheet.dart';
+import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
+import 'package:waffr/screens/offline/report/reportscreen.dart';
+import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
+import 'package:waffr/screens/shell/app_shell_scope.dart';
+import 'package:waffr/widgets/button/glass_button.dart';
+import 'package:waffr/widgets/containers/glass.dart';
 
 // Offline home tab: balance, add actions, spending distribution, recent
 // expenses / obligations, and active savings goals. Each card opens the
@@ -1056,7 +1056,7 @@ class _VerticalProgress extends StatelessWidget {
 // Two pages in one card: the last expenses and the obligations. Swiping
 // switches pages; a tap opens the full screen of the visible page.
 class _ExpensesAndObligationsCard extends StatefulWidget {
-  final List<WafferTransaction> expenses;
+  final List<WaffrTransaction> expenses;
   final List<RecurringExpense> obligations;
   final bool compact;
 
@@ -1158,7 +1158,7 @@ class _ExpensesAndObligationsCardState
 
 // Last three expenses from the store.
 class _RecentExpensesPage extends StatelessWidget {
-  final List<WafferTransaction> expenses;
+  final List<WaffrTransaction> expenses;
   final bool compact;
 
   const _RecentExpensesPage({required this.expenses, this.compact = false});
@@ -1282,7 +1282,7 @@ class _CardPage extends StatelessWidget {
 }
 
 class _ExpenseRow extends StatelessWidget {
-  final WafferTransaction expense;
+  final WaffrTransaction expense;
   final bool compact;
 
   const _ExpenseRow({required this.expense, this.compact = false});

@@ -1,7 +1,7 @@
 // The one "nothing here yet" block: muted icon, short title, optional hint.
 // Lists, cards and sheets all use it so empty screens look the same.
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_color.dart';
 
 class AppEmptyState extends StatelessWidget {
   final IconData icon;

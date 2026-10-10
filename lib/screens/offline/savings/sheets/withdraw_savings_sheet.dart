@@ -1,10 +1,10 @@
 // Moves money from savings back into the operating balance.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 Future<void> showWithdrawSavingsSheet(BuildContext context) {
   return showGlassSheet<void>(

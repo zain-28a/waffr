@@ -2,22 +2,22 @@
 // points that open create / manual save / withdraw / shopping / recurring sheets.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/widgets/containers/app_empty_state.dart';
-import 'package:waffer/data/models/calendar_period.dart';
-import 'package:waffer/data/models/savings_goal.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/theme/app_palette.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/screens/offline/savings/sheets/completed_goals_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/create_goal_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/manage_goals_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/manual_save_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/periodic_goals_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/shopping_list_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/withdraw_savings_sheet.dart';
-import 'package:waffer/widgets/button/glass_button.dart';
-import 'package:waffer/widgets/containers/glass.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/containers/app_empty_state.dart';
+import 'package:waffr/data/models/calendar_period.dart';
+import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/screens/offline/savings/sheets/completed_goals_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/manage_goals_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/manual_save_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/periodic_goals_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/withdraw_savings_sheet.dart';
+import 'package:waffr/widgets/button/glass_button.dart';
+import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 // Range chips + swipeable period card, total savings, goal progress, and sheet launches.
 class SavingsScreen extends StatefulWidget {

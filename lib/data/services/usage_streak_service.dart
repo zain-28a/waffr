@@ -1,11 +1,11 @@
 // Local daily streak. Signed-in users also ship it inside settings sync.
 
 import 'package:flutter/foundation.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/usage/streak_math.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/insights/profile_snapshot.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/usage/streak_math.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/insights/profile_snapshot.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 /// A streak that just grew by a day on this device: [from] to [to].
 class StreakIncrease {
