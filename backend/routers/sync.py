@@ -373,6 +373,9 @@ def _apply_recurring(db: Session, user_id: int, data: RecurringSyncIn) -> None:
     row.interval_count = max(1, data.interval_count)
     row.next_run_at = as_utc_or_now(data.next_due_at)
     row.is_active = data.enabled
+    row.requires_confirmation = data.requires_confirmation
+    row.remind_at = None if data.remind_at is None else as_utc_or_now(data.remind_at)
+    row.remind_on_income = data.remind_on_income
     if data.created_at is not None:
         row.created_at = as_utc_or_now(data.created_at)
     row.deleted_at = None
@@ -624,6 +627,9 @@ def sync_changes(
                     "interval_count": row.interval_count,
                     "next_due_at": row.next_run_at,
                     "enabled": row.is_active,
+                    "requires_confirmation": bool(row.requires_confirmation),
+                    "remind_at": row.remind_at,
+                    "remind_on_income": bool(row.remind_on_income),
                     "created_at": row.created_at,
                     "updated_at": row.updated_at,
                 },
