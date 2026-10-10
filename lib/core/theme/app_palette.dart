@@ -19,23 +19,23 @@ class AppPalette {
     required this.textSecondary,
   });
 
+  static const AppPalette light = AppPalette(
+    background: AppColors.lightBackground,
+    surface: AppColors.lightSurface,
+    accent: AppColors.lightAccent,
+    textPrimary: AppColors.lightTextPrimary,
+    textSecondary: AppColors.lightTextSecondary,
+  );
+
+  static const AppPalette dark = AppPalette(
+    background: AppColors.darkBackground,
+    surface: AppColors.darkSurface,
+    accent: AppColors.darkAccent,
+    textPrimary: AppColors.darkTextPrimary,
+    textSecondary: AppColors.darkTextSecondary,
+  );
+
   factory AppPalette.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (isDark) {
-      return const AppPalette(
-        background: AppColors.darkBackground,
-        surface: AppColors.darkSurface,
-        accent: AppColors.darkAccent,
-        textPrimary: AppColors.darkTextPrimary,
-        textSecondary: AppColors.darkTextSecondary,
-      );
-    }
-    return const AppPalette(
-      background: AppColors.lightBackground,
-      surface: AppColors.lightSurface,
-      accent: AppColors.lightAccent,
-      textPrimary: AppColors.lightTextPrimary,
-      textSecondary: AppColors.lightTextSecondary,
-    );
+    return Theme.of(context).brightness == Brightness.dark ? dark : light;
   }
 }

@@ -11,6 +11,7 @@ import 'package:waffr/core/sync/auth_session.dart';
 import 'package:waffr/core/sync/sync_dirty.dart';
 import 'package:waffr/core/sync/sync_service.dart';
 import 'package:waffr/core/l10n/waffr_material_localizations.dart';
+import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_theme.dart';
 import 'package:waffr/screens/offline/applock/applockscreen.dart';
 import 'package:waffr/screens/offline/login/login_screen.dart';
@@ -147,9 +148,12 @@ class _WafarAppState extends State<WafarApp> {
           themeMode: themeMode,
 
           builder: (context, child) {
-            return Directionality(
-              textDirection: TextDirection.rtl,
-              child: child!,
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: _systemBarsFor(Theme.of(context).brightness),
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: child!,
+              ),
             );
           },
 
@@ -357,6 +361,20 @@ class _AppFlowControllerState
       appFlowController: this,
     );
   }
+}
+
+/// Status and navigation bar icons that stay readable on the app background.
+SystemUiOverlayStyle _systemBarsFor(Brightness brightness) {
+  final dark = brightness == Brightness.dark;
+  return SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+    statusBarBrightness: brightness,
+    systemNavigationBarColor:
+        dark ? AppColors.darkBackground : AppColors.lightBackground,
+    systemNavigationBarIconBrightness:
+        dark ? Brightness.light : Brightness.dark,
+  );
 }
 
 /// No saved choice yet: follow the device. After a choice: the stored light or dark theme.
