@@ -23,12 +23,11 @@ Copyright (c) 2026 Zain Alaabideen Alloush. All rights reserved.
    license, and nothing in this notice limits or replaces those licenses:
 
    - Fonts: Tajawal, Outfit and Bebas Neue, under the SIL Open Font License
-     1.1. Their notices are in assets/licenses/ and are shown in the app
-     (الإعدادات ← عن وفّر ← تراخيص المكونات).
+     1.1. Their notices are in assets/licenses/ and are bundled with the app.
    - Material Icons, under the Apache License 2.0.
    - The Flutter framework, Dart packages and backend Python packages, each
-     under its own open-source license (see pubspec.yaml,
-     backend/requirements.txt and the in-app license page).
+     under its own open-source license (see pubspec.yaml and
+     backend/requirements.txt).
 
 4. No license granted
 
