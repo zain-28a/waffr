@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
 const String insufficientBalanceMessage =
@@ -79,7 +80,13 @@ void showAppSnackBar(
   final resolved =
       kind ?? (success ? AppFeedbackKind.success : AppFeedbackKind.error);
   final style = _styleFor(context, resolved);
+  final reduced = AppMotion.reduced(context);
   final messenger = ScaffoldMessenger.of(context);
+  if (resolved == AppFeedbackKind.success) {
+    AppHaptics.success();
+  } else if (resolved != AppFeedbackKind.info) {
+    AppHaptics.warning();
+  }
   messenger.hideCurrentSnackBar();
   messenger.showSnackBar(
     SnackBar(
@@ -119,12 +126,14 @@ void showAppSnackBar(
         ],
       ),
     ),
-    snackBarAnimationStyle: const AnimationStyle(
-      duration: Duration(milliseconds: 420),
-      reverseDuration: Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    ),
+    snackBarAnimationStyle: reduced
+        ? AnimationStyle.noAnimation
+        : const AnimationStyle(
+            duration: AppMotion.emphasized,
+            reverseDuration: AppMotion.medium,
+            curve: AppMotion.enter,
+            reverseCurve: AppMotion.exit,
+          ),
   );
 }
 
@@ -143,7 +152,7 @@ Future<T?> showAppDialog<T>({
     barrierDismissible: barrierDismissible,
     barrierLabel: 'إغلاق',
     barrierColor: Colors.black.withValues(alpha: 0.38),
-    transitionDuration: const Duration(milliseconds: 280),
+    transitionDuration: AppMotion.of(context, AppMotion.medium),
     pageBuilder: (context, animation, secondaryAnimation) {
       return SafeArea(
         child: Center(
@@ -154,8 +163,8 @@ Future<T?> showAppDialog<T>({
     transitionBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(
         parent: animation,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
+        curve: AppMotion.enter,
+        reverseCurve: AppMotion.exit,
       );
       return FadeTransition(
         opacity: curved,
@@ -409,11 +418,11 @@ class AppInlineMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = message;
     return AnimatedSize(
-      duration: const Duration(milliseconds: 260),
+      duration: AppMotion.of(context, AppMotion.medium),
       curve: Curves.easeOutCubic,
       alignment: Alignment.topCenter,
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
+        duration: AppMotion.of(context, AppMotion.fast),
         child: text == null
             ? const SizedBox(width: double.infinity)
             : _InlineMessageBody(

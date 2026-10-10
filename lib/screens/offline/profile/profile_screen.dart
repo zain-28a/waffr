@@ -14,6 +14,8 @@ import 'package:waffr/widgets/brand/profile_avatar.dart';
 import 'package:waffr/screens/offline/profile/streak_card.dart';
 import 'package:waffr/widgets/charts/savings_spending_bar.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/widgets/smart/smart_analysis_button.dart';
 
 class ProfileScreen extends StatefulWidget {
   final ValueNotifier<int> tabIndex;
@@ -86,13 +88,22 @@ class _ProfileScreenState extends State<ProfileScreen>
               lastDay: streak.lastDay,
               replayToken: _streakReplay,
             ),
-            if (started != null) ...[
-              const SizedBox(height: 18),
-              _UsageDuration(
-                text: usageDurationText(started, DateTime.now()),
-                palette: palette,
-              ),
-            ],
+            const SizedBox(height: 18),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: started == null
+                      ? const SizedBox.shrink()
+                      : _UsageDuration(
+                          text: usageDurationText(started, DateTime.now()),
+                          palette: palette,
+                        ),
+                ),
+                const SizedBox(width: 8),
+                const SmartAnalysisButton(scope: InsightScope.profile),
+              ],
+            ),
             const SizedBox(height: 22),
             _UsageStats(snapshot: snapshot, palette: palette),
             const SizedBox(height: 16),

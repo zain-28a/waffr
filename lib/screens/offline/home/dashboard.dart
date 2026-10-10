@@ -12,6 +12,7 @@ import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
 import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffr/screens/offline/home/sheets/add_income_sheet.dart';
@@ -238,7 +239,7 @@ class _BalanceCard extends StatelessWidget {
                 : null,
             behavior: HitTestBehavior.opaque,
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 280),
+              duration: AppMotion.of(context, AppMotion.medium),
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
               transitionBuilder: (child, animation) {
@@ -412,7 +413,7 @@ class _CurrencyDots extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 3),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 280),
+              duration: AppMotion.of(context, AppMotion.medium),
               curve: Curves.easeOutCubic,
               width: 6,
               height: index == activeIndex ? 18 : 6,
@@ -631,8 +632,8 @@ class _DistributionChart extends StatelessWidget {
                   ),
                   // After the first sweep, data changes glide between values.
                   swapAnimationDuration:
-                      sweep < 1 ? Duration.zero : Motion.medium,
-                  swapAnimationCurve: Motion.enter,
+                      sweep < 1 ? Duration.zero : AppMotion.slow,
+                  swapAnimationCurve: AppMotion.enter,
                 );
               },
             ),
@@ -1230,7 +1231,13 @@ class _RecentExpensesPage extends StatelessWidget {
                       thickness: 1,
                       color: textPrimary.withValues(alpha: 0.08),
                     ),
-                  _ExpenseRow(expense: latest[index], compact: compact),
+                  // Keyed by id so only a newly added expense plays the
+                  // entrance; rows already shown keep their state.
+                  Reveal(
+                    key: ValueKey(latest[index].id),
+                    index: index,
+                    child: _ExpenseRow(expense: latest[index], compact: compact),
+                  ),
                 ],
               ],
             ),

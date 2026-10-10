@@ -3,9 +3,11 @@ import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/services/home_widget_sync.dart';
 import 'package:waffr/data/services/notification_service.dart';
 import 'package:waffr/data/services/profile_identity.dart';
 import 'package:waffr/data/services/system_notifications.dart';
@@ -13,7 +15,12 @@ import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/screens/offline/home/dashboard.dart';
+import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
+import 'package:waffr/screens/offline/home/sheets/add_income_sheet.dart';
+import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
 import 'package:waffr/screens/offline/notifications/notifications_screen.dart';
 import 'package:waffr/screens/offline/profile/profile_screen.dart';
 import 'package:waffr/screens/online/online_screen.dart';
@@ -45,16 +52,24 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
+class _AppShellState extends State<AppShell>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   final ValueNotifier<int> _tabIndex = ValueNotifier<int>(0);
   final PageController _pageController = PageController();
 
-  // Target page while animateToPage is in flight; stops the bar highlight
-  // from flickering mid-animation.
+  // Target page while a tap-driven switch is in flight; pages the pager
+  // passes on the way are not reported as the selected tab.
   int? _animatingToPage;
+
+  // Pager opacity for the fade-through used on tabs that are not neighbors.
+  late final AnimationController _pagerFade = AnimationController(
+    vsync: this,
+    value: 1,
+  );
 
   Timer? _dueTimer;
   bool _syncingEvents = false;
+  StreamSubscription<Uri?>? _widgetTaps;
 
   // Set when today's open extended the streak; drives the overlay once.
   StreakIncrease? _streakIncrease;
@@ -88,6 +103,47 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _startDueTimer();
     _syncFinancialEvents();
+    unawaited(HomeWidgetSync.instance.start());
+    _listenToWidgetTaps();
+  }
+
+  // A tap on a home screen widget opens the app on the matching place.
+  void _listenToWidgetTaps() {
+    if (!HomeWidgetSync.supported) return;
+    HomeWidget.initiallyLaunchedFromHomeWidget()
+        .then(_openFromWidget)
+        .catchError((Object _) {});
+    _widgetTaps = HomeWidget.widgetClicked.listen(
+      _openFromWidget,
+      onError: (Object _) {},
+    );
+  }
+
+  void _openFromWidget(Uri? uri) {
+    if (uri == null || uri.host.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      switch (uri.host) {
+        case 'add-expense':
+          _onTabTapped(0);
+          showAddExpenseSheet(context);
+        case 'add-income':
+          _onTabTapped(0);
+          showAddIncomeSheet(context);
+        case 'savings':
+          _onTabTapped(2);
+        case 'create-goal':
+          _onTabTapped(2);
+          showCreateGoalSheet(context);
+        case 'obligations':
+          showObligationsSheet(context);
+        case 'profile':
+          _onTabTapped(4);
+        default:
+          _onTabTapped(0);
+      }
+    });
   }
 
   void _startDueTimer() {
@@ -163,29 +219,71 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     await ProfileIdentity.instance.reload();
   }
 
-  // Animates the pager; highlight updates wait until the animation settles.
+  // The bar highlight moves with the tap. Neighbor tabs slide; farther tabs
+  // fade through, so the pager never sweeps past (and builds) the tabs
+  // between them.
   void _onTabTapped(int index) {
     if (index == _tabIndex.value && _animatingToPage == null) return;
     if (_animatingToPage == index) return;
 
+    final from = _pageController.hasClients
+        ? (_pageController.page?.round() ?? _tabIndex.value)
+        : _tabIndex.value;
+
+    _tabIndex.value = index;
+    if (!_pageController.hasClients) return;
     _animatingToPage = index;
+
+    if ((index - from).abs() > 1 || AppMotion.reduced(context)) {
+      _fadeThroughTo(index);
+      return;
+    }
+
+    // A fade-through still running is cut short and the pager shown again.
+    if (_pagerFade.value < 1) {
+      _pagerFade.animateTo(1, duration: AppMotion.fast, curve: AppMotion.enter);
+    }
     _pageController
         .animateToPage(
           index,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
+          duration: AppMotion.medium,
+          curve: AppMotion.standard,
         )
-        .whenComplete(() {
-          if (!mounted) return;
-          if (_animatingToPage != index) return;
-          _animatingToPage = null;
-          final settled = _pageController.hasClients
-              ? _pageController.page?.round()
-              : null;
-          if (settled != null && settled != _tabIndex.value) {
-            _tabIndex.value = settled;
-          }
-        });
+        .whenComplete(() => _settleTap(index));
+  }
+
+  // Fades the pager out, jumps to [index], and fades back in.
+  Future<void> _fadeThroughTo(int index) async {
+    final reduced = AppMotion.reduced(context);
+    if (!reduced) {
+      try {
+        await _pagerFade
+            .animateTo(0, duration: AppMotion.instant, curve: AppMotion.exit)
+            .orCancel;
+      } on TickerCanceled {
+        return;
+      }
+    }
+    if (!mounted || _animatingToPage != index) return;
+    _pageController.jumpToPage(index);
+    _settleTap(index);
+    if (!reduced) {
+      _pagerFade.animateTo(1, duration: AppMotion.fast, curve: AppMotion.enter);
+    } else {
+      _pagerFade.value = 1;
+    }
+  }
+
+  // Tap switch finished; the pager's resting page is the selected tab.
+  void _settleTap(int index) {
+    if (!mounted) return;
+    if (_animatingToPage != index) return;
+    _animatingToPage = null;
+    final settled =
+        _pageController.hasClients ? _pageController.page?.round() : null;
+    if (settled != null && settled != _tabIndex.value) {
+      _tabIndex.value = settled;
+    }
   }
 
   // Swipe settled (or ignored while a conflicting tap animation is in flight).
@@ -201,8 +299,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   @override
   void dispose() {
     _dueTimer?.cancel();
+    _widgetTaps?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
+    _pagerFade.dispose();
     _tabIndex.dispose();
     super.dispose();
   }
@@ -267,13 +367,16 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                   Expanded(
                     // Only the visible page is built: zero viewport cache and no
                     // implicit neighbor scrolling. Pages come from _tabAt.
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: _tabCount,
-                      allowImplicitScrolling: false,
-                      scrollCacheExtent: const ScrollCacheExtent.viewport(0),
-                      onPageChanged: _onPageChanged,
-                      itemBuilder: (context, index) => _tabAt(index),
+                    child: FadeTransition(
+                      opacity: _pagerFade,
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: _tabCount,
+                        allowImplicitScrolling: false,
+                        scrollCacheExtent: const ScrollCacheExtent.viewport(0),
+                        onPageChanged: _onPageChanged,
+                        itemBuilder: (context, index) => _tabAt(index),
+                      ),
                     ),
                   ),
                 ],

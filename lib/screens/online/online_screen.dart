@@ -20,6 +20,7 @@ import 'package:waffr/screens/online/sheets/news_sheet.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 final NumberFormat _rateFormat = NumberFormat('#,##0.##', 'en');
 
@@ -181,7 +182,7 @@ class _OnlineScreenState extends State<OnlineScreen>
           ignoring: !locked,
           child: AnimatedOpacity(
             opacity: locked ? 1 : 0,
-            duration: const Duration(milliseconds: 360),
+            duration: AppMotion.of(context, AppMotion.slow),
             curve: Curves.easeOutCubic,
             child: _SignInGate(onLogin: _openLogin),
           ),
@@ -386,7 +387,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
                 children: [
                   Flexible(
                     child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 280),
+                      duration: AppMotion.of(context, AppMotion.medium),
                       switchInCurve: Curves.easeOutCubic,
                       switchOutCurve: Curves.easeInCubic,
                       transitionBuilder: (child, animation) {
@@ -416,7 +417,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
                   const SizedBox(width: 4),
                   AnimatedRotation(
                     turns: _menuOpen ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 280),
+                    duration: AppMotion.of(context, AppMotion.medium),
                     curve: Curves.easeOutBack,
                     child: Icon(
                       Icons.keyboard_arrow_down_rounded,
@@ -490,8 +491,8 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
-      reverseDuration: const Duration(milliseconds: 200),
+      duration: AppMotion.slow,
+      reverseDuration: AppMotion.fast,
     );
     final curve = CurvedAnimation(
       parent: _controller,
@@ -691,7 +692,7 @@ class _RateValue extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 280),
+              duration: AppMotion.of(context, AppMotion.medium),
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
               transitionBuilder: (child, animation) {
@@ -897,7 +898,7 @@ class _NewsPreviewCardState extends State<_NewsPreviewCard> {
                   ),
                   if (ready && count > 1)
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
+                      duration: AppMotion.of(context, AppMotion.fast),
                       child: Text(
                         '${_index + 1} / $count',
                         key: ValueKey(_index),

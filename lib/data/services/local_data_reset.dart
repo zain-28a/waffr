@@ -5,6 +5,7 @@ import 'package:waffr/data/services/profile_identity.dart';
 import 'package:waffr/data/services/system_notifications.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/data/services/profile_photo.dart';
+import 'package:waffr/data/services/smart_settings.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/shopping_list_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
@@ -35,5 +36,6 @@ class LocalDataReset {
     RecurringExpenseStore.instance.resetCache();
     CategoryStore.instance.resetCache();
     ExpensePresetStore.instance.resetCache();
+    SmartSettings.instance.resetCache();
   }
 }

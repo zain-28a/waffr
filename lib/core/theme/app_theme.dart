@@ -1,7 +1,9 @@
 // Builds Material ThemeData for light and dark modes from AppColors and fonts.
 
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 // Central theme: Outfit (mixed-case Latin) with Tajawal fallback for Arabic.
 class AppTheme {
@@ -130,13 +132,21 @@ class AppTheme {
     );
   }
 
+  // iOS and macOS slide with the edge swipe-back gesture; Android follows
+  // the predictive back gesture and zooms for button and code navigation.
   static const PageTransitionsTheme _pageTransitions = PageTransitionsTheme(
     builders: {
-      TargetPlatform.android: ZoomPageTransitionsBuilder(),
-      TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
-      TargetPlatform.macOS: ZoomPageTransitionsBuilder(),
-      TargetPlatform.windows: ZoomPageTransitionsBuilder(),
-      TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+      TargetPlatform.android: ReducedMotionPageTransitionsBuilder(
+        PredictiveBackFullscreenPageTransitionsBuilder(),
+      ),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.windows: ReducedMotionPageTransitionsBuilder(
+        ZoomPageTransitionsBuilder(),
+      ),
+      TargetPlatform.linux: ReducedMotionPageTransitionsBuilder(
+        ZoomPageTransitionsBuilder(),
+      ),
     },
   );
 

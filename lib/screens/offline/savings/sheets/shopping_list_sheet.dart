@@ -14,6 +14,7 @@ import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/dialogs/edit_delete_menu.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 Future<void> showShoppingListSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -591,6 +592,7 @@ class _PurchaseShoppingItemSheetState
       if (!mounted) return;
 
       if (saved) {
+        AppHaptics.success();
         Navigator.of(context).maybePop();
         return;
       }

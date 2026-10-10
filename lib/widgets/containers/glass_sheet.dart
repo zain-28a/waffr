@@ -12,6 +12,7 @@ import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 
 /// Modal barrier tint. Dims the page behind the sheet without blurring it.
@@ -29,6 +30,8 @@ Future<T?> showGlassSheet<T>({
     backgroundColor: Colors.transparent,
     barrierColor: kSheetBarrierColor,
     elevation: 0,
+    sheetAnimationStyle:
+        AppMotion.reduced(context) ? AnimationStyle.noAnimation : null,
     builder: (context) => _GlassSheetShell(
       builder: builder,
       heightFactor: heightFactor,
@@ -130,7 +133,7 @@ class GlassSheetBody extends StatelessWidget {
         child: SingleChildScrollView(
           padding: padding,
           child: AnimatedSize(
-            duration: const Duration(milliseconds: 360),
+            duration: AppMotion.of(context, AppMotion.slow),
             curve: Curves.easeOutCubic,
             alignment: Alignment.topCenter,
             clipBehavior: Clip.none,
@@ -791,7 +794,7 @@ class _AmountMenuDropState extends State<_AmountMenuDrop>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 180),
+    duration: AppMotion.fast,
   )..forward();
 
   @override
@@ -1178,7 +1181,7 @@ class SheetChoiceChips extends StatelessWidget {
             return Stack(
               children: [
                 AnimatedPositionedDirectional(
-                  duration: const Duration(milliseconds: 280),
+                  duration: AppMotion.of(context, AppMotion.medium),
                   curve: Curves.easeOutCubic,
                   start: selectedIndex * itemWidth,
                   width: itemWidth,
@@ -1205,7 +1208,7 @@ class SheetChoiceChips extends StatelessWidget {
                               horizontal: 4,
                             ),
                             child: AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 220),
+                              duration: AppMotion.of(context, AppMotion.fast),
                               curve: Curves.easeOut,
                               style: TextStyle(
                                 fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
@@ -1245,12 +1248,12 @@ class SheetExpand extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSize(
-      duration: const Duration(milliseconds: 340),
+      duration: AppMotion.of(context, AppMotion.slow),
       curve: Curves.easeOutCubic,
       alignment: Alignment.topCenter,
       clipBehavior: Clip.none,
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 260),
+        duration: AppMotion.of(context, AppMotion.medium),
         switchInCurve: Curves.easeOutCubic,
         switchOutCurve: Curves.easeInCubic,
         transitionBuilder: (child, animation) {
@@ -1285,7 +1288,7 @@ class SheetSwap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 280),
+      duration: AppMotion.of(context, AppMotion.medium),
       switchInCurve: Curves.easeOutCubic,
       switchOutCurve: Curves.easeInCubic,
       transitionBuilder: (child, animation) {
