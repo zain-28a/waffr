@@ -278,16 +278,16 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
-              AuthFieldLabel(text: 'العنوان (اختياري)', color: textPrimary),
+              AuthFieldLabel(text: 'العنوان (الشارع اختياري)', color: textPrimary),
               const SizedBox(height: 8),
               TextField(
                 controller: _addressController,
                 textAlign: TextAlign.right,
-                maxLength: maxStreetLength,
+                maxLength: maxCityLength + maxStreetLength + 2,
                 onChanged: (_) => setState(() {}),
                 style: TextStyle(color: textPrimary, fontSize: 16),
                 decoration: authFieldDecoration(
-                  hint: 'مثال: دمشق، المزة',
+                  hint: 'مثال: اللاذقية، المشروع الثاني',
                   fillColor: surface,
                   textSecondary: textSecondary,
                 ).copyWith(counterText: ''),
