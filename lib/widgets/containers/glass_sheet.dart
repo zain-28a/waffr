@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
@@ -174,52 +175,57 @@ class GlassSheetHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 52),
-              child: Column(
-                children: [
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: accent,
+        // Full width so the close / next buttons stay at the sheet edges even
+        // when the title is short.
+        SizedBox(
+          width: double.infinity,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 52),
+                child: Column(
+                  children: [
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: accent,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    subtitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      fontSize: 13,
-                      color: textSecondary,
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontSize: 13,
+                        color: textSecondary,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              left: 0,
-              child: SheetCircleButton(
-                icon: Icons.close_rounded,
-                onTap: () => Navigator.of(context).maybePop(),
-              ),
-            ),
-            if (onNext != null)
-              Positioned(
-                right: 0,
-                child: SheetCircleButton(
-                  icon: Icons.chevron_right_rounded,
-                  onTap: onNext!,
+                  ],
                 ),
               ),
-          ],
+              Positioned(
+                left: 0,
+                child: SheetCircleButton(
+                  icon: Icons.close_rounded,
+                  onTap: () => Navigator.of(context).maybePop(),
+                ),
+              ),
+              if (onNext != null)
+                Positioned(
+                  right: 0,
+                  child: SheetCircleButton(
+                    icon: Icons.chevron_right_rounded,
+                    onTap: onNext!,
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     );
@@ -316,6 +322,39 @@ class SheetFieldLabel extends StatelessWidget {
             action!,
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Small (i) button next to a field label; opens a short explanation.
+/// Every inline help in the app uses this so they look and behave the same.
+class SheetInfoButton extends StatelessWidget {
+  final String title;
+  final String message;
+
+  const SheetInfoButton({
+    super.key,
+    required this.title,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+
+    return Semantics(
+      button: true,
+      label: 'شرح: $title',
+      child: InkResponse(
+        radius: 18,
+        onTap: () => showAppInfoDialog(context, title: title, message: message),
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: Icon(Icons.info_outline_rounded, size: 18, color: accent),
+        ),
       ),
     );
   }

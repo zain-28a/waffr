@@ -24,7 +24,7 @@ import 'package:waffer/screens/offline/settings/account_screen.dart';
 import 'package:waffer/screens/offline/settings/ai_permissions_screen.dart';
 import 'package:waffer/screens/offline/settings/help_screen.dart';
 import 'package:waffer/screens/offline/settings/privacy_security_screen.dart';
-import 'package:waffer/screens/offline/savings/sheets/recurring_expenses_sheet.dart';
+import 'package:waffer/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffer/screens/offline/settings/sheets/currencies_sheet.dart';
 import 'package:waffer/screens/offline/settings/sheets/monthly_income_sheet.dart';
 import 'package:waffer/widgets/brand/profile_avatar.dart';
@@ -573,13 +573,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 12),
           _SettingsTile(
             icon: Icons.event_repeat_rounded,
-            title: 'المصروفات المتكررة',
-            subtitle: 'تعديل المبلغ أو إيقاف الخصم التلقائي',
+            title: 'الالتزامات',
+            subtitle: 'المصروفات المتكررة وطريقة خصمها',
             accent: accent,
             surface: surface,
             textPrimary: textPrimary,
             textSecondary: textSecondary,
-            onTap: () => showRecurringExpensesSheet(context),
+            onTap: () => showObligationsSheet(context),
           ),
 
           const SizedBox(height: 25),

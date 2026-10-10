@@ -4,6 +4,7 @@ import 'package:waffer/data/services/notification_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
+import 'package:waffer/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
@@ -26,6 +27,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   // Clears history only — balance, savings, goals, and mute stay intact.
+  // Marks the alert read; obligation alerts also open where they can be acted on.
+  void _open(AppNotification notification) {
+    _service.markRead(notification.id);
+    switch (notification.type) {
+      case NotificationType.recurringExpenseDue:
+        showDueObligationsSheet(context);
+      case NotificationType.recurringExpenseBlocked:
+      case NotificationType.recurringExpenseApplied:
+      case NotificationType.recurringExpenseUpcoming:
+        showObligationsSheet(context);
+      default:
+        break;
+    }
+  }
+
   Future<void> _confirmClear() async {
     final confirmed = await showAppConfirmDialog(
       context,
@@ -115,7 +131,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       itemBuilder: (context, index) {
                         return _NotificationGroupView(
                           group: groups[index],
-                          onOpen: _service.markRead,
+                          onOpen: _open,
                         );
                       },
                     ),
@@ -301,7 +317,7 @@ class _EmptyNotifications extends StatelessWidget {
 // One time bucket (e.g. Today) and its tiles.
 class _NotificationGroupView extends StatelessWidget {
   final NotificationTimeGroup group;
-  final ValueChanged<String> onOpen;
+  final ValueChanged<AppNotification> onOpen;
 
   const _NotificationGroupView({
     required this.group,
@@ -333,7 +349,7 @@ class _NotificationGroupView extends StatelessWidget {
             if (i > 0) const SizedBox(height: 8),
             _NotificationTile(
               notification: group.items[i],
-              onTap: () => onOpen(group.items[i].id),
+              onTap: () => onOpen(group.items[i]),
             ),
           ],
         ],

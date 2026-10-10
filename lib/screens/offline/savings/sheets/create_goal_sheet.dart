@@ -177,10 +177,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
     }
 
     if (type != _ContributionType.custom && _income <= 0) {
-      showMonthlyIncomeRequiredSheet(
-        context,
-        requirement: MonthlyIncomeRequirement.plan,
-      );
+      showMonthlyIncomeRequiredSheet(context);
       return;
     }
 

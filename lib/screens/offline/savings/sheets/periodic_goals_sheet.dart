@@ -16,10 +16,7 @@ Future<void> showPeriodicGoalsSheet(BuildContext context) async {
   await TransactionStore.instance.ensureLoaded();
   if (!context.mounted) return;
   if (!TransactionStore.instance.hasConfiguredMonthlyIncome) {
-    await showMonthlyIncomeRequiredSheet(
-      context,
-      requirement: MonthlyIncomeRequirement.plan,
-    );
+    await showMonthlyIncomeRequiredSheet(context);
     return;
   }
 
