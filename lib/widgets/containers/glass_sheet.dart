@@ -12,6 +12,7 @@ import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/motion/motion.dart';
 
 /// Modal barrier tint. Dims the page behind the sheet without blurring it.
 const Color kSheetBarrierColor = Color.fromARGB(114, 0, 0, 0);
@@ -135,7 +136,7 @@ class GlassSheetBody extends StatelessWidget {
             clipBehavior: Clip.none,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: children,
+              children: staggered(children, offset: 12),
             ),
           ),
         ),

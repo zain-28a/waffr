@@ -2,6 +2,10 @@
 
 import 'package:flutter/widgets.dart';
 
+/// Space a tab keeps free at the bottom of its scroll content so the last
+/// card can scroll clear of the floating navigation bar.
+const double kFloatingNavClearance = 88;
+
 class AppShellTabs {
   static const int home = 0;
   static const int report = 1;
