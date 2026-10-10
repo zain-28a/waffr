@@ -1,6 +1,7 @@
-// Tappable glass surface with a brief press-scale animation.
+// Tappable glass surface that sinks on touch and springs back on release.
 // Visual chrome comes from GlassContainer (translucent fill, no BackdropFilter).
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 
 /// Pressable [GlassContainer] that scales slightly on tap.
@@ -36,31 +37,32 @@ class GlassButton extends StatefulWidget {
 }
 
 class _GlassButtonState extends State<GlassButton> {
-  double _scale = 1.0;
+  bool _pressed = false;
 
-  void _onTapDown(TapDownDetails details) {
-    setState(() => _scale = 0.95);
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
   }
 
-  void _onTapUp(TapUpDetails details) {
-    setState(() => _scale = 1.0);
-  }
-
-  void _onTapCancel() {
-    setState(() => _scale = 1.0);
+  void _onTap() {
+    HapticFeedback.selectionClick();
+    widget.onTap();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Sinks quickly on touch and springs back past its size on release.
     return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: _onTapDown,
-      onTapUp: _onTapUp,
-      onTapCancel: _onTapCancel,
+      onTap: _onTap,
+      onTapDown: (_) => _setPressed(true),
+      onTapUp: (_) => _setPressed(false),
+      onTapCancel: () => _setPressed(false),
       child: AnimatedScale(
-        scale: _scale,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
+        scale: _pressed ? 0.95 : 1.0,
+        duration: _pressed
+            ? const Duration(milliseconds: 90)
+            : const Duration(milliseconds: 320),
+        curve: _pressed ? Curves.easeOut : Curves.easeOutBack,
         child: GlassContainer(
           width: widget.width,
           height: widget.height,

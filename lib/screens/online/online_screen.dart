@@ -4,6 +4,8 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
+import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/data/models/exchange_rate.dart';
 import 'package:waffr/data/models/nearby_place_category.dart';
 import 'package:waffr/data/models/news_article.dart';
@@ -148,10 +150,10 @@ class _OnlineScreenState extends State<OnlineScreen>
     final locked = _identity.isLoaded && !_identity.isLoggedIn;
 
     final content = SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 26),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+        children: staggered([
           _ExchangeRateCard(
             rate: OnlineFeedService.rateFor(_selectedAsset),
             onSelected: (asset) => setState(() => _selectedAsset = asset),
@@ -164,7 +166,7 @@ class _OnlineScreenState extends State<OnlineScreen>
             state: _newsState,
             onTap: _newsState == _NewsLoadState.loading ? null : _onNewsTap,
           ),
-        ],
+        ]),
       ),
     );
 
