@@ -10,6 +10,7 @@ import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
+import 'package:waffer/widgets/button/app_primary_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
 /// Modal barrier tint. Dims the page behind the sheet without blurring it.
@@ -354,6 +355,90 @@ class SheetInfoButton extends StatelessWidget {
           width: 22,
           height: 22,
           child: Icon(Icons.info_outline_rounded, size: 18, color: accent),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tappable row inside a sheet: icon, label, optional hint. Used for lists of
+/// choices (e.g. photo source) so every option row looks the same.
+class SheetOptionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? hint;
+  final VoidCallback onTap;
+  final bool destructive;
+
+  const SheetOptionTile({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.hint,
+    this.destructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    const destructiveColor = Color(0xFFD3544D);
+    final tint = destructive ? destructiveColor : accent;
+
+    return Material(
+      color: sheetFieldColor(context),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: tint.withValues(alpha: 0.12),
+                ),
+                child: Icon(icon, size: 20, color: tint),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: destructive ? destructiveColor : textPrimary,
+                      ),
+                    ),
+                    if (hint != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        hint!,
+                        style: TextStyle(
+                          fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                          fontSize: 12,
+                          color: textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1236,38 +1321,11 @@ class SheetSaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-
-    return Material(
-      color: enabled ? accent : textSecondary.withValues(alpha: 0.35),
-      borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: enabled ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.check_rounded, size: 20, color: Colors.white),
-            ],
-          ),
-        ),
-      ),
+    return AppPrimaryButton(
+      label: label,
+      onTap: onTap,
+      enabled: enabled,
+      icon: Icons.check_rounded,
     );
   }
 }

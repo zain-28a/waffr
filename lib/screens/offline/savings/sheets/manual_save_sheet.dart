@@ -63,8 +63,8 @@ class _ManualSaveSheetState extends State<_ManualSaveSheet> {
     return GlassSheetBody(
       children: [
         GlassSheetHeader(
-          title: 'ادخار مبلغ',
-          subtitle: 'يُنقل من الرصيد التشغيلي إلى الادخار.',
+          title: 'توفير مبلغ',
+          subtitle: 'يُنقل المبلغ من رصيدك إلى التوفير.',
           onNext: _isValid ? _save : null,
         ),
         const SizedBox(height: 18),
@@ -79,7 +79,7 @@ class _ManualSaveSheetState extends State<_ManualSaveSheet> {
         ),
         const SizedBox(height: 22),
         SheetSaveButton(
-          label: 'تأكيد الادخار',
+          label: 'تأكيد التوفير',
           enabled: _isValid && !_saving,
           onTap: _save,
         ),

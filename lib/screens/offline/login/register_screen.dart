@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/button/app_primary_button.dart';
 import 'package:waffer/data/models/registration_profile.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_service.dart';
@@ -6,7 +7,6 @@ import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/screens/offline/login/auth_fields.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
-import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
 // Credential step of signup: email, password, confirm — uses [profile] from user info.
@@ -35,6 +35,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _confirmController = TextEditingController();
 
   bool _busy = false;
+  // Shown above the main button; cleared as soon as a field changes.
+  String? _message;
+  AppFeedbackKind _messageKind = AppFeedbackKind.error;
   bool _obscure = true;
 
   @override
@@ -70,7 +73,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (!result.ok) {
       setState(() => _busy = false);
-      showAppSnackBar(context, result.message);
+      _show(result.message);
       return;
     }
 
@@ -101,6 +104,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
     Navigator.of(context).pop();
   }
 
+  void _show(String? message, {bool success = false}) {
+    setState(() {
+      _message = message;
+      _messageKind = success ? AppFeedbackKind.success : AppFeedbackKind.error;
+    });
+  }
+
+  bool get _emailValid {
+    final email = _emailController.text.trim();
+    return email.contains('@') && email.contains('.');
+  }
+
+  // Why the main button is disabled, in plain words.
+  String? get _missingReason {
+    final password = _passwordController.text;
+    if (!_emailValid) return 'أدخل بريداً إلكترونياً صالحاً';
+    if (password.length < 8) return 'كلمة المرور يجب أن تتكون من 8 أحرف على الأقل';
+    if (password != _confirmController.text) return 'كلمتا المرور غير متطابقتين';
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -115,16 +139,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: WafferPageHeader(
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
-          onPressed: _busy ? null : _leaveCredentials,
-        ),
-        title: Text(
-          'إنشاء حساب',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+      appBar: WafferBackHeader(
+        enabled: !_busy,
+        onBack: _leaveCredentials,
+        title: 'إنشاء حساب',
       ),
       body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
@@ -134,7 +152,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Text(
                 'أنشئ حساباً لحفظ بياناتك ومزامنتها',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: textSecondary, fontSize: 16),
+                style: TextStyle(color: textSecondary, fontSize: 15),
               ),
               const SizedBox(height: 28),
               GlassContainer(
@@ -152,7 +170,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       keyboardType: TextInputType.emailAddress,
                       textDirection: TextDirection.ltr,
                       autocorrect: false,
-                      onChanged: (_) => setState(() {}),
+                      onChanged: (_) => setState(() => _message = null),
                       style: TextStyle(color: textPrimary, fontSize: 16),
                       decoration: authFieldDecoration(
                         hint: 'example@email.com',
@@ -167,10 +185,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: _passwordController,
                       enabled: !_busy,
                       obscureText: _obscure,
-                      onChanged: (_) => setState(() {}),
+                      onChanged: (_) => setState(() => _message = null),
                       style: TextStyle(color: textPrimary, fontSize: 16),
                       decoration: authFieldDecoration(
-                        hint: '٨ أحرف على الأقل',
+                        hint: '8 أحرف على الأقل',
                         fillColor: surface,
                         textSecondary: textSecondary,
                         suffixIcon: IconButton(
@@ -194,7 +212,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: _confirmController,
                       enabled: !_busy,
                       obscureText: _obscure,
-                      onChanged: (_) => setState(() {}),
+                      onChanged: (_) => setState(() => _message = null),
                       style: TextStyle(color: textPrimary, fontSize: 16),
                       decoration: authFieldDecoration(
                         hint: 'أعد كتابة كلمة المرور',
@@ -206,35 +224,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               const SizedBox(height: 28),
-              GlassButton(
-                onTap: _canSubmit ? _register : () {},
-                colorType: GlassColorType.accent,
-                borderRadius: 22,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 18,
-                  horizontal: 10,
-                ),
-                child: _busy
-                    ? Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Color.fromARGB(255, 255, 255, 255),
-                          ),
-                        ),
-                      )
-                    : Text(
-                        'إنشاء الحساب',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color.fromARGB(255, 255, 255, 255),
-                        ),
-                      ),
+              AppInlineMessage(message: _message, kind: _messageKind),
+              AppPrimaryButton(
+                label: 'إنشاء الحساب',
+                enabled: _canSubmit,
+                onDisabledTap: () => _show(_missingReason),
+                busy: _busy,
+                onTap: _register,
               ),
               const SizedBox(height: 8),
               TextButton(

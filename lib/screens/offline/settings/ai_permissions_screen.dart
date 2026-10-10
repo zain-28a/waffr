@@ -21,16 +21,8 @@ class AIPermissionsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: background,
-      appBar: WafferPageHeader(
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'أذونات الذكاء الاصطناعي',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+      appBar: WafferBackHeader(
+        title: 'أذونات الذكاء الاصطناعي',
       ),
       body: Center(
         child: Padding(
@@ -47,7 +39,7 @@ class AIPermissionsScreen extends StatelessWidget {
               children: [
                 const SizedBox(height: 16),
                 Text(
-                  'لا توجد أذونات حاليا',
+                  'لا توجد أذونات حالياً',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],

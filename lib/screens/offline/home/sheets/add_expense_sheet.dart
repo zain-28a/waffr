@@ -356,7 +356,7 @@ class _PresetStarButton extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: filled ? 'سيُحفظ كمصروف محفوظ' : 'المصاريف المحفوظة',
+      label: filled ? 'سيُحفظ كمصروف محفوظ' : 'المصروفات المحفوظة',
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
@@ -485,11 +485,11 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
     final store = CategoryStore.instance;
     final confirmed = await showAppConfirmDialog(
       context,
-      title: 'حذف تصنيف "$label"',
+      title: 'حذف تصنيف «$label»',
       message: store.isBuiltIn(label)
-          ? 'لن يظهر في قائمة التصنيفات بعد الآن. المصاريف السابقة تبقى كما هي، '
+          ? 'لن يظهر في قائمة التصنيفات بعد الآن. المصروفات السابقة تبقى كما هي، '
               'ويمكنك إعادته بإضافة تصنيف مخصص بالاسم نفسه.'
-          : 'لن يظهر في قائمة التصنيفات بعد الآن. المصاريف السابقة تبقى كما هي.',
+          : 'لن يظهر في قائمة التصنيفات بعد الآن. المصروفات السابقة تبقى كما هي.',
       confirmLabel: 'حذف',
       destructive: true,
     );

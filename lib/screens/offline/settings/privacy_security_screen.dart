@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:waffer/widgets/button/app_primary_button.dart';
 import 'package:waffer/data/services/local_data_reset.dart';
 import 'package:waffer/core/security/app_lock.dart';
 import 'package:waffer/core/sync/auth_session.dart';
@@ -71,21 +72,10 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            WafferPageHeader(
+            WafferBackHeader(
               applySafeArea: false,
-              centerTitle: true,
               elevated: _headerElevated,
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: colors.textPrimary,
-                ),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: Text(
-                'الخصوصية والأمان',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              title: 'الخصوصية والأمان',
             ),
             Expanded(
               child: _loading
@@ -267,7 +257,7 @@ class _CloudSyncDetailPage extends StatelessWidget {
               ? const [
                   _InfoLine(
                     label:
-                        'تُحفظ البيانات المدعومة على الجهاز أولاً لتعمل دون اتصال.',
+                        'تُحفظ بياناتك على الجهاز أولاً، فيعمل التطبيق دون اتصال.',
                   ),
                   _InfoLine(
                     label:
@@ -275,7 +265,7 @@ class _CloudSyncDetailPage extends StatelessWidget {
                   ),
                   _InfoLine(
                     label:
-                        'تُعزل بيانات كل حساب عن غيره وفق ملكية الحساب المسجّل.',
+                        'بيانات كل حساب منفصلة عن غيره، ولا يصل إليها إلا صاحبها.',
                     showDivider: false,
                   ),
                 ]
@@ -289,7 +279,7 @@ class _CloudSyncDetailPage extends StatelessWidget {
                   ),
                   _InfoLine(
                     label:
-                        'بعد تسجيل الدخول، تُزامَن البيانات المدعومة تلقائياً عند توفر الاتصال.',
+                        'بعد تسجيل الدخول، تُزامَن بياناتك تلقائياً عند توفر الاتصال.',
                     showDivider: false,
                   ),
                 ],
@@ -306,7 +296,7 @@ class _SyncedDataDetailPage extends StatelessWidget {
   static const _synced = <String>[
     'المعاملات المالية',
     'أهداف التوفير والتحويلات',
-    'المصروفات المتكررة',
+    'الالتزامات (المصروفات المتكررة)',
     'قوائم التسوق وعناصرها',
     'الإشعارات',
     'التصنيفات المخصصة',
@@ -316,7 +306,7 @@ class _SyncedDataDetailPage extends StatelessWidget {
 
   static const _localOnly = <String>[
     'إعدادات قفل التطبيق',
-    'أسرار الجلسة ورموز الدخول',
+    'بيانات تسجيل الدخول',
     'ملفات صور الملف الشخصي المحلية',
     'بيانات خاصة بالجهاز',
   ];
@@ -427,7 +417,7 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
       case AppLockToggleResult.unsupported:
         showAppSnackBar(
           context,
-          'جهازك لا يدعم المصادقة البيومترية',
+          'جهازك لا يدعم البصمة أو قفل الشاشة',
           kind: AppFeedbackKind.warning,
         );
       case AppLockToggleResult.cancelled:
@@ -545,26 +535,9 @@ class _LocalResetDetailPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 22),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () => _confirmReset(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors.accent,
-              foregroundColor: colors.surface,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: const Text(
-              'إعادة ضبط هذا الجهاز',
-              style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+        AppPrimaryButton(
+          label: 'إعادة ضبط هذا الجهاز',
+          onTap: () => _confirmReset(context),
         ),
       ],
     );
@@ -587,19 +560,8 @@ class _PrivacyDetailScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: WafferPageHeader(
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_forward_ios_rounded,
-            color: colors.textPrimary,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          title,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+      appBar: WafferBackHeader(
+        title: title,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),

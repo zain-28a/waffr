@@ -67,7 +67,7 @@ class _WithdrawSavingsSheetState extends State<_WithdrawSavingsSheet> {
       children: [
         GlassSheetHeader(
           title: 'سحب إلى الرصيد',
-          subtitle: 'يُعاد المبلغ من الادخار إلى الرصيد التشغيلي.',
+          subtitle: 'يُعاد المبلغ من التوفير إلى رصيدك.',
           onNext: _isValid ? _save : null,
         ),
         const SizedBox(height: 18),
@@ -75,7 +75,7 @@ class _WithdrawSavingsSheetState extends State<_WithdrawSavingsSheet> {
           label: 'المبلغ',
           controller: _amountController,
           helper:
-              'المدّخر ${formatMoney(_store.savingsBalanceFor(_currencyCode))} ${currencyLabelFor(_currencyCode)}',
+              'الموفَّر ${formatMoney(_store.savingsBalanceFor(_currencyCode))} ${currencyLabelFor(_currencyCode)}',
           currencyCode: _currencyCode,
           onCurrencyChanged: (code) => setState(() => _currencyCode = code),
           onChanged: (_) => setState(() {}),

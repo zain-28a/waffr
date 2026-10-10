@@ -136,7 +136,7 @@ class _CompletedGoalCard extends StatelessWidget {
             ),
           ),
           Text(
-            'المتجمّع: ${formatMoney(total)} $currencyLabel',
+            'المبلغ المجموع: ${formatMoney(total)} $currencyLabel',
             style: TextStyle(
               fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 13.5,

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:waffer/widgets/button/app_primary_button.dart';
+import 'package:waffer/screens/offline/login/auth_fields.dart';
+import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/data/models/country.dart';
 import 'package:waffer/data/models/registration_profile.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/offline/user_info/country_picker_sheet.dart';
-import 'package:waffer/widgets/button/ani_pri_button.dart';
 import 'package:waffer/widgets/dialogs/waffer_date_picker.dart';
 
 // Collects name, birth date, optional gender, country with an optional phone
@@ -133,50 +135,34 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
     return Scaffold(
       backgroundColor: bg,
+      appBar: WafferBackHeader(
+        title: 'الملف الشخصي',
+        showBack: widget.onBack != null,
+        onBack: widget.onBack,
+      ),
       body: SafeArea(
+        top: false,
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (widget.onBack != null)
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: IconButton(
-                    icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
-                    onPressed: widget.onBack,
-                  ),
-                )
-              else
-                const SizedBox(height: 40),
-
               Text(
-                "الملف الشخصي",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: textPrimary,
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "هذه المعلومات تساعد في تقديم تجربة افضل",
+                'تساعدنا هذه المعلومات على تقديم تجربة أفضل لك',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 15, color: textSecondary),
               ),
 
-              const SizedBox(height: 48),
+              const SizedBox(height: 28),
 
-              _FieldLabel(text: 'الاسم', color: textPrimary),
+              AuthFieldLabel(text: 'الاسم', color: textPrimary),
               const SizedBox(height: 8),
               TextField(
                 controller: _nameController,
                 textAlign: TextAlign.right,
                 onChanged: (_) => setState(() {}),
                 style: TextStyle(color: textPrimary, fontSize: 16),
-                decoration: _fieldDecoration(
+                decoration: authFieldDecoration(
                   hint: 'الاسم الكامل',
                   fillColor: surface,
                   textSecondary: textSecondary,
@@ -185,7 +171,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
-              _FieldLabel(text: 'تاريخ الميلاد', color: textPrimary),
+              AuthFieldLabel(text: 'تاريخ الميلاد', color: textPrimary),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: _pickBirthDate,
@@ -223,7 +209,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
-              _FieldLabel(text: 'الجنس (اختياري)', color: textPrimary),
+              AuthFieldLabel(text: 'الجنس (اختياري)', color: textPrimary),
               const SizedBox(height: 4),
               Row(
                 children: [
@@ -249,7 +235,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 20),
 
-              _FieldLabel(text: 'الدولة', color: textPrimary),
+              AuthFieldLabel(text: 'الدولة', color: textPrimary),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: _pickCountry,
@@ -292,7 +278,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
-              _FieldLabel(text: 'العنوان (اختياري)', color: textPrimary),
+              AuthFieldLabel(text: 'العنوان (اختياري)', color: textPrimary),
               const SizedBox(height: 8),
               TextField(
                 controller: _addressController,
@@ -300,8 +286,8 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                 maxLength: maxStreetLength,
                 onChanged: (_) => setState(() {}),
                 style: TextStyle(color: textPrimary, fontSize: 16),
-                decoration: _fieldDecoration(
-                  hint: 'المشروع الأول',
+                decoration: authFieldDecoration(
+                  hint: 'مثال: دمشق، المزة',
                   fillColor: surface,
                   textSecondary: textSecondary,
                 ).copyWith(counterText: ''),
@@ -309,7 +295,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
-              _FieldLabel(text: 'رقم الهاتف (اختياري)', color: textPrimary),
+              AuthFieldLabel(text: 'رقم الهاتف (اختياري)', color: textPrimary),
               const SizedBox(height: 8),
               _PhoneField(
                 controller: _phoneController,
@@ -324,15 +310,11 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 48),
 
-              AnimatedPrimaryButton(
-                text: 'متابعة',
-                style: const TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                  fontWeight: FontWeight.bold,
-                ),
-                backgroundColor: _isFormValid ? accent : textSecondary,
-                textColor: surface,
-                onPressed: _continue,
+              AppPrimaryButton(
+                label: 'متابعة',
+                enabled: _isFormValid,
+                onTap: _continue,
+                onDisabledTap: _continue,
               ),
 
               const SizedBox(height: 20),
@@ -340,39 +322,6 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  InputDecoration _fieldDecoration({
-    required String hint,
-    required Color fillColor,
-    required Color textSecondary,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(color: textSecondary.withValues(alpha: 0.6)),
-      filled: true,
-      fillColor: fillColor,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide.none,
-      ),
-    );
-  }
-}
-
-class _FieldLabel extends StatelessWidget {
-  final String text;
-  final Color color;
-
-  const _FieldLabel({required this.text, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color),
     );
   }
 }

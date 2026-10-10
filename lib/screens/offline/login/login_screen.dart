@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/button/app_primary_button.dart';
 import 'package:waffer/data/services/backup_service.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/sync/sync_service.dart';
@@ -8,7 +9,6 @@ import 'package:waffer/screens/offline/login/account_creation_flow.dart';
 import 'package:waffer/screens/offline/login/auth_fields.dart';
 import 'package:waffer/screens/offline/login/forgot_password_screen.dart';
 import 'package:waffer/widgets/brand/waffer_logo.dart';
-import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 import 'package:waffer/core/prefs/app_prefs.dart';
 
@@ -35,6 +35,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   bool _busy = false;
+  // Shown above the main button; cleared as soon as a field changes.
+  String? _message;
+  AppFeedbackKind _messageKind = AppFeedbackKind.error;
   bool _obscure = true;
 
   @override
@@ -67,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!result.ok) {
       setState(() => _busy = false);
-      showAppSnackBar(context, result.message);
+      _show(result.message);
       return;
     }
 
@@ -123,6 +126,25 @@ class _LoginScreenState extends State<LoginScreen> {
     if (widget.popOnSuccess && mounted && Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     }
+  }
+
+  void _show(String? message, {bool success = false}) {
+    setState(() {
+      _message = message;
+      _messageKind = success ? AppFeedbackKind.success : AppFeedbackKind.error;
+    });
+  }
+
+  bool get _emailValid {
+    final email = _emailController.text.trim();
+    return email.contains('@') && email.contains('.');
+  }
+
+  // Why the main button is disabled, in plain words.
+  String? get _missingReason {
+    if (!_emailValid) return 'أدخل بريداً إلكترونياً صالحاً';
+    if (_passwordController.text.isEmpty) return 'أدخل كلمة المرور';
+    return null;
   }
 
   @override
@@ -188,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       textDirection: TextDirection.ltr,
                       autocorrect: false,
-                      onChanged: (_) => setState(() {}),
+                      onChanged: (_) => setState(() => _message = null),
                       style: TextStyle(color: textPrimary, fontSize: 16),
                       decoration: authFieldDecoration(
                         hint: 'example@email.com',
@@ -203,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _passwordController,
                       enabled: !_busy,
                       obscureText: _obscure,
-                      onChanged: (_) => setState(() {}),
+                      onChanged: (_) => setState(() => _message = null),
                       style: TextStyle(color: textPrimary, fontSize: 16),
                       decoration: authFieldDecoration(
                         hint: '••••••••',
@@ -239,35 +261,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              GlassButton(
-                onTap: _canSubmit ? _login : () {},
-                colorType: GlassColorType.accent,
-                borderRadius: 22,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 18,
-                  horizontal: 10,
-                ),
-                child: _busy
-                    ? Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Color.fromARGB(255, 255, 255, 255),
-                          ),
-                        ),
-                      )
-                    : Text(
-                        'تسجيل الدخول',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color.fromARGB(255, 255, 255, 255),
-                        ),
-                      ),
+              AppInlineMessage(message: _message, kind: _messageKind),
+              AppPrimaryButton(
+                label: 'تسجيل الدخول',
+                enabled: _canSubmit,
+                onDisabledTap: () => _show(_missingReason),
+                busy: _busy,
+                onTap: _login,
               ),
               const SizedBox(height: 8),
               TextButton(

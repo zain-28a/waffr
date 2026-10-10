@@ -77,7 +77,7 @@ class _MonthlyIncomeSheetState extends State<_MonthlyIncomeSheet> {
       children: [
         GlassSheetHeader(
           title: widget.title,
-          subtitle: 'يُستخدم لخطط الادخار والمصروفات المتكررة.',
+          subtitle: 'يُستخدم لحساب خطط التوفير الدورية.',
           onNext: _isValid ? _save : null,
         ),
         const SizedBox(height: 18),
