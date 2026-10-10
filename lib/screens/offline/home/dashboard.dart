@@ -73,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen>
             children: [
               _BalanceCard(
                 balance: _store.balance,
-                spent: _store.totalExpense,
+                spent: _store.cycleSpent,
                 maxBalance: _store.maxBalance,
                 ratio: _store.remainingRatio,
                 onShoppingList: () => showShoppingListSheet(context),

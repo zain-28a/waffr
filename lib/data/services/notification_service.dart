@@ -334,7 +334,7 @@ class NotificationService extends ChangeNotifier {
   bool _evaluateSpending(TransactionStore store) {
     if (store.maxBalance <= 0) return false;
 
-    final current = store.totalExpense / store.maxBalance;
+    final current = store.cycleSpent / store.maxBalance;
     final previous = _snapshot.spentRatio;
     if (previous == null) return false;
 
@@ -352,7 +352,7 @@ class NotificationService extends ChangeNotifier {
     return _tryAdd(
       type: NotificationType.highSpending,
       title: 'صرفت $percent% من دخلك',
-      message: 'صرفت ${formatMoney(store.totalExpense)} من '
+      message: 'صرفت ${formatMoney(store.cycleSpent)} من '
           '${formatMoney(store.maxBalance)} $currencyLabel، '
           'والمتاح الآن ${formatMoney(store.balance)} $currencyLabel.',
       eventKey: 'highSpending:$percent:$cycle',
@@ -595,8 +595,7 @@ class NotificationService extends ChangeNotifier {
     _items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
 
-  String _incomeCycle(TransactionStore store) =>
-      'income:${store.maxBalance.round()}';
+  String _incomeCycle(TransactionStore store) => 'cycle:${store.cycleKey}';
 
   String _goalReachedKey(String goalId) => 'goalReached:$goalId';
 
@@ -705,7 +704,7 @@ class _NotificationSnapshot {
   /// Builds a snapshot from the live [TransactionStore].
   factory _NotificationSnapshot.fromStore(TransactionStore store) {
     final spent =
-        store.maxBalance <= 0 ? 0.0 : store.totalExpense / store.maxBalance;
+        store.maxBalance <= 0 ? 0.0 : store.cycleSpent / store.maxBalance;
     return _NotificationSnapshot(
       initialized: true,
       remainingRatio: store.remainingRatio,
