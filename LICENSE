@@ -1,22 +1,63 @@
 Copyright (c) 2026 Zain Alaabideen Alloush. All rights reserved.
 
-Waffr ("the Software") — including its source code, design, graphics, text
-and documentation — is proprietary and confidential.
+1. Scope
 
-The Waffr logo artwork and the icons made from it (app icons, splash images
-and the notification icon) were not created by the copyright holder above.
-They are not covered by this notice and remain the property of their creator.
+   "The Software" means Waffr (وفّر), including its mobile, desktop and web
+   apps, its backend server, and their source code, compiled code, design,
+   user interface, graphics, text, translations, data structures and
+   documentation, in this repository or distributed in any other form.
 
-No license or other right is granted to any person to use, copy, modify,
-merge, publish, distribute, sublicense, sell, reverse engineer, or create
-derivative works of the Software, in whole or in part, by any means, without
-the prior written permission of the copyright holder.
+   The Software is proprietary and confidential and is owned by the copyright
+   holder named above, except for the parts listed in sections 2 and 3.
 
-Access to this repository does not grant any of the rights above.
+2. Logo
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+   The Waffr logo artwork and the icons made from it (app icons, splash
+   images and the notification icon) were not created by the copyright holder
+   above. They are not covered by this notice and remain the property of their
+   creator. They may not be used without the permission of their owner.
+
+3. Third-party components
+
+   The Software uses components owned by others. Each one stays under its own
+   license, and nothing in this notice limits or replaces those licenses:
+
+   - Fonts: Tajawal, Outfit and Bebas Neue, under the SIL Open Font License
+     1.1. Their notices are in assets/licenses/ and are shown in the app
+     (الإعدادات ← عن وفّر ← تراخيص المكونات).
+   - Material Icons, under the Apache License 2.0.
+   - The Flutter framework, Dart packages and backend Python packages, each
+     under its own open-source license (see pubspec.yaml,
+     backend/requirements.txt and the in-app license page).
+
+4. No license granted
+
+   No license or other right is granted to any person to use, copy, modify,
+   merge, publish, distribute, sublicense, sell, rent, reverse engineer,
+   decompile, or create derivative works of the Software, in whole or in
+   part, by any means, without the prior written permission of the copyright
+   holder.
+
+   Access to this repository, or to a copy of the Software, does not grant
+   any of these rights. Anyone given access must keep the Software
+   confidential and use it only as the copyright holder allows in writing.
+
+   Installing an official build of the app on a device for personal use does
+   not transfer any ownership of the Software.
+
+5. No warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+6. Limitation of liability
+
+   IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR
+   OTHER LIABILITY, INCLUDING LOSS OF DATA OR FINANCIAL LOSS, WHETHER IN AN
+   ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+7. Permissions
+
+   For any permission not granted above, contact the copyright holder.
