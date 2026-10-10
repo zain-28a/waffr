@@ -1,36 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The dashboard's add income / add expense buttons (_ActionButton in
+     lib/screens/offline/home/dashboard.dart), side by side as glass pills. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_background"
-    android:gravity="center"
     android:layoutDirection="rtl"
     android:orientation="horizontal"
-    android:padding="10dp">
+    android:padding="4dp">
 
-    <TextView
-        android:id="@+id/quick_add_expense"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:background="@drawable/widget_button"
-        android:gravity="center"
-        android:text="@string/widget_add_expense"
-        android:textColor="@color/widget_on_accent"
-        android:textSize="15sp"
-        android:textStyle="bold" />
-
-    <TextView
+    <LinearLayout
         android:id="@+id/quick_add_income"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_marginStart="8dp"
         android:layout_weight="1"
-        android:background="@drawable/widget_button_soft"
+        android:background="@drawable/widget_pill"
         android:gravity="center"
-        android:text="@string/widget_add_income"
-        android:textColor="@color/widget_accent"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+        android:orientation="horizontal"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_income" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/tajawal_bold"
+            android:maxLines="1"
+            android:text="@string/widget_add_income"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="14.5sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/quick_add_expense"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:background="@drawable/widget_pill"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_expense" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/tajawal_bold"
+            android:maxLines="1"
+            android:text="@string/widget_add_expense"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="14.5sp" />
+    </LinearLayout>
 </LinearLayout>

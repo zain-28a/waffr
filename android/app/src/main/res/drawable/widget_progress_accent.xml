@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pill progress bar: the fill keeps its rounded ends at any value and is
+     a shade lighter on top, like the app's progress bars. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/widget_accent_track" />
+            <corners android:radius="999dp" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <scale
+            android:scaleGravity="left|fill_vertical"
+            android:scaleWidth="100%">
+            <shape android:shape="rectangle">
+                <gradient
+                    android:angle="270"
+                    android:endColor="@color/widget_accent"
+                    android:startColor="@color/widget_accent_light" />
+                <corners android:radius="999dp" />
+            </shape>
+        </scale>
+    </item>
+</layer-list>

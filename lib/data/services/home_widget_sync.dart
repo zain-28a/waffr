@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:waffr/core/insights/smart/arabic_text.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/usage/streak_math.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/data/stores/currency_store.dart';
@@ -173,6 +174,7 @@ Map<String, Object> buildHomeWidgetData({
     data['obligation_empty'] = true;
     data['obligation_name'] = 'لا توجد التزامات قادمة';
     data['obligation_amount'] = '';
+    data['obligation_value'] = '';
     data['obligation_when'] = '';
   } else {
     final next = upcoming.first;
@@ -181,6 +183,7 @@ Map<String, Object> buildHomeWidgetData({
     data['obligation_empty'] = false;
     data['obligation_name'] = next.name;
     data['obligation_amount'] = '${formatMoney(next.amount)} $symbol';
+    data['obligation_value'] = formatMoney(next.amount);
     data['obligation_when'] = switch (days) {
       < 0 => 'مستحق الآن',
       0 => 'اليوم',
@@ -191,6 +194,14 @@ Map<String, Object> buildHomeWidgetData({
 
   final count = streak < 1 ? 1 : streak;
   data['streak_count'] = '$count';
+  // The ring fills toward the next milestone, as on the profile card.
+  data['streak_percent'] =
+      '${(count / nextStreakMilestone(count) * 100).round().clamp(0, 100)}';
+  data['streak_word'] = switch (count) {
+    1 => 'يوم',
+    <= 10 => 'أيام',
+    _ => 'يوماً',
+  };
   data['streak_label'] = switch (count) {
     1 => 'اليوم الأول',
     2 => 'يومان متتاليان',
