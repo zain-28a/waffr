@@ -1,9 +1,10 @@
-// Opt-in switches for the AI features and what each one sends.
+// Switches for the smart features and a note on where the analysis runs.
 
 import 'package:flutter/material.dart';
-import 'package:waffr/core/sync/auth_session.dart';
+import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/core/theme/app_color.dart';
-import 'package:waffr/data/services/ai_insights_service.dart';
+import 'package:waffr/data/services/smart_settings.dart';
+import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/widgets/containers/glass.dart';
@@ -16,19 +17,12 @@ class AIPermissionsScreen extends StatefulWidget {
 }
 
 class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
-  final AiInsightsService _service = AiInsightsService.instance;
-
-  // Null while checking; AI requests go through the account, so guests
-  // see why the switches are off.
-  bool? _signedIn;
+  final SmartSettings _settings = SmartSettings.instance;
 
   @override
   void initState() {
     super.initState();
-    _service.ensureLoaded();
-    AuthSession.instance.isLoggedIn().then((value) {
-      if (mounted) setState(() => _signedIn = value);
-    });
+    _settings.ensureLoaded();
   }
 
   @override
@@ -39,46 +33,35 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
     final textSecondary =
         isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final canUse = _signedIn == true;
 
     return Scaffold(
       backgroundColor: background,
-      appBar: WaffrBackHeader(
-        title: 'أذونات الذكاء الاصطناعي',
-      ),
+      appBar: WaffrBackHeader(title: 'التحليل الذكي'),
       body: AnimatedBuilder(
-        animation: _service,
+        animation: _settings,
         builder: (context, _) {
           return ListView(
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
             children: [
-              if (_signedIn == false) ...[
-                const AppListTile(
-                  icon: Icons.person_outline_rounded,
-                  title: 'تحتاج إلى حساب',
-                  subtitle:
-                      'تعمل ميزات الذكاء الاصطناعي عبر حسابك. سجّل الدخول لتفعيلها.',
-                  showChevron: false,
-                ),
-                const SizedBox(height: 16),
-              ],
+              AppListTile(
+                icon: Icons.auto_awesome,
+                title: 'افتح التحليل الشامل',
+                subtitle: 'ملاحظات واقتراحات عن مصاريفك وتوفيرك وعاداتك',
+                onTap: () => openSmartAnalysis(context, InsightScope.profile),
+              ),
+              const SizedBox(height: 22),
               const AppSectionTitle(title: 'الميزات'),
               AppListTile(
-                icon: Icons.auto_graph_rounded,
-                title: 'تحليلات واقتراحات',
-                subtitle:
-                    'رؤى أسبوعية في الرئيسية، ملخص الشهر في التقارير، واقتراح مبلغ توفير',
+                icon: Icons.notifications_active_outlined,
+                title: 'تنبيهات ذكية',
+                subtitle: 'تنبيه إذا كان رصيدك سينفد قبل الدخل القادم',
                 showChevron: false,
                 trailing: Switch(
-                  value: _service.insightsEnabled,
+                  value: _settings.alerts,
                   activeThumbColor: accent,
-                  onChanged: canUse ? _service.setInsightsEnabled : null,
+                  onChanged: _settings.setAlerts,
                 ),
-                onTap: canUse
-                    ? () => _service.setInsightsEnabled(
-                          !_service.insightsEnabled,
-                        )
-                    : null,
+                onTap: () => _settings.setAlerts(!_settings.alerts),
               ),
               const SizedBox(height: 10),
               AppListTile(
@@ -87,29 +70,21 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
                 subtitle: 'يقترح التصنيف من الملاحظة التي تكتبها',
                 showChevron: false,
                 trailing: Switch(
-                  value: _service.categorizeEnabled,
+                  value: _settings.categorize,
                   activeThumbColor: accent,
-                  onChanged: canUse ? _service.setCategorizeEnabled : null,
+                  onChanged: _settings.setCategorize,
                 ),
-                onTap: canUse
-                    ? () => _service.setCategorizeEnabled(
-                          !_service.categorizeEnabled,
-                        )
-                    : null,
+                onTap: () => _settings.setCategorize(!_settings.categorize),
               ),
               const SizedBox(height: 22),
-              const AppSectionTitle(title: 'ما الذي يُرسَل'),
+              const AppSectionTitle(title: 'الخصوصية'),
               GlassContainer(
                 colorType: GlassColorType.surface,
                 borderRadius: 22,
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  'التحليلات: مجاميع الصرف لكل تصنيف، الرصيد، الدخل، '
-                  'أهداف التوفير والالتزامات. لا تُرسَل العمليات المفردة ولا ملاحظاتها.\n\n'
-                  'التصنيف التلقائي: نص الملاحظة وأسماء التصنيفات فقط.\n\n'
-                  'تُرسَل البيانات عبر خادم وفّر إلى نموذج Claude من Anthropic '
-                  'لتوليد النتيجة، ولا تُستخدم لأي غرض آخر. '
-                  'إيقاف الميزة يحذف النتائج المحفوظة على هذا الجهاز.',
+                  'كل التحليل يتم على جهازك. لا تُرسَل مصاريفك أو ملاحظاتك '
+                  'إلى أي خادم لتحليلها، ويعمل التحليل بدون إنترنت وفي وضع الضيف.',
                   style: TextStyle(
                     fontFamily: 'Outfit',
                     fontFamilyFallback: const ['Tajawal'],
