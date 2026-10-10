@@ -684,7 +684,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
-                  'الشعار',
+                  'الأيقونة',
                   style: TextStyle(
                     fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
@@ -716,24 +716,20 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
-                        'إلغاء',
-                        style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
+                    child: AppDialogActionButton(
+                      action: AppDialogAction(
+                        label: 'إلغاء',
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Expanded(
-                    child: TextButton(
-                      onPressed: _submit,
-                      child: Text(
-                        widget.submitLabel,
-                        style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                          fontWeight: FontWeight.w800,
-                          color: accent,
-                        ),
+                    child: AppDialogActionButton(
+                      action: AppDialogAction(
+                        label: widget.submitLabel,
+                        primary: true,
+                        onPressed: _submit,
                       ),
                     ),
                   ),

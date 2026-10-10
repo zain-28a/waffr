@@ -2,6 +2,7 @@
 // sheet where charges waiting for approval are deducted or postponed.
 
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/core/sync/sync_clock.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
@@ -131,7 +132,7 @@ class _ObligationColors {
           isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
       textSecondary:
           isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-      warning: isDark ? const Color(0xFFE2C27A) : const Color(0xFF8A6A24),
+      warning: AppColors.warningOf(context),
     );
   }
 }
@@ -194,7 +195,7 @@ class _ObligationsSheetState extends State<ObligationsSheet> {
             ),
             const SizedBox(height: 16),
             if (items.isEmpty)
-              _EmptyObligations(colors: colors)
+              const _EmptyObligations()
             else ...[
               _SummaryBox(
                 colors: colors,
@@ -347,34 +348,14 @@ class _AwaitingBanner extends StatelessWidget {
 }
 
 class _EmptyObligations extends StatelessWidget {
-  final _ObligationColors colors;
-
-  const _EmptyObligations({required this.colors});
+  const _EmptyObligations();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 28),
-      child: Column(
-        children: [
-          Icon(
-            Icons.event_repeat_outlined,
-            size: 42,
-            color: colors.textSecondary.withValues(alpha: 0.55),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'لا توجد التزامات بعد',
-            style: _text(colors.textPrimary, size: 14, weight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'لإضافة التزام، اختر «إضافة مصروف» ثم «مصروف متكرر».',
-            textAlign: TextAlign.center,
-            style: _text(colors.textSecondary, size: 12.5),
-          ),
-        ],
-      ),
+    return const AppEmptyState(
+      icon: Icons.event_repeat_outlined,
+      title: 'لا توجد التزامات بعد',
+      message: 'لإضافة التزام، اختر «إضافة مصروف» ثم «مصروف متكرر».',
     );
   }
 }
@@ -628,13 +609,9 @@ class _ObligationDetailsSheetState extends State<_ObligationDetailsSheet> {
               ),
               const SizedBox(height: 8),
             ],
-            TextButton.icon(
-              onPressed: () => _delete(item),
-              icon: const Icon(Icons.delete_outline_rounded, color: _deleteColor),
-              label: Text(
-                'حذف الالتزام',
-                style: _text(_deleteColor, size: 14, weight: FontWeight.w700),
-              ),
+            SheetDestructiveButton(
+              label: 'حذف الالتزام',
+              onTap: () => _delete(item),
             ),
           ],
         );
@@ -643,7 +620,6 @@ class _ObligationDetailsSheetState extends State<_ObligationDetailsSheet> {
   }
 }
 
-const Color _deleteColor = Color(0xFFD3544D);
 
 // ---------------------------------------------------------------------------
 // Charges waiting for approval
@@ -772,22 +748,9 @@ class _DueObligationsSheetState extends State<DueObligationsSheet> {
             child: Center(child: CircularProgressIndicator()),
           )
         else if (items.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.task_alt_rounded,
-                  size: 42,
-                  color: colors.accent.withValues(alpha: 0.7),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'لا توجد التزامات بانتظار تأكيدك',
-                  style: _text(colors.textPrimary, size: 14, weight: FontWeight.w700),
-                ),
-              ],
-            ),
+          const AppEmptyState(
+            icon: Icons.task_alt_rounded,
+            title: 'لا توجد التزامات بانتظار تأكيدك',
           )
         else ...[
           for (final item in items) ...[

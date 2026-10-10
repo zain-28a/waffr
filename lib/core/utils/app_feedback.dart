@@ -25,7 +25,6 @@ class _FeedbackStyle {
 
 _FeedbackStyle _styleFor(BuildContext context, AppFeedbackKind kind) {
   final palette = AppPalette.of(context);
-  final isDark = Theme.of(context).brightness == Brightness.dark;
 
   return switch (kind) {
     AppFeedbackKind.success => _FeedbackStyle(
@@ -37,13 +36,13 @@ _FeedbackStyle _styleFor(BuildContext context, AppFeedbackKind kind) {
     AppFeedbackKind.error => _FeedbackStyle(
       background: palette.surface,
       foreground: palette.textPrimary,
-      accent: isDark ? const Color(0xFFE38B8B) : const Color(0xFF8E3B3B),
+      accent: AppColors.destructiveOf(context),
       icon: Icons.error_outline_rounded,
     ),
     AppFeedbackKind.warning => _FeedbackStyle(
       background: palette.surface,
       foreground: palette.textPrimary,
-      accent: isDark ? const Color(0xFFE2C27A) : const Color(0xFF8A6A24),
+      accent: AppColors.warningOf(context),
       icon: Icons.warning_amber_rounded,
     ),
     AppFeedbackKind.info => _FeedbackStyle(
@@ -293,9 +292,7 @@ class AppDialogActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final destructiveColor =
-        isDark ? const Color(0xFFE38B8B) : const Color(0xFF8E3B3B);
+    final destructiveColor = AppColors.destructiveOf(context);
 
     if (!action.primary && !action.destructive) {
       return TextButton(

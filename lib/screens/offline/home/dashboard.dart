@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/data/models/expense_categories.dart';
@@ -1413,7 +1414,7 @@ class _ObligationRow extends StatelessWidget {
     final textSecondary = isDark
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
-    final warning = isDark ? const Color(0xFFE2C27A) : const Color(0xFF8A6A24);
+    final warning = AppColors.warningOf(context);
 
     final category = categoryFor(item.category);
     final attention = obligationNeedsAttention(item, now: now);
@@ -1619,33 +1620,6 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: compact ? 12 : 18),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            size: compact ? 30 : 38,
-            color: textPrimary.withValues(alpha: 0.3),
-          ),
-          SizedBox(height: compact ? 8 : 10),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-              fontSize: compact ? 12 : 13.5,
-              color: textPrimary.withValues(alpha: 0.55),
-            ),
-          ),
-        ],
-      ),
-    );
+    return AppEmptyState(icon: icon, title: message, compact: compact);
   }
 }

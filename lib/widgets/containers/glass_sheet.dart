@@ -387,7 +387,7 @@ class SheetOptionTile extends StatelessWidget {
         isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary =
         isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    const destructiveColor = Color(0xFFD3544D);
+    final destructiveColor = AppColors.destructiveOf(context);
     final tint = destructive ? destructiveColor : accent;
 
     return Material(
@@ -1326,6 +1326,51 @@ class SheetSaveButton extends StatelessWidget {
       onTap: onTap,
       enabled: enabled,
       icon: Icons.check_rounded,
+    );
+  }
+}
+
+/// Secondary "remove / delete" action under a sheet's main button. Every
+/// sheet that deletes or clears something uses it, so removal always looks
+/// the same and stays visually below the primary action.
+class SheetDestructiveButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onTap;
+  final IconData icon;
+
+  const SheetDestructiveButton({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.icon = Icons.delete_outline_rounded,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = AppColors.destructiveOf(context);
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton.icon(
+        onPressed: onTap,
+        style: TextButton.styleFrom(
+          foregroundColor: color,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+        icon: Icon(icon, size: 20, color: color),
+        label: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Outfit',
+            fontFamilyFallback: const ['Tajawal'],
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ),
     );
   }
 }

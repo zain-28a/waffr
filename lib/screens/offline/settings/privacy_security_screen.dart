@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:waffer/widgets/containers/app_list_tile.dart';
 import 'package:waffer/widgets/button/app_primary_button.dart';
 import 'package:waffer/data/services/local_data_reset.dart';
 import 'package:waffer/core/security/app_lock.dart';
@@ -609,23 +610,11 @@ class _SectionLabel extends StatelessWidget {
   const _SectionLabel({required this.title, required this.color});
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 5, bottom: 10),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: color,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AppSectionTitle(title: title);
 }
 
 // Card wrapping one or more privacy settings rows.
+// Rows stacked like the Settings screen: one card per row.
 class _SettingsGroup extends StatelessWidget {
   final Color surface;
   final List<Widget> children;
@@ -637,13 +626,13 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(children: children),
+    return Column(
+      children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          children[i],
+        ],
+      ],
     );
   }
 }
@@ -674,107 +663,19 @@ class _SettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: colors.accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(icon, color: colors.accent, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      ),
-                    ),
-                  ),
-                  if (status != null) ...[
-                    const SizedBox(width: 8),
-                    _StatusChip(
-                      label: status!,
-                      emphasized: statusEmphasis,
-                      colors: colors,
-                    ),
-                  ],
-                  ?trailing,
-                  if (showChevron)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.only(start: 6),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: colors.textSecondary.withValues(alpha: 0.5),
-                        size: 15,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (showDivider)
-          Divider(
-            height: 1,
-            thickness: 1,
-            indent: 64,
-            color: colors.textSecondary.withValues(alpha: 0.12),
-          ),
-      ],
+    return AppListTile(
+      icon: icon,
+      title: title,
+      status: status,
+      statusOn: statusEmphasis,
+      trailing: trailing,
+      showChevron: showChevron,
+      onTap: onTap,
     );
   }
 }
 
 // Small pill showing on/off or similar status text.
-class _StatusChip extends StatelessWidget {
-  final String label;
-  final bool emphasized;
-  final _PrivacyColors colors;
-
-  const _StatusChip({
-    required this.label,
-    required this.emphasized,
-    required this.colors,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = emphasized ? colors.accent : colors.textSecondary;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: emphasized ? 0.12 : 0.08),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 11.5,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-        ),
-      ),
-    );
-  }
-}
-
 // Banner summarizing the current privacy/security status.
 class _StatusBanner extends StatelessWidget {
   final _PrivacyColors colors;

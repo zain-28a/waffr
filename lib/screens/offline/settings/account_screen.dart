@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:waffer/widgets/containers/app_list_tile.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 import 'package:waffer/data/services/backup_service.dart';
 import 'package:waffer/data/services/profile_photo.dart';
@@ -342,64 +343,12 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: surface,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: busy ? null : onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-          child: Row(
-            children: [
-              Container(
-                width: 43,
-                height: 43,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: accent, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: TextStyle(color: textSecondary, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              busy
-                  ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: accent,
-                      ),
-                    )
-                  : Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: textSecondary.withValues(alpha: 0.5),
-                      size: 16,
-                    ),
-            ],
-          ),
-        ),
-      ),
+    return AppListTile(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      busy: busy,
+      onTap: onTap,
     );
   }
 }

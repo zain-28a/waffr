@@ -1,6 +1,8 @@
 // Reorder, delete, or add active savings goals.
 
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/button/app_primary_button.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/data/models/savings_goal.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
 import 'package:waffer/core/theme/app_color.dart';
@@ -86,17 +88,9 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
                   ConstrainedBox(
                     constraints: BoxConstraints(maxHeight: maxListHeight),
                     child: goals.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 36),
-                            child: Text(
-                              'لا توجد أهداف حالياً',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                                fontSize: 14,
-                                color: textPrimary.withValues(alpha: 0.55),
-                              ),
-                            ),
+                        ? const AppEmptyState(
+                            icon: Icons.flag_outlined,
+                            title: 'لا توجد أهداف حالياً',
                           )
                         : ReorderableListView.builder(
                             shrinkWrap: true,
@@ -142,36 +136,10 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
                           ),
                   ),
                   const SizedBox(height: 16),
-                  Material(
-                    color: accent,
-                    borderRadius: BorderRadius.circular(22),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(22),
-                      onTap: () => showCreateGoalSheet(context),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'إضافة هدف',
-                              style: TextStyle(
-                                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Icon(
-                              Icons.add_rounded,
-                              size: 22,
-                              color: Colors.white,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  AppPrimaryButton(
+                    label: 'إضافة هدف',
+                    icon: Icons.add_rounded,
+                    onTap: () => showCreateGoalSheet(context),
                   ),
                 ],
               );

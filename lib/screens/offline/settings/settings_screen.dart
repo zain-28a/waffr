@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:waffer/widgets/containers/app_list_tile.dart';
 import 'package:waffer/data/services/backup_service.dart';
 import 'package:waffer/data/stores/expense_preset_store.dart';
 import 'package:waffer/data/stores/category_store.dart';
@@ -775,38 +776,20 @@ class _SectionTitle extends StatelessWidget {
   const _SectionTitle({required this.title, required this.color});
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 5, bottom: 10),
-
-      child: Text(
-        title,
-
-        style: TextStyle(
-          color: color,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AppSectionTitle(title: title);
 }
 
 // Standard settings row: icon, title, subtitle, optional trailing control.
+// Kept so the call sites stay short; the look lives in AppListTile.
 class _SettingsTile extends StatelessWidget {
   final IconData icon;
-
   final String title;
   final String subtitle;
-
   final Color accent;
   final Color surface;
-
   final Color textPrimary;
   final Color textSecondary;
-
   final Widget? trailing;
-
   final VoidCallback onTap;
 
   const _SettingsTile({
@@ -823,72 +806,12 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: surface,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-
-          child: Row(
-            children: [
-              Container(
-                width: 43,
-                height: 43,
-
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-
-                  borderRadius: BorderRadius.circular(14),
-                ),
-
-                child: Icon(icon, color: accent, size: 22),
-              ),
-
-              const SizedBox(width: 14),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-
-                  children: [
-                    Text(
-                      title,
-
-                      style: TextStyle(
-                        color: textPrimary,
-
-                        fontSize: 15,
-
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-
-                    const SizedBox(height: 3),
-
-                    Text(
-                      subtitle,
-
-                      style: TextStyle(color: textSecondary, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-
-              trailing ??
-                  Icon(
-                    Icons.arrow_back_ios_new_rounded,
-
-                    color: textSecondary.withValues(alpha: 0.5),
-
-                    size: 16,
-                  ),
-            ],
-          ),
-        ),
-      ),
+    return AppListTile(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      trailing: trailing,
+      onTap: onTap,
     );
   }
 }

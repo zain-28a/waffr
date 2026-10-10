@@ -399,37 +399,10 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
             ],
           ),
         ),
-        const SizedBox(height: 22),
-        Material(
-          color: textPrimary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(22),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(22),
-            onTap: _deleting ? null : _confirmDelete,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'حذف الخطة',
-                    style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.delete_outline_rounded,
-                    size: 20,
-                    color: textPrimary.withValues(alpha: 0.75),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        const SizedBox(height: 12),
+        SheetDestructiveButton(
+          label: 'حذف الخطة',
+          onTap: _deleting ? null : _confirmDelete,
         ),
       ],
     );

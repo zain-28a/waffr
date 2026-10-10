@@ -1,6 +1,7 @@
 // Shopping list preview card plus sheets to add items and record purchases as expenses.
 
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/data/stores/shopping_list_store.dart';
@@ -330,26 +331,10 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
             ),
             const SizedBox(height: 16),
             if (_store.items.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 28),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.shopping_basket_outlined,
-                      size: 42,
-                      color: colors.textSecondary.withValues(alpha: 0.55),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'قائمة المشتريات فارغة',
-                      style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                        fontSize: 14,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+              const AppEmptyState(
+                icon: Icons.shopping_basket_outlined,
+                title: 'قائمة المشتريات فارغة',
+                message: 'اكتب اسم ما تحتاج إليه ثم اضغط +.',
               )
             else ...[
               Align(

@@ -2,6 +2,7 @@
 // points that open create / manual save / withdraw / shopping / recurring sheets.
 
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/data/models/calendar_period.dart';
 import 'package:waffer/data/models/savings_goal.dart';
 import 'package:waffer/data/stores/transaction_store.dart';
@@ -488,18 +489,10 @@ class _ActiveGoalsPanel extends StatelessWidget {
               count: 0,
             ),
             const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.only(right: 15),
-              child: Text(
-                'لا توجد أهداف محددة حالياً',
-                textAlign: TextAlign.start,
-                style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: colors.textSecondary,
-                ),
-              ),
+            const AppEmptyState(
+              icon: Icons.flag_outlined,
+              title: 'لا توجد أهداف حالياً',
+              compact: true,
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -635,10 +628,10 @@ class _PlanButtonsRow extends StatelessWidget {
               label: periodicLabel,
               onTap: onPeriodic,
               leading: periodicActive
-                  ? const Icon(
+                  ? Icon(
                       Icons.check_circle_rounded,
                       size: 16,
-                      color: Color(0xFF3D8A4A),
+                      color: AppPalette.of(context).accent,
                     )
                   : null,
             ),
