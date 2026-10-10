@@ -19,9 +19,10 @@ class AppTheme {
       cardColor: AppColors.lightSurface,
       fontFamily: english,
       fontFamilyFallback: fallback,
-      colorScheme: const ColorScheme.light(
-        primary: AppColors.lightAccent,
-        surface: AppColors.lightSurface,
+      colorScheme: _colorScheme(Brightness.light),
+      switchTheme: _switchTheme(
+        accent: AppColors.lightAccent,
+        secondary: AppColors.lightTextSecondary,
       ),
       textTheme: _textTheme(
         primary: AppColors.lightTextPrimary,
@@ -44,9 +45,10 @@ class AppTheme {
       cardColor: AppColors.darkSurface,
       fontFamily: english,
       fontFamilyFallback: fallback,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.darkAccent,
-        surface: AppColors.darkSurface,
+      colorScheme: _colorScheme(Brightness.dark),
+      switchTheme: _switchTheme(
+        accent: AppColors.darkAccent,
+        secondary: AppColors.darkTextSecondary,
       ),
       textTheme: _textTheme(
         primary: AppColors.darkTextPrimary,
@@ -58,6 +60,69 @@ class AppTheme {
         background: AppColors.darkSurface,
         foreground: AppColors.darkTextPrimary,
       ),
+    );
+  }
+
+  // Every Material color role maps to an app token, so no widget falls back
+  // to Material's default purple or teal.
+  static ColorScheme _colorScheme(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    final accent = dark ? AppColors.darkAccent : AppColors.lightAccent;
+    final surface = dark ? AppColors.darkSurface : AppColors.lightSurface;
+    final textPrimary =
+        dark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        dark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final destructive =
+        dark ? AppColors.darkDestructive : AppColors.lightDestructive;
+    final container = accent.withValues(alpha: 0.18);
+
+    return ColorScheme(
+      brightness: brightness,
+      primary: accent,
+      onPrimary: Colors.white,
+      primaryContainer: container,
+      onPrimaryContainer: textPrimary,
+      secondary: accent,
+      onSecondary: Colors.white,
+      secondaryContainer: container,
+      onSecondaryContainer: textPrimary,
+      tertiary: accent,
+      onTertiary: Colors.white,
+      error: destructive,
+      onError: Colors.white,
+      surface: surface,
+      onSurface: textPrimary,
+      onSurfaceVariant: textSecondary,
+      outline: textSecondary,
+      outlineVariant: textSecondary.withValues(alpha: 0.3),
+      surfaceTint: Colors.transparent,
+    );
+  }
+
+  // One switch look: white thumb on an accent track when on, a quiet
+  // outlined track when off.
+  static SwitchThemeData _switchTheme({
+    required Color accent,
+    required Color secondary,
+  }) {
+    return SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return Colors.white;
+        return secondary;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return states.contains(WidgetState.disabled)
+              ? accent.withValues(alpha: 0.4)
+              : accent;
+        }
+        return secondary.withValues(alpha: 0.12);
+      }),
+      trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return Colors.transparent;
+        return secondary.withValues(alpha: 0.4);
+      }),
     );
   }
 
