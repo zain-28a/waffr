@@ -1,9 +1,47 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:waffer/core/usage/streak_math.dart';
-import 'package:waffer/core/usage/usage_duration.dart';
-import 'package:waffer/core/insights/spending_improvement.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/core/usage/streak_math.dart';
+import 'package:waffr/data/services/usage_streak_service.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/screens/offline/profile/streak_card.dart';
+import 'package:waffr/core/usage/usage_duration.dart';
+import 'package:waffr/core/insights/spending_improvement.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('opening on the next day hands out one streak increase', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await AppPrefs.instance;
+    await prefs.clear();
+    TransactionStore.instance.resetCache();
+    final service = UsageStreakService.instance..resetCache();
+
+    await service.recordToday(now: DateTime(2026, 9, 1, 9));
+    expect(service.takeIncrease(), isNull, reason: 'day one is not an increase');
+
+    await service.recordToday(now: DateTime(2026, 9, 1, 20));
+    expect(service.takeIncrease(), isNull, reason: 'same day again');
+
+    await service.recordToday(now: DateTime(2026, 9, 2, 8));
+    final increase = service.takeIncrease();
+    expect(increase?.from, 1);
+    expect(increase?.to, 2);
+    expect(service.takeIncrease(), isNull, reason: 'handed out once');
+
+    await service.recordToday(now: DateTime(2026, 9, 5, 8));
+    expect(service.count, 1);
+    expect(service.takeIncrease(), isNull, reason: 'a broken streak restarts');
+  });
+
+  test('the next streak milestone is the next round number', () {
+    expect(nextStreakMilestone(1), 3);
+    expect(nextStreakMilestone(3), 7);
+    expect(nextStreakMilestone(29), 30);
+    expect(nextStreakMilestone(365), 730);
+  });
+
   test('first open is day one and a repeat the same day stays there', () {
     final first = StreakMath.record(
       const StreakSnapshot(),

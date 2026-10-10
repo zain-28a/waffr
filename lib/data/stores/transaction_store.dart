@@ -4,17 +4,17 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:waffer/data/models/calendar_period.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/models/savings_goal.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/core/sync/profile_sync.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/sync/sync_mapper.dart';
-import 'package:waffer/core/sync/sync_merge.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/data/models/calendar_period.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/core/sync/profile_sync.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/sync/sync_mapper.dart';
+import 'package:waffr/core/sync/sync_merge.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 // Ledger in prefs as JSON. Operating balance is always income − expense − net savings.
 class TransactionStore extends ChangeNotifier {
@@ -37,10 +37,10 @@ class TransactionStore extends ChangeNotifier {
   // Pre-JSON expense rows: amount|description|isoDate.
   static const String legacyExpensesKey = 'expenses';
 
-  final List<WafferTransaction> _transactions = [];
+  final List<WaffrTransaction> _transactions = [];
   final List<SavingsGoal> _goals = [];
   final Set<String> _processedPeriods = {};
-  final Map<String, Future<WafferTransaction?>> _pendingExpenseSources = {};
+  final Map<String, Future<WaffrTransaction?>> _pendingExpenseSources = {};
 
   Future<void>? _loader;
   bool _loaded = false;
@@ -81,30 +81,30 @@ class TransactionStore extends ChangeNotifier {
   }
 
   // Newest first.
-  List<WafferTransaction> get transactions => List.unmodifiable(_transactions);
+  List<WaffrTransaction> get transactions => List.unmodifiable(_transactions);
 
-  List<WafferTransaction> get expenses => expensesFor(_activeCode);
+  List<WaffrTransaction> get expenses => expensesFor(_activeCode);
 
-  List<WafferTransaction> get incomes => incomesFor(_activeCode);
+  List<WaffrTransaction> get incomes => incomesFor(_activeCode);
 
-  List<WafferTransaction> get savingsTransfers =>
+  List<WaffrTransaction> get savingsTransfers =>
       savingsTransfersFor(_activeCode);
 
-  List<WafferTransaction> expensesFor(String currencyCode) {
+  List<WaffrTransaction> expensesFor(String currencyCode) {
     final code = Currencies.normalize(currencyCode);
     return _transactions
         .where((item) => item.isExpense && item.currencyCode == code)
         .toList(growable: false);
   }
 
-  List<WafferTransaction> incomesFor(String currencyCode) {
+  List<WaffrTransaction> incomesFor(String currencyCode) {
     final code = Currencies.normalize(currencyCode);
     return _transactions
         .where((item) => item.isIncome && item.currencyCode == code)
         .toList(growable: false);
   }
 
-  List<WafferTransaction> savingsTransfersFor(String currencyCode) {
+  List<WaffrTransaction> savingsTransfersFor(String currencyCode) {
     final code = Currencies.normalize(currencyCode);
     return _transactions
         .where(
@@ -249,10 +249,120 @@ class TransactionStore extends ChangeNotifier {
 
   bool get hasRecurringIncome => hasMonthlyIncome || hasWeeklyIncome;
 
-  // Peak balance ≈ total recorded income for that currency.
+  // ---------------------------------------------------------------------
+  // Balance cycle: the 100% the home bar measures against. A new cycle
+  // starts when leftover balance is moved to savings with a new income, and
+  // at the start of every month when the income is monthly.
+  // ---------------------------------------------------------------------
+
+  /// processedPeriodKey on the transfer that moves leftover balance to
+  /// savings while adding a new income.
+  static const String carryOverKey = 'carry';
+  static const String _carryOverNote = 'نقل الرصيد الحالي إلى التوفير';
+
+  bool _isCarryOver(WaffrTransaction item) =>
+      item.isSavingsIn &&
+      (item.processedPeriodKey == carryOverKey ||
+          (item.transferKind == SavingsTransferKind.manual &&
+              item.note == _carryOverNote));
+
+  // Transfers that close a cycle rather than spend from it.
+  bool _closesCycle(WaffrTransaction item) =>
+      _isCarryOver(item) ||
+      (item.isSavingsIn &&
+          item.transferKind == SavingsTransferKind.periodLeftover);
+
+  /// Start of the current balance cycle, or null before the first reset.
+  ///
+  /// A new cycle starts when income arrives on an empty balance (all of it
+  /// spent, or the leftover just moved to savings), and at the start of
+  /// every month when the income is monthly.
+  DateTime? cycleStartFor(String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
+    final rows = _transactions
+        .where((item) => item.currencyCode == code)
+        .toList()
+      ..sort((a, b) {
+        final byTime = a.dateTime.compareTo(b.dateTime);
+        if (byTime != 0) return byTime;
+        // Same moment: the carry-over transfer comes before its income.
+        return (a.isIncome ? 1 : 0).compareTo(b.isIncome ? 1 : 0);
+      });
+
+    DateTime? start;
+    var running = 0.0;
+    var saved = 0.0;
+    for (final item in rows) {
+      if (item.isIncome && running <= _cycleEpsilon) start = item.dateTime;
+      if (item.isIncome) running += item.amount;
+      if (item.isExpense) running -= item.amount;
+      if (item.isSavingsIn) {
+        running -= item.amount;
+        saved += item.amount;
+      }
+      if (item.isSavingsOut) {
+        // Withdrawals return at most what is in savings, like balanceFor.
+        final back = item.amount < saved ? item.amount : saved;
+        running += back;
+        saved -= back;
+      }
+      if (_isCarryOver(item) && (start == null || item.dateTime.isAfter(start))) {
+        start = item.dateTime;
+      }
+    }
+
+    if (preferredIncomeFrequencyFor(code) == RecurringFrequency.monthly) {
+      final monthStart = CalendarPeriod.monthStart(deviceNow());
+      if (start == null || monthStart.isAfter(start)) start = monthStart;
+    }
+    return start;
+  }
+
+  static const double _cycleEpsilon = 0.005;
+
+  bool _inCycle(WaffrTransaction item, DateTime? start) =>
+      start == null || !item.dateTime.isBefore(start);
+
+  /// Expenses recorded in the current cycle.
+  double cycleSpentFor(String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
+    final start = cycleStartFor(code);
+    var total = 0.0;
+    for (final item in _transactions) {
+      if (item.currencyCode == code && item.isExpense && _inCycle(item, start)) {
+        total += item.amount;
+      }
+    }
+    return total;
+  }
+
+  double get cycleSpent => cycleSpentFor(_activeCode);
+
+  /// The cycle's 100%: what the balance would be now if nothing had been
+  /// spent or saved since the cycle started.
   double get maxBalance => maxBalanceFor(_activeCode);
 
-  double maxBalanceFor(String currencyCode) => totalIncomeFor(currencyCode);
+  double maxBalanceFor(String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
+    final start = cycleStartFor(code);
+    var used = 0.0;
+    for (final item in _transactions) {
+      if (item.currencyCode != code || !_inCycle(item, start)) continue;
+      if (_closesCycle(item)) continue;
+      if (item.isExpense || item.isSavingsIn) used += item.amount;
+      if (item.isSavingsOut) used -= item.amount;
+    }
+    final capacity = balanceFor(code) + used;
+    return capacity > 0 ? capacity : 0;
+  }
+
+  /// Stable id of the current cycle, for one-alert-per-cycle notifications.
+  String get cycleKey => cycleKeyFor(_activeCode);
+
+  String cycleKeyFor(String currencyCode) {
+    final start = cycleStartFor(currencyCode);
+    return '${start?.millisecondsSinceEpoch ?? 0}';
+  }
 
   double get remainingRatio => remainingRatioFor(_activeCode);
 
@@ -406,7 +516,7 @@ class TransactionStore extends ChangeNotifier {
 
   // Weekly vs monthly plan cadence from the latest recurring income row.
   RecurringFrequency preferredIncomeFrequencyFor(String currencyCode) {
-    WafferTransaction? latestRecurringIncome;
+    WaffrTransaction? latestRecurringIncome;
 
     for (final income in incomesFor(currencyCode)) {
       if (income.frequency == RecurringFrequency.weekly ||
@@ -461,15 +571,16 @@ class TransactionStore extends ChangeNotifier {
 
     if (moveBalanceToSavings && currentBalance > 0) {
       await _add(
-        WafferTransaction(
-          id: WafferTransaction.newId(),
+        WaffrTransaction(
+          id: WaffrTransaction.newId(),
           type: TransactionType.savingsIn,
           amount: currentBalance,
           currencyCode: code,
-          note: 'نقل الرصيد الحالي إلى التوفير',
+          note: _carryOverNote,
           dateTime: deviceNow(),
           transferKind: SavingsTransferKind.manual,
           goalId: currentGoal?.id,
+          processedPeriodKey: carryOverKey,
         ),
         persist: false,
         notify: false,
@@ -479,8 +590,8 @@ class TransactionStore extends ChangeNotifier {
     final now = deviceNow();
 
     await _add(
-      WafferTransaction(
-        id: WafferTransaction.newId(),
+      WaffrTransaction(
+        id: WaffrTransaction.newId(),
         type: TransactionType.income,
         amount: amount,
         currencyCode: code,
@@ -606,7 +717,7 @@ class TransactionStore extends ChangeNotifier {
   }
 
   // Returns the expense on success, or null when amount exceeds balance.
-  Future<WafferTransaction?> addExpense({
+  Future<WaffrTransaction?> addExpense({
     required double amount,
     required String category,
     required String paymentMethod,
@@ -711,12 +822,12 @@ class TransactionStore extends ChangeNotifier {
         : activeGoalsFor(code).first;
 
     await _add(
-      WafferTransaction(
-        id: WafferTransaction.newId(),
+      WaffrTransaction(
+        id: WaffrTransaction.newId(),
         type: TransactionType.savingsIn,
         amount: amount,
         currencyCode: code,
-        note: 'ادخار يدوي',
+        note: 'توفير يدوي',
         dateTime: deviceNow(),
         transferKind: SavingsTransferKind.manual,
         goalId: currentGoal?.id,
@@ -736,8 +847,8 @@ class TransactionStore extends ChangeNotifier {
     }
 
     await _add(
-      WafferTransaction(
-        id: WafferTransaction.newId(),
+      WaffrTransaction(
+        id: WaffrTransaction.newId(),
         type: TransactionType.savingsOut,
         amount: amount,
         currencyCode: code,
@@ -869,7 +980,7 @@ class TransactionStore extends ChangeNotifier {
       _goals.add(
         SavingsGoal(
           id: SavingsGoal.newId(),
-          name: 'ادخار ${cappedPercent.round()}٪',
+          name: 'توفير ${cappedPercent.round()}٪',
           targetAmount: target,
           currencyCode: code,
           createdAt: deviceNow(),
@@ -972,7 +1083,7 @@ class TransactionStore extends ChangeNotifier {
   }) async {
     await ensureLoaded();
 
-    var changed = mergeRemoteRecords<WafferTransaction>(
+    var changed = mergeRemoteRecords<WaffrTransaction>(
       items: _transactions,
       upserts: [
         for (final raw in transactions)
@@ -985,7 +1096,7 @@ class TransactionStore extends ChangeNotifier {
       updatedOf: (item) => item.syncUpdatedAt,
     );
 
-    changed |= mergeRemoteRecords<WafferTransaction>(
+    changed |= mergeRemoteRecords<WaffrTransaction>(
       items: _transactions,
       upserts: [
         for (final raw in transfers)
@@ -1080,7 +1191,7 @@ class TransactionStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<WafferTransaction?> _createExpense({
+  Future<WaffrTransaction?> _createExpense({
     required double amount,
     required String category,
     required String paymentMethod,
@@ -1094,8 +1205,8 @@ class TransactionStore extends ChangeNotifier {
       return null;
     }
 
-    final transaction = WafferTransaction(
-      id: WafferTransaction.newId(),
+    final transaction = WaffrTransaction(
+      id: WaffrTransaction.newId(),
       type: TransactionType.expense,
       amount: amount,
       currencyCode: code,
@@ -1123,7 +1234,7 @@ class TransactionStore extends ChangeNotifier {
   }
 
   Future<void> _add(
-    WafferTransaction transaction, {
+    WaffrTransaction transaction, {
     bool persist = true,
     bool notify = true,
   }) async {
@@ -1165,7 +1276,7 @@ class TransactionStore extends ChangeNotifier {
 
     if (stored != null) {
       _transactions.addAll(
-        stored.map(WafferTransaction.decode).whereType<WafferTransaction>(),
+        stored.map(WaffrTransaction.decode).whereType<WaffrTransaction>(),
       );
 
       _sort();
@@ -1387,12 +1498,12 @@ class TransactionStore extends ChangeNotifier {
     }
 
     _transactions.add(
-      WafferTransaction(
-        id: WafferTransaction.newId(),
+      WaffrTransaction(
+        id: WaffrTransaction.newId(),
         type: TransactionType.savingsIn,
         amount: amount,
         currencyCode: goal.currencyCode,
-        note: 'ادخار دوري: ${goal.name}',
+        note: 'توفير دوري: ${goal.name}',
         dateTime: deviceNow(),
         transferKind: SavingsTransferKind.goalPeriodic,
         goalId: goal.id,
@@ -1459,8 +1570,8 @@ class TransactionStore extends ChangeNotifier {
         : activeGoalsFor(code).first;
 
     _transactions.add(
-      WafferTransaction(
-        id: WafferTransaction.newId(),
+      WaffrTransaction(
+        id: WaffrTransaction.newId(),
         type: TransactionType.savingsIn,
         amount: leftover,
         currencyCode: code,
@@ -1512,7 +1623,7 @@ class TransactionStore extends ChangeNotifier {
     return changed;
   }
 
-  bool _countsTowardGoal(WafferTransaction item, SavingsGoal goal) {
+  bool _countsTowardGoal(WaffrTransaction item, SavingsGoal goal) {
     if (!item.isSavingsIn && !item.isSavingsOut) {
       return false;
     }
@@ -1725,7 +1836,7 @@ class TransactionStore extends ChangeNotifier {
   }
 
   // Keeps the earlier local event time when merging a remote duplicate id.
-  WafferTransaction _preserveEventTime(WafferTransaction incoming) {
+  WaffrTransaction _preserveEventTime(WaffrTransaction incoming) {
     for (final local in _transactions) {
       if (local.id != incoming.id) continue;
       return incoming.copyWith(
@@ -1835,12 +1946,12 @@ class TransactionStore extends ChangeNotifier {
     });
   }
 
-  List<WafferTransaction> _migrateLegacyExpenses(List<String>? legacy) {
+  List<WaffrTransaction> _migrateLegacyExpenses(List<String>? legacy) {
     if (legacy == null || legacy.isEmpty) {
       return const [];
     }
 
-    final migrated = <WafferTransaction>[];
+    final migrated = <WaffrTransaction>[];
 
     for (final entry in legacy) {
       final parts = entry.split('|');
@@ -1858,8 +1969,8 @@ class TransactionStore extends ChangeNotifier {
       final date = parts.length > 2 ? DateTime.tryParse(parts[2]) : null;
 
       migrated.add(
-        WafferTransaction(
-          id: WafferTransaction.newId() + migrated.length.toString(),
+        WaffrTransaction(
+          id: WaffrTransaction.newId() + migrated.length.toString(),
           type: TransactionType.expense,
           amount: amount,
           category: 'أخرى',

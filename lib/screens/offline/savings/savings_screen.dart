@@ -2,21 +2,22 @@
 // points that open create / manual save / withdraw / shopping / recurring sheets.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/data/models/calendar_period.dart';
-import 'package:waffer/data/models/savings_goal.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/theme/app_palette.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/screens/offline/savings/sheets/completed_goals_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/create_goal_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/manage_goals_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/manual_save_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/periodic_goals_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/shopping_list_sheet.dart';
-import 'package:waffer/screens/offline/savings/sheets/withdraw_savings_sheet.dart';
-import 'package:waffer/widgets/button/glass_button.dart';
-import 'package:waffer/widgets/containers/glass.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/containers/app_empty_state.dart';
+import 'package:waffr/data/models/calendar_period.dart';
+import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/screens/offline/savings/sheets/completed_goals_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/manage_goals_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/manual_save_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/periodic_goals_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/withdraw_savings_sheet.dart';
+import 'package:waffr/widgets/button/glass_button.dart';
+import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 // Range chips + swipeable period card, total savings, goal progress, and sheet launches.
 class SavingsScreen extends StatefulWidget {
@@ -149,7 +150,7 @@ class _SavingsScreenState extends State<SavingsScreen>
               _SplitActionRow(
                 leading: _TotalSavingsCard(total: _store.savingsBalance),
                 first: _ActionButton(
-                  label: 'ادخار مبلغ',
+                  label: 'توفير مبلغ',
                   onTap: () => showManualSaveSheet(context),
                 ),
                 second: _ActionButton(
@@ -172,7 +173,7 @@ class _SavingsScreenState extends State<SavingsScreen>
               _PlanButtonsRow(
                 periodicLabel: _store.hasActivePeriodicPlan
                     ? 'خطة جارية'
-                    : 'خطط دورية',
+                    : 'خطط التوفير',
                 periodicActive: _store.hasActivePeriodicPlan,
                 onPeriodic: () => showPeriodicGoalsSheet(context),
                 onCompleted: () => showCompletedGoalsSheet(context),
@@ -243,7 +244,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      'المبلغ الموفر',
+                      'المبلغ الموفَّر',
                       style: TextStyle(
                         fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                         fontSize: 12,
@@ -488,18 +489,10 @@ class _ActiveGoalsPanel extends StatelessWidget {
               count: 0,
             ),
             const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.only(right: 15),
-              child: Text(
-                "لايوجد اهداف محددة حاليا",
-                textAlign: TextAlign.start,
-                style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: colors.textSecondary,
-                ),
-              ),
+            const AppEmptyState(
+              icon: Icons.flag_outlined,
+              title: 'لا توجد أهداف حالياً',
+              compact: true,
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -635,10 +628,10 @@ class _PlanButtonsRow extends StatelessWidget {
               label: periodicLabel,
               onTap: onPeriodic,
               leading: periodicActive
-                  ? const Icon(
+                  ? Icon(
                       Icons.check_circle_rounded,
                       size: 16,
-                      color: Color(0xFF3D8A4A),
+                      color: AppPalette.of(context).accent,
                     )
                   : null,
             ),
@@ -692,7 +685,7 @@ class _TotalSavingsCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'إجمالي المبالغ الموفرة',
+                  'إجمالي المبالغ الموفَّرة',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -710,7 +703,7 @@ class _TotalSavingsCard extends StatelessWidget {
 
           if (total <= 0)
             Text(
-              'لا توجد مبالغ موفرة بعد',
+              'لا توجد مبالغ موفَّرة بعد',
               style: TextStyle(
                 fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 14,
@@ -757,8 +750,8 @@ class _TotalSavingsCard extends StatelessWidget {
 
           Text(
             total > 0
-                ? 'إجمالي المبلغ المدخر حالياً'
-                : 'ادخر أول مبلغ ليظهر هنا',
+                ? 'إجمالي المبلغ الموفَّر حالياً'
+                : 'وفّر أول مبلغ ليظهر هنا',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(

@@ -13,16 +13,19 @@ enum NotificationType {
   largeExpense,
   recurringExpenseBlocked,
   recurringExpenseApplied,
+  recurringExpenseUpcoming,
+  recurringExpenseDue,
 }
 
 // Light visual weight for list styling (no extra theme colors).
 enum NotificationPriority { warning, important, success, savings, info }
 
-// Shared percent / size cutoffs for generators across the app.
+// Shared percent / size cutoffs for generators across the app. Spending and
+// remaining-balance cutoffs do not overlap, so one drop never sends two alerts.
 class NotificationThresholds {
-  static const List<int> remainingPercents = [30, 20, 10];
-  static const List<int> spendingPercents = [50, 70, 80, 90];
-  static const List<int> goalPercents = [25, 50, 75];
+  static const List<int> remainingPercents = [25, 10];
+  static const List<int> spendingPercents = [50];
+  static const List<int> goalPercents = [50, 75];
   static const double largeExpenseMultiplier = 2.0;
   static const int minExpensesForLarge = 4;
 }
@@ -65,6 +68,9 @@ class AppNotification {
         NotificationType.recurringPeriodCompleted => NotificationPriority.info,
         NotificationType.recurringExpenseBlocked => NotificationPriority.warning,
         NotificationType.recurringExpenseApplied => NotificationPriority.info,
+        NotificationType.recurringExpenseUpcoming =>
+          NotificationPriority.warning,
+        NotificationType.recurringExpenseDue => NotificationPriority.important,
       };
 
   AppNotification copyWith({
@@ -158,6 +164,8 @@ class AppNotification {
       'largeExpense' => NotificationType.largeExpense,
       'recurringExpenseBlocked' => NotificationType.recurringExpenseBlocked,
       'recurringExpenseApplied' => NotificationType.recurringExpenseApplied,
+      'recurringExpenseUpcoming' => NotificationType.recurringExpenseUpcoming,
+      'recurringExpenseDue' => NotificationType.recurringExpenseDue,
       _ => NotificationType.recurringPeriodCompleted,
     };
   }

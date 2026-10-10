@@ -8,8 +8,18 @@ from sqlalchemy.orm import Session
 from database import create_tables, get_db, utc_now
 from category_model import ExpenseCategory
 from models import Notification, User, UserSettings
+from preset_model import ExpensePreset
+import password_reset
 import profile_photo as stored_photo
-from schemas import RegisterRequest, LoginRequest, AuthResponse
+from schemas import (
+    AuthResponse,
+    ChangePasswordRequest,
+    DataKeyIn,
+    ForgotPasswordRequest,
+    LoginRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+)
 from auth import (
     hash_password,
     verify_password,
@@ -41,6 +51,7 @@ _MODEL_MODULES = (
     ShoppingList,
     ShoppingItem,
     ExpenseCategory,
+    ExpensePreset,
     NewsArticle,
     ExchangeRate,
 )
@@ -73,7 +84,7 @@ app.include_router(sync_router)
 
 @app.get("/")
 def root():
-    return {"message": "Waffer API is running"}
+    return {"message": "Waffr API is running"}
 
 
 @app.post("/auth/register", response_model=AuthResponse)
@@ -92,6 +103,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     country = _clean(data.country)
     city = _clean(data.city)
     street = _clean(data.street)
+    phone = _clean(data.phone)
 
     user = User(
         email=data.email,
@@ -102,6 +114,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
         country=country,
         city=city,
         street=street,
+        phone=phone,
         settings=UserSettings(
             gender=gender,
             birthdate=birthdate,
@@ -113,7 +126,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    token = create_access_token(user.id)
+    token = create_access_token(user)
 
     return {
         "access_token": token,
@@ -131,7 +144,7 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
             detail="Invalid email or password",
         )
 
-    token = create_access_token(user.id)
+    token = create_access_token(user)
 
     return {
         "access_token": token,
@@ -172,13 +185,118 @@ def _user_payload(user: User) -> dict:
         "country": _clean(user.country),
         "city": _clean(user.city),
         "street": _clean(user.street),
+        "phone": _clean(user.phone),
+        "data_key": _data_key(user),
         **_photo_meta(user),
+    }
+
+
+def _data_key(user: User) -> dict | None:
+    if not user.wrapped_key or not user.key_salt or not user.key_iterations:
+        return None
+    return {
+        "salt": user.key_salt,
+        "iterations": user.key_iterations,
+        "wrapped_key": user.wrapped_key,
     }
 
 
 @app.get("/auth/me")
 def get_me(current_user: User = Depends(get_current_user)):
     return _user_payload(current_user)
+
+
+@app.put("/auth/key")
+def store_data_key(
+    data: DataKeyIn,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Set once. Replacing it would leave the encrypted rows unreadable.
+    if current_user.wrapped_key:
+        raise HTTPException(status_code=409, detail="Data key already set")
+    current_user.key_salt = data.salt
+    current_user.key_iterations = data.iterations
+    current_user.wrapped_key = data.wrapped_key
+    db.commit()
+    db.refresh(current_user)
+    return {"data_key": _data_key(current_user)}
+
+
+@app.post("/auth/password/forgot")
+def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    if not password_reset.email_configured():
+        raise HTTPException(status_code=503, detail="Email is not configured")
+    # Same reply whether or not the email has an account.
+    user = db.query(User).filter(User.email == data.email).first()
+    if user is not None:
+        code = password_reset.issue_code(user, utc_now())
+        if code is not None:
+            db.commit()
+            try:
+                password_reset.send_code(user.email, code)
+            except password_reset.EmailSendFailed:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Could not send email",
+                ) from None
+    return {"ok": True}
+
+
+@app.post("/auth/password/reset")
+def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == data.email).first()
+    if user is None or not password_reset.check_code(user, data.code, utc_now()):
+        db.commit()
+        raise HTTPException(status_code=400, detail="Invalid or expired code")
+
+    user.password_hash = hash_password(data.new_password)
+    user.token_version += 1
+    password_reset.clear_code(user)
+    # The data key was wrapped with the old password and cannot be recovered.
+    # The next sign-in creates a new one.
+    user.key_salt = None
+    user.key_iterations = None
+    user.wrapped_key = None
+    password_reset.drop_sealed_text(db, user.id)
+    db.commit()
+    return {"ok": True}
+
+
+@app.post("/auth/password/change", response_model=AuthResponse)
+def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(data.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if current_user.wrapped_key and data.data_key is None:
+        raise HTTPException(status_code=400, detail="Data key is required")
+
+    current_user.password_hash = hash_password(data.new_password)
+    current_user.token_version += 1
+    if data.data_key is not None:
+        current_user.key_salt = data.data_key.salt
+        current_user.key_iterations = data.data_key.iterations
+        current_user.wrapped_key = data.data_key.wrapped_key
+    db.commit()
+    db.refresh(current_user)
+    return {
+        "access_token": create_access_token(current_user),
+        "token_type": "bearer",
+    }
+
+
+@app.delete("/auth/account", status_code=204)
+def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Rows owned by the user go with it (ORM cascade and ON DELETE CASCADE).
+    stored_photo.delete_photo(current_user.id)
+    db.delete(current_user)
+    db.commit()
 
 
 @app.put("/auth/photo")

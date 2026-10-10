@@ -2,19 +2,21 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:waffer/data/models/app_notification.dart';
-import 'package:waffer/data/models/calendar_period.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/sync/sync_mapper.dart';
-import 'package:waffer/core/sync/sync_merge.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
-import 'package:waffer/data/services/system_notifications.dart';
-import 'package:waffer/data/services/usage_streak_service.dart';
+import 'package:waffr/data/models/app_notification.dart';
+import 'package:waffr/data/models/calendar_period.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/sync/sync_mapper.dart';
+import 'package:waffr/core/sync/sync_merge.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/data/services/system_notifications.dart';
+import 'package:waffr/data/services/usage_streak_service.dart';
 
 /// In-app notification engine for balance, spending, goals, savings, and periods.
 ///
@@ -24,8 +26,9 @@ import 'package:waffer/data/services/usage_streak_service.dart';
 /// via [seedIfNeeded] / [evaluate]; screens only display the feed—do not call
 /// from `build()`. Alerts fire when values cross thresholds vs the snapshot,
 /// not on every load. Thresholds ([NotificationThresholds]): remaining balance
-/// 30/20/10%; spending 50/70/80/90%; goals 25/50/75%; large expense = 2× prior
-/// average once there are more than four expenses.
+/// 25/10%; spending 50%; goals 50/75%; large expense = 2× prior average once
+/// there are more than four expenses (scheduled bills excluded). Every message
+/// names the amount or goal it is about.
 class NotificationService extends ChangeNotifier {
   NotificationService._();
 
@@ -152,6 +155,7 @@ class NotificationService extends ChangeNotifier {
     unawaited(
       SystemNotifications.instance.syncStreakReminder(
         enabled: !muted && UsageStreakService.instance.count >= 2,
+        streakCount: UsageStreakService.instance.count,
       ),
     );
   }
@@ -310,10 +314,14 @@ class NotificationService extends ChangeNotifier {
 
     final percent = crossed.reduce((a, b) => a < b ? a : b);
     final cycle = _incomeCycle(store);
+    final left = '${formatMoney(store.balance)} $currencyLabel';
+    final income = '${formatMoney(store.maxBalance)} $currencyLabel';
     return _tryAdd(
       type: NotificationType.balanceWarning,
-      title: 'رصيدك المتاح اقترب من النفاد',
-      message: 'بقي $percent% من رصيدك المتاح',
+      title: percent <= 10 ? 'رصيدك على وشك النفاد' : 'بقي ربع رصيدك',
+      message: percent <= 10
+          ? 'بقي $left فقط من أصل $income.'
+          : 'المتاح الآن $left من أصل $income. راجع مصروفاتك حتى الدخل القادم.',
       eventKey: 'balanceWarning:$percent:$cycle',
       metadata: {
         'percent': '$percent',
@@ -326,7 +334,7 @@ class NotificationService extends ChangeNotifier {
   bool _evaluateSpending(TransactionStore store) {
     if (store.maxBalance <= 0) return false;
 
-    final current = store.totalExpense / store.maxBalance;
+    final current = store.cycleSpent / store.maxBalance;
     final previous = _snapshot.spentRatio;
     if (previous == null) return false;
 
@@ -343,8 +351,10 @@ class NotificationService extends ChangeNotifier {
     final cycle = _incomeCycle(store);
     return _tryAdd(
       type: NotificationType.highSpending,
-      title: 'إنفاق مرتفع',
-      message: 'لقد أنفقت $percent% من رصيدك',
+      title: 'صرفت $percent% من دخلك',
+      message: 'صرفت ${formatMoney(store.cycleSpent)} من '
+          '${formatMoney(store.maxBalance)} $currencyLabel، '
+          'والمتاح الآن ${formatMoney(store.balance)} $currencyLabel.',
       eventKey: 'highSpending:$percent:$cycle',
       metadata: {
         'percent': '$percent',
@@ -364,8 +374,9 @@ class NotificationService extends ChangeNotifier {
       if (goal.isCompleted) {
         changed |= _tryAdd(
           type: NotificationType.goalReached,
-          title: 'تم تحقيق هدفك 🎯',
-          message: goal.name,
+          title: 'اكتمل هدف ${goal.name}',
+          message: 'جمعت ${formatMoney(goal.targetAmount)} '
+              '${currencyLabelFor(goal.currencyCode)} المطلوبة لهذا الهدف.',
           eventKey: _goalReachedKey(goal.id),
           relatedId: goal.id,
           metadata: {
@@ -389,10 +400,12 @@ class NotificationService extends ChangeNotifier {
       if (crossed.isEmpty) continue;
 
       final percent = crossed.reduce((a, b) => a > b ? a : b);
+      final symbol = currencyLabelFor(goal.currencyCode);
       changed |= _tryAdd(
         type: NotificationType.goalProgress,
-        title: 'تقدم في هدفك',
-        message: 'وصلت إلى $percent% من هدفك',
+        title: 'هدف ${goal.name}: $percent%',
+        message: 'وفّرت ${formatMoney(store.currentSaved(goal))} من '
+            '${formatMoney(goal.targetAmount)} $symbol.',
         eventKey: _goalProgressKey(goal.id, percent),
         relatedId: goal.id,
         metadata: {
@@ -421,15 +434,17 @@ class NotificationService extends ChangeNotifier {
 
       final periodLabel = _periodAdjective(item);
       final goalName = _goalName(store, item.goalId);
+      final amount =
+          '${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}';
+      final weekly = periodLabel == 'الأسبوعية';
 
       changed |= _tryAdd(
         type: NotificationType.savingsTransferred,
-        title: 'تم تحويل مبلغ إلى الادخار',
+        title: 'أُضيف $amount إلى التوفير',
         message: kind == SavingsTransferKind.goalPeriodic
-            ? 'تم تحويل ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)} إلى الادخار'
-                '${goalName == null ? '' : ' · $goalName'}'
-            : 'تم تحويل ${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)} إلى الادخار'
-                '${periodLabel == null ? '' : ' · الفترة $periodLabel'}',
+            ? 'الدفعة الدورية${goalName == null ? '' : ' لهدف $goalName'}.'
+            : 'المتبقي من دخل ${weekly ? 'الأسبوع' : 'الشهر'} الماضي'
+                '${goalName == null ? '' : '، ضمن هدف $goalName'}.',
         eventKey: 'savingsTransfer:${item.id}',
         relatedId: item.id,
         metadata: {
@@ -475,13 +490,12 @@ class NotificationService extends ChangeNotifier {
       );
       if (hasTransfer) continue;
 
-      final weekly = periodKey.startsWith('w:');
+      final weekly = periodKey.contains('w:');
+      final span = weekly ? 'الأسبوع' : 'الشهر';
       changed |= _tryAdd(
         type: NotificationType.recurringPeriodCompleted,
-        title: weekly ? 'انتهت الفترة الأسبوعية' : 'انتهت الفترة الشهرية',
-        message: weekly
-            ? 'انتهت الفترة الأسبوعية وتم تحديث الادخار'
-            : 'انتهت الفترة الشهرية وتم تحديث الادخار',
+        title: 'انتهى $span دون توفير',
+        message: 'لم يتبقَّ من دخل $span الماضي مبلغ يُنقل إلى التوفير.',
         eventKey: 'periodCompleted:$periodKey',
         relatedId: periodKey,
         metadata: {
@@ -509,6 +523,8 @@ class NotificationService extends ChangeNotifier {
       final expense = chronological[i];
       if (_snapshot.knownTransactionIds.contains(expense.id)) continue;
       if (i < NotificationThresholds.minExpensesForLarge) continue;
+      // Scheduled bills have their own notice and are expected amounts.
+      if (RecurringExpense.isRecurringSource(expense.sourceId)) continue;
 
       final prior = chronological.sublist(0, i);
       final average =
@@ -520,8 +536,10 @@ class NotificationService extends ChangeNotifier {
 
       changed |= _tryAdd(
         type: NotificationType.largeExpense,
-        title: 'مصروف مرتفع',
-        message: 'هذا المصروف أعلى من متوسط مصروفاتك المعتاد.',
+        title: 'مصروف أعلى من المعتاد',
+        message: '${formatMoney(expense.amount)} '
+            '${currencyLabelFor(expense.currencyCode)} على '
+            '${categoryFor(expense.category).label}، أي ضعف متوسط مصروفاتك أو أكثر.',
         eventKey: 'largeExpense:${expense.id}',
         relatedId: expense.id,
         metadata: {
@@ -577,8 +595,7 @@ class NotificationService extends ChangeNotifier {
     _items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
 
-  String _incomeCycle(TransactionStore store) =>
-      'income:${store.maxBalance.round()}';
+  String _incomeCycle(TransactionStore store) => 'cycle:${store.cycleKey}';
 
   String _goalReachedKey(String goalId) => 'goalReached:$goalId';
 
@@ -594,7 +611,7 @@ class NotificationService extends ChangeNotifier {
   }
 
   /// Arabic weekly/monthly adjective from period key or recurring frequency.
-  String? _periodAdjective(WafferTransaction item) {
+  String? _periodAdjective(WaffrTransaction item) {
     final key = item.processedPeriodKey;
     if (key != null) {
       if (key.startsWith('w:')) return 'الأسبوعية';
@@ -687,7 +704,7 @@ class _NotificationSnapshot {
   /// Builds a snapshot from the live [TransactionStore].
   factory _NotificationSnapshot.fromStore(TransactionStore store) {
     final spent =
-        store.maxBalance <= 0 ? 0.0 : store.totalExpense / store.maxBalance;
+        store.maxBalance <= 0 ? 0.0 : store.cycleSpent / store.maxBalance;
     return _NotificationSnapshot(
       initialized: true,
       remainingRatio: store.remainingRatio,

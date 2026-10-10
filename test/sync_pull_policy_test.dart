@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:waffer/core/sync/sync_pull_policy.dart';
+import 'package:waffr/core/sync/sync_pull_policy.dart';
 
 void main() {
   final now = DateTime.utc(2026, 9, 20, 17);

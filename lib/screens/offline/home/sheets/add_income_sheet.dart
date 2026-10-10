@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 // Glass bottom sheet for logging income (amount, frequency, leftover balance).
 
@@ -24,7 +25,7 @@ class _AddIncomeSheet extends StatefulWidget {
 }
 
 class _AddIncomeSheetState extends State<_AddIncomeSheet> {
-  static const String _freqNone = 'بدون مدة';
+  static const String _freqNone = 'مرة واحدة';
   static const String _freqWeekly = 'أسبوعي';
   static const String _freqMonthly = 'شهري';
   // Weekly income still works in the store; the chip is hidden for now.
@@ -90,18 +91,30 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
       currencyCode: _currencyCode,
     );
 
-    if (!mounted) return;
-    Navigator.of(context).maybePop();
-  }
+    // New income ends "remind me on next income" and is a good moment to
+    // settle obligations that still wait for approval.
+    final obligations = RecurringExpenseStore.instance;
+    await obligations.releaseIncomeReminders(_currencyCode);
+    final waiting =
+        obligations.awaitingConfirmation(_currencyCode).isNotEmpty;
 
-  // Explains what happens to leftover balance when a new income period starts.
-  void _showBalanceInfo() {
-    showAppInfoDialog(
-      context,
-      title: 'الرصيد الحالي',
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    await navigator.maybePop();
+    if (!waiting || !navigator.mounted) return;
+
+    final review = await showAppConfirmDialog(
+      navigator.context,
+      title: 'التزامات بانتظار تأكيدك',
       message:
-          'يُظهر هذا القسم الرصيد المتبقي لديك من الفترة السابقة. اختر ما تريد فعله به: نقله إلى التوفير، أو إبقاءه ضمن رصيدك الجديد.',
+          'أضفت دخلاً جديداً، ولديك التزامات لم تُخصم بعد. هل تريد مراجعتها الآن؟',
+      confirmLabel: 'مراجعة',
+      cancelLabel: 'لاحقاً',
+      kind: AppFeedbackKind.info,
     );
+    if (review && navigator.mounted) {
+      await showDueObligationsSheet(navigator.context);
+    }
   }
 
   @override
@@ -126,7 +139,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 18),
-        const SheetFieldLabel(text: 'مدة المبلغ'),
+        const SheetFieldLabel(text: 'نوع الدخل'),
         SheetChoiceChips(
           options: _frequencyOptions,
           selected: _frequencyLabel,
@@ -140,7 +153,11 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
               const SizedBox(height: 18),
               SheetFieldLabel(
                 text: 'الرصيد الحالي',
-                action: _SheetInfoButton(onTap: _showBalanceInfo),
+                action: const SheetInfoButton(
+                  title: 'الرصيد الحالي',
+                  message:
+                      'هذا هو المبلغ المتبقي لديك من الفترة السابقة. اختر ما تريد فعله به: نقله إلى التوفير، أو إبقاءه ضمن رصيدك الجديد.',
+                ),
               ),
               SheetChoiceChips(
                 options: const [_keepBalance, _moveBalance],
@@ -163,42 +180,6 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
           onTap: _save,
         ),
       ],
-    );
-  }
-}
-
-class _SheetInfoButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _SheetInfoButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: textSecondary.withValues(alpha: 0.0)),
-          ),
-          alignment: Alignment.center,
-          child: Icon(
-            Icons.info_outline_rounded,
-            size: 18,
-            color: accent,
-          ),
-        ),
-      ),
     );
   }
 }

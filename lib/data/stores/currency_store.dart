@@ -1,11 +1,11 @@
 // Persists which currencies are enabled and which one is active in the UI.
 
 import 'package:flutter/foundation.dart';
-import 'package:waffer/data/models/currency.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
+import 'package:waffr/data/models/currency.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
 
-export 'package:waffer/data/models/currency.dart';
+export 'package:waffr/data/models/currency.dart';
 
 // Enabled list + active code. Removing a currency never deletes its ledger rows.
 class CurrencyStore extends ChangeNotifier {

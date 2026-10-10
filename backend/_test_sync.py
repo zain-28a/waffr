@@ -33,6 +33,7 @@ def empty_payload(last_sync_at=None, **overrides):
         "recurring_expenses": collection(),
         "notifications": collection(),
         "expense_categories": collection(),
+        "expense_presets": collection(),
         "settings": None,
     }
     body.update(overrides)
@@ -121,6 +122,7 @@ def main() -> int:
     rec_id = f"r{uuid4().hex[:10]}"
     note_id = f"n{uuid4().hex[:10]}"
     cat_id = f"cat_{uuid4().hex[:10]}"
+    preset_id = f"p{uuid4().hex[:10]}"
     now = stamp()
 
     status, first_body = request(
@@ -201,6 +203,8 @@ def main() -> int:
                         "interval_count": 1,
                         "next_due_at": now,
                         "enabled": True,
+                        "requires_confirmation": True,
+                        "remind_on_income": True,
                         "created_at": now,
                         "updated_at": now,
                     }
@@ -231,12 +235,32 @@ def main() -> int:
                     }
                 ]
             ),
+            expense_presets=collection(
+                [
+                    {
+                        "client_id": preset_id,
+                        "amount": "1500",
+                        "multiplier": 2,
+                        "currency_code": "SYP",
+                        "category": "طعام",
+                        "payment_method": "نقداً",
+                        "note": "خبز",
+                        "recurring": False,
+                        "unit": "month",
+                        "interval_count": 1,
+                        "created_at": now,
+                        "updated_at": now,
+                    }
+                ]
+            ),
             settings={
                 "notifications_muted": True,
                 "monthly_income_amount": "800.00",
                 "processed_period_keys": ["leftover:m:2026-01"],
                 "display_name": "Sync Tester",
                 "gender": "male",
+                "phone": "+963 912345678",
+                "hidden_categories": ["تعليم", "ترفيه", "تعليم"],
                 "dark_mode": True,
                 "updated_at": now,
             },
@@ -256,6 +280,13 @@ def main() -> int:
     )
     check(item_id in client_ids(first_body["shopping_items"]["upserts"]), "shopping item returned")
     check(rec_id in client_ids(first_body["recurring_expenses"]["upserts"]), "recurring returned")
+    rec = next(
+        item for item in first_body["recurring_expenses"]["upserts"]
+        if item["client_id"] == rec_id
+    )
+    check(rec["requires_confirmation"] is True, "recurring keeps confirm-before-deduct")
+    check(rec["remind_on_income"] is True, "recurring keeps postpone-until-income")
+    check(rec["remind_at"] is None, "recurring remind_at defaults to empty")
     check(note_id in client_ids(first_body["notifications"]["upserts"]), "notification returned")
     check(cat_id in client_ids(first_body["expense_categories"]["upserts"]), "category returned")
     check(first_body["settings"]["notifications_muted"] is True, "muted setting stored")
@@ -263,6 +294,17 @@ def main() -> int:
     check(first_body["settings"]["gender"] == "male", "gender stored")
     check(first_body["settings"]["dark_mode"] is True, "dark mode stored")
     check(first_body["settings"]["has_photo"] is False, "no photo by default")
+    presets = first_body["expense_presets"]["upserts"]
+    check(preset_id in client_ids(presets), "expense preset returned")
+    check(
+        any(row["multiplier"] == 2 and row["note"] == "خبز" for row in presets),
+        "expense preset keeps its details",
+    )
+    check(first_body["settings"]["phone"] == "+963 912345678", "phone stored")
+    check(
+        first_body["settings"]["hidden_categories"] == ["تعليم", "ترفيه"],
+        "removed built-in categories stored once each",
+    )
     check(
         "leftover:m:2026-01" in first_body["settings"]["processed_period_keys"],
         "processed period keys stored",
@@ -376,6 +418,37 @@ def main() -> int:
     )
     status, missing = request("GET", "/transactions", token=token_a)
     check(missing == [], "soft-deleted transaction hidden from CRUD")
+
+    status, preset_gone = request(
+        "POST",
+        "/sync",
+        token=token_a,
+        body=empty_payload(
+            last_sync_at=deleted["server_time"],
+            expense_presets=collection(
+                deletes=[{"client_id": preset_id, "deleted_at": stamp(20)}]
+            ),
+        ),
+    )
+    check(status == 200, "preset delete accepted")
+    check(
+        any(
+            item["client_id"] == preset_id
+            for item in preset_gone["expense_presets"]["deletes"]
+        ),
+        "preset delete returned to client",
+    )
+
+    status, _ = request(
+        "POST",
+        "/auth/register",
+        body={
+            "email": f"phone_{uuid4().hex[:8]}@example.com",
+            "password": "PasswordC1!",
+            "phone": "0912",
+        },
+    )
+    check(status == 422, "malformed phone rejected at sign-up")
 
     status, other = request(
         "POST",

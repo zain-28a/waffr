@@ -1,12 +1,13 @@
 // Lists finished savings goals with their completed amounts and dates.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/data/models/savings_goal.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/containers/glass.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/containers/app_empty_state.dart';
+import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 Future<void> showCompletedGoalsSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -52,27 +53,10 @@ class _CompletedGoalsSheetState extends State<_CompletedGoalsSheet> {
         ),
         const SizedBox(height: 12),
         if (goals.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 36),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.emoji_events_outlined,
-                  size: 38,
-                  color: textPrimary.withValues(alpha: 0.3),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'لا توجد أهداف محققة بعد',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                    fontSize: 14,
-                    color: textPrimary.withValues(alpha: 0.55),
-                  ),
-                ),
-              ],
-            ),
+          const AppEmptyState(
+            icon: Icons.emoji_events_outlined,
+            title: 'لا توجد أهداف محققة بعد',
+            message: 'عندما تكمل هدفاً يظهر هنا.',
           )
         else
           for (final goal in goals) ...[
@@ -136,7 +120,7 @@ class _CompletedGoalCard extends StatelessWidget {
             ),
           ),
           Text(
-            'المتجمّع: ${formatMoney(total)} $currencyLabel',
+            'المبلغ المجموع: ${formatMoney(total)} $currencyLabel',
             style: TextStyle(
               fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 13.5,

@@ -1,10 +1,10 @@
 // Moves money from the operating balance into savings without a goal.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 Future<void> showManualSaveSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -63,8 +63,8 @@ class _ManualSaveSheetState extends State<_ManualSaveSheet> {
     return GlassSheetBody(
       children: [
         GlassSheetHeader(
-          title: 'ادخار مبلغ',
-          subtitle: 'يُنقل من الرصيد التشغيلي إلى الادخار.',
+          title: 'توفير مبلغ',
+          subtitle: 'يُنقل المبلغ من رصيدك إلى التوفير.',
           onNext: _isValid ? _save : null,
         ),
         const SizedBox(height: 18),
@@ -79,7 +79,7 @@ class _ManualSaveSheetState extends State<_ManualSaveSheet> {
         ),
         const SizedBox(height: 22),
         SheetSaveButton(
-          label: 'تأكيد الادخار',
+          label: 'تأكيد التوفير',
           enabled: _isValid && !_saving,
           onTap: _save,
         ),

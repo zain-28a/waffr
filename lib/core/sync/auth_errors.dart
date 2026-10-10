@@ -13,12 +13,12 @@ String describeAuthError(int status, Object? body) {
         detail.contains('email')) {
       return 'أدخل بريداً إلكترونياً صالحاً';
     }
-    return detail.isEmpty ? 'تعذر إنشاء الحساب' : detail;
+    return detail.isEmpty ? 'تعذّر إنشاء الحساب' : detail;
   }
   if (status == 422) {
     return 'أدخل بريداً إلكترونياً صالحاً';
   }
-  return 'تعذر الاتصال بالحساب. حاول مرة أخرى';
+  return 'تعذّر الاتصال بالحساب. حاول مرة أخرى';
 }
 
 // Pull FastAPI's `detail` string (or first validation msg) from the JSON body.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/widgets/button/ani_pri_button.dart';
+import 'package:waffr/widgets/button/app_primary_button.dart';
+import 'package:waffr/core/theme/app_color.dart';
 
 // First-launch light/dark picker before entering the app.
 
@@ -42,7 +42,6 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
   @override
   Widget build(BuildContext context) {
     final bg = _isDark ? const Color.fromARGB(255, 24, 24, 24) : AppColors.lightBackground;
-    final surface = _isDark ? AppColors.darkSurface : AppColors.lightSurface;
     final textPrimary = _isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary = _isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final accent = _isDark ? const Color.fromARGB(255, 121, 168, 78) : const Color.fromARGB(255, 64, 106, 38);
@@ -83,9 +82,14 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
               const SizedBox(height: 8),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 400),
-                style: TextStyle(color: textSecondary, fontSize: 18),
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 18,
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: const ['Tajawal'],
+                ),
                 child: const Text(
-                  "يمكن تغييره لاحقا من الاعدادات",
+                  'يمكنك تغييره لاحقاً من الإعدادات',
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -103,9 +107,14 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     child: Text(
-                      _isDark ? 'غامق' : 'فاتح',
+                      _isDark ? 'داكن' : 'فاتح',
                       key: ValueKey(_isDark),
-                      style: TextStyle(color: textPrimary, fontSize: 20),
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 20,
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: const ['Tajawal'],
+                      ),
                     ),
                   ),
                 ],
@@ -115,13 +124,10 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
 
               SizedBox(
                 width: 500,
-                child: AnimatedPrimaryButton(
-  text: 'متابعة',
-  backgroundColor: accent,
-  textColor: surface,
-                  style: TextStyle(color: surface, fontSize: 18, fontWeight: FontWeight.bold),
-  onPressed: _continue,
-)
+                child: AppPrimaryButton(
+                  label: 'متابعة',
+                  onTap: _continue,
+                )
               ),
               
             ], 

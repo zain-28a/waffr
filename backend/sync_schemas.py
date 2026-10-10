@@ -5,6 +5,9 @@ from pydantic import BaseModel, Field, field_serializer, field_validator
 
 from api_schemas import money_str, parse_decimal
 
+# Private text arrives encrypted, which is longer than what the user typed.
+PRIVATE_TEXT_MAX = 4000
+
 
 class TombstoneIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=64)
@@ -36,7 +39,7 @@ class TransactionSyncIn(BaseModel):
 
 class GoalSyncIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=64)
-    name: str = Field(min_length=1, max_length=100)
+    name: str = Field(min_length=1, max_length=PRIVATE_TEXT_MAX)
     target_amount: Decimal = Field(gt=0)
     duration: str = Field(default="month")
     deadline: datetime | None = None
@@ -97,7 +100,7 @@ class ShoppingListSyncIn(BaseModel):
 class ShoppingItemSyncIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=64)
     list_client_id: str = Field(default="shopping_default", max_length=64)
-    name: str = Field(min_length=1, max_length=255)
+    name: str = Field(min_length=1, max_length=PRIVATE_TEXT_MAX)
     quantity: int = 1
     price: Decimal | None = None
     is_purchased: bool = False
@@ -122,6 +125,9 @@ class RecurringSyncIn(BaseModel):
     interval_count: int = 1
     next_due_at: datetime | None = None
     enabled: bool = True
+    requires_confirmation: bool = False
+    remind_at: datetime | None = None
+    remind_on_income: bool = False
     currency_code: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -150,10 +156,33 @@ class NotificationSyncIn(BaseModel):
 
 class CategorySyncIn(BaseModel):
     client_id: str = Field(min_length=1, max_length=64)
-    label: str = Field(min_length=1, max_length=100)
+    label: str = Field(min_length=1, max_length=PRIVATE_TEXT_MAX)
     icon_index: int = 0
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+class PresetSyncIn(BaseModel):
+    client_id: str = Field(min_length=1, max_length=64)
+    amount: Decimal = Field(gt=0)
+    multiplier: int = Field(default=1, ge=1, le=10)
+    currency_code: str | None = None
+    category: str = Field(min_length=1, max_length=PRIVATE_TEXT_MAX)
+    payment_method: str = Field(default="", max_length=PRIVATE_TEXT_MAX)
+    note: str | None = Field(default=None, max_length=PRIVATE_TEXT_MAX)
+    recurring: bool = False
+    unit: str = Field(default="month", pattern="^(day|week|month)$")
+    interval_count: int = Field(default=1, ge=1, le=99)
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _amount(cls, value):
+        parsed = parse_decimal(value)
+        if parsed is None:
+            raise ValueError("amount is required")
+        return parsed
 
 
 class SettingsSyncIn(BaseModel):
@@ -176,10 +205,12 @@ class SettingsSyncIn(BaseModel):
     country: str | None = Field(default=None, max_length=80)
     city: str | None = Field(default=None, max_length=80)
     street: str | None = Field(default=None, max_length=160)
+    phone: str | None = Field(default=None, max_length=32)
     dark_mode: bool | None = None
     usage_started_at: str | None = Field(default=None, max_length=40)
     streak_count: int | None = None
     streak_last_date: str | None = Field(default=None, max_length=10)
+    hidden_categories: list[str] | None = None
     updated_at: datetime | None = None
 
     @field_validator("monthly_income_amount", "weekly_income_amount", mode="before")
@@ -203,6 +234,7 @@ class SyncRequest(BaseModel):
     recurring_expenses: SyncCollectionIn = Field(default_factory=SyncCollectionIn)
     notifications: SyncCollectionIn = Field(default_factory=SyncCollectionIn)
     expense_categories: SyncCollectionIn = Field(default_factory=SyncCollectionIn)
+    expense_presets: SyncCollectionIn = Field(default_factory=SyncCollectionIn)
     settings: SettingsSyncIn | None = None
 
 
@@ -226,10 +258,12 @@ class SettingsSyncOut(BaseModel):
     country: str | None = None
     city: str | None = None
     street: str | None = None
+    phone: str | None = None
     dark_mode: bool | None = None
     usage_started_at: str | None = None
     streak_count: int | None = None
     streak_last_date: str | None = None
+    hidden_categories: list[str] = Field(default_factory=list)
     has_photo: bool = False
     photo_updated_at: datetime | None = None
     updated_at: datetime
@@ -254,4 +288,5 @@ class SyncResponse(BaseModel):
     recurring_expenses: SyncCollectionOut
     notifications: SyncCollectionOut
     expense_categories: SyncCollectionOut
+    expense_presets: SyncCollectionOut
     settings: SettingsSyncOut

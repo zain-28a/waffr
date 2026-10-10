@@ -1,4 +1,4 @@
-package com.example.waffer
+package com.waffr.app
 
 import android.content.ClipData
 import android.content.Intent
@@ -16,7 +16,7 @@ class MainActivity : FlutterFragmentActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "waffer/share_pdf",
+            "waffr/share_pdf",
         ).setMethodCallHandler { call, result ->
             if (call.method != "share") {
                 result.notImplemented()
@@ -46,8 +46,8 @@ class MainActivity : FlutterFragmentActivity() {
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "application/pdf"
             putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_TITLE, "waffer-expenses.pdf")
-            clipData = ClipData.newRawUri("waffer-expenses.pdf", uri)
+            putExtra(Intent.EXTRA_TITLE, "waffr-expenses.pdf")
+            clipData = ClipData.newRawUri("waffr-expenses.pdf", uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         val targets = packageManager.queryIntentActivities(

@@ -1,17 +1,19 @@
 // Shopping list preview card plus sheets to add items and record purchases as expenses.
 
 import 'package:flutter/material.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/models/expense_categories.dart';
-import 'package:waffer/data/stores/shopping_list_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/screens/offline/home/sheets/add_expense_sheet.dart';
-import 'package:waffer/widgets/button/glass_button.dart';
-import 'package:waffer/widgets/containers/glass.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/containers/app_empty_state.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/shopping_list_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
+import 'package:waffr/widgets/button/glass_button.dart';
+import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/dialogs/edit_delete_menu.dart';
 
 Future<void> showShoppingListSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -86,7 +88,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                         Text(
                           preview.isEmpty
                               ? 'أضف ما تحتاج إلى شرائه'
-                              : '${_store.items.length} عناصر محفوظة',
+                              : itemsCountLabel(_store.items.length),
                           style: TextStyle(
                             fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                             fontSize: 11.5,
@@ -107,7 +109,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      '+ ${_store.items.length - preview.length} عناصر أخرى',
+                      '+ ${itemsCountLabel(_store.items.length - preview.length, other: true)}',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
@@ -217,7 +219,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
     final confirmed = await showAppConfirmDialog(
       context,
       title: 'إفراغ قائمة المشتريات',
-      message: 'سيتم حذف كل العناصر من القائمة. المصروفات المسجّلة لن تتأثر.',
+      message: 'ستُحذف كل العناصر من القائمة. المصروفات المسجّلة لن تتأثر.',
       confirmLabel: 'إفراغ',
       destructive: true,
     );
@@ -232,6 +234,47 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
   Future<void> _purchase(ShoppingItem item) async {
     if (item.isPurchased) return;
     await showPurchaseShoppingItemSheet(context, item);
+  }
+
+  // Same edit / delete menu as the expense categories.
+  Future<void> _showItemActions(
+    BuildContext anchorContext,
+    ShoppingItem item,
+  ) async {
+    final action = await showEditDeleteMenu(
+      context,
+      anchorContext: anchorContext,
+    );
+    if (!mounted || action == null) return;
+    switch (action) {
+      case EditDeleteAction.edit:
+        await _renameItem(item);
+      case EditDeleteAction.delete:
+        await _removeItem(item);
+    }
+  }
+
+  Future<void> _renameItem(ShoppingItem item) async {
+    final name = await showAppDialog<String>(
+      context: context,
+      builder: (_) => _RenameShoppingItemDialog(initialName: item.name),
+    );
+    if (name == null || !mounted) return;
+    await _store.renameItem(item.id, name);
+  }
+
+  Future<void> _removeItem(ShoppingItem item) async {
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'حذف «${item.name}»',
+      message: item.isPurchased
+          ? 'سيُحذف العنصر من القائمة. المصروف المسجّل لشرائه لن يتأثر.'
+          : 'سيُحذف العنصر من قائمة المشتريات.',
+      confirmLabel: 'حذف',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+    await _store.removeItem(item.id);
   }
 
   @override
@@ -288,26 +331,10 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
             ),
             const SizedBox(height: 16),
             if (_store.items.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 28),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.shopping_basket_outlined,
-                      size: 42,
-                      color: colors.textSecondary.withValues(alpha: 0.55),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'قائمة المشتريات فارغة',
-                      style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                        fontSize: 14,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+              const AppEmptyState(
+                icon: Icons.shopping_basket_outlined,
+                title: 'قائمة المشتريات فارغة',
+                message: 'اكتب اسم ما تحتاج إليه ثم اضغط +.',
               )
             else ...[
               Align(
@@ -333,9 +360,11 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
               const SizedBox(height: 4),
               for (final item in _store.items) ...[
                 _ShoppingItemTile(
+                  key: ValueKey(item.id),
                   item: item,
                   colors: colors,
                   onTap: () => _purchase(item),
+                  onActions: (anchor) => _showItemActions(anchor, item),
                 ),
                 const SizedBox(height: 8),
               ],
@@ -347,16 +376,20 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
   }
 }
 
-// Checkbox row; tap opens the purchase sheet when not yet bought.
+// Checkbox row; tap opens the purchase sheet when not yet bought. The dots
+// button (or a long press) opens edit / delete.
 class _ShoppingItemTile extends StatelessWidget {
   final ShoppingItem item;
   final _ShoppingColors colors;
   final VoidCallback onTap;
+  final ValueChanged<BuildContext> onActions;
 
   const _ShoppingItemTile({
+    super.key,
     required this.item,
     required this.colors,
     required this.onTap,
+    required this.onActions,
   });
 
   @override
@@ -366,9 +399,10 @@ class _ShoppingItemTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: item.isPurchased ? null : onTap,
+        onLongPress: () => onActions(context),
         borderRadius: BorderRadius.circular(18),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          padding: const EdgeInsetsDirectional.fromSTEB(12, 9, 4, 9),
           child: Row(
             children: [
               Checkbox(
@@ -409,9 +443,80 @@ class _ShoppingItemTile extends StatelessWidget {
                       : colors.accent,
                 ),
               ),
+              Builder(
+                builder: (anchorContext) => IconButton(
+                  tooltip: 'تعديل أو حذف',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 34,
+                    minHeight: 34,
+                  ),
+                  onPressed: () => onActions(anchorContext),
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    size: 19,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Name field for editing one shopping item.
+class _RenameShoppingItemDialog extends StatefulWidget {
+  final String initialName;
+
+  const _RenameShoppingItemDialog({required this.initialName});
+
+  @override
+  State<_RenameShoppingItemDialog> createState() =>
+      _RenameShoppingItemDialogState();
+}
+
+class _RenameShoppingItemDialogState extends State<_RenameShoppingItemDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialName);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  bool get _canSave => _controller.text.trim().isNotEmpty;
+
+  void _save() {
+    if (!_canSave) return;
+    Navigator.of(context).pop(_controller.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppDialogFrame(
+      title: 'تعديل العنصر',
+      kind: AppFeedbackKind.info,
+      actions: [
+        AppDialogAction(
+          label: 'إلغاء',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppDialogAction(
+          label: 'حفظ',
+          primary: true,
+          enabled: _canSave,
+          onPressed: _save,
+        ),
+      ],
+      child: SheetTextField(
+        controller: _controller,
+        hint: 'اسم العنصر',
+        onChanged: (_) => setState(() {}),
       ),
     );
   }
@@ -443,7 +548,7 @@ class _PurchaseShoppingItemSheetState
     extends State<_PurchaseShoppingItemSheet> {
   final TextEditingController _amountController = TextEditingController();
 
-  String _category = expenseCategories.first.label;
+  String _category = CategoryStore.instance.defaultLabel;
   bool _saving = false;
   late String _currencyCode;
 
@@ -501,7 +606,7 @@ class _PurchaseShoppingItemSheetState
       return;
     }
 
-    showAppSnackBar(context, 'تعذر حفظ المصروف. حاول مرة أخرى.');
+    showAppSnackBar(context, 'تعذّر حفظ المصروف. حاول مرة أخرى.');
   }
 
   @override
@@ -525,7 +630,7 @@ class _PurchaseShoppingItemSheetState
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 18),
-        const SheetFieldLabel(text: 'الصنف'),
+        const SheetFieldLabel(text: 'التصنيف'),
         ExpenseCategoryGrid(
           selected: _category,
           onSelected: (value) => setState(() => _category = value),
@@ -569,4 +674,12 @@ class _ShoppingColors {
           : AppColors.lightTextSecondary,
     );
   }
+}
+
+// "عنصر واحد محفوظ", "عنصران محفوظان", "3 عناصر محفوظة", "11 عنصراً محفوظاً".
+String itemsCountLabel(int count, {bool other = false}) {
+  if (count == 1) return other ? 'عنصر آخر' : 'عنصر واحد محفوظ';
+  if (count == 2) return other ? 'عنصران آخران' : 'عنصران محفوظان';
+  if (count <= 10) return other ? '$count عناصر أخرى' : '$count عناصر محفوظة';
+  return other ? '$count عنصراً آخر' : '$count عنصراً محفوظاً';
 }

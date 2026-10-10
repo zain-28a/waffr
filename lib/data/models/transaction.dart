@@ -1,8 +1,8 @@
-// Money movement types and the WafferTransaction record stored as JSON in prefs.
+// Money movement types and the WaffrTransaction record stored as JSON in prefs.
 
 import 'dart:convert';
 
-import 'package:waffer/data/models/currency.dart';
+import 'package:waffr/data/models/currency.dart';
 
 enum TransactionType { income, expense, savingsIn, savingsOut }
 
@@ -13,7 +13,7 @@ enum RecurringFrequency { none, weekly, monthly }
 enum SavingsTransferKind { periodLeftover, goalPeriodic, manual, withdraw }
 
 // One ledger row: income, expense, or savings in/out, with optional period/goal links.
-class WafferTransaction {
+class WaffrTransaction {
   final String id;
   final TransactionType type;
   final double amount;
@@ -42,7 +42,7 @@ class WafferTransaction {
 
   final DateTime? updatedAt;
 
-  const WafferTransaction({
+  const WaffrTransaction({
     required this.id,
     required this.type,
     required this.amount,
@@ -62,8 +62,8 @@ class WafferTransaction {
 
   DateTime get syncUpdatedAt => (updatedAt ?? dateTime).toUtc();
 
-  WafferTransaction copyWith({DateTime? dateTime, String? currencyCode}) {
-    return WafferTransaction(
+  WaffrTransaction copyWith({DateTime? dateTime, String? currencyCode}) {
+    return WaffrTransaction(
       id: id,
       type: type,
       amount: amount,
@@ -111,7 +111,7 @@ class WafferTransaction {
   String encode() => jsonEncode(toJson());
 
   // Prefs decode; rejects non-positive amounts. Accepts legacy currency_code.
-  static WafferTransaction? decode(String raw) {
+  static WaffrTransaction? decode(String raw) {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is! Map) return null;
@@ -119,7 +119,7 @@ class WafferTransaction {
       final amount = (decoded['amount'] as num?)?.toDouble() ?? 0;
       if (amount <= 0) return null;
 
-      return WafferTransaction(
+      return WaffrTransaction(
         id: _text(decoded['id']) ?? newId(),
         type: _parseType(_text(decoded['type'])),
         amount: amount,

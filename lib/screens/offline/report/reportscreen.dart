@@ -5,20 +5,24 @@ import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:waffer/data/stores/category_store.dart';
-import 'package:waffer/data/models/expense_categories.dart';
-import 'package:waffer/data/models/transaction.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/insights/spending_improvement.dart';
-import 'package:waffer/core/theme/app_palette.dart';
-import 'package:waffer/data/stores/shopping_list_store.dart';
-import 'package:waffer/core/utils/app_feedback.dart';
-import 'package:waffer/core/utils/money.dart';
-import 'package:waffer/widgets/brand/waffer_page_header.dart';
-import 'package:waffer/widgets/button/glass_button.dart';
-import 'package:waffer/widgets/containers/glass.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
-import 'package:waffer/screens/offline/report/expense_history_share.dart';
+import 'package:waffr/widgets/containers/app_empty_state.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/data/models/recurring_expense.dart';
+import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/insights/spending_improvement.dart';
+import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
+import 'package:waffr/data/stores/shopping_list_store.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/widgets/button/glass_button.dart';
+import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/dialogs/waffr_date_picker.dart';
+import 'package:waffr/screens/offline/report/expense_history_share.dart';
 
 // Picks a range (day / week / month / 3 months / 6 months / year) via chips.
 // A horizontal PageView pages between older and newer periods; itemBuilder
@@ -254,7 +258,7 @@ class _ChartBucket {
 // Filters expenses for a period, sums by category, and buckets them into chart points.
 class _ReportData {
   final _ReportPeriod period;
-  final List<WafferTransaction> expenses;
+  final List<WaffrTransaction> expenses;
   final double total;
   final List<_CategoryTotal> categoryTotals;
   final List<_ChartBucket> chartBuckets;
@@ -268,7 +272,7 @@ class _ReportData {
   });
 
   factory _ReportData.from(
-    List<WafferTransaction> allExpenses,
+    List<WaffrTransaction> allExpenses,
     _ReportPeriod period,
   ) {
     final expenses = _expensesInPeriod(allExpenses, period);
@@ -371,7 +375,7 @@ class _SpendingChartCard extends StatelessWidget {
             child: report.expenses.isEmpty
                 ? const _EmptyState(
                     icon: Icons.show_chart_rounded,
-                    message: 'لا توجد مصاريف في هذه الفترة',
+                    message: 'لا توجد مصروفات في هذه الفترة',
                   )
                 : Directionality(
                     textDirection: TextDirection.ltr,
@@ -690,7 +694,7 @@ class _SpendingSummary extends StatelessWidget {
                   ),
                   const SizedBox(width: 7),
                   Text(
-                    'سجل المصاريف',
+                    'سجل المصروفات',
                     style: TextStyle(
                       fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                       fontSize: 13,
@@ -740,7 +744,7 @@ class _ExpenseDistribution extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '<النسبة من إجمالي الصرف وليس الرصيد>',
+                  'النسبة من إجمالي الصرف وليس الرصيد',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -971,7 +975,12 @@ class _ImprovementCard extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           GlassButton(
-            onTap: () {},
+            onTap: () => showAppInfoDialog(
+              context,
+              title: 'التحليل الذكي',
+              message:
+                  'نعمل على ميزة تحلّل مصروفاتك وتقترح عليك طرقاً للتوفير. ستتوفر في تحديث قادم.',
+            ),
             colorType: GlassColorType.background,
             borderRadius: 20,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
@@ -981,7 +990,7 @@ class _ImprovementCard extends StatelessWidget {
                 Icon(Icons.auto_graph_rounded, size: 17, color: colors.accent),
                 const SizedBox(width: 6),
                 Text(
-                  "بس اعمل الai",
+                  'التحليل الذكي',
                   style: TextStyle(
                     fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
                     fontSize: 12.5,
@@ -1017,6 +1026,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   late final Listenable _listenables = Listenable.merge([
     _store,
     CategoryStore.instance,
+    RecurringExpenseStore.instance,
   ]);
 
   bool _selecting = false;
@@ -1028,6 +1038,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   @override
   void initState() {
     super.initState();
+    RecurringExpenseStore.instance.ensureLoaded();
     _selectionAnim = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 240),
@@ -1083,7 +1094,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     });
   }
 
-  void _toggleDay(List<WafferTransaction> expenses) {
+  void _toggleDay(List<WaffrTransaction> expenses) {
     final ids = expenses.map((item) => item.id);
     final allSelected = ids.every(_selected.contains);
     setState(() {
@@ -1095,7 +1106,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     });
   }
 
-  void _toggleAll(List<WafferTransaction> expenses) {
+  void _toggleAll(List<WaffrTransaction> expenses) {
     final ids = expenses.map((item) => item.id).toSet();
     final allSelected = ids.isNotEmpty && ids.every(_selected.contains);
     setState(() {
@@ -1107,7 +1118,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     });
   }
 
-  Future<void> _pickRange(List<WafferTransaction> expenses) async {
+  Future<void> _pickRange(List<WaffrTransaction> expenses) async {
     if (expenses.isEmpty) return;
     var oldest = expenses.first.dateTime.toLocal();
     for (final expense in expenses) {
@@ -1117,17 +1128,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     final now = DateTime.now();
     final firstDate = DateTime(oldest.year, oldest.month, oldest.day);
     final lastDate = DateTime(now.year, now.month, now.day);
-    final range = await showDateRangePicker(
+    final range = await showWaffrDateRangePicker(
       context: context,
+      title: 'نطاق التاريخ',
       firstDate: firstDate,
       lastDate: lastDate.isBefore(firstDate) ? firstDate : lastDate,
-      locale: const Locale('ar'),
-      builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
     );
     if (!mounted || range == null) return;
     final start = DateTime(range.start.year, range.start.month, range.start.day);
@@ -1146,7 +1151,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     });
   }
 
-  Future<void> _confirmShare(List<WafferTransaction> expenses) async {
+  Future<void> _confirmShare(List<WaffrTransaction> expenses) async {
     final chosen = expenses.where((item) => _selected.contains(item.id)).toList();
     if (chosen.isEmpty || _sharing) return;
     final format = await showAppDialog<_ExpenseShareFormat>(
@@ -1163,7 +1168,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       }
     } catch (_) {
       if (mounted) {
-        showAppSnackBar(context, 'تعذر مشاركة السجل.');
+        showAppSnackBar(context, 'تعذّر مشاركة السجل.');
       }
     } finally {
       if (mounted) setState(() => _sharing = false);
@@ -1174,8 +1179,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
     final isIncome = widget.isIncome;
-    final title = isIncome ? 'سجل الدخل' : 'سجل المصاريف';
-    final summaryLabel = isIncome ? 'كل الدخل' : 'كل المصاريف';
+    final title = isIncome ? 'سجل الدخل' : 'سجل المصروفات';
+    final summaryLabel = isIncome ? 'كل الدخل' : 'كل المصروفات';
     final emptyMessage = isIncome
         ? 'لا يوجد دخل مسجّل بعد'
         : 'لا يوجد مصروف مسجّل بعد';
@@ -1185,19 +1190,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: WafferPageHeader(
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_forward_ios_rounded,
-            color: colors.textPrimary,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          title,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+      appBar: WaffrBackHeader(
+        title: title,
       ),
       floatingActionButton: isIncome
           ? null
@@ -1372,7 +1366,7 @@ class _ShareFormatDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppDialogFrame(
       title: 'مشاركة السجل',
-      message: 'اختر طريقة تصدير المصاريف المحددة.',
+      message: 'اختر طريقة تصدير المصروفات المحددة.',
       kind: AppFeedbackKind.info,
       child: Row(
         children: [
@@ -1538,13 +1532,13 @@ class _SelectMark extends StatelessWidget {
 // Transactions that share the same calendar day for the history list.
 class _ExpenseDayGroup {
   final DateTime date;
-  final List<WafferTransaction> expenses;
+  final List<WaffrTransaction> expenses;
 
   const _ExpenseDayGroup(this.date, this.expenses);
 }
 
 // Confirms, deletes the expense, refunds balance, and undoes linked shopping purchases.
-Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async {
+Future<void> _undoExpense(BuildContext context, WaffrTransaction expense) async {
   final confirmed = await showAppConfirmDialog(
     context,
     title: 'التراجع عن المصروف',
@@ -1560,7 +1554,7 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
   if (!context.mounted) return;
 
   if (!undone) {
-    showAppSnackBar(context, 'تعذر التراجع عن هذا المصروف.');
+    showAppSnackBar(context, 'تعذّر التراجع عن هذا المصروف.');
     return;
   }
 
@@ -1570,7 +1564,7 @@ Future<void> _undoExpense(BuildContext context, WafferTransaction expense) async
 }
 
 // Confirms, deletes the income entry, and subtracts it from the running balance.
-Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
+Future<void> _undoIncome(BuildContext context, WaffrTransaction income) async {
   final confirmed = await showAppConfirmDialog(
     context,
     title: 'التراجع عن الدخل',
@@ -1586,7 +1580,7 @@ Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
   if (!context.mounted) return;
 
   if (!undone) {
-    showAppSnackBar(context, 'تعذر التراجع عن هذا الدخل.');
+    showAppSnackBar(context, 'تعذّر التراجع عن هذا الدخل.');
     return;
   }
 
@@ -1596,7 +1590,7 @@ Future<void> _undoIncome(BuildContext context, WafferTransaction income) async {
 // Date header plus a glass card listing that day's transactions.
 class _HistoryDayGroup extends StatelessWidget {
   final DateTime date;
-  final List<WafferTransaction> expenses;
+  final List<WaffrTransaction> expenses;
   final bool isIncome;
   final bool selecting;
   final double reveal;
@@ -1604,7 +1598,7 @@ class _HistoryDayGroup extends StatelessWidget {
   final VoidCallback? onToggleDay;
   final VoidCallback? onLongPressDay;
   final ValueChanged<String>? onToggleExpense;
-  final ValueChanged<WafferTransaction>? onLongPressExpense;
+  final ValueChanged<WaffrTransaction>? onLongPressExpense;
 
   const _HistoryDayGroup({
     required this.date,
@@ -1701,7 +1695,7 @@ class _HistoryDayGroup extends StatelessWidget {
 
 // Single history row: category/note, timestamp, amount, optional undo.
 class _HistoryExpenseRow extends StatelessWidget {
-  final WafferTransaction expense;
+  final WaffrTransaction expense;
   final bool isIncome;
   final bool selecting;
   final double reveal;
@@ -1726,14 +1720,22 @@ class _HistoryExpenseRow extends StatelessWidget {
     final colors = AppPalette.of(context);
     final category = categoryFor(expense.category);
     final note = expense.note?.trim();
+    final recurring =
+        !isIncome && RecurringExpense.isRecurringSource(expense.sourceId);
+    final schedule = recurring ? _recurringSchedule(expense) : null;
     final title = isIncome
         ? (note != null && note.isNotEmpty
             ? note
             : _incomeFrequencyLabel(expense.frequency))
         : category.label;
+    // A schedule without a note stored its "every N" text as the note; the
+    // recurring badge already shows it.
+    final noteIsSchedule = recurring &&
+        note != null &&
+        (note == schedule || _looksLikeSchedule(note));
     final subtitle = isIncome && note != null && note.isNotEmpty
         ? _incomeFrequencyLabel(expense.frequency)
-        : (!isIncome ? note : null);
+        : (!isIncome && !noteIsSchedule ? note : null);
     final icon = isIncome ? Icons.payments_outlined : category.icon;
     return GestureDetector(
       onLongPress: onLongPress,
@@ -1793,6 +1795,10 @@ class _HistoryExpenseRow extends StatelessWidget {
                   ),
                 ),
               ],
+              if (recurring) ...[
+                const SizedBox(height: 4),
+                _RecurringBadge(schedule: schedule ?? _scheduleFromNote(note)),
+              ],
               const SizedBox(height: 2),
               Text(
                 '${formatDate(expense.dateTime)} • '
@@ -1845,6 +1851,82 @@ class _HistoryExpenseRow extends StatelessWidget {
   }
 }
 
+// "Recurring" pill on history rows posted by a schedule, with the schedule
+// ("كل شهر") next to it when it is still known.
+class _RecurringBadge extends StatelessWidget {
+  final String? schedule;
+
+  const _RecurringBadge({required this.schedule});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppPalette.of(context);
+    final text = TextStyle(
+      fontFamily: 'Outfit',
+      fontFamilyFallback: const ['Tajawal'],
+      fontSize: 10.5,
+      height: 1.2,
+      fontWeight: FontWeight.w700,
+      color: colors.accent,
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsetsDirectional.fromSTEB(7, 3, 8, 3),
+          decoration: BoxDecoration(
+            color: colors.accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: colors.accent.withValues(alpha: 0.22)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.autorenew_rounded, size: 12, color: colors.accent),
+              const SizedBox(width: 4),
+              Text('مصروف متكرر', style: text),
+            ],
+          ),
+        ),
+        if (schedule != null) ...[
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              schedule!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: text.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// "كل شهر" for the schedule that posted [expense], if it still exists.
+String? _recurringSchedule(WaffrTransaction expense) {
+  final id = RecurringExpense.idFromSource(expense.sourceId);
+  if (id == null) return null;
+  return RecurringExpenseStore.instance.byId(id)?.intervalDescription;
+}
+
+final RegExp _schedulePattern = RegExp(
+  r'^كل (\d+ )?(يوم|أسبوع|شهر|أيام|أسابيع|أشهر)$',
+);
+
+bool _looksLikeSchedule(String text) => _schedulePattern.hasMatch(text);
+
+// Deleted schedules: the note may still hold the "every N" text.
+String? _scheduleFromNote(String? note) {
+  if (note == null || !_looksLikeSchedule(note)) return null;
+  return note;
+}
+
 // Centered icon + message used when a chart or list has nothing to show.
 class _EmptyState extends StatelessWidget {
   final IconData icon;
@@ -1854,32 +1936,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppPalette.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 36,
-              color: colors.textPrimary.withValues(alpha: 0.28),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                fontSize: 13,
-                color: colors.textPrimary.withValues(alpha: 0.55),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return Center(child: AppEmptyState(icon: icon, title: message));
   }
 }
 
@@ -1919,8 +1976,8 @@ _ReportPeriod _periodFor(_ReportRange range, int offset) {
   return _ReportPeriod(start: start, end: end, range: range);
 }
 
-List<WafferTransaction> _expensesInPeriod(
-  List<WafferTransaction> expenses,
+List<WaffrTransaction> _expensesInPeriod(
+  List<WaffrTransaction> expenses,
   _ReportPeriod period,
 ) {
   return expenses
@@ -1932,13 +1989,13 @@ List<WafferTransaction> _expensesInPeriod(
       .toList(growable: false);
 }
 
-double _sumExpenses(List<WafferTransaction> expenses) {
+double _sumExpenses(List<WaffrTransaction> expenses) {
   return expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
 }
 
 // Creates empty buckets for the range grain, then fills amounts from expenses.
 List<_ChartBucket> _buildChartBuckets(
-  List<WafferTransaction> expenses,
+  List<WaffrTransaction> expenses,
   _ReportPeriod period,
 ) {
   late final List<_ChartBucket> buckets;
@@ -2062,8 +2119,8 @@ List<_ChartBucket> _buildChartBuckets(
   );
 }
 
-List<_ExpenseDayGroup> _groupExpensesByDay(List<WafferTransaction> expenses) {
-  final grouped = <DateTime, List<WafferTransaction>>{};
+List<_ExpenseDayGroup> _groupExpensesByDay(List<WaffrTransaction> expenses) {
+  final grouped = <DateTime, List<WaffrTransaction>>{};
   for (final expense in expenses) {
     final local = expense.dateTime.toLocal();
     final date = DateTime(local.year, local.month, local.day);

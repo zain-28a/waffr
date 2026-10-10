@@ -1,10 +1,10 @@
 // Shared top app bar for the shell and settings-style screens.
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:waffer/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_color.dart';
 
 /// Fixed-height page header with optional scroll-elevation shadow.
-class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
+class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
   static const double height = 68;
 
   final Widget title;
@@ -14,7 +14,7 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
   final ValueListenable<bool>? elevated;
   final bool applySafeArea;
 
-  const WafferPageHeader({
+  const WaffrPageHeader({
     super.key,
     required this.title,
     this.leading,
@@ -52,6 +52,64 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
           applySafeArea: applySafeArea,
         );
       },
+    );
+  }
+}
+
+/// Header of every pushed screen: back arrow and centered title. Use this
+/// instead of building a [WaffrPageHeader] by hand so all screens match.
+class WaffrBackHeader extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+
+  /// Defaults to popping the current route.
+  final VoidCallback? onBack;
+
+  /// False disables the back arrow (e.g. while a request is running).
+  final bool enabled;
+
+  /// False hides the back arrow on the first screen of a flow.
+  final bool showBack;
+  final ValueListenable<bool>? elevated;
+  final bool applySafeArea;
+
+  const WaffrBackHeader({
+    super.key,
+    required this.title,
+    this.onBack,
+    this.enabled = true,
+    this.showBack = true,
+    this.elevated,
+    this.applySafeArea = true,
+  });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(WaffrPageHeader.height);
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+
+    return WaffrPageHeader(
+      centerTitle: true,
+      elevated: elevated,
+      applySafeArea: applySafeArea,
+      leading: showBack
+          ? IconButton(
+              tooltip: 'رجوع',
+              icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
+              onPressed: enabled
+                  ? (onBack ?? () => Navigator.of(context).maybePop())
+                  : null,
+            )
+          : null,
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.headlineSmall,
+      ),
     );
   }
 }
@@ -115,7 +173,7 @@ class _HeaderChrome extends StatelessWidget {
 
   Widget get _bar {
     return SizedBox(
-      height: WafferPageHeader.height,
+      height: WaffrPageHeader.height,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Row(

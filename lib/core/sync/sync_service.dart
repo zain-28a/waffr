@@ -8,23 +8,26 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
-import 'package:waffer/data/stores/category_store.dart';
-import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/data/services/notification_service.dart';
-import 'package:waffer/data/stores/recurring_expense_store.dart';
-import 'package:waffer/data/stores/shopping_list_store.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
-import 'package:waffer/core/sync/api_config.dart';
-import 'package:waffer/core/sync/auth_session.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/sync/sync_mapper.dart';
-import 'package:waffer/core/sync/sync_pull_policy.dart';
-import 'package:waffer/core/sync/profile_photo_sync.dart';
-import 'package:waffer/core/sync/profile_sync.dart';
-import 'package:waffer/data/services/usage_streak_service.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/expense_preset_store.dart';
+import 'package:waffr/data/services/notification_service.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
+import 'package:waffr/data/stores/shopping_list_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/core/security/data_key.dart';
+import 'package:waffr/core/sync/api_config.dart';
+import 'package:waffr/core/sync/auth_session.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_crypto.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/sync/sync_mapper.dart';
+import 'package:waffr/core/sync/sync_pull_policy.dart';
+import 'package:waffr/core/sync/profile_photo_sync.dart';
+import 'package:waffr/core/sync/profile_sync.dart';
+import 'package:waffr/data/services/usage_streak_service.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
 
 enum SyncStatus { success, offline, noAccount, failed, skipped }
 
@@ -58,6 +61,7 @@ class SyncService with WidgetsBindingObserver {
   bool _listenersAttached = false;
   bool _applying = false;
   bool _wasOnline = true;
+  bool _resealPending = false;
   DateTime? _lastNetworkAttemptAt;
 
   final ValueNotifier<bool> isSyncing = ValueNotifier<bool>(false);
@@ -85,7 +89,7 @@ class SyncService with WidgetsBindingObserver {
 
     if (_syncing) {
       _pending = true;
-      return const SyncResult(SyncStatus.skipped, 'المزامنة قيد التنفيذ');
+      return const SyncResult(SyncStatus.skipped, 'جارٍ المزامنة');
     }
 
     _syncing = true;
@@ -95,7 +99,7 @@ class SyncService with WidgetsBindingObserver {
       if (!await AuthSession.instance.isLoggedIn()) {
         return const SyncResult(
           SyncStatus.noAccount,
-          'وضع الضيف محلي فقط. سجّل الدخول للمزامنة',
+          'في وضع الضيف تبقى بياناتك على جهازك فقط. سجّل الدخول للمزامنة',
         );
       }
 
@@ -122,12 +126,24 @@ class SyncService with WidgetsBindingObserver {
         );
       }
 
+      // Sessions from before encryption have no data key. Signing in again
+      // with the password creates or unlocks it.
+      final cipher = await DataKeyStore.instance.cipher();
+      if (cipher == null) {
+        await AuthSession.instance.clearSession();
+        return const SyncResult(
+          SyncStatus.noAccount,
+          'سجّل الدخول مجدداً لحماية بياناتك',
+        );
+      }
+
       final prefs = await AppPrefs.instance;
       final currencySynced = prefs.getBool(_currencySyncedKey) ?? false;
       final payload = await _buildRequest(
         lastSync: lastSync,
         sendAll: dirty || lastSync == null || force || !currencySynced,
       );
+      await sealSyncRequest(payload, cipher);
       final base = await ApiConfig.baseUrl();
       http.Response response;
       try {
@@ -171,7 +187,7 @@ class SyncService with WidgetsBindingObserver {
       if (response.statusCode != 200) {
         return const SyncResult(
           SyncStatus.failed,
-          'تعذر المزامنة. يمكنك المحاولة لاحقاً',
+          'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
         );
       }
 
@@ -181,22 +197,23 @@ class SyncService with WidgetsBindingObserver {
         if (decoded is! Map) {
           return const SyncResult(
             SyncStatus.failed,
-            'تعذر المزامنة. يمكنك المحاولة لاحقاً',
+            'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
           );
         }
         body = Map<String, dynamic>.from(decoded);
       } catch (_) {
         return const SyncResult(
           SyncStatus.failed,
-          'تعذر المزامنة. يمكنك المحاولة لاحقاً',
+          'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
         );
       }
 
+      final sawPlaintext = await openSyncResponse(body, cipher);
       final applied = await _applyResponse(body);
       if (!applied) {
         return const SyncResult(
           SyncStatus.failed,
-          'تعذر دمج البيانات. بقيت النسخة المحلية',
+          'تعذّر تحديث بياناتك من الحساب، فبقيت النسخة المحفوظة على جهازك',
         );
       }
 
@@ -217,16 +234,23 @@ class SyncService with WidgetsBindingObserver {
       if (UsageStreakService.instance.consumePushRequest()) {
         await SyncDirty.mark(settings: true);
       }
+      // Rows saved before encryption came back readable; push everything
+      // once more so the server copy is replaced with sealed text.
+      _resealPending = sawPlaintext && !force;
       return const SyncResult(SyncStatus.success, 'تمت المزامنة');
     } catch (_) {
       return const SyncResult(
         SyncStatus.failed,
-        'تعذر المزامنة. يمكنك المحاولة لاحقاً',
+        'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
       );
     } finally {
       _syncing = false;
       isSyncing.value = false;
-      if (_pending) {
+      if (_resealPending) {
+        _resealPending = false;
+        _pending = false;
+        unawaited(syncNow(force: true));
+      } else if (_pending) {
         _pending = false;
         scheduleSync();
       }
@@ -253,6 +277,7 @@ class SyncService with WidgetsBindingObserver {
       RecurringExpenseStore.instance.ensureLoaded(),
       NotificationService.instance.ensureLoaded(),
       CategoryStore.instance.ensureLoaded(),
+      ExpensePresetStore.instance.ensureLoaded(),
       SyncTombstones.instance.ensureLoaded(),
     ]);
 
@@ -302,6 +327,12 @@ class SyncService with WidgetsBindingObserver {
           categoryToSync(item),
     ];
 
+    final presets = [
+      for (final item in ExpensePresetStore.instance.items)
+        if (_shouldSend(item.syncUpdatedAt, lastSync, sendAll))
+          item.toSyncJson(),
+    ];
+
     final settingsUpdated = await SyncDirty.settingsUpdatedAt();
     final includeSettings = sendAll ||
         lastSync == null ||
@@ -341,6 +372,10 @@ class SyncService with WidgetsBindingObserver {
         upserts: categories,
         deletes: SyncTombstones.instance.of(SyncCollection.expenseCategories),
       ),
+      'expense_presets': collectionPayload(
+        upserts: presets,
+        deletes: SyncTombstones.instance.of(SyncCollection.expensePresets),
+      ),
       'settings': includeSettings ? await _settingsPayload() : null,
     };
   }
@@ -361,6 +396,7 @@ class SyncService with WidgetsBindingObserver {
       'enabled_currencies': CurrencyStore.instance.enabledCodes,
       'active_currency': CurrencyStore.instance.activeCode,
       'processed_period_keys': store.processedPeriodTokens.toList(),
+      'hidden_categories': CategoryStore.instance.hiddenBuiltIns,
       ...await ProfileSync.fields(),
       'updated_at': toSyncIso(await SyncDirty.settingsUpdatedAt()),
     };
@@ -402,6 +438,13 @@ class SyncService with WidgetsBindingObserver {
         upserts: asMapList(_collection(body, 'expense_categories')['upserts']),
         deletes: tombstonesFromSync(
           _collection(body, 'expense_categories')['deletes'],
+        ),
+      );
+
+      await ExpensePresetStore.instance.applyRemoteSync(
+        upserts: asMapList(_collection(body, 'expense_presets')['upserts']),
+        deletes: tombstonesFromSync(
+          _collection(body, 'expense_presets')['deletes'],
         ),
       );
 
@@ -474,6 +517,7 @@ class SyncService with WidgetsBindingObserver {
     await clear('recurring_expenses', SyncCollection.recurringExpenses);
     await clear('notifications', SyncCollection.notifications);
     await clear('expense_categories', SyncCollection.expenseCategories);
+    await clear('expense_presets', SyncCollection.expensePresets);
   }
 
   @override

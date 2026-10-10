@@ -3,14 +3,14 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:waffer/data/models/expense_categories.dart';
-import 'package:waffer/data/stores/transaction_store.dart';
-import 'package:waffer/core/sync/sync_clock.dart';
-import 'package:waffer/core/sync/sync_dirty.dart';
-import 'package:waffer/core/sync/sync_mapper.dart';
-import 'package:waffer/core/sync/sync_merge.dart';
-import 'package:waffer/core/sync/sync_tombstones.dart';
-import 'package:waffer/core/prefs/app_prefs.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/sync/sync_dirty.dart';
+import 'package:waffr/core/sync/sync_mapper.dart';
+import 'package:waffr/core/sync/sync_merge.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 // One list row; [expenseId] links a purchased item to its ledger expense.
 class ShoppingItem {
@@ -35,6 +35,7 @@ class ShoppingItem {
   DateTime get syncUpdatedAt => (updatedAt ?? createdAt).toUtc();
 
   ShoppingItem copyWith({
+    String? name,
     bool? isPurchased,
     DateTime? purchasedAt,
     String? expenseId,
@@ -44,7 +45,7 @@ class ShoppingItem {
   }) {
     return ShoppingItem(
       id: id,
-      name: name,
+      name: name ?? this.name,
       createdAt: createdAt,
       isPurchased: clearPurchase ? false : (isPurchased ?? this.isPurchased),
       purchasedAt: clearPurchase ? null : (purchasedAt ?? this.purchasedAt),
@@ -158,6 +159,37 @@ class ShoppingListStore extends ChangeNotifier {
 
     await _persist();
     notifyListeners();
+  }
+
+  // New name only; a recorded purchase keeps its expense as it was.
+  Future<bool> renameItem(String id, String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return false;
+
+    await ensureLoaded();
+
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index < 0) return false;
+    if (_items[index].name == trimmed) return true;
+
+    _items[index] = _items[index].copyWith(name: trimmed);
+    await _persist();
+    notifyListeners();
+    return true;
+  }
+
+  // Removes one item. A recorded purchase stays in the expense history.
+  Future<bool> removeItem(String id) async {
+    await ensureLoaded();
+
+    final before = _items.length;
+    _items.removeWhere((item) => item.id == id);
+    if (_items.length == before) return false;
+
+    await SyncTombstones.instance.add(SyncCollection.shoppingItems, id);
+    await _persist();
+    notifyListeners();
+    return true;
   }
 
   Future<void> clearAll() async {
