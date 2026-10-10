@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/data/models/app_notification.dart';
 import 'package:waffer/data/services/notification_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
@@ -261,42 +262,11 @@ class _EmptyNotifications extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _NotificationColors.of(context);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.notifications_none_rounded,
-              size: 42,
-              color: colors.textSecondary.withValues(alpha: 0.55),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'لا توجد إشعارات بعد',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: colors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'ستظهر هنا تنبيهات الرصيد والأهداف والتوفير عند حدوثها',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                fontSize: 13,
-                color: colors.textSecondary,
-              ),
-            ),
-          ],
-        ),
+    return const Center(
+      child: AppEmptyState(
+        icon: Icons.notifications_none_rounded,
+        title: 'لا توجد إشعارات بعد',
+        message: 'ستظهر هنا تنبيهات الرصيد والأهداف والتوفير والالتزامات عند حدوثها',
       ),
     );
   }

@@ -6,8 +6,6 @@ import 'package:waffer/core/theme/app_color.dart';
 
 enum EditDeleteAction { edit, delete }
 
-const Color _deleteColor = Color(0xFFD3544D);
-
 /// Opens the menu over the widget at [anchorContext]. [allowEdit] hides the
 /// edit row when only removal makes sense.
 Future<EditDeleteAction?> showEditDeleteMenu(
@@ -24,6 +22,7 @@ Future<EditDeleteAction?> showEditDeleteMenu(
   final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
   final textPrimary =
       isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+  final deleteColor = AppColors.destructiveOf(context);
 
   return showMenu<EditDeleteAction>(
     context: context,
@@ -61,20 +60,20 @@ Future<EditDeleteAction?> showEditDeleteMenu(
             ],
           ),
         ),
-      const PopupMenuItem(
+      PopupMenuItem(
         value: EditDeleteAction.delete,
         height: 44,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.delete_rounded, size: 18, color: _deleteColor),
-            SizedBox(width: 8),
+            Icon(Icons.delete_rounded, size: 18, color: deleteColor),
+            const SizedBox(width: 8),
             Text(
               'حذف',
               style: TextStyle(
                 fontFamily: 'Outfit',
-                fontFamilyFallback: ['Tajawal'],
-                color: _deleteColor,
+                fontFamilyFallback: const ['Tajawal'],
+                color: deleteColor,
               ),
             ),
           ],

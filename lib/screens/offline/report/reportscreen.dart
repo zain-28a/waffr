@@ -5,6 +5,7 @@ import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/models/expense_categories.dart';
 import 'package:waffer/data/models/recurring_expense.dart';
@@ -1935,32 +1936,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppPalette.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 36,
-              color: colors.textPrimary.withValues(alpha: 0.28),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                fontSize: 13,
-                color: colors.textPrimary.withValues(alpha: 0.55),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return Center(child: AppEmptyState(icon: icon, title: message));
   }
 }
 

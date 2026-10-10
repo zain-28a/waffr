@@ -2,6 +2,7 @@
 // the custom-category box: a grid of tiles plus Cancel / Add actions.
 
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
@@ -77,8 +78,6 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
     final size = MediaQuery.sizeOf(context);
 
@@ -133,7 +132,7 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
                 builder: (context, _) {
                   final presets = _store.items;
                   if (presets.isEmpty) {
-                    return _EmptyPresets(color: textSecondary);
+                    return const _EmptyPresets();
                   }
                   return GridView.builder(
                     shrinkWrap: true,
@@ -213,35 +212,13 @@ String _titleOf(ExpensePreset preset) {
 }
 
 class _EmptyPresets extends StatelessWidget {
-  final Color color;
-
-  const _EmptyPresets({required this.color});
+  const _EmptyPresets();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 22),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.star_border_rounded,
-            size: 34,
-            color: color.withValues(alpha: 0.55),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'لا توجد مصروفات محفوظة بعد',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Outfit',
-              fontFamilyFallback: const ['Tajawal'],
-              fontSize: 13,
-              color: color,
-            ),
-          ),
-        ],
-      ),
+    return const AppEmptyState(
+      icon: Icons.star_border_rounded,
+      title: 'لا توجد مصروفات محفوظة بعد',
     );
   }
 }
