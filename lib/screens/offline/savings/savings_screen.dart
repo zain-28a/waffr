@@ -838,7 +838,7 @@ class _CreateGoalCard extends StatelessWidget {
             fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
             fontSize: 13.5,
             fontWeight: FontWeight.bold,
-            color: Color.fromARGB(255, 255, 255, 255),
+            color: AppPalette.of(context).onAccent,
           ),
         ),
       ),

@@ -22,6 +22,7 @@ class AppTheme {
       colorScheme: _colorScheme(Brightness.light),
       switchTheme: _switchTheme(
         accent: AppColors.lightAccent,
+        onAccent: AppColors.lightOnAccent,
         secondary: AppColors.lightTextSecondary,
       ),
       textTheme: _textTheme(
@@ -48,6 +49,7 @@ class AppTheme {
       colorScheme: _colorScheme(Brightness.dark),
       switchTheme: _switchTheme(
         accent: AppColors.darkAccent,
+        onAccent: AppColors.darkOnAccent,
         secondary: AppColors.darkTextSecondary,
       ),
       textTheme: _textTheme(
@@ -68,6 +70,7 @@ class AppTheme {
   static ColorScheme _colorScheme(Brightness brightness) {
     final dark = brightness == Brightness.dark;
     final accent = dark ? AppColors.darkAccent : AppColors.lightAccent;
+    final onAccent = dark ? AppColors.darkOnAccent : AppColors.lightOnAccent;
     final surface = dark ? AppColors.darkSurface : AppColors.lightSurface;
     final textPrimary =
         dark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
@@ -80,17 +83,17 @@ class AppTheme {
     return ColorScheme(
       brightness: brightness,
       primary: accent,
-      onPrimary: Colors.white,
+      onPrimary: onAccent,
       primaryContainer: container,
       onPrimaryContainer: textPrimary,
       secondary: accent,
-      onSecondary: Colors.white,
+      onSecondary: onAccent,
       secondaryContainer: container,
       onSecondaryContainer: textPrimary,
       tertiary: accent,
-      onTertiary: Colors.white,
+      onTertiary: onAccent,
       error: destructive,
-      onError: Colors.white,
+      onError: onAccent,
       surface: surface,
       onSurface: textPrimary,
       onSurfaceVariant: textSecondary,
@@ -100,15 +103,16 @@ class AppTheme {
     );
   }
 
-  // One switch look: white thumb on an accent track when on, a quiet
+  // One switch look: an on-accent thumb on the accent track when on, a quiet
   // outlined track when off.
   static SwitchThemeData _switchTheme({
     required Color accent,
+    required Color onAccent,
     required Color secondary,
   }) {
     return SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) return Colors.white;
+        if (states.contains(WidgetState.selected)) return onAccent;
         return secondary;
       }),
       trackColor: WidgetStateProperty.resolveWith((states) {
