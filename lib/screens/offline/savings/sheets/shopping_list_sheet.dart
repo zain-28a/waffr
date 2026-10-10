@@ -316,14 +316,14 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
                       width: 54,
                       height: 54,
                       child: _adding
-                          ? const Padding(
-                              padding: EdgeInsets.all(17),
+                          ? Padding(
+                              padding: const EdgeInsets.all(17),
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Colors.white,
+                                color: AppColors.onAccentOf(context),
                               ),
                             )
-                          : const Icon(Icons.add_rounded, color: Colors.white),
+                          : Icon(Icons.add_rounded, color: AppColors.onAccentOf(context)),
                     ),
                   ),
                 ),

@@ -1210,7 +1210,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                   backgroundColor: canShare || !_selecting
                       ? colors.accent
                       : colors.accent.withValues(alpha: 0.35),
-                  foregroundColor: Colors.white,
+                  foregroundColor: colors.onAccent,
                   elevation: canShare || !_selecting ? 4 : 0,
                   child: const Icon(Icons.share_rounded),
                 );
@@ -1516,7 +1516,7 @@ class _SelectMark extends StatelessWidget {
           ),
         ),
         child: state == _SelectState.checked
-            ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+            ? Icon(Icons.check_rounded, size: 14, color: colors.onAccent)
             : state == _SelectState.partial
                 ? Container(
                     width: 10,
