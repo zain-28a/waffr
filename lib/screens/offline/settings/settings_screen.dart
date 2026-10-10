@@ -308,12 +308,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showAbout() {
-    showAppInfoDialog(
-      context,
-      title: 'عن وفّر',
-      message:
-          'وفّر يساعدك على تنظيم دخلك ومصروفاتك والتزاماتك، والتوفير لأهدافك. '
-          'بياناتك المالية تُحفظ على جهازك، ويمكنك مزامنتها مع حسابك متى شئت.',
+    showAppDialog<void>(
+      context: context,
+      builder: (dialogContext) => AppDialogFrame(
+        title: 'عن وفّر',
+        message:
+            'وفّر يساعدك على تنظيم دخلك ومصروفاتك والتزاماتك، والتوفير لأهدافك. '
+            'بياناتك المالية تُحفظ على جهازك، ويمكنك مزامنتها مع حسابك متى شئت.\n\n'
+            '© 2026 Zain Alaabideen Alloush. جميع الحقوق محفوظة.',
+        actions: [
+          AppDialogAction(
+            label: 'تراخيص المكونات',
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              showLicensePage(
+                context: context,
+                applicationName: 'وفّر',
+                applicationVersion: '2.10.0',
+                applicationLegalese:
+                    '© 2026 Zain Alaabideen Alloush. جميع الحقوق محفوظة.',
+              );
+            },
+          ),
+          AppDialogAction(
+            label: 'حسناً',
+            primary: true,
+            onPressed: () => Navigator.pop(dialogContext),
+          ),
+        ],
+      ),
     );
   }
 

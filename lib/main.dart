@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffr/data/services/backup_service.dart';
@@ -30,8 +32,25 @@ Future<void> main() async {
       NotificationService.instance.seedIfNeeded;
 
   unawaited(SyncService.instance.initialize());
+  _registerFontLicenses();
 
   runApp(const WafarApp());
+}
+
+// Bundled fonts are OFL-licensed; their notices must ship with the app.
+// Package licenses are added by Flutter itself.
+void _registerFontLicenses() {
+  const fonts = <String, String>{
+    'Tajawal': 'assets/licenses/Tajawal-OFL.txt',
+    'Outfit': 'assets/licenses/Outfit-OFL.txt',
+    'Bebas Neue': 'assets/licenses/BebasNeue-OFL.txt',
+  };
+  LicenseRegistry.addLicense(() async* {
+    for (final entry in fonts.entries) {
+      final text = await rootBundle.loadString(entry.value);
+      yield LicenseEntryWithLineBreaks(<String>[entry.key], text);
+    }
+  });
 }
 
 /// Root widget. Holds the light/dark choice and waits until it is known.
