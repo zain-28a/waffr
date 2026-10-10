@@ -31,6 +31,11 @@ import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/brand/streak_celebration.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
+import 'package:waffr/data/services/smart_settings.dart';
+import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
+import 'package:waffr/core/insights/smart/reminder_digest.dart';
 
 // Bottom navigation shell. Five tabs: home, report, savings, online, profile.
 // The tab bar floats over the pages; each tab keeps kFloatingNavClearance
@@ -70,6 +75,7 @@ class _AppShellState extends State<AppShell>
   Timer? _dueTimer;
   bool _syncingEvents = false;
   StreamSubscription<Uri?>? _widgetTaps;
+  StreamSubscription<String>? _notificationTaps;
 
   // Set when today's open extended the streak; drives the overlay once.
   StreakIncrease? _streakIncrease;
@@ -105,6 +111,54 @@ class _AppShellState extends State<AppShell>
     _syncFinancialEvents();
     unawaited(HomeWidgetSync.instance.start());
     _listenToWidgetTaps();
+    _listenToNotificationTaps();
+    unawaited(_syncComebackReminders());
+  }
+
+  // Reminders that only fire if the app stays closed for days; every open
+  // pushes them forward. Each states a fact from the user's own numbers.
+  Future<void> _syncComebackReminders() async {
+    final settings = SmartSettings.instance;
+    final notifications = NotificationService.instance;
+    await Future.wait([settings.ensureLoaded(), notifications.ensureLoaded()]);
+    final enabled = settings.alerts && !notifications.isMuted;
+    (String, String)? soon;
+    (String, String)? later;
+    (String, String)? weekly;
+    if (enabled) {
+      final facts = await SmartFactsLoader.load();
+      final digest = ReminderDigest(facts);
+      final first = digest.candidates(SystemNotifications.soonAt(facts.now));
+      final second = digest
+          .candidates(SystemNotifications.laterAt(facts.now))
+          .where((item) => first.isEmpty || item.kind != first.first.kind);
+      if (first.isNotEmpty) soon = (first.first.title, first.first.body);
+      if (second.isNotEmpty) later = (second.first.title, second.first.body);
+      final week = digest.weekly();
+      if (week != null) weekly = (week.title, week.body);
+    }
+    await SystemNotifications.instance.syncComebackReminders(
+      enabled: enabled,
+      soon: soon,
+      later: later,
+      weekly: weekly,
+    );
+  }
+
+  // Smart reminders open the analysis.
+  void _listenToNotificationTaps() {
+    final system = SystemNotifications.instance;
+    system.launchPayload().then(_openFromNotification);
+    _notificationTaps = system.taps.listen(_openFromNotification);
+  }
+
+  void _openFromNotification(String? payload) {
+    if (payload != SystemNotifications.smartPayload) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      openSmartAnalysis(context, InsightScope.reports);
+    });
   }
 
   // A tap on a home screen widget opens the app on the matching place.
@@ -158,6 +212,7 @@ class _AppShellState extends State<AppShell>
     if (state == AppLifecycleState.resumed) {
       _startDueTimer();
       _syncFinancialEvents();
+      unawaited(_syncComebackReminders());
       ProfileIdentity.instance.reload();
     } else if (state == AppLifecycleState.paused) {
       _dueTimer?.cancel();
@@ -300,6 +355,7 @@ class _AppShellState extends State<AppShell>
   void dispose() {
     _dueTimer?.cancel();
     _widgetTaps?.cancel();
+    _notificationTaps?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     _pagerFade.dispose();
