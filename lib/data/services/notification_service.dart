@@ -17,6 +17,9 @@ import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/data/services/system_notifications.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
+import 'package:waffr/core/insights/smart/arabic_text.dart';
+import 'package:waffr/core/insights/smart/smart_facts.dart';
+import 'package:waffr/data/services/smart_settings.dart';
 
 /// In-app notification engine for balance, spending, goals, savings, and periods.
 ///
@@ -87,6 +90,7 @@ class NotificationService extends ChangeNotifier {
       await ensureLoaded();
       final store = TransactionStore.instance;
       await store.ensureLoaded();
+      await SmartSettings.instance.ensureLoaded();
 
       if (!_snapshot.initialized) {
         _applyBaseline(store);
@@ -102,6 +106,7 @@ class NotificationService extends ChangeNotifier {
       changed |= _evaluateTransfers(store);
       changed |= _evaluatePeriods(store);
       changed |= _evaluateLargeExpenses(store);
+      changed |= _evaluateForecast(store);
 
       final previous = _snapshot;
       _refreshSnapshot(store);
@@ -183,6 +188,17 @@ class NotificationService extends ChangeNotifier {
     }
     await _persistItems();
     notifyListeners();
+  }
+
+  /// Deletes one notification. The list updates before the save so a
+  /// swiped-away tile leaves the screen in the same frame.
+  Future<void> remove(String id) async {
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index < 0) return;
+    _items.removeAt(index);
+    notifyListeners();
+    await SyncTombstones.instance.add(SyncCollection.notifications, id);
+    await _persistItems();
   }
 
   /// Clears the feed only; leaves balance, savings, goals, and mute untouched.
@@ -327,6 +343,50 @@ class NotificationService extends ChangeNotifier {
         'percent': '$percent',
         'cycle': cycle,
       },
+    );
+  }
+
+  /// Smart alert: at the recent pace the balance runs out before the next
+  /// income. At most once a week per cycle, and only with enough history.
+  bool _evaluateForecast(TransactionStore store) {
+    if (!SmartSettings.instance.alerts || store.balance <= 0) return false;
+    final facts = SmartFacts(
+      now: deviceNow(),
+      currencySymbol: currencyLabel,
+      expenses: store.expenses,
+      incomes: store.incomes,
+      savingsTransfers: const [],
+      balance: store.balance,
+      maxBalance: store.maxBalance,
+      monthlyIncome: store.configuredMonthlyIncome,
+      incomeFrequency: store.preferredIncomeFrequency,
+      hasRecurringIncome: store.hasRecurringIncome,
+      savingsBalance: 0,
+      goals: const [],
+      completedGoals: 0,
+      obligations: const [],
+      pendingShopping: 0,
+      streakCount: 0,
+      usageStartedAt: null,
+    );
+    final untilIncome = facts.daysUntilIncome;
+    final runway = facts.runwayDays;
+    if (untilIncome == null || untilIncome < 3 || runway == null) return false;
+    if (facts.weeksOfHistory < 1 || facts.loggedLast30 < 5) return false;
+    final gap = (untilIncome - runway).ceil();
+    if (gap < 2) return false;
+
+    final dailyLimit = store.balance / untilIncome;
+    final cycle = _incomeCycle(store);
+    final week = CalendarPeriod.weeklyKey(facts.now);
+    return _tryAdd(
+      type: NotificationType.balanceWarning,
+      title: 'قد ينفد رصيدك قبل الدخل',
+      message: 'بوتيرتك الحالية سينفد رصيدك قبل الدخل القادم بنحو '
+          '${Ar.days.of(gap)}. حاول ألا تتجاوز '
+          '${formatMoney(dailyLimit)} $currencyLabel يومياً.',
+      eventKey: 'balanceForecast:$cycle:$week',
+      metadata: {'cycle': cycle, 'gapDays': '$gap'},
     );
   }
 

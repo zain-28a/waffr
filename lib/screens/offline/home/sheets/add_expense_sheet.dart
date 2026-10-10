@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:waffr/data/stores/category_store.dart';
@@ -15,6 +17,10 @@ import 'package:waffr/screens/offline/home/sheets/expense_presets_dialog.dart';
 import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/dialogs/edit_delete_menu.dart';
+import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/core/insights/smart/category_suggester.dart';
+import 'package:waffr/data/services/smart_settings.dart';
+import 'package:waffr/widgets/smart/smart_glow.dart';
 
 // Glass bottom sheet for one-off or recurring expenses, plus category picks.
 
@@ -37,6 +43,13 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   final TextEditingController _noteController = TextEditingController();
 
   String _category = CategoryStore.instance.defaultLabel;
+
+  // Smart category: picked from the note until the user chooses one
+  // themselves, after which it is only offered as a suggestion.
+  bool _categoryTouched = false;
+  String? _suggestedCategory;
+  Timer? _suggestTimer;
+  CategorySuggester? _suggester;
   final String _paymentMethod = paymentMethods.first;
 
   bool _saving = false;
@@ -111,6 +124,25 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     });
   }
 
+  // Waits for a pause in typing, then picks (or offers) a category.
+  void _onNoteChanged(String note) {
+    _suggestTimer?.cancel();
+    _suggestTimer = Timer(const Duration(milliseconds: 280), () async {
+      await SmartSettings.instance.ensureLoaded();
+      if (!mounted || !SmartSettings.instance.categorize) return;
+      _suggester ??= CategorySuggester(TransactionStore.instance.transactions);
+      final options = [
+        for (final item in CategoryStore.instance.selectableCategories)
+          item.label,
+      ];
+      final suggestion = _suggester!.suggest(note, options);
+      setState(() {
+        _suggestedCategory = suggestion;
+        if (suggestion != null && !_categoryTouched) _category = suggestion;
+      });
+    });
+  }
+
   // Star: pick a saved expense, or mark this one to be saved as a preset.
   Future<void> _openPresets() async {
     FocusScope.of(context).unfocus();
@@ -145,6 +177,8 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
       _multiplier = preset.multiplier;
       _currencyCode = code;
       _category = preset.category;
+      _categoryTouched = true;
+      _suggestedCategory = null;
       _noteController.text = note;
       _recurring = recurring;
       _recurringUnit = preset.unit;
@@ -175,6 +209,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   @override
   void dispose() {
     _amountController.dispose();
+    _suggestTimer?.cancel();
     _noteController.dispose();
     _intervalController.dispose();
     super.dispose();
@@ -202,6 +237,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
       await _storePresetIfMarked(note);
 
       if (!mounted) return;
+      AppHaptics.success();
       Navigator.of(context).maybePop();
       return;
     }
@@ -224,6 +260,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
 
     await _storePresetIfMarked(note);
     if (!mounted) return;
+    AppHaptics.success();
     Navigator.of(context).maybePop();
   }
 
@@ -319,7 +356,10 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         const SheetFieldLabel(text: 'التصنيف'),
         ExpenseCategoryGrid(
           selected: _category,
-          onSelected: (label) => setState(() => _category = label),
+          onSelected: (label) => setState(() {
+            _category = label;
+            _categoryTouched = true;
+          }),
         ),
         
         const SizedBox(height: 10),
@@ -327,6 +367,20 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         SheetTextField(
           controller: _noteController,
           hint: 'مثال: غداء، تاكسي، فاتورة إنترنت...',
+          onChanged: _onNoteChanged,
+        ),
+        _SmartCategoryHint(
+          suggestion: _suggestedCategory,
+          current: _category,
+          applied: _suggestedCategory != null &&
+              !_categoryTouched &&
+              _suggestedCategory == _category,
+          onApply: () {
+            final suggestion = _suggestedCategory;
+            if (suggestion == null) return;
+            AppHaptics.selection();
+            setState(() => _category = suggestion);
+          },
         ),
         const SizedBox(height: 12),
         SheetSaveButton(
@@ -364,7 +418,7 @@ class _PresetStarButton extends StatelessWidget {
           width: 36,
           height: 26,
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 260),
+            duration: AppMotion.of(context, AppMotion.medium),
             switchInCurve: Curves.easeOutBack,
             switchOutCurve: Curves.easeInCubic,
             transitionBuilder: (child, animation) => ScaleTransition(
@@ -506,7 +560,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
   @override
   Widget build(BuildContext context) {
     return AnimatedSize(
-      duration: const Duration(milliseconds: 280),
+      duration: AppMotion.of(context, AppMotion.medium),
       curve: Curves.easeOutCubic,
       alignment: Alignment.topCenter,
       child: ListenableBuilder(
@@ -765,7 +819,7 @@ class _IconChoice extends StatelessWidget {
           final side = constraints.biggest.shortestSide;
           return Center(
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: AppMotion.of(context, AppMotion.fast),
               curve: Curves.easeOutCubic,
               width: side,
               height: side,
@@ -820,7 +874,7 @@ class _CategoryTile extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 260),
+        duration: AppMotion.of(context, AppMotion.medium),
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
           color: isSelected
@@ -855,6 +909,89 @@ class _CategoryTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Under the note: says when the category was picked from the note, or
+// offers the picked one when the user already chose another.
+class _SmartCategoryHint extends StatelessWidget {
+  final String? suggestion;
+  final String current;
+  final bool applied;
+  final VoidCallback onApply;
+
+  const _SmartCategoryHint({
+    required this.suggestion,
+    required this.current,
+    required this.applied,
+    required this.onApply,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final colors = smartGlowColors(context);
+    final label = suggestion;
+
+    Widget? child;
+    if (label != null && applied) {
+      child = Row(
+        key: ValueKey('applied-$label'),
+        children: [
+          Icon(Icons.auto_awesome, size: 15, color: colors[2]),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              'اخترتُ تصنيف «$label» من الملاحظة',
+              style: TextStyle(
+                fontFamily: 'Outfit',
+                fontFamilyFallback: const ['Tajawal'],
+                fontSize: 12.5,
+                color: textSecondary,
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (label != null && label != current) {
+      child = Align(
+        key: ValueKey('offer-$label'),
+        alignment: AlignmentDirectional.centerStart,
+        child: ActionChip(
+          avatar: Icon(Icons.auto_awesome, size: 16, color: colors[2]),
+          label: Text(
+            'اقتراح: $label',
+            style: const TextStyle(
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          onPressed: onApply,
+          shape: const StadiumBorder(),
+          side: BorderSide(color: colors[2].withValues(alpha: 0.35)),
+          backgroundColor: colors[2].withValues(alpha: 0.08),
+        ),
+      );
+    }
+
+    return AnimatedSize(
+      duration: AppMotion.of(context, AppMotion.medium),
+      curve: AppMotion.enter,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: AppMotion.of(context, AppMotion.fast),
+        child: child == null
+            ? const SizedBox(width: double.infinity)
+            : Padding(
+                key: child.key,
+                padding: const EdgeInsets.only(top: 8),
+                child: child,
+              ),
       ),
     );
   }

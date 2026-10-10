@@ -1,26 +1,12 @@
 // Shared motion pieces: staggered entrance, rolling money digits and
-// animated progress. All of them are implicit (no work after they settle)
-// and turn themselves off when the device asks for reduced motion.
+// animated progress. Timings come from AppMotion. All of them are
+// implicit (no work after they settle) and turn themselves off when the
+// device asks for reduced motion.
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/utils/money.dart';
-
-/// Standard timings so every screen moves at the same pace.
-class Motion {
-  Motion._();
-
-  static const Duration fast = Duration(milliseconds: 180);
-  static const Duration medium = Duration(milliseconds: 360);
-  static const Duration slow = Duration(milliseconds: 700);
-
-  static const Curve enter = Curves.easeOutCubic;
-  static const Curve spring = Curves.easeOutBack;
-
-  /// True when the system asks apps to cut animations.
-  static bool reduced(BuildContext context) =>
-      MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-}
 
 /// Fades and lifts [child] in once, the first time it is built.
 /// [index] staggers siblings so a screen settles top to bottom.
@@ -47,7 +33,7 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
   );
   late final Animation<double> _curve = CurvedAnimation(
     parent: _controller,
-    curve: Motion.enter,
+    curve: AppMotion.enter,
   );
   bool _started = false;
 
@@ -56,7 +42,7 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    if (Motion.reduced(context)) {
+    if (AppMotion.reduced(context)) {
       _controller.value = 1;
       return;
     }
@@ -108,7 +94,7 @@ class _RollingMoneyState extends State<RollingMoney>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: Motion.slow,
+    duration: AppMotion.countUp,
     value: 1,
   );
   late String _from = formatMoney(widget.value);
@@ -122,7 +108,7 @@ class _RollingMoneyState extends State<RollingMoney>
     // Start from what is on screen now, even mid-roll.
     _from = _controller.value < 0.5 ? _from : _to;
     _to = next;
-    if (Motion.reduced(context)) {
+    if (AppMotion.reduced(context)) {
       _controller.value = 1;
     } else {
       _controller.forward(from: 0);
@@ -143,7 +129,7 @@ class _RollingMoneyState extends State<RollingMoney>
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, _) {
-          final t = Motion.enter.transform(_controller.value);
+          final t = AppMotion.enter.transform(_controller.value);
           if (t >= 1 || _from == _to) {
             return Text(_to, style: widget.style, maxLines: 1);
           }
@@ -314,17 +300,17 @@ class AnimatedRatio extends StatelessWidget {
     super.key,
     required this.value,
     required this.builder,
-    this.duration = Motion.slow,
+    this.duration = AppMotion.countUp,
   });
 
   @override
   Widget build(BuildContext context) {
     final target = value.isFinite ? value.clamp(0.0, 1.0) : 0.0;
-    if (Motion.reduced(context)) return builder(context, target);
+    if (AppMotion.reduced(context)) return builder(context, target);
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: target),
       duration: duration,
-      curve: Motion.enter,
+      curve: AppMotion.enter,
       builder: (context, v, _) => builder(context, v),
     );
   }

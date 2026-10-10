@@ -8,6 +8,7 @@ import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/calendar_period.dart';
 import 'package:waffr/data/models/savings_goal.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/savings/sheets/completed_goals_sheet.dart';
@@ -20,6 +21,8 @@ import 'package:waffr/screens/offline/savings/sheets/withdraw_savings_sheet.dart
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/widgets/smart/smart_analysis_button.dart';
 
 // Range chips + swipeable period card, total savings, goal progress, and sheet launches.
 class SavingsScreen extends StatefulWidget {
@@ -72,7 +75,7 @@ class _SavingsScreenState extends State<SavingsScreen>
     if (_periodOffset >= _maxPeriodOffset - 1) return;
 
     _periodController.nextPage(
-      duration: const Duration(milliseconds: 280),
+      duration: AppMotion.medium,
       curve: Curves.easeOutCubic,
     );
   }
@@ -81,7 +84,7 @@ class _SavingsScreenState extends State<SavingsScreen>
     if (_periodOffset == 0) return;
 
     _periodController.previousPage(
-      duration: const Duration(milliseconds: 280),
+      duration: AppMotion.medium,
       curve: Curves.easeOutCubic,
     );
   }
@@ -254,7 +257,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                       ),
                     ),
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
+                      duration: AppMotion.of(context, AppMotion.fast),
                       child: Text(
                         isCurrent
                             ? CalendarPeriod.currentPeriodCaption(range)
@@ -595,11 +598,11 @@ class _SavingsGoalsHeader extends StatelessWidget {
                   color: colors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 1),
-              
             ],
           ),
         ),
+        const SizedBox(width: 8),
+        const SmartAnalysisButton(scope: InsightScope.savings),
       ],
     );
   }

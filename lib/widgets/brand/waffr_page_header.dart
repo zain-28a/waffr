@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 /// Fixed-height page header with optional scroll-elevation shadow.
 class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
@@ -139,7 +140,7 @@ class _HeaderChrome extends StatelessWidget {
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+      duration: AppMotion.of(context, AppMotion.fast),
       curve: Curves.easeOut,
       width: double.infinity,
       decoration: BoxDecoration(

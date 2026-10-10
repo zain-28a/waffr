@@ -5,6 +5,7 @@ import 'package:waffr/data/models/app_notification.dart';
 import 'package:waffr/data/services/notification_service.dart';
 import 'package:waffr/data/services/system_notifications.dart';
 import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
@@ -81,6 +82,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       default:
         break;
     }
+  }
+
+  void _dismiss(AppNotification notification) {
+    AppHaptics.warning();
+    _service.remove(notification.id);
   }
 
   Future<void> _confirmClear() async {
@@ -172,6 +178,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                         final view = _NotificationGroupView(
                           group: groups[index],
                           onOpen: _open,
+                          onDismiss: _dismiss,
                         );
                         // Only the first screenful animates in.
                         return index < 6
@@ -331,10 +338,12 @@ class _EmptyNotifications extends StatelessWidget {
 class _NotificationGroupView extends StatelessWidget {
   final NotificationTimeGroup group;
   final ValueChanged<AppNotification> onOpen;
+  final ValueChanged<AppNotification> onDismiss;
 
   const _NotificationGroupView({
     required this.group,
     required this.onOpen,
+    required this.onDismiss,
   });
 
   @override
@@ -360,13 +369,46 @@ class _NotificationGroupView extends StatelessWidget {
           ),
           for (var i = 0; i < group.items.length; i++) ...[
             if (i > 0) const SizedBox(height: 8),
-            _NotificationTile(
-              notification: group.items[i],
-              onTap: () => onOpen(group.items[i]),
+            // Swipe either way to delete one alert.
+            Dismissible(
+              key: ValueKey(group.items[i].id),
+              onDismissed: (_) => onDismiss(group.items[i]),
+              background: const _DismissBackground(
+                alignment: AlignmentDirectional.centerStart,
+              ),
+              secondaryBackground: const _DismissBackground(
+                alignment: AlignmentDirectional.centerEnd,
+              ),
+              child: _NotificationTile(
+                notification: group.items[i],
+                onTap: () => onOpen(group.items[i]),
+              ),
             ),
           ],
         ],
       ),
+    );
+  }
+}
+
+// Red delete strip revealed behind a tile while it is swiped.
+class _DismissBackground extends StatelessWidget {
+  final AlignmentDirectional alignment;
+
+  const _DismissBackground({required this.alignment});
+
+  @override
+  Widget build(BuildContext context) {
+    final destructive = AppColors.destructiveOf(context);
+
+    return Container(
+      alignment: alignment,
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      decoration: BoxDecoration(
+        color: destructive.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Icon(Icons.delete_outline_rounded, color: destructive),
     );
   }
 }
