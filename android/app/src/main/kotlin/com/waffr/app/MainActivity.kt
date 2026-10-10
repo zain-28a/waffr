@@ -1,4 +1,4 @@
-package com.example.waffer
+package com.waffr.app
 
 import android.content.ClipData
 import android.content.Intent
