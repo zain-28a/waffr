@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/app_notification.dart';
 import 'package:waffr/data/services/notification_service.dart';
@@ -168,10 +169,14 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                       padding: const EdgeInsets.fromLTRB(18, 8, 18, 26),
                       itemCount: groups.length,
                       itemBuilder: (context, index) {
-                        return _NotificationGroupView(
+                        final view = _NotificationGroupView(
                           group: groups[index],
                           onOpen: _open,
                         );
+                        // Only the first screenful animates in.
+                        return index < 6
+                            ? Reveal(index: index, child: view)
+                            : view;
                       },
                     ),
             ),

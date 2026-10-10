@@ -1,6 +1,7 @@
 // In-app FAQ grouped by topic (balance, expenses, savings, sync, etc.).
 
 import 'package:flutter/material.dart';
+import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 
@@ -216,7 +217,7 @@ class HelpScreen extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
-        children: [
+        children: staggered([
           Text(
             'دليل وفّر',
             style: TextStyle(
@@ -253,7 +254,7 @@ class HelpScreen extends StatelessWidget {
             ],
             const SizedBox(height: 22),
           ],
-        ],
+        ]),
       ),
     );
   }
