@@ -63,7 +63,7 @@ class InsightEngine {
   // Isolated left-to-right so "20%" never flips inside Arabic text.
   String _pct(double ratio) => '\u2066${(ratio * 100).abs().round()}%\u2069';
 
-  String _days(int n) => Ar.days.of(n);
+  String _days(int n) => n < 1 ? 'أقل من يوم' : Ar.days.of(n);
 
   static const List<String> _openers = [
     'بحسب أرقامك،',
@@ -460,7 +460,7 @@ class InsightEngine {
         ]),
         body: _say(InsightTone.warning, [
           'بهذه الوتيرة سينفد رصيدك قبل الدخل القادم بنحو ${_days(gap)}، فحاول ألا تتجاوز ${_m(dailyLimit)} يومياً.',
-          'يكفي رصيدك قرابة ${_days(runway.floor())} فقط، والدخل بعد ${_days(untilIncome)}. حدّك اليومي الآمن ${_m(dailyLimit)}.',
+          'يكفي رصيدك ${runway < 1 ? '' : 'قرابة '}${_days(runway.floor())} فقط، والدخل بعد ${_days(untilIncome)}. حدّك اليومي الآمن ${_m(dailyLimit)}.',
           'لتصل إلى الدخل القادم بأمان، اجعل صرفك اليومي نحو ${_m(dailyLimit)} بدلاً من ${_m(facts.dailyAverageRecent)}.',
         ]),
         detail: detail,

@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:waffr/core/insights/smart/reminder_digest.dart';
 
 class SystemNotifications {
   SystemNotifications._();
@@ -66,19 +67,8 @@ class SystemNotifications {
     try {
       await _plugin.cancel(id: _streakId);
       if (!enabled || !_timeZoneReady) return;
-
-      final tomorrow = _tomorrowEvening();
-
-      await _plugin.zonedSchedule(
-        id: _streakId,
-        title: streakCount >= 2
-            ? 'لديك $streakCount أيام متواصلة في وفّر'
-            : 'أيامك المتواصلة في وفّر',
-        body: 'سجّل مصروفات اليوم حتى لا تنقطع أيامك المتواصلة.',
-        scheduledDate: tomorrow,
-        notificationDetails: _details(),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      );
+      final text = ReminderDigest.streakText(streakCount);
+      await _schedule(_streakId, (text.title, text.body), _tomorrowEvening());
     } catch (_) {}
   }
 
