@@ -14,6 +14,7 @@ enum NotificationType {
   recurringExpenseBlocked,
   recurringExpenseApplied,
   recurringExpenseUpcoming,
+  recurringExpenseDue,
 }
 
 // Light visual weight for list styling (no extra theme colors).
@@ -69,6 +70,7 @@ class AppNotification {
         NotificationType.recurringExpenseApplied => NotificationPriority.info,
         NotificationType.recurringExpenseUpcoming =>
           NotificationPriority.warning,
+        NotificationType.recurringExpenseDue => NotificationPriority.important,
       };
 
   AppNotification copyWith({
@@ -163,6 +165,7 @@ class AppNotification {
       'recurringExpenseBlocked' => NotificationType.recurringExpenseBlocked,
       'recurringExpenseApplied' => NotificationType.recurringExpenseApplied,
       'recurringExpenseUpcoming' => NotificationType.recurringExpenseUpcoming,
+      'recurringExpenseDue' => NotificationType.recurringExpenseDue,
       _ => NotificationType.recurringPeriodCompleted,
     };
   }

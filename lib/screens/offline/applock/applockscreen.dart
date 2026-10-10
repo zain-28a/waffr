@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:waffer/widgets/button/app_primary_button.dart';
 import 'package:waffer/core/theme/app_color.dart';
 
 // Blocks the app until device auth (biometrics or PIN) succeeds.
@@ -129,26 +130,11 @@ class _LockScreenState extends State<LockScreen> {
 
             const SizedBox(height: 30),
 
-            ElevatedButton.icon(
-              onPressed: _loading ? null : _authenticate,
-              icon: const Icon(Icons.fingerprint),
-              label: const Text(
-                'فتح القفل',
-                style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 28,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
+            AppPrimaryButton(
+              label: 'فتح القفل',
+              icon: Icons.fingerprint,
+              busy: _loading,
+              onTap: _authenticate,
             ),
           ],
         ),

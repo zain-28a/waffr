@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:waffer/widgets/containers/app_list_tile.dart';
+import 'package:waffer/widgets/button/app_primary_button.dart';
 import 'package:waffer/data/services/local_data_reset.dart';
 import 'package:waffer/core/security/app_lock.dart';
 import 'package:waffer/core/sync/auth_session.dart';
@@ -71,21 +73,10 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            WafferPageHeader(
+            WafferBackHeader(
               applySafeArea: false,
-              centerTitle: true,
               elevated: _headerElevated,
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: colors.textPrimary,
-                ),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: Text(
-                'الخصوصية والأمان',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              title: 'الخصوصية والأمان',
             ),
             Expanded(
               child: _loading
@@ -267,7 +258,7 @@ class _CloudSyncDetailPage extends StatelessWidget {
               ? const [
                   _InfoLine(
                     label:
-                        'تُحفظ البيانات المدعومة على الجهاز أولاً لتعمل دون اتصال.',
+                        'تُحفظ بياناتك على الجهاز أولاً، فيعمل التطبيق دون اتصال.',
                   ),
                   _InfoLine(
                     label:
@@ -275,7 +266,7 @@ class _CloudSyncDetailPage extends StatelessWidget {
                   ),
                   _InfoLine(
                     label:
-                        'تُعزل بيانات كل حساب عن غيره وفق ملكية الحساب المسجّل.',
+                        'بيانات كل حساب منفصلة عن غيره، ولا يصل إليها إلا صاحبها.',
                     showDivider: false,
                   ),
                 ]
@@ -289,7 +280,7 @@ class _CloudSyncDetailPage extends StatelessWidget {
                   ),
                   _InfoLine(
                     label:
-                        'بعد تسجيل الدخول، تُزامَن البيانات المدعومة تلقائياً عند توفر الاتصال.',
+                        'بعد تسجيل الدخول، تُزامَن بياناتك تلقائياً عند توفر الاتصال.',
                     showDivider: false,
                   ),
                 ],
@@ -306,7 +297,7 @@ class _SyncedDataDetailPage extends StatelessWidget {
   static const _synced = <String>[
     'المعاملات المالية',
     'أهداف التوفير والتحويلات',
-    'المصروفات المتكررة',
+    'الالتزامات (المصروفات المتكررة)',
     'قوائم التسوق وعناصرها',
     'الإشعارات',
     'التصنيفات المخصصة',
@@ -316,7 +307,7 @@ class _SyncedDataDetailPage extends StatelessWidget {
 
   static const _localOnly = <String>[
     'إعدادات قفل التطبيق',
-    'أسرار الجلسة ورموز الدخول',
+    'بيانات تسجيل الدخول',
     'ملفات صور الملف الشخصي المحلية',
     'بيانات خاصة بالجهاز',
   ];
@@ -427,7 +418,7 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
       case AppLockToggleResult.unsupported:
         showAppSnackBar(
           context,
-          'جهازك لا يدعم المصادقة البيومترية',
+          'جهازك لا يدعم البصمة أو قفل الشاشة',
           kind: AppFeedbackKind.warning,
         );
       case AppLockToggleResult.cancelled:
@@ -545,26 +536,9 @@ class _LocalResetDetailPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 22),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () => _confirmReset(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors.accent,
-              foregroundColor: colors.surface,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: const Text(
-              'إعادة ضبط هذا الجهاز',
-              style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+        AppPrimaryButton(
+          label: 'إعادة ضبط هذا الجهاز',
+          onTap: () => _confirmReset(context),
         ),
       ],
     );
@@ -587,19 +561,8 @@ class _PrivacyDetailScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: WafferPageHeader(
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_forward_ios_rounded,
-            color: colors.textPrimary,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          title,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+      appBar: WafferBackHeader(
+        title: title,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
@@ -647,23 +610,11 @@ class _SectionLabel extends StatelessWidget {
   const _SectionLabel({required this.title, required this.color});
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 5, bottom: 10),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: color,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AppSectionTitle(title: title);
 }
 
 // Card wrapping one or more privacy settings rows.
+// Rows stacked like the Settings screen: one card per row.
 class _SettingsGroup extends StatelessWidget {
   final Color surface;
   final List<Widget> children;
@@ -675,13 +626,13 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(children: children),
+    return Column(
+      children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          children[i],
+        ],
+      ],
     );
   }
 }
@@ -712,107 +663,19 @@ class _SettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: colors.accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(icon, color: colors.accent, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      ),
-                    ),
-                  ),
-                  if (status != null) ...[
-                    const SizedBox(width: 8),
-                    _StatusChip(
-                      label: status!,
-                      emphasized: statusEmphasis,
-                      colors: colors,
-                    ),
-                  ],
-                  ?trailing,
-                  if (showChevron)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.only(start: 6),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: colors.textSecondary.withValues(alpha: 0.5),
-                        size: 15,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (showDivider)
-          Divider(
-            height: 1,
-            thickness: 1,
-            indent: 64,
-            color: colors.textSecondary.withValues(alpha: 0.12),
-          ),
-      ],
+    return AppListTile(
+      icon: icon,
+      title: title,
+      status: status,
+      statusOn: statusEmphasis,
+      trailing: trailing,
+      showChevron: showChevron,
+      onTap: onTap,
     );
   }
 }
 
 // Small pill showing on/off or similar status text.
-class _StatusChip extends StatelessWidget {
-  final String label;
-  final bool emphasized;
-  final _PrivacyColors colors;
-
-  const _StatusChip({
-    required this.label,
-    required this.emphasized,
-    required this.colors,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = emphasized ? colors.accent : colors.textSecondary;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: emphasized ? 0.12 : 0.08),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 11.5,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-        ),
-      ),
-    );
-  }
-}
-
 // Banner summarizing the current privacy/security status.
 class _StatusBanner extends StatelessWidget {
   final _PrivacyColors colors;

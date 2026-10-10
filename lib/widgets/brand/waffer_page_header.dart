@@ -56,6 +56,64 @@ class WafferPageHeader extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
+/// Header of every pushed screen: back arrow and centered title. Use this
+/// instead of building a [WafferPageHeader] by hand so all screens match.
+class WafferBackHeader extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+
+  /// Defaults to popping the current route.
+  final VoidCallback? onBack;
+
+  /// False disables the back arrow (e.g. while a request is running).
+  final bool enabled;
+
+  /// False hides the back arrow on the first screen of a flow.
+  final bool showBack;
+  final ValueListenable<bool>? elevated;
+  final bool applySafeArea;
+
+  const WafferBackHeader({
+    super.key,
+    required this.title,
+    this.onBack,
+    this.enabled = true,
+    this.showBack = true,
+    this.elevated,
+    this.applySafeArea = true,
+  });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(WafferPageHeader.height);
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+
+    return WafferPageHeader(
+      centerTitle: true,
+      elevated: elevated,
+      applySafeArea: applySafeArea,
+      leading: showBack
+          ? IconButton(
+              tooltip: 'رجوع',
+              icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
+              onPressed: enabled
+                  ? (onBack ?? () => Navigator.of(context).maybePop())
+                  : null,
+            )
+          : null,
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.headlineSmall,
+      ),
+    );
+  }
+}
+
 /// Gradient bar chrome, shadow, and title/leading layout.
 class _HeaderChrome extends StatelessWidget {
   final Widget title;

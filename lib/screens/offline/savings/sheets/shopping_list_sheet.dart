@@ -1,6 +1,7 @@
 // Shopping list preview card plus sheets to add items and record purchases as expenses.
 
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/data/stores/category_store.dart';
 import 'package:waffer/data/stores/currency_store.dart';
 import 'package:waffer/data/stores/shopping_list_store.dart';
@@ -87,7 +88,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                         Text(
                           preview.isEmpty
                               ? 'أضف ما تحتاج إلى شرائه'
-                              : '${_store.items.length} عناصر محفوظة',
+                              : itemsCountLabel(_store.items.length),
                           style: TextStyle(
                             fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                             fontSize: 11.5,
@@ -108,7 +109,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      '+ ${_store.items.length - preview.length} عناصر أخرى',
+                      '+ ${itemsCountLabel(_store.items.length - preview.length, other: true)}',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
@@ -218,7 +219,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
     final confirmed = await showAppConfirmDialog(
       context,
       title: 'إفراغ قائمة المشتريات',
-      message: 'سيتم حذف كل العناصر من القائمة. المصروفات المسجّلة لن تتأثر.',
+      message: 'ستُحذف كل العناصر من القائمة. المصروفات المسجّلة لن تتأثر.',
       confirmLabel: 'إفراغ',
       destructive: true,
     );
@@ -265,7 +266,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
   Future<void> _removeItem(ShoppingItem item) async {
     final confirmed = await showAppConfirmDialog(
       context,
-      title: 'حذف "${item.name}"',
+      title: 'حذف «${item.name}»',
       message: item.isPurchased
           ? 'سيُحذف العنصر من القائمة. المصروف المسجّل لشرائه لن يتأثر.'
           : 'سيُحذف العنصر من قائمة المشتريات.',
@@ -330,26 +331,10 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
             ),
             const SizedBox(height: 16),
             if (_store.items.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 28),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.shopping_basket_outlined,
-                      size: 42,
-                      color: colors.textSecondary.withValues(alpha: 0.55),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'قائمة المشتريات فارغة',
-                      style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                        fontSize: 14,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+              const AppEmptyState(
+                icon: Icons.shopping_basket_outlined,
+                title: 'قائمة المشتريات فارغة',
+                message: 'اكتب اسم ما تحتاج إليه ثم اضغط +.',
               )
             else ...[
               Align(
@@ -621,7 +606,7 @@ class _PurchaseShoppingItemSheetState
       return;
     }
 
-    showAppSnackBar(context, 'تعذر حفظ المصروف. حاول مرة أخرى.');
+    showAppSnackBar(context, 'تعذّر حفظ المصروف. حاول مرة أخرى.');
   }
 
   @override
@@ -645,7 +630,7 @@ class _PurchaseShoppingItemSheetState
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 18),
-        const SheetFieldLabel(text: 'الصنف'),
+        const SheetFieldLabel(text: 'التصنيف'),
         ExpenseCategoryGrid(
           selected: _category,
           onSelected: (value) => setState(() => _category = value),
@@ -689,4 +674,12 @@ class _ShoppingColors {
           : AppColors.lightTextSecondary,
     );
   }
+}
+
+// "عنصر واحد محفوظ", "عنصران محفوظان", "3 عناصر محفوظة", "11 عنصراً محفوظاً".
+String itemsCountLabel(int count, {bool other = false}) {
+  if (count == 1) return other ? 'عنصر آخر' : 'عنصر واحد محفوظ';
+  if (count == 2) return other ? 'عنصران آخران' : 'عنصران محفوظان';
+  if (count <= 10) return other ? '$count عناصر أخرى' : '$count عناصر محفوظة';
+  return other ? '$count عنصراً آخر' : '$count عنصراً محفوظاً';
 }

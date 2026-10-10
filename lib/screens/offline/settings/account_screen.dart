@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:waffer/widgets/containers/app_list_tile.dart';
+import 'package:waffer/widgets/containers/glass_sheet.dart';
 import 'package:waffer/data/services/backup_service.dart';
 import 'package:waffer/data/services/profile_photo.dart';
 import 'package:waffer/core/sync/auth_session.dart';
@@ -76,79 +78,37 @@ class _AccountScreenState extends State<AccountScreen> {
 
   // Camera / gallery / remove options for the avatar.
   Future<void> _showPhotoOptions() async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-
-    await showModalBottomSheet<void>(
+    await showGlassSheet<void>(
       context: context,
-      backgroundColor: surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 10, 8, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: textSecondary.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'صورة الملف الشخصي',
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ListTile(
-                  leading: Icon(Icons.photo_library_outlined, color: accent),
-                  title: Text(
-                    'اختيار من المعرض',
-                    style: TextStyle(color: textPrimary, fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
-                  ),
-                  onTap: () => _pickPhoto(ImageSource.gallery),
-                ),
-                ListTile(
-                  leading: Icon(Icons.photo_camera_outlined, color: accent),
-                  title: Text(
-                    'التقاط صورة',
-                    style: TextStyle(color: textPrimary, fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
-                  ),
-                  onTap: () => _pickPhoto(ImageSource.camera),
-                ),
-                if (_photoPath != null)
-                  ListTile(
-                    leading: Icon(Icons.delete_outline_rounded, color: accent),
-                    title: Text(
-                      'إزالة الصورة',
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      ),
-                    ),
-                    onTap: _removePhoto,
-                  ),
-              ],
-            ),
+      builder: (context) => GlassSheetBody(
+        children: [
+          const GlassSheetHeader(
+            title: 'صورة الملف الشخصي',
+            subtitle: 'اختر مصدر الصورة.',
           ),
-        );
-      },
+          const SizedBox(height: 16),
+          SheetOptionTile(
+            icon: Icons.photo_library_outlined,
+            label: 'اختيار من المعرض',
+            onTap: () => _pickPhoto(ImageSource.gallery),
+          ),
+          const SizedBox(height: 8),
+          SheetOptionTile(
+            icon: Icons.photo_camera_outlined,
+            label: 'التقاط صورة',
+            onTap: () => _pickPhoto(ImageSource.camera),
+          ),
+          if (_photoPath != null) ...[
+            const SizedBox(height: 8),
+            SheetOptionTile(
+              icon: Icons.delete_outline_rounded,
+              label: 'إزالة الصورة',
+              destructive: true,
+              onTap: _removePhoto,
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -226,16 +186,8 @@ class _AccountScreenState extends State<AccountScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: WafferPageHeader(
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'الحساب',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+      appBar: WafferBackHeader(
+        title: 'الحساب',
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -391,64 +343,12 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: surface,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: busy ? null : onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-          child: Row(
-            children: [
-              Container(
-                width: 43,
-                height: 43,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: accent, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: TextStyle(color: textSecondary, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              busy
-                  ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: accent,
-                      ),
-                    )
-                  : Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: textSecondary.withValues(alpha: 0.5),
-                      size: 16,
-                    ),
-            ],
-          ),
-        ),
-      ),
+    return AppListTile(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      busy: busy,
+      onTap: onTap,
     );
   }
 }

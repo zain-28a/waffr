@@ -139,5 +139,19 @@ class RecurringExpense(ClientIdMixin, SoftDeleteMixin, TimestampMixin, Base):
         nullable=False,
         index=True,
     )
+    requires_confirmation: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    remind_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    remind_on_income: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
 
     user: Mapped["User"] = relationship(back_populates="recurring_expenses")

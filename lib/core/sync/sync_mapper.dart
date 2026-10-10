@@ -103,6 +103,9 @@ Map<String, dynamic> recurringToSync(RecurringExpense item) {
     'interval_count': item.intervalCount,
     'next_due_at': toSyncIso(item.nextDueAt),
     'enabled': item.enabled,
+    'requires_confirmation': item.requiresConfirmation,
+    'remind_at': item.remindAt == null ? null : toSyncIso(item.remindAt!),
+    'remind_on_income': item.remindOnIncome,
     'created_at': toSyncIso(item.createdAt),
     'currency_code': item.currencyCode,
     'updated_at': toSyncIso(item.syncUpdatedAt),
@@ -240,6 +243,10 @@ RecurringExpense? recurringFromSync(Map<String, dynamic> raw) {
       'createdAt': raw['created_at'] ?? raw['createdAt'],
       'nextDueAt': raw['next_due_at'] ?? raw['nextDueAt'],
       'enabled': raw['enabled'],
+      'requiresConfirmation':
+          raw['requires_confirmation'] ?? raw['requiresConfirmation'],
+      'remindAt': raw['remind_at'] ?? raw['remindAt'],
+      'remindOnIncome': raw['remind_on_income'] ?? raw['remindOnIncome'],
       'updatedAt': raw['updated_at'] ?? raw['updatedAt'],
     }),
   );

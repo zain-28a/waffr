@@ -54,16 +54,28 @@ void main() {
     );
   });
 
-  test('gender, phone and address are optional', () {
+  test('gender, phone and street are optional; the city is required', () {
     expect(
       registrationProfileError(
         name: 'أحمد',
         birthDate: DateTime(1998, 5, 12),
         gender: null,
         country: 'سوريا',
+        address: 'اللاذقية',
         today: today,
       ),
       isNull,
+    );
+    expect(
+      registrationProfileError(
+        name: 'أحمد',
+        birthDate: DateTime(1998, 5, 12),
+        gender: null,
+        country: 'سوريا',
+        address: ' ، المشروع الثاني',
+        today: today,
+      ),
+      'أدخل المدينة في حقل العنوان',
     );
 
     final profile = RegistrationProfile(
@@ -90,6 +102,7 @@ void main() {
         birthDate: DateTime(1998, 5, 12),
         gender: 'female',
         country: 'سوريا',
+        address: 'اللاذقية',
         phone: '12',
         today: today,
       ),
@@ -108,11 +121,11 @@ void main() {
   });
 
   test('one address field splits into city and street at the first comma', () {
-    expect(splitAddress('اللاذقية، المشروع الأول'), (
+    expect(splitAddress('اللاذقية، المشروع الثاني'), (
       city: 'اللاذقية',
-      street: 'المشروع الأول',
+      street: 'المشروع الثاني',
     ));
-    expect(splitAddress('المشروع الأول'), (city: '', street: 'المشروع الأول'));
+    expect(splitAddress('اللاذقية'), (city: 'اللاذقية', street: ''));
     expect(splitAddress('  '), (city: '', street: ''));
   });
 

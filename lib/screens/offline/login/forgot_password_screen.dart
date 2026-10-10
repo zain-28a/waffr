@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/button/app_primary_button.dart';
+import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/core/sync/auth_session.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/screens/offline/login/auth_fields.dart';
-import 'package:waffer/widgets/button/glass_button.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
 // Forgot password: email a code, then set a new password with it. Pops with
@@ -26,6 +27,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final TextEditingController _confirmController = TextEditingController();
 
   bool _busy = false;
+  // Shown above the main button; cleared as soon as a field changes.
+  String? _message;
+  AppFeedbackKind _messageKind = AppFeedbackKind.error;
   bool _codeSent = false;
   bool _obscure = true;
 
@@ -61,8 +65,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _busy = false;
       if (result.ok) _codeSent = true;
     });
-    showAppSnackBar(
-      context,
+    _show(
       result.ok ? 'إذا كان البريد مسجّلاً، سيصلك رمز خلال دقائق' : result.message,
       success: result.ok,
     );
@@ -79,13 +82,36 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!mounted) return;
     if (!result.ok) {
       setState(() => _busy = false);
-      showAppSnackBar(context, result.message);
+      _show(result.message);
       return;
     }
     Navigator.of(context).pop((
       email: _emailController.text.trim(),
       password: _passwordController.text,
     ));
+  }
+
+  void _show(String? message, {bool success = false}) {
+    setState(() {
+      _message = message;
+      _messageKind = success ? AppFeedbackKind.success : AppFeedbackKind.error;
+    });
+  }
+
+  bool get _emailValid {
+    final email = _emailController.text.trim();
+    return email.contains('@') && email.contains('.');
+  }
+
+  // Why the main button is disabled, in plain words.
+  String? get _missingReason {
+    if (!_emailValid) return 'أدخل بريداً إلكترونياً صالحاً';
+    if (!_codeSent) return null;
+    final password = _passwordController.text;
+    if (_codeController.text.trim().length != 6) return 'أدخل الرمز المكوّن من 6 أرقام';
+    if (password.length < 8) return 'كلمة المرور يجب أن تتكون من 8 أحرف على الأقل';
+    if (password != _confirmController.text) return 'كلمتا المرور غير متطابقتين';
+    return null;
   }
 
   @override
@@ -119,13 +145,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
-          onPressed: _busy ? null : () => Navigator.pop(context),
-        ),
+      appBar: WafferBackHeader(
+        enabled: !_busy,
+        title: 'نسيت كلمة المرور',
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -133,17 +155,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'نسيت كلمة المرور',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                ),
-              ),
-              const SizedBox(height: 10),
               Text(
                 _codeSent
                     ? 'أدخل الرمز الذي وصلك على بريدك وكلمة مرور جديدة'
@@ -167,7 +178,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       keyboardType: TextInputType.emailAddress,
                       textDirection: TextDirection.ltr,
                       autocorrect: false,
-                      onChanged: (_) => setState(() {}),
+                      onChanged: (_) => setState(() => _message = null),
                       style: TextStyle(color: textPrimary, fontSize: 16),
                       decoration: decoration('example@email.com'),
                     ),
@@ -181,7 +192,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         keyboardType: TextInputType.number,
                         textDirection: TextDirection.ltr,
                         maxLength: 6,
-                        onChanged: (_) => setState(() {}),
+                        onChanged: (_) => setState(() => _message = null),
                         style: TextStyle(color: textPrimary, fontSize: 16),
                         decoration: decoration('123456'),
                       ),
@@ -195,7 +206,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         controller: _passwordController,
                         enabled: !_busy,
                         obscureText: _obscure,
-                        onChanged: (_) => setState(() {}),
+                        onChanged: (_) => setState(() => _message = null),
                         style: TextStyle(color: textPrimary, fontSize: 16),
                         decoration: decoration(
                           '8 أحرف على الأقل',
@@ -212,7 +223,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         controller: _confirmController,
                         enabled: !_busy,
                         obscureText: _obscure,
-                        onChanged: (_) => setState(() {}),
+                        onChanged: (_) => setState(() => _message = null),
                         style: TextStyle(color: textPrimary, fontSize: 16),
                         decoration: decoration('أعد كتابة كلمة المرور'),
                       ),
@@ -232,37 +243,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
               ),
               const SizedBox(height: 28),
-              GlassButton(
-                onTap: _codeSent
-                    ? (_canReset ? _reset : () {})
-                    : (_canSend ? _sendCode : () {}),
-                colorType: GlassColorType.accent,
-                borderRadius: 22,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 18,
-                  horizontal: 10,
-                ),
-                child: _busy
-                    ? const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Color.fromARGB(255, 255, 255, 255),
-                          ),
-                        ),
-                      )
-                    : Text(
-                        _codeSent ? 'تعيين كلمة المرور' : 'إرسال الرمز',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color.fromARGB(255, 255, 255, 255),
-                        ),
-                      ),
+              AppInlineMessage(message: _message, kind: _messageKind),
+              AppPrimaryButton(
+                label: _codeSent ? 'تعيين كلمة المرور' : 'إرسال الرمز',
+                enabled: _codeSent ? _canReset : _canSend,
+                onDisabledTap: () => _show(_missingReason),
+                busy: _busy,
+                onTap: _codeSent ? _reset : _sendCode,
               ),
               if (_codeSent)
                 TextButton(

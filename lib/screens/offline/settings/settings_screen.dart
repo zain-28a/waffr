@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:waffer/widgets/containers/app_list_tile.dart';
 import 'package:waffer/data/services/backup_service.dart';
 import 'package:waffer/data/stores/expense_preset_store.dart';
 import 'package:waffer/data/stores/category_store.dart';
@@ -24,12 +25,11 @@ import 'package:waffer/screens/offline/settings/account_screen.dart';
 import 'package:waffer/screens/offline/settings/ai_permissions_screen.dart';
 import 'package:waffer/screens/offline/settings/help_screen.dart';
 import 'package:waffer/screens/offline/settings/privacy_security_screen.dart';
-import 'package:waffer/screens/offline/savings/sheets/recurring_expenses_sheet.dart';
+import 'package:waffer/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffer/screens/offline/settings/sheets/currencies_sheet.dart';
 import 'package:waffer/screens/offline/settings/sheets/monthly_income_sheet.dart';
 import 'package:waffer/widgets/brand/profile_avatar.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
-import 'package:waffer/widgets/containers/glass_sheet.dart';
 import 'package:waffer/widgets/dialogs/edit_amount_dialog.dart';
 import 'package:waffer/core/prefs/app_prefs.dart';
 
@@ -140,7 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           showAppSnackBar(
             context,
-            'جهازك لا يدعم المصادقة البيومترية',
+            'جهازك لا يدعم البصمة أو قفل الشاشة',
             kind: AppFeedbackKind.warning,
           );
 
@@ -209,125 +209,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Explains that Arabic is currently the only supported language.
   void _showLanguageInfo() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: kSheetBarrierColor,
-
-      builder: (context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: surface,
-
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          ),
-
-          padding: const EdgeInsets.all(24),
-
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-
-            children: [
-              Container(
-                width: 45,
-                height: 5,
-
-                decoration: BoxDecoration(
-                  color: textPrimary.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-
-              const SizedBox(height: 25),
-
-              Icon(Icons.language_rounded, color: accent, size: 50),
-
-              const SizedBox(height: 18),
-
-              Text(
-                'اللغة',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: textPrimary,
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Text(
-                'العربية هي اللغة الوحيدة المتاحة حالياً',
-
-                textAlign: TextAlign.center,
-
-                style: TextStyle(
-                  fontSize: 15,
-                  color: textSecondary,
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                  height: 1.5,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                'نعمل على إضافة المزيد من اللغات في التحديثات القادمة.',
-
-                textAlign: TextAlign.center,
-
-                style: TextStyle(
-                  fontSize: 14,
-                  color: textSecondary,
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accent,
-                    foregroundColor: surface,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-
-                  child: Text(
-                    'حسناً',
-                    style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 15),
-            ],
-          ),
-        );
-      },
+    showAppInfoDialog(
+      context,
+      title: 'اللغة',
+      message:
+          'العربية هي اللغة الوحيدة المتاحة حالياً. نعمل على إضافة لغات أخرى في التحديثات القادمة.',
     );
   }
 
@@ -385,7 +271,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       if (!mounted) return;
       if (!cleared) {
-        showAppSnackBar(context, 'تعذر إزالة الدخل. حاول مرة أخرى.');
+        showAppSnackBar(context, 'تعذّر إزالة الدخل. حاول مرة أخرى.');
         return;
       }
       await _loadSettings();
@@ -410,7 +296,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
 
     if (!saved) {
-      showAppSnackBar(context, 'تعذر حفظ الدخل. حاول مرة أخرى.');
+      showAppSnackBar(context, 'تعذّر حفظ الدخل. حاول مرة أخرى.');
       return;
     }
 
@@ -424,14 +310,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showAbout() {}
+  void _showAbout() {
+    showAppInfoDialog(
+      context,
+      title: 'عن وفّر',
+      message:
+          'وفّر يساعدك على تنظيم دخلك ومصروفاتك والتزاماتك، والتوفير لأهدافك. '
+          'بياناتك المالية تُحفظ على جهازك، ويمكنك مزامنتها مع حسابك متى شئت.',
+    );
+  }
 
   // Clears prefs, session, photo, and in-memory stores, then returns to first route.
   Future<void> _resetApp() async {
     final confirm = await showAppConfirmDialog(
       context,
       title: 'إعادة ضبط التطبيق',
-      message: 'سيتم حذف بيانات المستخدم والرصيد وسجل المصاريف. هل أنت متأكد؟',
+      message: 'ستُحذف بياناتك الشخصية ورصيدك وسجل المصروفات من هذا الجهاز. لا يمكن التراجع عن هذا الإجراء.',
       confirmLabel: 'حذف البيانات',
       destructive: true,
     );
@@ -483,18 +377,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            WafferPageHeader(
+            WafferBackHeader(
               applySafeArea: false,
-              centerTitle: true,
               elevated: _headerElevated,
-              leading: IconButton(
-                icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: Text(
-                'الإعدادات',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              title: 'الإعدادات',
             ),
             Expanded(
               child: NotificationListener<ScrollNotification>(
@@ -573,13 +459,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 12),
           _SettingsTile(
             icon: Icons.event_repeat_rounded,
-            title: 'المصروفات المتكررة',
-            subtitle: 'تعديل المبلغ أو إيقاف الخصم التلقائي',
+            title: 'الالتزامات',
+            subtitle: 'المصروفات المتكررة وطريقة خصمها',
             accent: accent,
             surface: surface,
             textPrimary: textPrimary,
             textSecondary: textSecondary,
-            onTap: () => showRecurringExpensesSheet(context),
+            onTap: () => showObligationsSheet(context),
           ),
 
           const SizedBox(height: 25),
@@ -591,7 +477,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             title: 'الوضع الداكن',
 
-            subtitle: isDark ? 'مفعل' : 'غير مفعل',
+            subtitle: isDark ? 'مفعّل' : 'غير مفعّل',
 
             accent: accent,
             surface: surface,
@@ -640,7 +526,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             title: 'قفل التطبيق',
 
-            subtitle: 'استخدام حماية الجهاز عند فتح وفر',
+            subtitle: 'طلب البصمة أو رمز الجهاز عند فتح وفّر',
 
             accent: accent,
             surface: surface,
@@ -739,7 +625,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _SettingsTile(
             icon: Icons.info_outline_rounded,
 
-            title: 'عن وفر',
+            title: 'عن وفّر',
 
             subtitle: 'معلومات عن التطبيق',
 
@@ -890,38 +776,20 @@ class _SectionTitle extends StatelessWidget {
   const _SectionTitle({required this.title, required this.color});
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 5, bottom: 10),
-
-      child: Text(
-        title,
-
-        style: TextStyle(
-          color: color,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AppSectionTitle(title: title);
 }
 
 // Standard settings row: icon, title, subtitle, optional trailing control.
+// Kept so the call sites stay short; the look lives in AppListTile.
 class _SettingsTile extends StatelessWidget {
   final IconData icon;
-
   final String title;
   final String subtitle;
-
   final Color accent;
   final Color surface;
-
   final Color textPrimary;
   final Color textSecondary;
-
   final Widget? trailing;
-
   final VoidCallback onTap;
 
   const _SettingsTile({
@@ -938,72 +806,12 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: surface,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-
-          child: Row(
-            children: [
-              Container(
-                width: 43,
-                height: 43,
-
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-
-                  borderRadius: BorderRadius.circular(14),
-                ),
-
-                child: Icon(icon, color: accent, size: 22),
-              ),
-
-              const SizedBox(width: 14),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-
-                  children: [
-                    Text(
-                      title,
-
-                      style: TextStyle(
-                        color: textPrimary,
-
-                        fontSize: 15,
-
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-
-                    const SizedBox(height: 3),
-
-                    Text(
-                      subtitle,
-
-                      style: TextStyle(color: textSecondary, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-
-              trailing ??
-                  Icon(
-                    Icons.arrow_back_ios_new_rounded,
-
-                    color: textSecondary.withValues(alpha: 0.5),
-
-                    size: 16,
-                  ),
-            ],
-          ),
-        ),
-      ),
+    return AppListTile(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      trailing: trailing,
+      onTap: onTap,
     );
   }
 }

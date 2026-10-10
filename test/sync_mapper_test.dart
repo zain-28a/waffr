@@ -61,10 +61,15 @@ void main() {
       intervalCount: 1,
       createdAt: DateTime.utc(2026, 3, 1),
       nextDueAt: DateTime.utc(2026, 4, 1),
+      requiresConfirmation: true,
+      remindAt: DateTime.utc(2026, 4, 3),
     );
     final recurringDecoded = recurringFromSync(recurringToSync(recurring));
     expect(recurringDecoded?.id, 'r1');
     expect(recurringDecoded?.amount, 12.5);
+    expect(recurringDecoded?.requiresConfirmation, isTrue);
+    expect(recurringDecoded?.remindAt?.toUtc(), DateTime.utc(2026, 4, 3));
+    expect(recurringDecoded?.remindOnIncome, isFalse);
 
     final note = AppNotification(
       id: 'n1',

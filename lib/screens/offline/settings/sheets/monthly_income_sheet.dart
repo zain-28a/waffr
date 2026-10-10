@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:waffer/data/stores/currency_store.dart';
-import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 import 'package:waffer/widgets/dialogs/edit_amount_dialog.dart';
@@ -77,7 +76,7 @@ class _MonthlyIncomeSheetState extends State<_MonthlyIncomeSheet> {
       children: [
         GlassSheetHeader(
           title: widget.title,
-          subtitle: 'يُستخدم لخطط الادخار والمصروفات المتكررة.',
+          subtitle: 'يُستخدم لحساب خطط التوفير الدورية.',
           onNext: _isValid ? _save : null,
         ),
         const SizedBox(height: 18),
@@ -96,20 +95,10 @@ class _MonthlyIncomeSheetState extends State<_MonthlyIncomeSheet> {
         ),
         if (widget.allowClear) ...[
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(
+          SheetDestructiveButton(
+            label: 'إزالة الدخل',
+            onTap: () => Navigator.of(context).pop(
               AmountDialogCleared(_currencyCode),
-            ),
-            child: Text(
-              'إزالة الدخل',
-              style: TextStyle(
-                fontFamily: 'Outfit',
-                fontFamilyFallback: ['Tajawal'],
-                fontSize: 15,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.darkAccent
-                    : AppColors.lightAccent,
-              ),
             ),
           ),
         ],

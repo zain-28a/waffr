@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:waffer/widgets/containers/app_empty_state.dart';
 import 'package:waffer/data/models/app_notification.dart';
 import 'package:waffer/data/services/notification_service.dart';
 import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
+import 'package:waffer/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffer/widgets/brand/waffer_page_header.dart';
 import 'package:waffer/widgets/containers/glass.dart';
 
@@ -26,12 +28,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   // Clears history only — balance, savings, goals, and mute stay intact.
+  // Marks the alert read; obligation alerts also open where they can be acted on.
+  void _open(AppNotification notification) {
+    _service.markRead(notification.id);
+    switch (notification.type) {
+      case NotificationType.recurringExpenseDue:
+        showDueObligationsSheet(context);
+      case NotificationType.recurringExpenseBlocked:
+      case NotificationType.recurringExpenseApplied:
+      case NotificationType.recurringExpenseUpcoming:
+        showObligationsSheet(context);
+      default:
+        break;
+    }
+  }
+
   Future<void> _confirmClear() async {
     final confirmed = await showAppConfirmDialog(
       context,
       title: 'مسح سجل الإشعارات',
       message:
-          'سيتم حذف سجل الإشعارات فقط. لن يتأثر رصيدك أو ادخارك أو أهدافك، ولن يتغيّر إعداد الكتم.',
+          'سيتم حذف سجل الإشعارات فقط. لن يتأثر رصيدك أو مبالغك الموفَّرة أو أهدافك، ولن يتغيّر إعداد الكتم.',
       confirmLabel: 'مسح السجل',
       destructive: true,
     );
@@ -43,26 +60,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _NotificationColors.of(context);
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            WafferPageHeader(
+            WafferBackHeader(
               applySafeArea: false,
-              centerTitle: true,
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: colors.textPrimary,
-                ),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: Text(
-                'الإشعارات',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              title: 'الإشعارات',
             ),
             Expanded(
               child: AnimatedBuilder(
@@ -115,7 +120,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       itemBuilder: (context, index) {
                         return _NotificationGroupView(
                           group: groups[index],
-                          onOpen: _service.markRead,
+                          onOpen: _open,
                         );
                       },
                     ),
@@ -178,7 +183,7 @@ class _MuteControl extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      muted ? 'الإشعارات مكتومة' : 'الإشعارات مفعلة',
+                      muted ? 'الإشعارات مكتومة' : 'الإشعارات مفعّلة',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -257,42 +262,11 @@ class _EmptyNotifications extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _NotificationColors.of(context);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.notifications_none_rounded,
-              size: 42,
-              color: colors.textSecondary.withValues(alpha: 0.55),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'لا توجد إشعارات بعد',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: colors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'ستظهر هنا تنبيهات الرصيد والأهداف والادخار عند حدوثها',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                fontSize: 13,
-                color: colors.textSecondary,
-              ),
-            ),
-          ],
-        ),
+    return const Center(
+      child: AppEmptyState(
+        icon: Icons.notifications_none_rounded,
+        title: 'لا توجد إشعارات بعد',
+        message: 'ستظهر هنا تنبيهات الرصيد والأهداف والتوفير والالتزامات عند حدوثها',
       ),
     );
   }
@@ -301,7 +275,7 @@ class _EmptyNotifications extends StatelessWidget {
 // One time bucket (e.g. Today) and its tiles.
 class _NotificationGroupView extends StatelessWidget {
   final NotificationTimeGroup group;
-  final ValueChanged<String> onOpen;
+  final ValueChanged<AppNotification> onOpen;
 
   const _NotificationGroupView({
     required this.group,
@@ -333,7 +307,7 @@ class _NotificationGroupView extends StatelessWidget {
             if (i > 0) const SizedBox(height: 8),
             _NotificationTile(
               notification: group.items[i],
-              onTap: () => onOpen(group.items[i].id),
+              onTap: () => onOpen(group.items[i]),
             ),
           ],
         ],
@@ -473,6 +447,7 @@ class _NotificationTile extends StatelessWidget {
       NotificationType.recurringExpenseBlocked => Icons.block_rounded,
       NotificationType.recurringExpenseApplied => Icons.event_repeat_rounded,
       NotificationType.recurringExpenseUpcoming => Icons.event_busy_outlined,
+      NotificationType.recurringExpenseDue => Icons.pending_actions_rounded,
     };
   }
 }

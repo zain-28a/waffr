@@ -12,9 +12,9 @@ import 'package:waffer/core/theme/app_color.dart';
 import 'package:waffer/core/utils/app_feedback.dart';
 import 'package:waffer/core/utils/money.dart';
 import 'package:waffer/screens/offline/home/sheets/expense_presets_dialog.dart';
+import 'package:waffer/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffer/widgets/containers/glass_sheet.dart';
 import 'package:waffer/widgets/dialogs/edit_delete_menu.dart';
-import 'package:waffer/widgets/sheets/monthly_income_required_sheet.dart';
 
 // Glass bottom sheet for one-off or recurring expenses, plus category picks.
 
@@ -47,6 +47,8 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   int _multiplier = 1;
   late String _currencyCode;
   RecurringUnit _recurringUnit = RecurringUnit.month;
+  // Null until the user picks; then the default follows the monthly income.
+  bool? _confirmChoice;
   final TextEditingController _intervalController = TextEditingController(
     text: '1',
   );
@@ -68,6 +70,11 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     if (_multiplier == 1) return null;
     return 'الإجمالي ${formatMoney(_amount)} $symbol';
   }
+
+  // Fixed salary → automatic; no monthly income set → ask before deducting.
+  bool get _requiresConfirmation =>
+      _confirmChoice ??
+      !TransactionStore.instance.hasConfiguredMonthlyIncomeFor(_currencyCode);
 
   int get _intervalCount {
     final value = int.tryParse(_intervalController.text.trim()) ?? 0;
@@ -125,18 +132,12 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
 
   // Fills every field from [preset]; the user can still edit before saving.
   Future<void> _applyPreset(ExpensePreset preset) async {
-    var recurring = preset.recurring;
+    final recurring = preset.recurring;
     final code = CurrencyStore.instance.enabledCodes.contains(
       preset.currencyCode,
     )
         ? preset.currencyCode
         : _currencyCode;
-    if (recurring) {
-      await TransactionStore.instance.ensureLoaded();
-      recurring =
-          TransactionStore.instance.hasConfiguredMonthlyIncomeFor(code);
-    }
-    if (!mounted) return;
 
     final note = preset.note ?? '';
     setState(() {
@@ -150,14 +151,6 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
       _intervalController.text = '${preset.intervalCount}';
       _saveAsPreset = false;
     });
-
-    if (preset.recurring && !recurring) {
-      showAppSnackBar(
-        context,
-        'حُفظ هذا المصروف كمتكرر، لكنه يحتاج إلى دخل شهري. سيُسجّل لمرة واحدة.',
-        kind: AppFeedbackKind.info,
-      );
-    }
   }
 
   Future<void> _storePresetIfMarked(String note) async {
@@ -187,7 +180,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     super.dispose();
   }
 
-  // One-off goes to TransactionStore; recurring needs monthly income first.
+  // One-off goes to TransactionStore; recurring becomes an obligation.
   Future<void> _save() async {
     if (!_isValid || _saving) return;
 
@@ -196,18 +189,6 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     final note = _noteController.text.trim();
 
     if (_recurring) {
-      await TransactionStore.instance.ensureLoaded();
-      if (!TransactionStore.instance.hasConfiguredMonthlyIncomeFor(
-        _currencyCode,
-      )) {
-        if (!mounted) return;
-        setState(() => _saving = false);
-        await showMonthlyIncomeRequiredSheet(
-          context,
-          requirement: MonthlyIncomeRequirement.expense,
-        );
-        return;
-      }
       await RecurringExpenseStore.instance.addExpense(
         amount: _amount,
         category: _category,
@@ -216,6 +197,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         intervalCount: _intervalCount,
         note: note.isEmpty ? null : note,
         currencyCode: _currencyCode,
+        requiresConfirmation: _requiresConfirmation,
       );
       await _storePresetIfMarked(note);
 
@@ -275,23 +257,8 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         SheetChoiceChips(
           options: const [_onceLabel, _recurringLabel],
           selected: _recurring ? _recurringLabel : _onceLabel,
-          onSelected: (value) async {
-            final recurring = value == _recurringLabel;
-            if (recurring) {
-              await TransactionStore.instance.ensureLoaded();
-              if (!context.mounted) return;
-              if (!TransactionStore.instance.hasConfiguredMonthlyIncomeFor(
-                _currencyCode,
-              )) {
-                await showMonthlyIncomeRequiredSheet(
-                  context,
-                  requirement: MonthlyIncomeRequirement.expense,
-                );
-                return;
-              }
-            }
-            if (!mounted) return;
-            setState(() => _recurring = recurring);
+          onSelected: (value) {
+            setState(() => _recurring = value == _recurringLabel);
           },
         ),
         SheetExpand(
@@ -327,6 +294,23 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                   LengthLimitingTextInputFormatter(2),
                 ],
                 onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 10),
+              const SheetFieldLabel(
+                text: 'طريقة الخصم',
+                action: SheetInfoButton(
+                  title: kDeductModeInfoTitle,
+                  message: kDeductModeInfoMessage,
+                ),
+              ),
+              SheetChoiceChips(
+                options: const [kDeductAutomaticLabel, kDeductConfirmLabel],
+                selected: _requiresConfirmation
+                    ? kDeductConfirmLabel
+                    : kDeductAutomaticLabel,
+                onSelected: (value) => setState(
+                  () => _confirmChoice = value == kDeductConfirmLabel,
+                ),
               ),
             ],
           ),
@@ -372,7 +356,7 @@ class _PresetStarButton extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: filled ? 'سيُحفظ كمصروف محفوظ' : 'المصاريف المحفوظة',
+      label: filled ? 'سيُحفظ كمصروف محفوظ' : 'المصروفات المحفوظة',
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
@@ -501,11 +485,11 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
     final store = CategoryStore.instance;
     final confirmed = await showAppConfirmDialog(
       context,
-      title: 'حذف تصنيف "$label"',
+      title: 'حذف تصنيف «$label»',
       message: store.isBuiltIn(label)
-          ? 'لن يظهر في قائمة التصنيفات بعد الآن. المصاريف السابقة تبقى كما هي، '
+          ? 'لن يظهر في قائمة التصنيفات بعد الآن. المصروفات السابقة تبقى كما هي، '
               'ويمكنك إعادته بإضافة تصنيف مخصص بالاسم نفسه.'
-          : 'لن يظهر في قائمة التصنيفات بعد الآن. المصاريف السابقة تبقى كما هي.',
+          : 'لن يظهر في قائمة التصنيفات بعد الآن. المصروفات السابقة تبقى كما هي.',
       confirmLabel: 'حذف',
       destructive: true,
     );
@@ -700,7 +684,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
-                  'الشعار',
+                  'الأيقونة',
                   style: TextStyle(
                     fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
@@ -732,24 +716,20 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
-                        'إلغاء',
-                        style: TextStyle(fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
+                    child: AppDialogActionButton(
+                      action: AppDialogAction(
+                        label: 'إلغاء',
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Expanded(
-                    child: TextButton(
-                      onPressed: _submit,
-                      child: Text(
-                        widget.submitLabel,
-                        style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                          fontWeight: FontWeight.w800,
-                          color: accent,
-                        ),
+                    child: AppDialogActionButton(
+                      action: AppDialogAction(
+                        label: widget.submitLabel,
+                        primary: true,
+                        onPressed: _submit,
                       ),
                     ),
                   ),

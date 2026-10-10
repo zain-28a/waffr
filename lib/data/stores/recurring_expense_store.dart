@@ -50,7 +50,7 @@ class RecurringExpenseStore extends ChangeNotifier {
     return null;
   }
 
-  // Requires configured monthly income for that currency before scheduling.
+  // With [requiresConfirmation] the first charge waits for the user's approval.
   Future<void> addExpense({
     required double amount,
     required String category,
@@ -59,6 +59,7 @@ class RecurringExpenseStore extends ChangeNotifier {
     required int intervalCount,
     String? note,
     String? currencyCode,
+    bool requiresConfirmation = false,
   }) async {
     if (amount <= 0 || intervalCount <= 0) return;
 
@@ -67,9 +68,6 @@ class RecurringExpenseStore extends ChangeNotifier {
     final code = Currencies.normalize(
       currencyCode ?? CurrencyStore.instance.activeCode,
     );
-    if (!TransactionStore.instance.hasConfiguredMonthlyIncomeFor(code)) {
-      return;
-    }
 
     final now = deviceNow();
 
@@ -85,9 +83,10 @@ class RecurringExpenseStore extends ChangeNotifier {
         unit: unit,
         intervalCount: intervalCount,
         createdAt: now,
-        // Due immediately so the first charge is written to history now.
-        // Later charges wait until this date, then catch up on the next open.
+        // Due immediately so the first charge is written to history now (or
+        // listed for approval). Later charges wait until this date.
         nextDueAt: now,
+        requiresConfirmation: requiresConfirmation,
       ),
     );
 
@@ -132,6 +131,175 @@ class RecurringExpenseStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setRequiresConfirmation(String id, bool value) async {
+    await ensureLoaded();
+
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index < 0 || _items[index].requiresConfirmation == value) return;
+
+    _items[index] = _items[index].copyWith(
+      requiresConfirmation: value,
+      clearReminder: true,
+    );
+    await _persist();
+    notifyListeners();
+    if (!value) await processDue();
+  }
+
+  // Charges that wait for the user's approval, oldest schedule first.
+  List<RecurringExpense> awaitingConfirmation(
+    String currencyCode, {
+    DateTime? now,
+  }) {
+    final moment = now ?? deviceNow();
+    final list = itemsFor(currencyCode)
+        .where(
+          (item) =>
+              item.enabled &&
+              item.requiresConfirmation &&
+              item.dueDates(moment, max: 1).isNotEmpty,
+        )
+        .toList();
+    list.sort((a, b) => a.nextDueAt.compareTo(b.nextDueAt));
+    return list;
+  }
+
+  // Charges not yet posted: approvals pending plus automatic ones held back
+  // by a low balance.
+  int overdueCount(String currencyCode, {DateTime? now}) {
+    final moment = now ?? deviceNow();
+    var count = 0;
+    for (final item in itemsFor(currencyCode)) {
+      if (!item.enabled) continue;
+      count += item.dueDates(moment).length;
+    }
+    return count;
+  }
+
+  // Monthly cost of all active schedules in a currency.
+  double monthlyTotal(String currencyCode) {
+    var total = 0.0;
+    for (final item in itemsFor(currencyCode)) {
+      if (item.enabled) total += item.monthlyEquivalent;
+    }
+    return total;
+  }
+
+  // Next charge date among active schedules in a currency.
+  RecurringExpense? nextUpcoming(String currencyCode, {DateTime? now}) {
+    final moment = now ?? deviceNow();
+    RecurringExpense? next;
+    for (final item in itemsFor(currencyCode)) {
+      if (!item.enabled || !item.nextDueAt.isAfter(moment)) continue;
+      if (next == null || item.nextDueAt.isBefore(next.nextDueAt)) {
+        next = item;
+      }
+    }
+    return next;
+  }
+
+  // Posts the oldest pending charge, or every pending one with [all].
+  // Returns how many were posted; stops early when the balance runs out.
+  Future<int> confirmDue(String id, {bool all = false}) {
+    final previous = _dueTail ?? Future<void>.value();
+    final run = previous
+        .catchError((Object _) {})
+        .then((_) => _confirmDue(id, all: all));
+    _dueTail = run;
+    return run;
+  }
+
+  Future<int> _confirmDue(String id, {required bool all}) async {
+    await ensureLoaded();
+    await TransactionStore.instance.ensureLoaded();
+
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index < 0) return 0;
+
+    final now = deviceNow();
+    var item = _items[index];
+    final dates = item.dueDates(now);
+    final wanted = all ? dates : dates.take(1);
+    var posted = 0;
+
+    for (final dueAt in wanted) {
+      final store = TransactionStore.instance;
+      final sourceId = _sourceId(item.id, dueAt);
+      if (!_alreadyPosted(sourceId)) {
+        if (!store.canDeduct(item.amount, currencyCode: item.currencyCode)) {
+          break;
+        }
+        final added = await store.addExpense(
+          amount: item.amount,
+          category: item.category,
+          paymentMethod: item.paymentMethod,
+          note: item.note ?? item.intervalDescription,
+          sourceId: sourceId,
+          occurredAt: dueAt.toLocal(),
+          currencyCode: item.currencyCode,
+        );
+        if (added == null) break;
+      }
+      posted++;
+      item = item.copyWith(
+        nextDueAt: RecurringExpense.nextDueFrom(
+          dueAt,
+          item.unit,
+          item.intervalCount,
+        ),
+      );
+    }
+
+    if (posted == 0) return 0;
+
+    if (item.dueDates(now, max: 1).isEmpty) {
+      item = item.copyWith(clearReminder: true);
+    }
+    _items[index] = item;
+    await _persist();
+    notifyListeners();
+    return posted;
+  }
+
+  // Keeps the charge pending and reminds after [after], or on the next income.
+  Future<void> postpone(
+    String id, {
+    Duration? after,
+    bool untilIncome = false,
+  }) async {
+    await ensureLoaded();
+
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index < 0) return;
+
+    _items[index] = untilIncome
+        ? _items[index].copyWith(clearReminder: true).copyWith(
+              remindOnIncome: true,
+            )
+        : _items[index].copyWith(clearReminder: true).copyWith(
+              remindAt: deviceNow().add(after ?? const Duration(days: 1)),
+            );
+    await _persist();
+    notifyListeners();
+  }
+
+  // New income ends "remind me on next income" postponements in that currency.
+  Future<void> releaseIncomeReminders(String currencyCode) async {
+    await ensureLoaded();
+
+    final code = Currencies.normalize(currencyCode);
+    var changed = false;
+    for (var i = 0; i < _items.length; i++) {
+      final item = _items[i];
+      if (item.currencyCode != code || !item.remindOnIncome) continue;
+      _items[i] = item.copyWith(clearReminder: true);
+      changed = true;
+    }
+    if (!changed) return;
+    await _persist();
+    notifyListeners();
+  }
+
   Future<void> deleteExpense(String id) async {
     await ensureLoaded();
 
@@ -163,9 +331,12 @@ class RecurringExpenseStore extends ChangeNotifier {
     for (var i = 0; i < _items.length; i++) {
       var item = _items[i];
       if (!item.enabled) continue;
-      if (!TransactionStore.instance.hasConfiguredMonthlyIncomeFor(
-        item.currencyCode,
-      )) {
+
+      if (item.requiresConfirmation) {
+        if (await _remindAwaiting(item, now)) {
+          _items[i] = item.copyWith(clearReminder: true);
+          changed = true;
+        }
         continue;
       }
 
@@ -260,6 +431,42 @@ class RecurringExpenseStore extends ChangeNotifier {
         debugPrint('Recurring upcoming notice failed: $error\n$stack');
       }
     }
+  }
+
+  // Notifies about a charge waiting for approval. Returns true when an expired
+  // reminder date should be cleared from the schedule.
+  Future<bool> _remindAwaiting(RecurringExpense item, DateTime now) async {
+    final dates = item.dueDates(now);
+    if (dates.isEmpty || item.remindOnIncome) return false;
+
+    final remindAt = item.remindAt;
+    if (remindAt != null && remindAt.isAfter(now)) return false;
+
+    // The first charge of a schedule just added is shown on the home screen.
+    final justAdded = dates.length == 1 &&
+        !_hasPosted(item.id) &&
+        now.difference(item.createdAt).inMinutes < 5;
+    if (!justAdded) {
+      final key = remindAt == null
+          ? 'recurringDue:${item.id}:${dates.last.toIso8601String()}'
+          : 'recurringDue:${item.id}:remind:${remindAt.toIso8601String()}';
+      final symbol = currencyLabelFor(item.currencyCode);
+      final count = dates.length;
+      try {
+        await NotificationService.instance.add(
+          type: NotificationType.recurringExpenseDue,
+          title: 'حان موعد ${_labelOf(item)}',
+          message: count > 1
+              ? 'لديك $count دفعات مستحقة بقيمة ${formatMoney(item.amount)} $symbol لكل دفعة. افتح الالتزامات لتأكيد الخصم أو تأجيله.'
+              : 'المبلغ ${formatMoney(item.amount)} $symbol. افتح الالتزامات لتأكيد الخصم أو تأجيله.',
+          eventKey: key,
+          relatedId: item.id,
+        );
+      } catch (error, stack) {
+        debugPrint('Recurring due notice failed: $error\n$stack');
+      }
+    }
+    return remindAt != null;
   }
 
   bool _isDue(DateTime due, DateTime now) => !due.toUtc().isAfter(now.toUtc());

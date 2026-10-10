@@ -138,7 +138,7 @@ class _OnlineScreenState extends State<OnlineScreen>
     final opened = await openNearbyPlaceSearch(category);
     if (opened || !mounted) return;
 
-    showAppSnackBar(context, 'تعذر فتح خرائط Google');
+    showAppSnackBar(context, 'تعذّر فتح خرائط Google');
   }
 
   @override
@@ -233,7 +233,7 @@ class _SignInGate extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'يجب تسجيل الدخول للوصول لميزات الانترنت.',
+                      'سجّل الدخول لاستخدام الميزات التي تحتاج إلى الإنترنت.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Outfit',
@@ -751,7 +751,7 @@ class _NearbyPlacesCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'مواقع قريبة:',
+            'مواقع قريبة',
             style: TextStyle(
               fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
               fontSize: 16,
@@ -884,7 +884,7 @@ class _NewsPreviewCardState extends State<_NewsPreviewCard> {
                 children: [
                   Expanded(
                     child: Text(
-                      'الأخبار:',
+                      'الأخبار',
                       style: TextStyle(
                         fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                         fontSize: 16,
@@ -1104,7 +1104,7 @@ class _NewsStatus extends StatelessWidget {
     }
 
     final message = state == _NewsLoadState.error
-        ? 'تعذر تحميل الأخبار'
+        ? 'تعذّر تحميل الأخبار'
         : 'لا توجد أخبار حالياً';
 
     return Column(

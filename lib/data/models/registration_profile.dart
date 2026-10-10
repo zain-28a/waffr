@@ -43,16 +43,17 @@ class RegistrationProfile {
 const int maxCityLength = 80;
 const int maxStreetLength = 160;
 
-/// One "city, street" field split for the account (city before the first
-/// comma, the rest is the street). Without a comma the text is the street.
+/// One "city, street" field split for the account: the city comes before
+/// the first comma and is required; the street after it is optional.
+/// Without a comma the whole text is the city.
 ({String city, String street}) splitAddress(String raw) {
   final text = raw.trim();
   final comma = text.indexOf(RegExp('[,،]'));
-  if (comma < 0) return (city: '', street: text);
-  final city = text.substring(0, comma).trim();
-  final street = text.substring(comma + 1).trim();
-  if (city.length > maxCityLength) return (city: '', street: text);
-  return (city: city, street: street);
+  if (comma < 0) return (city: text, street: '');
+  return (
+    city: text.substring(0, comma).trim(),
+    street: text.substring(comma + 1).trim(),
+  );
 }
 
 /// Digits of a local phone number without a leading trunk zero, or null
@@ -110,8 +111,11 @@ String? registrationProfileError({
   if (trimmedCountry.isEmpty) return 'اختر الدولة';
   if (trimmedCountry.length > 80) return 'اسم الدولة طويل جداً';
 
-  if (normalizePhoneNumber(phone) == null) return 'رقم الهاتف غير صالح';
+  final place = splitAddress(address);
+  if (place.city.isEmpty) return 'أدخل المدينة في حقل العنوان';
+  if (place.city.length > maxCityLength) return 'اسم المدينة طويل جداً';
+  if (place.street.length > maxStreetLength) return 'اسم الشارع طويل جداً';
 
-  if (address.trim().length > maxStreetLength) return 'العنوان طويل جداً';
+  if (normalizePhoneNumber(phone) == null) return 'رقم الهاتف غير صالح';
   return null;
 }

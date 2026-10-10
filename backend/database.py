@@ -433,6 +433,30 @@ def _ensure_recurring_columns(connection, inspector, tables: set[str]) -> None:
         "payment_method",
         "payment_method VARCHAR(100) NOT NULL DEFAULT ''",
     )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "recurring_expenses",
+        "requires_confirmation",
+        "requires_confirmation BOOLEAN NOT NULL DEFAULT FALSE",
+    )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "recurring_expenses",
+        "remind_at",
+        "remind_at TIMESTAMPTZ",
+    )
+    _add_column(
+        connection,
+        inspector,
+        tables,
+        "recurring_expenses",
+        "remind_on_income",
+        "remind_on_income BOOLEAN NOT NULL DEFAULT FALSE",
+    )
 
 
 def _ensure_notification_columns(connection, inspector, tables: set[str]) -> None:
