@@ -10,6 +10,7 @@ import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/screens/offline/home/dashboard.dart';
 import 'package:waffr/screens/offline/notifications/notifications_screen.dart';
 import 'package:waffr/screens/offline/profile/profile_screen.dart';
@@ -39,13 +40,20 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
+class _AppShellState extends State<AppShell>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   final ValueNotifier<int> _tabIndex = ValueNotifier<int>(0);
   final PageController _pageController = PageController();
 
-  // Target page while animateToPage is in flight; stops the bar highlight
-  // from flickering mid-animation.
+  // Target page while a tap-driven switch is in flight; pages the pager
+  // passes on the way are not reported as the selected tab.
   int? _animatingToPage;
+
+  // Pager opacity for the fade-through used on tabs that are not neighbors.
+  late final AnimationController _pagerFade = AnimationController(
+    vsync: this,
+    value: 1,
+  );
 
   Timer? _dueTimer;
   bool _syncingEvents = false;
@@ -157,29 +165,72 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     await ProfileIdentity.instance.reload();
   }
 
-  // Animates the pager; highlight updates wait until the animation settles.
+  // The bar highlight moves with the tap. Neighbor tabs slide; farther tabs
+  // fade through, so the pager never sweeps past (and builds) the tabs
+  // between them.
   void _onTabTapped(int index) {
     if (index == _tabIndex.value && _animatingToPage == null) return;
     if (_animatingToPage == index) return;
 
+    final from = _pageController.hasClients
+        ? (_pageController.page?.round() ?? _tabIndex.value)
+        : _tabIndex.value;
+
+    AppHaptics.selection();
+    _tabIndex.value = index;
+    if (!_pageController.hasClients) return;
     _animatingToPage = index;
+
+    if ((index - from).abs() > 1 || AppMotion.reduced(context)) {
+      _fadeThroughTo(index);
+      return;
+    }
+
+    // A fade-through still running is cut short and the pager shown again.
+    if (_pagerFade.value < 1) {
+      _pagerFade.animateTo(1, duration: AppMotion.fast, curve: AppMotion.enter);
+    }
     _pageController
         .animateToPage(
           index,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
+          duration: AppMotion.medium,
+          curve: AppMotion.standard,
         )
-        .whenComplete(() {
-          if (!mounted) return;
-          if (_animatingToPage != index) return;
-          _animatingToPage = null;
-          final settled = _pageController.hasClients
-              ? _pageController.page?.round()
-              : null;
-          if (settled != null && settled != _tabIndex.value) {
-            _tabIndex.value = settled;
-          }
-        });
+        .whenComplete(() => _settleTap(index));
+  }
+
+  // Fades the pager out, jumps to [index], and fades back in.
+  Future<void> _fadeThroughTo(int index) async {
+    final reduced = AppMotion.reduced(context);
+    if (!reduced) {
+      try {
+        await _pagerFade
+            .animateTo(0, duration: AppMotion.instant, curve: AppMotion.exit)
+            .orCancel;
+      } on TickerCanceled {
+        return;
+      }
+    }
+    if (!mounted || _animatingToPage != index) return;
+    _pageController.jumpToPage(index);
+    _settleTap(index);
+    if (!reduced) {
+      _pagerFade.animateTo(1, duration: AppMotion.fast, curve: AppMotion.enter);
+    } else {
+      _pagerFade.value = 1;
+    }
+  }
+
+  // Tap switch finished; the pager's resting page is the selected tab.
+  void _settleTap(int index) {
+    if (!mounted) return;
+    if (_animatingToPage != index) return;
+    _animatingToPage = null;
+    final settled =
+        _pageController.hasClients ? _pageController.page?.round() : null;
+    if (settled != null && settled != _tabIndex.value) {
+      _tabIndex.value = settled;
+    }
   }
 
   // Swipe settled (or ignored while a conflicting tap animation is in flight).
@@ -197,6 +248,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     _dueTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
+    _pagerFade.dispose();
     _tabIndex.dispose();
     super.dispose();
   }
@@ -261,13 +313,16 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                   Expanded(
                     // Only the visible page is built: zero viewport cache and no
                     // implicit neighbor scrolling. Pages come from _tabAt.
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: _tabCount,
-                      allowImplicitScrolling: false,
-                      scrollCacheExtent: const ScrollCacheExtent.viewport(0),
-                      onPageChanged: _onPageChanged,
-                      itemBuilder: (context, index) => _tabAt(index),
+                    child: FadeTransition(
+                      opacity: _pagerFade,
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: _tabCount,
+                        allowImplicitScrolling: false,
+                        scrollCacheExtent: const ScrollCacheExtent.viewport(0),
+                        onPageChanged: _onPageChanged,
+                        itemBuilder: (context, index) => _tabAt(index),
+                      ),
                     ),
                   ),
                   _BottomNavBar(
@@ -296,7 +351,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   }
 }
 
-// Icon row under the PageView; selected item grows via AnimatedScale.
+// Icon row under the PageView; the selected icon grows and a pill slides
+// under it.
 class _BottomNavBar extends StatelessWidget {
   final ValueNotifier<int> tabIndex;
   final int tabCount;
@@ -332,47 +388,74 @@ class _BottomNavBar extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
-            children: List.generate(tabCount, (index) {
-              final isSelected = index == currentIndex;
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final slotWidth = constraints.maxWidth / tabCount;
+              const pillWidth = 18.0;
 
-              return Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onTap(index),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Center(
-                      child: AnimatedScale(
-                        scale: isSelected ? 1.25 : 1.0,
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOut,
-                        child: Icon(
-                                index == 0
-                                    ? Icons.home_rounded
-                                    : index == 1
-                                        ? Icons.bar_chart_rounded
-                                        : index == 2
-                                            ? Icons.wallet_rounded
-                                            : index == 3
-                                                ? Icons.public_rounded
-                                                : Icons.person_rounded,
-                                size: 26,
-                                color: isSelected
-                                    ? accent
-                                    : textPrimary.withValues(alpha: 0.35),
+              return Stack(
+                children: [
+                  Row(
+                    children: List.generate(tabCount, (index) {
+                      final isSelected = index == currentIndex;
+
+                      return Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => onTap(index),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Center(
+                              child: AnimatedScale(
+                                scale: isSelected ? 1.25 : 1.0,
+                                duration: AppMotion.of(context, AppMotion.medium),
+                                curve: AppMotion.enter,
+                                child: Icon(
+                                  _icons[index],
+                                  size: 26,
+                                  color: isSelected
+                                      ? accent
+                                      : textPrimary.withValues(alpha: 0.35),
+                                ),
                               ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  AnimatedPositionedDirectional(
+                    duration: AppMotion.of(context, AppMotion.slow),
+                    curve: AppMotion.enter,
+                    start: slotWidth * currentIndex + (slotWidth - pillWidth) / 2,
+                    bottom: 3,
+                    width: pillWidth,
+                    height: 3,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: accent,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               );
-            }),
+            },
           ),
         );
       },
     );
   }
+
+  static const List<IconData> _icons = [
+    Icons.home_rounded,
+    Icons.bar_chart_rounded,
+    Icons.wallet_rounded,
+    Icons.public_rounded,
+    Icons.person_rounded,
+  ];
 }
 
 // Header bell. Unread dot comes from NotificationService, not a tab.

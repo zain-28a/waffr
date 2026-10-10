@@ -10,6 +10,7 @@ import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/sheets/monthly_income_required_sheet.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 // Requires monthly income; opens create UI or details for the active plan.
 Future<void> showPeriodicGoalsSheet(BuildContext context) async {
@@ -86,7 +87,10 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
     );
 
     if (!mounted) return;
-    if (ok) Navigator.of(context).maybePop();
+    if (ok) {
+      AppHaptics.success();
+      Navigator.of(context).maybePop();
+    }
     setState(() => _saving = false);
   }
 

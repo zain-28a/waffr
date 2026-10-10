@@ -5,6 +5,7 @@ import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 Future<void> showWithdrawSavingsSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -57,7 +58,10 @@ class _WithdrawSavingsSheetState extends State<_WithdrawSavingsSheet> {
       currencyCode: _currencyCode,
     );
     if (!mounted) return;
-    if (ok) Navigator.of(context).maybePop();
+    if (ok) {
+      AppHaptics.success();
+      Navigator.of(context).maybePop();
+    }
     setState(() => _saving = false);
   }
 

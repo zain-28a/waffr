@@ -23,6 +23,7 @@ import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/dialogs/waffr_date_picker.dart';
 import 'package:waffr/screens/offline/report/expense_history_share.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 // Picks a range (day / week / month / 3 months / 6 months / year) via chips.
 // A horizontal PageView pages between older and newer periods; itemBuilder
@@ -79,7 +80,7 @@ class _ReportScreenState extends State<ReportScreen>
   void _showOlderPeriod() {
     if (_periodOffset >= _maxPeriodOffset - 1) return;
     _periodController.nextPage(
-      duration: const Duration(milliseconds: 280),
+      duration: AppMotion.medium,
       curve: Curves.easeOutCubic,
     );
   }
@@ -87,7 +88,7 @@ class _ReportScreenState extends State<ReportScreen>
   void _showNewerPeriod() {
     if (_periodOffset == 0) return;
     _periodController.previousPage(
-      duration: const Duration(milliseconds: 280),
+      duration: AppMotion.medium,
       curve: Curves.easeOutCubic,
     );
   }
@@ -344,7 +345,7 @@ class _SpendingChartCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 1),
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
+                      duration: AppMotion.of(context, AppMotion.fast),
                       child: Text(
                         report.period.label,
                         key: ValueKey(report.period.start),
@@ -608,7 +609,7 @@ class _SpendingLineChart extends StatelessWidget {
           ),
         ],
       ),
-      duration: const Duration(milliseconds: 280),
+      duration: AppMotion.of(context, AppMotion.medium),
       curve: Curves.easeOut,
     );
   }
@@ -811,7 +812,7 @@ class _DistributionBar extends StatelessWidget {
               Expanded(
                 flex: math.max(1, (totals[index].amount / total * 1000).round()),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 350),
+                  duration: AppMotion.of(context, AppMotion.slow),
                   curve: Curves.easeOut,
                   color: categoryChartColor(context, totals[index].category),
                 ),
@@ -1041,8 +1042,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     RecurringExpenseStore.instance.ensureLoaded();
     _selectionAnim = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 240),
-      reverseDuration: const Duration(milliseconds: 200),
+      duration: AppMotion.medium,
+      reverseDuration: AppMotion.fast,
     );
     _selectionReveal = CurvedAnimation(
       parent: _selectionAnim,

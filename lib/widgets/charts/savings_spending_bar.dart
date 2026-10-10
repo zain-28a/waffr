@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 class SavingsSpendingBar extends StatelessWidget {
   final double savings;
@@ -38,7 +39,7 @@ class SavingsSpendingBar extends StatelessWidget {
         children: [
           TweenAnimationBuilder<double>(
             tween: Tween<double>(end: savingsShare),
-            duration: const Duration(milliseconds: 480),
+            duration: AppMotion.of(context, AppMotion.emphasized),
             curve: Curves.easeOutCubic,
             builder: (context, share, _) {
               return _SplitFill(

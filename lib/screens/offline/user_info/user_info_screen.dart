@@ -10,6 +10,7 @@ import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/user_info/country_picker_sheet.dart';
 import 'package:waffr/widgets/dialogs/waffr_date_picker.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 // Collects name, birth date, optional gender, country with an optional phone
 // number, and one optional address line for RegistrationProfile.
@@ -360,7 +361,7 @@ class _GenderRadio extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
+                duration: AppMotion.of(context, AppMotion.fast),
                 curve: Curves.easeOutCubic,
                 width: 22,
                 height: 22,
@@ -376,7 +377,7 @@ class _GenderRadio extends StatelessWidget {
                 alignment: Alignment.center,
                 child: AnimatedScale(
                   scale: selected ? 1 : 0,
-                  duration: const Duration(milliseconds: 220),
+                  duration: AppMotion.of(context, AppMotion.fast),
                   curve: Curves.easeOutBack,
                   child: Container(
                     width: 11,

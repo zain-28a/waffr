@@ -10,6 +10,7 @@ import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/sheets/monthly_income_required_sheet.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 Future<void> showCreateGoalSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -228,6 +229,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
     if (!mounted) return;
 
     if (success) {
+      AppHaptics.success();
       Navigator.of(context).maybePop();
       return;
     }
@@ -518,7 +520,7 @@ class _MethodButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 280),
+        duration: AppMotion.of(context, AppMotion.medium),
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(

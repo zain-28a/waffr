@@ -36,6 +36,7 @@ sheets. Shared sheet pieces (glass body, amount field, save button) live in
 | Change colors or type | `lib/core/theme/app_color.dart` and `lib/core/theme/app_theme.dart`. `AppPalette` only picks the existing light or dark token. |
 | Glass cards and buttons | `lib/widgets/containers/glass.dart` and `lib/widgets/button/glass_button.dart`. They are translucent fills, not backdrop blurs. |
 | Bottom sheet chrome | `lib/widgets/containers/glass_sheet.dart`. |
+| Motion and haptics | `lib/core/theme/app_motion.dart`: duration and curve tokens, reduced-motion handling (`AppMotion.of`), and `AppHaptics`. Shared animated widgets live in `lib/widgets/motion/`. |
 | Money formatting and the active currency symbol | `lib/core/utils/money.dart`. |
 | The currency list and the active currency | Catalog: `lib/data/models/currency.dart`. Saved selection: `lib/data/stores/currency_store.dart`. |
 | Transactions, balance, savings goals | `lib/data/models/transaction.dart`, `lib/data/models/savings_goal.dart`, and `lib/data/stores/transaction_store.dart`. |

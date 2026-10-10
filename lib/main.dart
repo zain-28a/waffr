@@ -11,6 +11,7 @@ import 'package:waffr/core/sync/auth_session.dart';
 import 'package:waffr/core/sync/sync_dirty.dart';
 import 'package:waffr/core/sync/sync_service.dart';
 import 'package:waffr/core/l10n/waffr_material_localizations.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_theme.dart';
 import 'package:waffr/screens/offline/applock/applockscreen.dart';
 import 'package:waffr/screens/offline/login/login_screen.dart';
@@ -320,44 +321,71 @@ class _AppFlowControllerState
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
+  _FlowStage get _stage {
     if (_authChoiceMade == null ||
         _isFirstLaunch == null ||
         _appLockEnabled == null) {
-      return const WaffrSplash();
+      return _FlowStage.splash;
     }
-
     // User has not chosen an account or guest mode yet.
-    if (_authChoiceMade == false) {
-      return LoginScreen(
-        onCompleted: _onAuthChoiceCompleted,
-      );
-    }
+    if (_authChoiceMade == false) return _FlowStage.login;
+    if (_isFirstLaunch == true) return _FlowStage.themeSelect;
+    if (_appLockEnabled == true && !_isAuthenticated) return _FlowStage.lock;
+    return _FlowStage.shell;
+  }
 
-    if (_isFirstLaunch == true) {
-      return ThemeSelectScreen(
-        onThemeChanged: widget.onThemeChanged,
+  @override
+  Widget build(BuildContext context) {
+    final stage = _stage;
 
-        onContinue: () {
-          unawaited(_markFirstLaunchDone());
-        },
-      );
-    }
+    final Widget page = switch (stage) {
+      _FlowStage.splash => const WaffrSplash(),
+      _FlowStage.login => LoginScreen(
+          onCompleted: _onAuthChoiceCompleted,
+        ),
+      _FlowStage.themeSelect => ThemeSelectScreen(
+          onThemeChanged: widget.onThemeChanged,
+          onContinue: () {
+            unawaited(_markFirstLaunchDone());
+          },
+        ),
+      _FlowStage.lock => LockScreen(
+          onAuthenticated: _unlockApp,
+        ),
+      _FlowStage.shell => AppShell(
+          themeNotifier: widget.themeNotifier,
+          onThemeChanged: widget.onToggleTheme,
+          appFlowController: this,
+        ),
+    };
 
-    if (_appLockEnabled == true && !_isAuthenticated) {
-      return LockScreen(
-        onAuthenticated: _unlockApp,
-      );
-    }
+    // The lock replaces the shell at once, so the ledger never fades out
+    // visibly behind it when the app comes back from the background.
+    if (stage == _FlowStage.lock) return page;
 
-    return AppShell(
-      themeNotifier: widget.themeNotifier,
-      onThemeChanged: widget.onToggleTheme,
-      appFlowController: this,
+    return AnimatedSwitcher(
+      duration: AppMotion.of(context, AppMotion.slow),
+      switchInCurve: AppMotion.enter,
+      switchOutCurve: AppMotion.exit,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.97, end: 1).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: KeyedSubtree(
+        key: ValueKey<_FlowStage>(stage),
+        child: page,
+      ),
     );
   }
 }
+
+/// Gates shown by [AppFlowController], in the order they are checked.
+enum _FlowStage { splash, login, themeSelect, lock, shell }
 
 /// No saved choice yet: follow the device. After a choice: the stored light or dark theme.
 ThemeMode _themeModeFromPrefs(SharedPreferences prefs) {

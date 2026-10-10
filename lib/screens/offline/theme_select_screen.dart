@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 // First-launch light/dark picker before entering the app.
 
@@ -47,7 +48,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
     final accent = _isDark ? const Color.fromARGB(255, 121, 168, 78) : const Color.fromARGB(255, 64, 106, 38);
 
     return Scaffold(body: AnimatedContainer(
-      duration: const Duration(milliseconds: 400),
+      duration: AppMotion.of(context, AppMotion.emphasized),
       curve: Curves.easeInOut,
       color: bg,
       width: double.infinity,
@@ -59,7 +60,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [Column(children: [const SizedBox(height: 100),
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 400),
+                duration: AppMotion.of(context, AppMotion.emphasized),
                  style: TextStyle(
                   color: textPrimary,
                   fontSize: 60,
@@ -81,7 +82,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
               ),
               const SizedBox(height: 8),
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 400),
+                duration: AppMotion.of(context, AppMotion.emphasized),
                 style: TextStyle(
                   color: textSecondary,
                   fontSize: 18,
@@ -105,7 +106,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                   ),
                   const SizedBox(height: 12),
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
+                    duration: AppMotion.of(context, AppMotion.medium),
                     child: Text(
                       _isDark ? 'داكن' : 'فاتح',
                       key: ValueKey(_isDark),
