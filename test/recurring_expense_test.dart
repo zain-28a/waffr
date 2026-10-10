@@ -105,4 +105,88 @@ void main() {
       due,
     );
   });
+
+  Future<void> seedPastConfirmed({required int daysAgo}) async {
+    final past = DateTime.now().subtract(Duration(days: daysAgo, minutes: 1));
+    final scheduled = RecurringExpense(
+      id: 'rent-c',
+      amount: 50,
+      category: 'سكن',
+      paymentMethod: 'نقداً',
+      unit: RecurringUnit.day,
+      intervalCount: 1,
+      createdAt: past,
+      nextDueAt: past,
+      requiresConfirmation: true,
+    );
+    final prefs = await AppPrefs.instance;
+    await prefs.setStringList(
+      RecurringExpenseStore.itemsKey,
+      [scheduled.encode()],
+    );
+    RecurringExpenseStore.instance.resetCache();
+  }
+
+  test('works without a configured monthly income', () async {
+    await TransactionStore.instance.addIncome(
+      amount: 300,
+      frequency: RecurringFrequency.none,
+      source: 'عمل حر',
+    );
+    await RecurringExpenseStore.instance.addExpense(
+      amount: 20,
+      category: 'طعام',
+      paymentMethod: 'نقداً',
+      unit: RecurringUnit.month,
+      intervalCount: 1,
+    );
+
+    expect(RecurringExpenseStore.instance.items, hasLength(1));
+    expect(TransactionStore.instance.expenses, hasLength(1));
+  });
+
+  test('confirmation charges wait and accumulate until approved', () async {
+    await seedIncome(1000);
+    await seedPastConfirmed(daysAgo: 2);
+
+    final store = RecurringExpenseStore.instance;
+    await store.processDue();
+    expect(TransactionStore.instance.expenses, isEmpty);
+
+    final code = store.items.single.currencyCode;
+    expect(store.awaitingConfirmation(code), hasLength(1));
+    expect(store.items.single.dueDates(DateTime.now()), hasLength(3));
+
+    expect(await store.confirmDue('rent-c'), 1);
+    expect(TransactionStore.instance.expenses, hasLength(1));
+    expect(store.items.single.dueDates(DateTime.now()), hasLength(2));
+
+    expect(await store.confirmDue('rent-c', all: true), 2);
+    expect(TransactionStore.instance.expenses, hasLength(3));
+    expect(store.awaitingConfirmation(code), isEmpty);
+  });
+
+  test('confirming stops when the balance runs out', () async {
+    await seedIncome(70);
+    await seedPastConfirmed(daysAgo: 2);
+
+    final store = RecurringExpenseStore.instance;
+    expect(await store.confirmDue('rent-c', all: true), 1);
+    expect(store.items.single.dueDates(DateTime.now()), hasLength(2));
+  });
+
+  test('postponing until income keeps the charge pending', () async {
+    await seedIncome(1000);
+    await seedPastConfirmed(daysAgo: 0);
+
+    final store = RecurringExpenseStore.instance;
+    await store.postpone('rent-c', untilIncome: true);
+    expect(store.items.single.remindOnIncome, isTrue);
+    expect(store.awaitingConfirmation(store.items.single.currencyCode),
+        hasLength(1));
+
+    await store.releaseIncomeReminders(store.items.single.currencyCode);
+    expect(store.items.single.remindOnIncome, isFalse);
+    expect(TransactionStore.instance.expenses, isEmpty);
+  });
 }

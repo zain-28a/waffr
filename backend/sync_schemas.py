@@ -125,6 +125,9 @@ class RecurringSyncIn(BaseModel):
     interval_count: int = 1
     next_due_at: datetime | None = None
     enabled: bool = True
+    requires_confirmation: bool = False
+    remind_at: datetime | None = None
+    remind_on_income: bool = False
     currency_code: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
