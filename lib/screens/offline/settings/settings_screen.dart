@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
-import 'package:waffr/data/services/backup_service.dart';
 import 'package:waffr/data/stores/expense_preset_store.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
@@ -162,7 +161,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final prefs = await AppPrefs.instance;
           await prefs.setBool('app_lock', true);
 
-          BackupService.instance.scheduleBackup();
 
           setState(() {
             _appLock = true;
@@ -189,7 +187,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final prefs = await AppPrefs.instance;
       await prefs.setBool('app_lock', false);
 
-      BackupService.instance.scheduleBackup();
 
       if (!mounted) return;
 

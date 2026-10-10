@@ -1,7 +1,6 @@
 // Biometric / device-credential app lock toggle backed by SharedPreferences.
 
 import 'package:local_auth/local_auth.dart';
-import 'package:waffr/data/services/backup_service.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
 
 enum AppLockToggleResult { enabled, disabled, unsupported, cancelled }
@@ -28,7 +27,6 @@ class AppLock {
     if (!enabled) {
       final prefs = await AppPrefs.instance;
       await prefs.setBool(prefsKey, false);
-      BackupService.instance.scheduleBackup();
       onDisabled?.call();
       return AppLockToggleResult.disabled;
     }
@@ -55,7 +53,6 @@ class AppLock {
 
     final prefs = await AppPrefs.instance;
     await prefs.setBool(prefsKey, true);
-    BackupService.instance.scheduleBackup();
     onEnabled?.call();
     return AppLockToggleResult.enabled;
   }
