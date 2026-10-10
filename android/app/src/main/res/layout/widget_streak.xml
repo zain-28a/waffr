@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Mirrors the profile streak card (lib/screens/offline/profile/streak_card.dart):
+     a ring toward the next milestone with the Waffr mark, then the count. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -9,26 +11,52 @@
     android:orientation="vertical"
     android:padding="12dp">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="🔥"
-        android:textSize="22sp" />
+    <FrameLayout
+        android:layout_width="76dp"
+        android:layout_height="76dp">
 
-    <TextView
-        android:id="@+id/streak_count"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="@color/widget_accent"
-        android:textSize="30sp"
-        android:textStyle="bold" />
+        <ProgressBar
+            android:id="@+id/streak_ring"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:max="100"
+            android:maxHeight="76dp"
+            android:minHeight="76dp"
+            android:progressDrawable="@drawable/widget_ring"
+            android:rotation="-90" />
 
-    <TextView
-        android:id="@+id/streak_label"
+        <ImageView
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_logo" />
+    </FrameLayout>
+
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:maxLines="1"
-        android:textColor="@color/widget_text_secondary"
-        android:textSize="11sp" />
+        android:layout_marginTop="4dp"
+        android:baselineAligned="true"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/streak_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/outfit_extrabold"
+            android:includeFontPadding="false"
+            android:textColor="@color/widget_accent"
+            android:textSize="28sp" />
+
+        <TextView
+            android:id="@+id/streak_word"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:fontFamily="@font/tajawal_bold"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="14sp" />
+    </LinearLayout>
 </LinearLayout>
