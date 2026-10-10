@@ -7,6 +7,7 @@ import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 // Glass bottom sheet for logging income (amount, frequency, leftover balance).
 
@@ -99,6 +100,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
         obligations.awaitingConfirmation(_currencyCode).isNotEmpty;
 
     if (!mounted) return;
+    AppHaptics.success();
     final navigator = Navigator.of(context);
     await navigator.maybePop();
     if (!waiting || !navigator.mounted) return;

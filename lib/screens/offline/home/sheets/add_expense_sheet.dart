@@ -15,6 +15,7 @@ import 'package:waffr/screens/offline/home/sheets/expense_presets_dialog.dart';
 import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/dialogs/edit_delete_menu.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 // Glass bottom sheet for one-off or recurring expenses, plus category picks.
 
@@ -202,6 +203,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
       await _storePresetIfMarked(note);
 
       if (!mounted) return;
+      AppHaptics.success();
       Navigator.of(context).maybePop();
       return;
     }
@@ -224,6 +226,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
 
     await _storePresetIfMarked(note);
     if (!mounted) return;
+    AppHaptics.success();
     Navigator.of(context).maybePop();
   }
 
@@ -364,7 +367,7 @@ class _PresetStarButton extends StatelessWidget {
           width: 36,
           height: 26,
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 260),
+            duration: AppMotion.of(context, AppMotion.medium),
             switchInCurve: Curves.easeOutBack,
             switchOutCurve: Curves.easeInCubic,
             transitionBuilder: (child, animation) => ScaleTransition(
@@ -506,7 +509,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
   @override
   Widget build(BuildContext context) {
     return AnimatedSize(
-      duration: const Duration(milliseconds: 280),
+      duration: AppMotion.of(context, AppMotion.medium),
       curve: Curves.easeOutCubic,
       alignment: Alignment.topCenter,
       child: ListenableBuilder(
@@ -765,7 +768,7 @@ class _IconChoice extends StatelessWidget {
           final side = constraints.biggest.shortestSide;
           return Center(
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: AppMotion.of(context, AppMotion.fast),
               curve: Curves.easeOutCubic,
               width: side,
               height: side,
@@ -819,7 +822,7 @@ class _CategoryTile extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 260),
+        duration: AppMotion.of(context, AppMotion.medium),
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
           color: isSelected

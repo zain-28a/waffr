@@ -11,6 +11,7 @@ import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
 import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffr/screens/offline/home/sheets/add_income_sheet.dart';
@@ -20,6 +21,8 @@ import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/motion/animated_number_text.dart';
+import 'package:waffr/widgets/motion/fade_slide_in.dart';
 
 // Offline home tab: balance, add actions, spending distribution, recent
 // expenses / obligations, and active savings goals. Each card opens the
@@ -237,7 +240,7 @@ class _BalanceCard extends StatelessWidget {
                 : null,
             behavior: HitTestBehavior.opaque,
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 280),
+              duration: AppMotion.of(context, AppMotion.medium),
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
               transitionBuilder: (child, animation) {
@@ -284,8 +287,9 @@ class _BalanceCard extends StatelessWidget {
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: AlignmentDirectional.centerStart,
-                            child: Text(
-                              formatMoney(balance),
+                            child: AnimatedNumberText(
+                              value: balance,
+                              format: formatMoney,
                               style: TextStyle(
                                 fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 36,
@@ -309,8 +313,9 @@ class _BalanceCard extends StatelessWidget {
                     const SizedBox(height: 0),
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: Text(
-                        '${(ratio * 100).round()}%',
+                      child: AnimatedNumberText(
+                        value: ratio * 100,
+                        format: (value) => '${value.round()}%',
                         style: TextStyle(
                           fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                           fontSize: 12.5,
@@ -403,7 +408,7 @@ class _CurrencyDots extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 3),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 280),
+              duration: AppMotion.of(context, AppMotion.medium),
               curve: Curves.easeOutCubic,
               width: 6,
               height: index == activeIndex ? 18 : 6,
@@ -431,20 +436,24 @@ class _HorizontalProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The fill width itself is tweened; animating the fill's container
+    // would leave the width change instant.
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
       child: Stack(
         children: [
           Container(height: 30, color: trackColor),
           Positioned.fill(
-            child: FractionallySizedBox(
-              alignment: AlignmentDirectional.centerStart,
-              widthFactor: ratio.clamp(0.0, 1.0),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 350),
-                curve: Curves.easeOut,
-                color: fillColor,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: ratio.clamp(0.0, 1.0)),
+              duration: AppMotion.of(context, AppMotion.countUp),
+              curve: AppMotion.enter,
+              builder: (context, widthFactor, child) => FractionallySizedBox(
+                alignment: AlignmentDirectional.centerStart,
+                widthFactor: widthFactor,
+                child: child,
               ),
+              child: ColoredBox(color: fillColor),
             ),
           ),
         ],
@@ -1036,13 +1045,18 @@ class _VerticalProgress extends StatelessWidget {
             Positioned.fill(child: ColoredBox(color: trackColor)),
             Align(
               alignment: Alignment.bottomCenter,
-              child: FractionallySizedBox(
-                heightFactor: ratio.clamp(0.0, 1.0),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeOut,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(end: ratio.clamp(0.0, 1.0)),
+                duration: AppMotion.of(context, AppMotion.countUp),
+                curve: AppMotion.enter,
+                builder: (context, heightFactor, child) =>
+                    FractionallySizedBox(
+                  heightFactor: heightFactor,
+                  child: child,
+                ),
+                child: SizedBox(
                   width: width,
-                  color: fillColor,
+                  child: ColoredBox(color: fillColor),
                 ),
               ),
             ),
@@ -1191,7 +1205,13 @@ class _RecentExpensesPage extends StatelessWidget {
                       thickness: 1,
                       color: textPrimary.withValues(alpha: 0.08),
                     ),
-                  _ExpenseRow(expense: latest[index], compact: compact),
+                  // Keyed by id so only a newly added expense plays the
+                  // entrance; rows already shown keep their state.
+                  FadeSlideIn(
+                    key: ValueKey(latest[index].id),
+                    delay: FadeSlideIn.staggerFor(index),
+                    child: _ExpenseRow(expense: latest[index], compact: compact),
+                  ),
                 ],
               ],
             ),

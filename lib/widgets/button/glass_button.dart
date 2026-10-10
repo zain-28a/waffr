@@ -2,6 +2,7 @@
 // Visual chrome comes from GlassContainer (translucent fill, no BackdropFilter).
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 /// Pressable [GlassContainer] that scales slightly on tap.
 ///
@@ -59,7 +60,7 @@ class _GlassButtonState extends State<GlassButton> {
       onTapCancel: _onTapCancel,
       child: AnimatedScale(
         scale: _scale,
-        duration: const Duration(milliseconds: 100),
+        duration: AppMotion.of(context, AppMotion.instant),
         curve: Curves.easeOut,
         child: GlassContainer(
           width: widget.width,

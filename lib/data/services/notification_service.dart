@@ -185,6 +185,17 @@ class NotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Deletes one notification. The list updates before the save so a
+  /// swiped-away tile leaves the screen in the same frame.
+  Future<void> remove(String id) async {
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index < 0) return;
+    _items.removeAt(index);
+    notifyListeners();
+    await SyncTombstones.instance.add(SyncCollection.notifications, id);
+    await _persistItems();
+  }
+
   /// Clears the feed only; leaves balance, savings, goals, and mute untouched.
   Future<void> clearHistory() async {
     await ensureLoaded();

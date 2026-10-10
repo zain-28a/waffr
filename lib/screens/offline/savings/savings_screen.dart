@@ -6,6 +6,7 @@ import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/calendar_period.dart';
 import 'package:waffr/data/models/savings_goal.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/savings/sheets/completed_goals_sheet.dart';
@@ -70,7 +71,7 @@ class _SavingsScreenState extends State<SavingsScreen>
     if (_periodOffset >= _maxPeriodOffset - 1) return;
 
     _periodController.nextPage(
-      duration: const Duration(milliseconds: 280),
+      duration: AppMotion.medium,
       curve: Curves.easeOutCubic,
     );
   }
@@ -79,7 +80,7 @@ class _SavingsScreenState extends State<SavingsScreen>
     if (_periodOffset == 0) return;
 
     _periodController.previousPage(
-      duration: const Duration(milliseconds: 280),
+      duration: AppMotion.medium,
       curve: Curves.easeOutCubic,
     );
   }
@@ -252,7 +253,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                       ),
                     ),
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
+                      duration: AppMotion.of(context, AppMotion.fast),
                       child: Text(
                         isCurrent
                             ? CalendarPeriod.currentPeriodCaption(range)
@@ -965,11 +966,16 @@ class _HorizontalProgress extends StatelessWidget {
 
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: FractionallySizedBox(
-                widthFactor: ratio.clamp(0.0, 1.0),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeOut,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(end: ratio.clamp(0.0, 1.0)),
+                duration: AppMotion.of(context, AppMotion.countUp),
+                curve: AppMotion.enter,
+                builder: (context, widthFactor, child) =>
+                    FractionallySizedBox(
+                  widthFactor: widthFactor,
+                  child: child,
+                ),
+                child: Container(
                   height: height,
                   decoration: BoxDecoration(
                     color: fillColor,
