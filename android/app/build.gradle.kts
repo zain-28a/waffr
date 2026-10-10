@@ -20,7 +20,7 @@ if (hasReleaseKey) {
 }
 
 android {
-    namespace = "com.example.waffer"
+    namespace = "com.waffr.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -31,8 +31,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.waffer"
+        // Permanent store identity of the app; never change it after publishing.
+        applicationId = "com.waffr.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
