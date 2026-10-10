@@ -411,7 +411,7 @@ class NotificationService extends ChangeNotifier {
     final cycle = _incomeCycle(store);
     return _tryAdd(
       type: NotificationType.highSpending,
-      title: 'صرفت $percent% من دخلك',
+      title: 'صرفت \u2066$percent%\u2069 من رصيد الدورة',
       message: 'صرفت ${formatMoney(store.cycleSpent)} من '
           '${formatMoney(store.maxBalance)} $currencyLabel، '
           'والمتاح الآن ${formatMoney(store.balance)} $currencyLabel.',
@@ -434,7 +434,7 @@ class NotificationService extends ChangeNotifier {
       if (goal.isCompleted) {
         changed |= _tryAdd(
           type: NotificationType.goalReached,
-          title: 'اكتمل هدف ${goal.name}',
+          title: 'اكتمل هدف ${Ar.quote(goal.name)}',
           message: 'جمعت ${formatMoney(goal.targetAmount)} '
               '${currencyLabelFor(goal.currencyCode)} المطلوبة لهذا الهدف.',
           eventKey: _goalReachedKey(goal.id),
@@ -463,7 +463,7 @@ class NotificationService extends ChangeNotifier {
       final symbol = currencyLabelFor(goal.currencyCode);
       changed |= _tryAdd(
         type: NotificationType.goalProgress,
-        title: 'هدف ${goal.name}: $percent%',
+        title: 'هدف ${Ar.quote(goal.name)}: \u2066$percent%\u2069',
         message: 'وفّرت ${formatMoney(store.currentSaved(goal))} من '
             '${formatMoney(goal.targetAmount)} $symbol.',
         eventKey: _goalProgressKey(goal.id, percent),
@@ -599,7 +599,7 @@ class NotificationService extends ChangeNotifier {
         title: 'مصروف أعلى من المعتاد',
         message: '${formatMoney(expense.amount)} '
             '${currencyLabelFor(expense.currencyCode)} على '
-            '${categoryFor(expense.category).label}، أي ضعف متوسط مصروفاتك أو أكثر.',
+            '${Ar.category(categoryFor(expense.category).label)}، أي ضعف متوسط مصروفاتك أو أكثر.',
         eventKey: 'largeExpense:${expense.id}',
         relatedId: expense.id,
         metadata: {

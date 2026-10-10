@@ -54,7 +54,7 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
               AppListTile(
                 icon: Icons.notifications_active_outlined,
                 title: 'تنبيهات ذكية',
-                subtitle: 'تنبيه إذا كان رصيدك سينفد قبل الدخل القادم',
+                subtitle: 'تنبيه قبل نفاد الرصيد، وتذكيرات قصيرة إن غبت عن التطبيق',
                 showChevron: false,
                 trailing: Switch(
                   value: _settings.alerts,

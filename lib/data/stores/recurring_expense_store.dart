@@ -13,6 +13,7 @@ import 'package:waffr/core/sync/sync_merge.dart';
 import 'package:waffr/core/sync/sync_tombstones.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/core/insights/smart/arabic_text.dart';
 
 // Schedules checked on launch/resume; posts expenses when nextDueAt is past.
 class RecurringExpenseStore extends ChangeNotifier {
@@ -457,7 +458,7 @@ class RecurringExpenseStore extends ChangeNotifier {
           type: NotificationType.recurringExpenseDue,
           title: 'حان موعد ${_labelOf(item)}',
           message: count > 1
-              ? 'لديك $count دفعات مستحقة بقيمة ${formatMoney(item.amount)} $symbol لكل دفعة. افتح الالتزامات لتأكيد الخصم أو تأجيله.'
+              ? 'لديك ${Ar.payments.of(count)} مستحقة بقيمة ${formatMoney(item.amount)} $symbol لكل دفعة. افتح الالتزامات لتأكيد الخصم أو تأجيله.'
               : 'المبلغ ${formatMoney(item.amount)} $symbol. افتح الالتزامات لتأكيد الخصم أو تأجيله.',
           eventKey: key,
           relatedId: item.id,
@@ -501,10 +502,10 @@ class RecurringExpenseStore extends ChangeNotifier {
     return false;
   }
 
-  // Name used in notices: the note, else the category.
+  // Name used in notices, in «» quotes: the note, else the category.
   String _labelOf(RecurringExpense item) {
     final note = item.note?.trim() ?? '';
-    return note.isEmpty ? item.category : note;
+    return Ar.quote(note.isEmpty ? item.category : note);
   }
 
   Future<void> _notifyBlocked(RecurringExpense item, DateTime dueAt) async {
