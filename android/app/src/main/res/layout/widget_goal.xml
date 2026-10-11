@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Mirrors the savings goals panel (_GoalProgressCard in
+     lib/screens/offline/savings/savings_screen.dart). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -6,52 +8,97 @@
     android:background="@drawable/widget_background"
     android:layoutDirection="rtl"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:paddingStart="16dp"
+    android:paddingTop="15dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="15dp">
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/widget_goal_title"
-        android:textColor="@color/widget_text_secondary"
-        android:textSize="12sp" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/widget_icon_tile">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_widget_wallet" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:fontFamily="@font/tajawal_bold"
+            android:maxLines="1"
+            android:text="@string/widget_goal_title"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical" />
 
     <TextView
         android:id="@+id/goal_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
         android:ellipsize="end"
+        android:fontFamily="@font/tajawal_bold"
         android:maxLines="1"
         android:textColor="@color/widget_text_primary"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        android:textSize="14.5sp" />
 
-    <TextView
-        android:id="@+id/goal_percent"
+    <LinearLayout
+        android:id="@+id/goal_progress_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:textColor="@color/widget_accent"
-        android:textSize="22sp"
-        android:textStyle="bold" />
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-    <ProgressBar
-        android:id="@+id/goal_progress"
-        style="@android:style/Widget.ProgressBar.Horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="8dp"
-        android:layout_marginTop="4dp"
-        android:max="100"
-        android:mirrorForRtl="true"
-        android:progressDrawable="@drawable/widget_progress" />
+        <ProgressBar
+            android:id="@+id/goal_progress"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="0dp"
+            android:layout_height="16dp"
+            android:layout_weight="1"
+            android:max="100"
+            android:maxHeight="16dp"
+            android:minHeight="16dp"
+            android:mirrorForRtl="true"
+            android:progressDrawable="@drawable/widget_progress_neutral" />
+
+        <TextView
+            android:id="@+id/goal_percent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/outfit_bold"
+            android:textColor="@color/widget_text_secondary"
+            android:textSize="12.5sp" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/goal_caption"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="7dp"
         android:ellipsize="end"
+        android:fontFamily="@font/tajawal_medium"
         android:maxLines="2"
         android:textColor="@color/widget_text_secondary"
-        android:textSize="11sp" />
+        android:textSize="12sp" />
 </LinearLayout>

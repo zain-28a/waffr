@@ -21,8 +21,6 @@ import 'package:waffr/screens/offline/savings/sheets/withdraw_savings_sheet.dart
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
-import 'package:waffr/core/insights/smart/smart_insight.dart';
-import 'package:waffr/widgets/smart/smart_analysis_button.dart';
 
 // Range chips + swipeable period card, total savings, goal progress, and sheet launches.
 class SavingsScreen extends StatefulWidget {
@@ -710,7 +708,6 @@ class _SavingsGoalsHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        const SmartAnalysisButton(scope: InsightScope.savings),
         if (count > 0) ...[
           const SizedBox(width: 2),
           IconButton(
@@ -813,7 +810,7 @@ class _TotalSavingsCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'إجمالي المبالغ الموفَّرة',
+                  'إجمالي المبالغ الموفرة',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(

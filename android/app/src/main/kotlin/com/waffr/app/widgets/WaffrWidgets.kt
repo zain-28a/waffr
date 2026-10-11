@@ -91,8 +91,7 @@ class GoalWidgetProvider : HomeWidgetProvider() {
                 )
                 setTextViewText(R.id.goal_percent, widgetData.text("goal_percent_label"))
                 setProgressBar(R.id.goal_progress, 100, widgetData.percent("goal_percent"), false)
-                setViewVisibility(R.id.goal_progress, if (empty) View.GONE else View.VISIBLE)
-                setViewVisibility(R.id.goal_percent, if (empty) View.GONE else View.VISIBLE)
+                setViewVisibility(R.id.goal_progress_row, if (empty) View.GONE else View.VISIBLE)
                 setOnClickPendingIntent(R.id.widget_root, launch(context, if (empty) "create-goal" else "savings"))
             }
             appWidgetManager.updateAppWidget(id, views)
@@ -114,9 +113,10 @@ class ObligationWidgetProvider : HomeWidgetProvider() {
                     R.id.obligation_name,
                     widgetData.text("obligation_name", context.getString(R.string.widget_obligation_empty)),
                 )
-                setTextViewText(R.id.obligation_amount, widgetData.text("obligation_amount"))
+                setTextViewText(R.id.obligation_value, widgetData.text("obligation_value"))
+                setTextViewText(R.id.obligation_currency, widgetData.text("balance_currency"))
                 setTextViewText(R.id.obligation_when, widgetData.text("obligation_when"))
-                setViewVisibility(R.id.obligation_amount, if (empty) View.GONE else View.VISIBLE)
+                setViewVisibility(R.id.obligation_amount_row, if (empty) View.GONE else View.VISIBLE)
                 setViewVisibility(R.id.obligation_when, if (empty) View.GONE else View.VISIBLE)
                 setOnClickPendingIntent(R.id.widget_root, launch(context, "obligations"))
             }
@@ -143,12 +143,18 @@ class StreakWidgetProvider : HomeWidgetProvider() {
                     if (broken) "0" else widgetData.text("streak_count", "1"),
                 )
                 setTextViewText(
-                    R.id.streak_label,
+                    R.id.streak_word,
                     if (broken) {
-                        widgetData.text("streak_reset_label", context.getString(R.string.widget_streak_label))
+                        widgetData.text("streak_reset_label", context.getString(R.string.widget_streak_word))
                     } else {
-                        widgetData.text("streak_label", context.getString(R.string.widget_streak_label))
+                        widgetData.text("streak_word", context.getString(R.string.widget_streak_word))
                     },
+                )
+                setProgressBar(
+                    R.id.streak_ring,
+                    100,
+                    if (broken) 0 else widgetData.percent("streak_percent"),
+                    false,
                 )
                 setOnClickPendingIntent(R.id.widget_root, launch(context, "profile"))
             }

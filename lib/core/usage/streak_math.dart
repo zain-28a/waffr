@@ -148,3 +148,13 @@ class StreakMath {
     return StreakSnapshot.dayKey(value);
   }
 }
+
+const List<int> _streakMilestones = [3, 7, 14, 30, 60, 100, 180, 365];
+
+/// Next round number of days worth aiming for.
+int nextStreakMilestone(int count) {
+  for (final value in _streakMilestones) {
+    if (value > count) return value;
+  }
+  return (count ~/ 365 + 1) * 365;
+}

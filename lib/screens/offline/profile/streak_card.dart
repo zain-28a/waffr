@@ -6,19 +6,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/usage/streak_math.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/brand/waffr_logo.dart';
 import 'package:waffr/widgets/containers/glass.dart';
-
-const List<int> _milestones = [3, 7, 14, 30, 60, 100, 180, 365];
-
-/// Next round number of days worth aiming for.
-int nextStreakMilestone(int count) {
-  for (final value in _milestones) {
-    if (value > count) return value;
-  }
-  return (count ~/ 365 + 1) * 365;
-}
 
 class StreakCard extends StatefulWidget {
   final int count;

@@ -9,7 +9,9 @@ extension target that only Xcode can create. One-time setup on a Mac:
    then **Finish** (and **Activate** the scheme if asked).
 3. Xcode creates a `WaffrWidgets` folder with sample files. Delete the
    generated `.swift` files and add this folder's `WaffrWidgets.swift`,
-   `Info.plist` and `WaffrWidgets.entitlements` to the target instead.
+   `Info.plist`, `WaffrWidgets.entitlements`, `Assets.xcassets` (the logo
+   on the streak widget) and the `Fonts` folder (Tajawal and Outfit, the
+   app's fonts) to the target instead.
 4. Select the **Runner** target → **Signing & Capabilities → + Capability
    → App Groups**, and add `group.com.waffr.app`. Do the same for the
    **WaffrWidgets** target (or point its *Code Signing Entitlements*
