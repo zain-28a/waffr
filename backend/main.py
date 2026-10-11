@@ -1,16 +1,15 @@
 import asyncio
 from contextlib import asynccontextmanager, suppress
 
-from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
 from database import create_tables, get_db, utc_now
+from legacy_photo import photo_meta, remove_uploaded_photos
 from category_model import ExpenseCategory
 from models import Notification, User, UserSettings
 from preset_model import ExpensePreset
 import password_reset
-import profile_photo as stored_photo
 from schemas import (
     AuthResponse,
     ChangePasswordRequest,
@@ -57,6 +56,7 @@ _MODEL_MODULES = (
 )
 
 create_tables()
+remove_uploaded_photos()
 
 
 @asynccontextmanager
@@ -168,13 +168,6 @@ def _profile_text(user: User, field: str, *, settings_fallback: bool = False) ->
     return _clean(getattr(user.settings, field, None))
 
 
-def _photo_meta(user: User) -> dict:
-    return {
-        "has_photo": stored_photo.has_photo(user.id),
-        "photo_updated_at": user.photo_updated_at,
-    }
-
-
 def _user_payload(user: User) -> dict:
     return {
         "id": user.id,
@@ -187,7 +180,7 @@ def _user_payload(user: User) -> dict:
         "street": _clean(user.street),
         "phone": _clean(user.phone),
         "data_key": _data_key(user),
-        **_photo_meta(user),
+        **photo_meta(),
     }
 
 
@@ -294,53 +287,23 @@ def delete_account(
     db: Session = Depends(get_db),
 ):
     # Rows owned by the user go with it (ORM cascade and ON DELETE CASCADE).
-    stored_photo.delete_photo(current_user.id)
     db.delete(current_user)
     db.commit()
 
 
+# Profile photos were removed. These stay for older app versions: an upload
+# is dropped unread and answered as "no photo", so the app stops retrying it
+# and removes the photo on its next sync.
 @app.put("/auth/photo")
-async def upload_photo(
-    request: Request,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    data = await request.body()
-    if not data:
-        raise HTTPException(status_code=400, detail="Image is required")
-    try:
-        stored_photo.save_photo(current_user.id, data)
-    except ValueError as error:
-        detail = "Image is too large" if str(error) == "image too large" else "Unsupported image"
-        status = 413 if str(error) == "image too large" else 400
-        raise HTTPException(status_code=status, detail=detail) from error
-
-    current_user.photo_updated_at = utc_now()
-    db.commit()
-    db.refresh(current_user)
-    return _photo_meta(current_user)
+def upload_photo(_current_user: User = Depends(get_current_user)):
+    return photo_meta()
 
 
 @app.get("/auth/photo")
-def download_photo(current_user: User = Depends(get_current_user)):
-    path = stored_photo.photo_path(current_user.id)
-    if path is None:
-        raise HTTPException(status_code=404, detail="No profile photo")
-    return FileResponse(
-        str(path),
-        media_type=stored_photo.media_type_for(path),
-        filename=path.name,
-        headers={"Cache-Control": "no-store"},
-    )
+def download_photo(_current_user: User = Depends(get_current_user)):
+    raise HTTPException(status_code=404, detail="No profile photo")
 
 
 @app.delete("/auth/photo")
-def delete_photo(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    stored_photo.delete_photo(current_user.id)
-    current_user.photo_updated_at = utc_now()
-    db.commit()
-    db.refresh(current_user)
-    return _photo_meta(current_user)
+def delete_photo(_current_user: User = Depends(get_current_user)):
+    return photo_meta()

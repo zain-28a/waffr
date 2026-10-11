@@ -9,7 +9,6 @@ import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/services/notification_service.dart';
 import 'package:waffr/data/services/profile_identity.dart';
-import 'package:waffr/data/services/profile_photo.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/shopping_list_store.dart';
@@ -58,7 +57,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _userName = '';
   String _userEmail = '';
   bool _loggedIn = false;
-  String? _photoPath;
 
   bool _hasMonthlyIncome = false;
   bool _hasWeeklyIncome = false;
@@ -93,7 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Pulls prefs, auth session, profile photo, and configured income into state.
+  // Pulls prefs, auth session, and configured income into state.
   Future<void> _loadSettings() async {
     final prefs = await AppPrefs.instance;
     await TransactionStore.instance.ensureLoaded();
@@ -101,7 +99,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final store = TransactionStore.instance;
     final accountEmail = await AuthSession.instance.email() ?? '';
     final loggedIn = await AuthSession.instance.isLoggedIn();
-    final photoPath = await ProfilePhoto.path();
 
     if (!mounted) return;
 
@@ -109,7 +106,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _appLock = prefs.getBool('app_lock') ?? false;
 
       _loggedIn = loggedIn;
-      _photoPath = photoPath;
 
       _userName = prefs.getString('user_name') ?? '';
 
@@ -312,7 +308,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // The About text is not written yet.
   void _showAbout() {}
 
-  // Clears prefs, session, photo, and in-memory stores, then returns to first route.
+  // Clears prefs, session, and in-memory stores, then returns to first route.
   Future<void> _resetApp() async {
     final confirm = await showAppConfirmDialog(
       context,
@@ -329,7 +325,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.clear();
     await AuthSession.instance.clearSession();
     await AuthSession.instance.clearDataOwner();
-    await ProfilePhoto.clear();
 
     TransactionStore.instance.resetCache();
     CurrencyStore.instance.resetCache();
@@ -399,12 +394,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               email: _loggedIn
                   ? _userEmail
                   : 'اضغط لتسجيل الدخول أو إنشاء حساب',
-              photoPath: _photoPath,
               accent: accent,
               surface: surface,
               textPrimary: textPrimary,
               textSecondary: textSecondary,
-              placeholder: !_loggedIn,
+              signedIn: _loggedIn,
             ),
           ),
 
@@ -682,8 +676,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 class _ProfileCard extends StatelessWidget {
   final String name;
   final String email;
-  final String? photoPath;
-  final bool placeholder;
+  final bool signedIn;
 
   final Color accent;
   final Color surface;
@@ -698,8 +691,7 @@ class _ProfileCard extends StatelessWidget {
     required this.surface,
     required this.textPrimary,
     required this.textSecondary,
-    this.photoPath,
-    this.placeholder = false,
+    required this.signedIn,
   });
 
   @override
@@ -715,10 +707,9 @@ class _ProfileCard extends StatelessWidget {
       child: Row(
         children: [
           ProfileAvatar(
-            photoPath: photoPath,
             accent: accent,
             radius: 27,
-            placeholder: placeholder,
+            signedIn: signedIn,
           ),
 
           const SizedBox(width: 15),
