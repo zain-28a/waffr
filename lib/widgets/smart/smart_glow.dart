@@ -3,6 +3,7 @@
 
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
@@ -63,7 +64,21 @@ class _SmartGlowBackgroundState extends State<SmartGlowBackground>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (AppMotion.reduced(context)) {
+    _syncDrift();
+  }
+
+  @override
+  void didUpdateWidget(SmartGlowBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncDrift();
+  }
+
+  // The glow drifts only while it is at full strength ("thinking"). The
+  // calm resting glow stays still, so a finished report lets the screen
+  // stop drawing frames.
+  void _syncDrift() {
+    final moving = widget.intensity >= 0.99 && !AppMotion.reduced(context);
+    if (!moving) {
       _drift.stop();
     } else if (!_drift.isAnimating) {
       _drift.repeat();
@@ -151,7 +166,7 @@ class _GlowPainter extends CustomPainter {
   bool shouldRepaint(_GlowPainter old) =>
       old.intensity != intensity ||
       old.strength != strength ||
-      old.colors != colors;
+      !listEquals(old.colors, colors);
 }
 
 // A sparkle inside a rotating color ring, the "thinking" mark.
@@ -189,7 +204,10 @@ class _SmartSparkState extends State<SmartSpark>
     if (run && !_spin.isAnimating) {
       _spin.repeat();
     } else if (!run && _spin.isAnimating) {
-      _spin.animateTo(1, duration: AppMotion.medium).then((_) => _spin.value = 0);
+      // The ring hides as soon as spinning ends, so stop at once instead of
+      // racing through the rest of a turn nobody sees.
+      _spin.stop();
+      _spin.value = 0;
     }
   }
 

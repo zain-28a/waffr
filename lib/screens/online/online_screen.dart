@@ -179,9 +179,21 @@ class _OnlineScreenState extends State<OnlineScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
+        // Guests see the cards blurred. The blur is applied to the cards
+        // themselves in their own layer, instead of a full-screen backdrop
+        // filter that had to be recomputed on every frame of a tab swipe.
         AbsorbPointer(
           absorbing: locked,
-          child: ExcludeSemantics(excluding: locked, child: content),
+          child: ExcludeSemantics(
+            excluding: locked,
+            child: RepaintBoundary(
+              child: ImageFiltered(
+                enabled: locked,
+                imageFilter: ImageFilter.blur(sigmaX: 7, sigmaY: 7),
+                child: content,
+              ),
+            ),
+          ),
         ),
         IgnorePointer(
           ignoring: !locked,
@@ -208,8 +220,7 @@ class _SignInGate extends StatelessWidget {
     final colors = AppPalette.of(context);
 
     return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 7, sigmaY: 7),
+      child: SizedBox.expand(
         child: ColoredBox(
           color: colors.background.withValues(alpha: 0.55),
           child: Center(

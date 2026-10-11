@@ -17,6 +17,9 @@ import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffr/screens/offline/home/sheets/add_income_sheet.dart';
 import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffr/screens/offline/report/reportscreen.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
+import 'package:waffr/data/stores/shopping_list_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/manual_save_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
@@ -155,13 +158,25 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
       AppHaptics.success();
       return;
     }
+    _lastTypingBuild = Duration.zero;
     _typing.start();
   }
 
+  // Last tick that rebuilt the screen. Text is revealed about 30 times a
+  // second instead of on every frame, which halves the rebuild and text
+  // layout work while it still reads as smooth typing.
+  Duration _lastTypingBuild = Duration.zero;
+
   void _onTypingTick(Duration elapsed) {
     final next = math.min(_total, (elapsed.inMilliseconds * _charsPerMs).round());
-    if (next != _revealed) setState(() => _revealed = next);
-    if (_revealed >= _total) _finish();
+    if (next >= _total) {
+      _finish();
+      return;
+    }
+    if (next == _revealed) return;
+    if (elapsed - _lastTypingBuild < const Duration(milliseconds: 33)) return;
+    _lastTypingBuild = elapsed;
+    setState(() => _revealed = next);
   }
 
   void _finish() {
@@ -184,6 +199,16 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
 
   Future<void> _runAction(InsightAction action) async {
     AppHaptics.selection();
+    // Rerun the analysis afterwards only if the action changed any data;
+    // closing a sheet without saving should not replay the whole reading.
+    var changed = false;
+    void markChanged() => changed = true;
+    final stores = Listenable.merge([
+      TransactionStore.instance,
+      RecurringExpenseStore.instance,
+      ShoppingListStore.instance,
+    ])
+      ..addListener(markChanged);
     switch (action) {
       case InsightAction.addExpense:
         await showAddExpenseSheet(context);
@@ -204,6 +229,8 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
           ),
         );
     }
+    stores.removeListener(markChanged);
+    if (!changed || !mounted) return;
     // The data may have changed; refresh the reading quietly.
     if (mounted) _generate(quick: true);
   }
@@ -229,7 +256,9 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
       body: Stack(
         children: [
           Positioned.fill(
-            child: SmartGlowBackground(intensity: generating ? 1 : 0.4),
+            child: RepaintBoundary(
+              child: SmartGlowBackground(intensity: generating ? 1 : 0.4),
+            ),
           ),
           SafeArea(
             top: false,
@@ -606,8 +635,13 @@ class _InsightCard extends StatelessWidget {
         colorType: GlassColorType.surface,
         borderRadius: 22,
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        // While the text is being typed the card simply grows with it; an
+        // animated resize lagged behind each new line and made the cards
+        // below move in steps. It animates only for expand/collapse.
         child: AnimatedSize(
-          duration: AppMotion.of(context, AppMotion.medium),
+          duration: typing
+              ? Duration.zero
+              : AppMotion.of(context, AppMotion.medium),
           curve: AppMotion.enter,
           alignment: Alignment.topCenter,
           child: Column(
