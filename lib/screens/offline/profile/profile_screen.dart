@@ -11,8 +11,9 @@ import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/widgets/brand/profile_avatar.dart';
+import 'package:waffr/screens/offline/profile/balance_scale_card.dart';
 import 'package:waffr/screens/offline/profile/streak_card.dart';
-import 'package:waffr/widgets/charts/savings_spending_bar.dart';
+import 'package:waffr/core/insights/money_balance.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/widgets/smart/smart_analysis_button.dart';
@@ -110,30 +111,11 @@ class _ProfileScreenState extends State<ProfileScreen>
             const SizedBox(height: kCardGap),
             _UsageStats(snapshot: snapshot, palette: palette),
             const SizedBox(height: kCardGap),
-            GlassContainer(
-              colorType: GlassColorType.surface,
-              borderRadius: 22,
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'الصرف والتوفير',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontFamilyFallback: const ['Tajawal'],
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: palette.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SavingsSpendingBar(
-                    savings: snapshot.saved,
-                    spending: snapshot.spent,
-                  ),
-                ],
+            BalanceScaleCard(
+              balance: MoneyBalance.fromTransactions(
+                _store.transactions,
+                currencyCode: CurrencyStore.instance.activeCode,
+                now: DateTime.now(),
               ),
             ),
           ]),
