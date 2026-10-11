@@ -76,7 +76,9 @@ Map<String, dynamic> goalToSync(SavingsGoal item) {
     'is_periodic': item.isPeriodic,
     'duration_count': item.durationCount,
     'priority': item.priority,
-    'completed_at': item.completedAt == null ? null : toSyncIso(item.completedAt),
+    'completed_at': item.completedAt == null
+        ? null
+        : toSyncIso(item.completedAt),
     'completed_amount': item.completedAmount?.toString(),
     'created_at': toSyncIso(item.createdAt),
     'currency_code': item.currencyCode,
@@ -161,9 +163,7 @@ WaffrTransaction? transactionFromSync(Map<String, dynamic> raw) {
     currencyCode: Currencies.normalize(
       _text(raw['currency_code']) ?? _text(raw['currencyCode']),
     ),
-    frequency: WaffrTransaction.frequencyFrom(
-      raw['frequency']?.toString(),
-    ),
+    frequency: WaffrTransaction.frequencyFrom(raw['frequency']?.toString()),
     periodKey: _text(raw['period_key'] ?? raw['periodKey']),
     updatedAt: parseSyncDate(raw['updated_at'] ?? raw['updatedAt']),
   );
@@ -177,8 +177,8 @@ WaffrTransaction? transferFromSync(Map<String, dynamic> raw) {
 
   final direction = raw['direction']?.toString();
   final kind = WaffrTransaction.transferKindFrom(raw['kind']?.toString());
-  final outgoing = direction == 'to_balance' ||
-      kind == SavingsTransferKind.withdraw;
+  final outgoing =
+      direction == 'to_balance' || kind == SavingsTransferKind.withdraw;
   final occurred = parseEventLocal(raw['occurred_at'] ?? raw['dateTime']);
   if (occurred == null) return null;
 
@@ -191,10 +191,9 @@ WaffrTransaction? transferFromSync(Map<String, dynamic> raw) {
     currencyCode: Currencies.normalize(
       _text(raw['currency_code']) ?? _text(raw['currencyCode']),
     ),
-    transferKind: kind ??
-        (outgoing
-            ? SavingsTransferKind.withdraw
-            : SavingsTransferKind.manual),
+    transferKind:
+        kind ??
+        (outgoing ? SavingsTransferKind.withdraw : SavingsTransferKind.manual),
     goalId: _text(raw['goal_client_id'] ?? raw['goalId']),
     processedPeriodKey: _text(
       raw['processed_period_key'] ?? raw['processedPeriodKey'],
@@ -212,15 +211,17 @@ SavingsGoal? goalFromSync(Map<String, dynamic> raw) {
       'currencyCode': raw['currency_code'] ?? raw['currencyCode'],
       'createdAt': raw['created_at'] ?? raw['createdAt'],
       'completedAt': raw['completed_at'] ?? raw['completedAt'],
-      'completedAmount':
-          parseMoney(raw['completed_amount'] ?? raw['completedAmount']),
+      'completedAmount': parseMoney(
+        raw['completed_amount'] ?? raw['completedAmount'],
+      ),
       'duration': raw['duration'],
-      'allocatePercent':
-          parseMoney(raw['allocate_percent'] ?? raw['allocatePercent']),
-      'allocateAmount':
-          parseMoney(raw['allocate_amount'] ?? raw['allocateAmount']),
-      'deductFrequency':
-          raw['deduct_frequency'] ?? raw['deductFrequency'],
+      'allocatePercent': parseMoney(
+        raw['allocate_percent'] ?? raw['allocatePercent'],
+      ),
+      'allocateAmount': parseMoney(
+        raw['allocate_amount'] ?? raw['allocateAmount'],
+      ),
+      'deductFrequency': raw['deduct_frequency'] ?? raw['deductFrequency'],
       'isPeriodic': raw['is_periodic'] ?? raw['isPeriodic'],
       'durationCount': raw['duration_count'] ?? raw['durationCount'],
       'priority': raw['priority'],

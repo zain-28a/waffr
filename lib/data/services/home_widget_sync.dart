@@ -26,11 +26,26 @@ class HomeWidgetSync {
   static const String appGroupId = 'group.com.waffr.app';
 
   static const List<({String android, String ios})> _widgets = [
-    (android: 'com.waffr.app.widgets.BalanceWidgetProvider', ios: 'WaffrBalanceWidget'),
-    (android: 'com.waffr.app.widgets.QuickAddWidgetProvider', ios: 'WaffrQuickAddWidget'),
-    (android: 'com.waffr.app.widgets.GoalWidgetProvider', ios: 'WaffrGoalWidget'),
-    (android: 'com.waffr.app.widgets.ObligationWidgetProvider', ios: 'WaffrObligationWidget'),
-    (android: 'com.waffr.app.widgets.StreakWidgetProvider', ios: 'WaffrStreakWidget'),
+    (
+      android: 'com.waffr.app.widgets.BalanceWidgetProvider',
+      ios: 'WaffrBalanceWidget',
+    ),
+    (
+      android: 'com.waffr.app.widgets.QuickAddWidgetProvider',
+      ios: 'WaffrQuickAddWidget',
+    ),
+    (
+      android: 'com.waffr.app.widgets.GoalWidgetProvider',
+      ios: 'WaffrGoalWidget',
+    ),
+    (
+      android: 'com.waffr.app.widgets.ObligationWidgetProvider',
+      ios: 'WaffrObligationWidget',
+    ),
+    (
+      android: 'com.waffr.app.widgets.StreakWidgetProvider',
+      ios: 'WaffrStreakWidget',
+    ),
   ];
 
   bool _started = false;
@@ -114,7 +129,9 @@ class HomeWidgetSync {
               saved: store.goalProgress(store.activeGoals.first),
             ),
       obligations: [
-        for (final item in recurring.itemsFor(CurrencyStore.instance.activeCode))
+        for (final item in recurring.itemsFor(
+          CurrencyStore.instance.activeCode,
+        ))
           if (item.enabled)
             (
               name: item.note?.trim().isNotEmpty == true

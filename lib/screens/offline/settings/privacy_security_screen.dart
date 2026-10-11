@@ -16,10 +16,7 @@ import 'package:waffr/widgets/brand/waffr_page_header.dart';
 class PrivacySecurityScreen extends StatefulWidget {
   final dynamic appFlowController;
 
-  const PrivacySecurityScreen({
-    super.key,
-    this.appFlowController,
-  });
+  const PrivacySecurityScreen({super.key, this.appFlowController});
 
   @override
   State<PrivacySecurityScreen> createState() => _PrivacySecurityScreenState();
@@ -59,9 +56,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
   }
 
   Future<void> _openDetail(Widget page) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => page),
-    );
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
     await _load();
   }
 
@@ -107,9 +102,8 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                                 icon: Icons.badge_outlined,
                                 title: 'بيانات الحساب',
                                 colors: colors,
-                                onTap: () => _openDetail(
-                                  const _AccountDataDetailPage(),
-                                ),
+                                onTap: () =>
+                                    _openDetail(const _AccountDataDetailPage()),
                               ),
                               _SettingsRow(
                                 icon: Icons.cloud_sync_outlined,
@@ -126,9 +120,8 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                                 title: 'البيانات المتزامنة',
                                 colors: colors,
                                 showDivider: false,
-                                onTap: () => _openDetail(
-                                  const _SyncedDataDetailPage(),
-                                ),
+                                onTap: () =>
+                                    _openDetail(const _SyncedDataDetailPage()),
                               ),
                             ],
                           ),
@@ -170,9 +163,8 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                                 title: 'إعادة ضبط البيانات المحلية',
                                 colors: colors,
                                 showDivider: false,
-                                onTap: () => _openDetail(
-                                  const _LocalResetDetailPage(),
-                                ),
+                                onTap: () =>
+                                    _openDetail(const _LocalResetDetailPage()),
                               ),
                             ],
                           ),
@@ -202,8 +194,7 @@ class _AccountDataDetailPage extends StatelessWidget {
         _DetailLead(
           icon: Icons.badge_outlined,
           colors: colors,
-          text:
-              'يحتفظ وفّر بمعلومات أساسية لتشغيل الحساب وعرض الملف الشخصي.',
+          text: 'يحتفظ وفّر بمعلومات أساسية لتشغيل الحساب وعرض الملف الشخصي.',
         ),
         const SizedBox(height: 16),
         _InfoGroup(
@@ -222,8 +213,7 @@ class _AccountDataDetailPage extends StatelessWidget {
         const SizedBox(height: 14),
         _NoteText(
           colors: colors,
-          text:
-              'عند تسجيل الدخول، تُزامَن معلومات الملف الشخصي ذات الصلة مع الحساب. صورة الملف الشخصي تبقى محفوظة محلياً على الجهاز.',
+          text: 'عند تسجيل الدخول، تُزامَن معلومات الملف الشخصي ذات الصلة مع الحساب. صورة الملف الشخصي تبقى محفوظة محلياً على الجهاز.',
         ),
       ],
     );
@@ -258,30 +248,23 @@ class _CloudSyncDetailPage extends StatelessWidget {
           children: loggedIn
               ? const [
                   _InfoLine(
-                    label:
-                        'تُحفظ بياناتك على الجهاز أولاً، فيعمل التطبيق دون اتصال.',
+                    label: 'تُحفظ بياناتك على الجهاز أولاً، فيعمل التطبيق دون اتصال.',
                   ),
                   _InfoLine(
-                    label:
-                        'عند توفر الاتصال، تُزامَن تلقائياً مع خوادم وفّر.',
+                    label: 'عند توفر الاتصال، تُزامَن تلقائياً مع خوادم وفّر.',
                   ),
                   _InfoLine(
-                    label:
-                        'بيانات كل حساب منفصلة عن غيره، ولا يصل إليها إلا صاحبها.',
+                    label: 'بيانات كل حساب منفصلة عن غيره، ولا يصل إليها إلا صاحبها.',
                     showDivider: false,
                   ),
                 ]
               : const [
+                  _InfoLine(label: 'تبقى بياناتك محفوظة على هذا الجهاز.'),
                   _InfoLine(
-                    label: 'تبقى بياناتك محفوظة على هذا الجهاز.',
+                    label: 'لا تُرسل البيانات إلى السحابة في وضع الضيف.',
                   ),
                   _InfoLine(
-                    label:
-                        'لا تُرسل البيانات إلى السحابة في وضع الضيف.',
-                  ),
-                  _InfoLine(
-                    label:
-                        'بعد تسجيل الدخول، تُزامَن بياناتك تلقائياً عند توفر الاتصال.',
+                    label: 'بعد تسجيل الدخول، تُزامَن بياناتك تلقائياً عند توفر الاتصال.',
                     showDivider: false,
                   ),
                 ],
@@ -323,8 +306,7 @@ class _SyncedDataDetailPage extends StatelessWidget {
       children: [
         _NoteText(
           colors: colors,
-          text:
-              'تُزامَن البيانات التالية مع الحساب عند تسجيل الدخول وتوفر الاتصال.',
+          text: 'تُزامَن البيانات التالية مع الحساب عند تسجيل الدخول وتوفر الاتصال.',
         ),
         const SizedBox(height: 16),
         _SectionLabel(title: 'تُزامَن مع الحساب', color: colors.textSecondary),
@@ -446,12 +428,10 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
           colors: colors,
           children: const [
             _InfoLine(
-              label:
-                  'يستخدم قفل التطبيق مصادقة الجهاز، مثل البصمة أو التعرف على الوجه أو رمز الجهاز.',
+              label: 'يستخدم قفل التطبيق مصادقة الجهاز، مثل البصمة أو التعرف على الوجه أو رمز الجهاز.',
             ),
             _InfoLine(
-              label:
-                  'يمنع فتح التطبيق على هذا الجهاز دون تأكيد هويتك.',
+              label: 'يمنع فتح التطبيق على هذا الجهاز دون تأكيد هويتك.',
             ),
             _InfoLine(
               label: 'هذا الإعداد يبقى على الجهاز ولا يُزامَن مع الحساب.',
@@ -490,8 +470,7 @@ class _LocalResetDetailPage extends StatelessWidget {
     final confirm = await showAppConfirmDialog(
       context,
       title: 'إعادة ضبط البيانات المحلية',
-      message:
-          'سيتم حذف البيانات المخزّنة على هذا الجهاز. لا يمكن التراجع عن هذا الإجراء.',
+      message: 'سيتم حذف البيانات المخزّنة على هذا الجهاز. لا يمكن التراجع عن هذا الإجراء.',
       confirmLabel: 'حذف البيانات',
       destructive: true,
     );
@@ -522,15 +501,11 @@ class _LocalResetDetailPage extends StatelessWidget {
           colors: colors,
           children: const [
             _InfoLine(
-              label:
-                  'سيتم حذف البيانات المالية المحلية وإعدادات هذا الجهاز.',
+              label: 'سيتم حذف البيانات المالية المحلية وإعدادات هذا الجهاز.',
             ),
+            _InfoLine(label: 'لا يمكن التراجع عن هذا الإجراء بعد تأكيده.'),
             _InfoLine(
-              label: 'لا يمكن التراجع عن هذا الإجراء بعد تأكيده.',
-            ),
-            _InfoLine(
-              label:
-                  'لا يحذف هذا الإجراء حسابك من الخادم. لحذف الحساب استخدم شاشة الحساب بعد تسجيل الدخول.',
+              label: 'لا يحذف هذا الإجراء حسابك من الخادم. لحذف الحساب استخدم شاشة الحساب بعد تسجيل الدخول.',
               showDivider: false,
             ),
           ],
@@ -561,9 +536,7 @@ class _PrivacyDetailScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: WaffrBackHeader(
-        title: title,
-      ),
+      appBar: WaffrBackHeader(title: title),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
         children: children,
@@ -593,10 +566,12 @@ class _PrivacyColors {
     return _PrivacyColors(
       background: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       surface: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-      textPrimary:
-          isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-      textSecondary:
-          isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+      textPrimary: isDark
+          ? AppColors.darkTextPrimary
+          : AppColors.lightTextPrimary,
+      textSecondary: isDark
+          ? AppColors.darkTextSecondary
+          : AppColors.lightTextSecondary,
       accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
     );
   }
@@ -619,10 +594,7 @@ class _SettingsGroup extends StatelessWidget {
   final Color surface;
   final List<Widget> children;
 
-  const _SettingsGroup({
-    required this.surface,
-    required this.children,
-  });
+  const _SettingsGroup({required this.surface, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -706,10 +678,7 @@ class _StatusBanner extends StatelessWidget {
           Container(
             width: 10,
             height: 10,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -722,7 +691,8 @@ class _StatusBanner extends StatelessWidget {
                     color: colors.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -732,7 +702,8 @@ class _StatusBanner extends StatelessWidget {
                     color: colors.textSecondary,
                     fontSize: 12.5,
                     height: 1.45,
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
               ],
@@ -781,7 +752,8 @@ class _DetailLead extends StatelessWidget {
                 fontSize: 14.5,
                 height: 1.55,
                 fontWeight: FontWeight.w600,
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
               ),
             ),
           ),
@@ -796,10 +768,7 @@ class _InfoGroup extends StatelessWidget {
   final _PrivacyColors colors;
   final List<Widget> children;
 
-  const _InfoGroup({
-    required this.colors,
-    required this.children,
-  });
+  const _InfoGroup({required this.colors, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -819,10 +788,7 @@ class _InfoLine extends StatelessWidget {
   final String label;
   final bool showDivider;
 
-  const _InfoLine({
-    required this.label,
-    this.showDivider = true,
-  });
+  const _InfoLine({required this.label, this.showDivider = true});
 
   @override
   Widget build(BuildContext context) {
@@ -842,7 +808,8 @@ class _InfoLine extends StatelessWidget {
                     color: colors.textPrimary,
                     fontSize: 13.5,
                     height: 1.45,
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
               ),
@@ -866,10 +833,7 @@ class _NoteText extends StatelessWidget {
   final _PrivacyColors colors;
   final String text;
 
-  const _NoteText({
-    required this.colors,
-    required this.text,
-  });
+  const _NoteText({required this.colors, required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -879,7 +843,8 @@ class _NoteText extends StatelessWidget {
         color: colors.textSecondary,
         fontSize: 13.5,
         height: 1.55,
-        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+        fontFamily: 'Outfit',
+        fontFamilyFallback: ['Tajawal'],
       ),
     );
   }

@@ -2,16 +2,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/core/insights/smart/category_suggester.dart';
 import 'package:waffr/data/models/transaction.dart';
 
-const _all = ['طعام', 'مواصلات', 'تسوق', 'فواتير', 'صحة', 'ترفيه', 'تعليم', 'أخرى'];
+const _all = [
+  'طعام',
+  'مواصلات',
+  'تسوق',
+  'فواتير',
+  'صحة',
+  'ترفيه',
+  'تعليم',
+  'أخرى',
+];
 
 WaffrTransaction _expense(String note, String category) => WaffrTransaction(
-      id: note + category,
-      type: TransactionType.expense,
-      amount: 10,
-      dateTime: DateTime(2026, 10, 1),
-      category: category,
-      note: note,
-    );
+  id: note + category,
+  type: TransactionType.expense,
+  amount: 10,
+  dateTime: DateTime(2026, 10, 1),
+  category: category,
+  note: note,
+);
 
 void main() {
   test('common words map to built-in categories', () {

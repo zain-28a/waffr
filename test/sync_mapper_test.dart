@@ -125,10 +125,7 @@ void main() {
       items: items,
       upserts: const [],
       deletes: [
-        SyncTombstone(
-          clientId: 'gone',
-          deletedAt: DateTime.utc(2026, 1, 3),
-        ),
+        SyncTombstone(clientId: 'gone', deletedAt: DateTime.utc(2026, 1, 3)),
       ],
       collection: SyncCollection.transactions,
       idOf: (item) => item.id,

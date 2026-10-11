@@ -61,19 +61,19 @@ class ExpensePreset {
       'p${DateTime.now().microsecondsSinceEpoch}_${_seq++}';
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'amount': amount,
-        'multiplier': multiplier,
-        'currencyCode': currencyCode,
-        'category': category,
-        'paymentMethod': paymentMethod,
-        'note': note,
-        'recurring': recurring,
-        'unit': unit.name,
-        'intervalCount': intervalCount,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': syncUpdatedAt.toIso8601String(),
-      };
+    'id': id,
+    'amount': amount,
+    'multiplier': multiplier,
+    'currencyCode': currencyCode,
+    'category': category,
+    'paymentMethod': paymentMethod,
+    'note': note,
+    'recurring': recurring,
+    'unit': unit.name,
+    'intervalCount': intervalCount,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': syncUpdatedAt.toIso8601String(),
+  };
 
   String encode() => jsonEncode(toJson());
 
@@ -102,19 +102,19 @@ class ExpensePreset {
   }
 
   Map<String, dynamic> toSyncJson() => {
-        'client_id': id,
-        'amount': amount.toString(),
-        'multiplier': multiplier,
-        'currency_code': currencyCode,
-        'category': category,
-        'payment_method': paymentMethod,
-        'note': note,
-        'recurring': recurring,
-        'unit': unit.name,
-        'interval_count': intervalCount,
-        'created_at': toSyncIso(createdAt),
-        'updated_at': toSyncIso(syncUpdatedAt),
-      };
+    'client_id': id,
+    'amount': amount.toString(),
+    'multiplier': multiplier,
+    'currency_code': currencyCode,
+    'category': category,
+    'payment_method': paymentMethod,
+    'note': note,
+    'recurring': recurring,
+    'unit': unit.name,
+    'interval_count': intervalCount,
+    'created_at': toSyncIso(createdAt),
+    'updated_at': toSyncIso(syncUpdatedAt),
+  };
 
   static ExpensePreset? fromSync(Map<String, dynamic> raw) {
     return _fromMap(

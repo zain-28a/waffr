@@ -13,25 +13,27 @@ WaffrTransaction _expense(
   DateTime date, {
   String category = 'طعام',
   String? payment,
-}) =>
-    WaffrTransaction(
-      id: 'e${_ids++}',
-      type: TransactionType.expense,
-      amount: amount,
-      dateTime: date,
-      category: category,
-      paymentMethod: payment,
-    );
+}) => WaffrTransaction(
+  id: 'e${_ids++}',
+  type: TransactionType.expense,
+  amount: amount,
+  dateTime: date,
+  category: category,
+  paymentMethod: payment,
+);
 
-WaffrTransaction _transfer(double amount, DateTime date,
-        {bool out = false, String? goalId}) =>
-    WaffrTransaction(
-      id: 't${_ids++}',
-      type: out ? TransactionType.savingsOut : TransactionType.savingsIn,
-      amount: amount,
-      dateTime: date,
-      goalId: goalId,
-    );
+WaffrTransaction _transfer(
+  double amount,
+  DateTime date, {
+  bool out = false,
+  String? goalId,
+}) => WaffrTransaction(
+  id: 't${_ids++}',
+  type: out ? TransactionType.savingsOut : TransactionType.savingsIn,
+  amount: amount,
+  dateTime: date,
+  goalId: goalId,
+);
 
 SmartFacts _facts({
   DateTime? now,
@@ -54,8 +56,9 @@ SmartFacts _facts({
     balance: balance,
     maxBalance: 1000,
     monthlyIncome: income,
-    incomeFrequency:
-        recurringIncome ? RecurringFrequency.monthly : RecurringFrequency.none,
+    incomeFrequency: recurringIncome
+        ? RecurringFrequency.monthly
+        : RecurringFrequency.none,
     hasRecurringIncome: recurringIncome,
     savingsBalance: savingsBalance,
     goals: goals,
@@ -153,22 +156,29 @@ void main() {
   );
 
   test('no expenses asks the user to start logging', () {
-    final report = InsightEngine(_facts(), seed: 1).analyze(InsightScope.reports);
+    final report = InsightEngine(
+      _facts(),
+      seed: 1,
+    ).analyze(InsightScope.reports);
 
     expect(_ids_(report), contains('no-expenses'));
     expect(report.insights.first.action, InsightAction.addExpense);
   });
 
   test('month-over-month increase is a warning with the real numbers', () {
-    final facts = _facts(expenses: [
-      for (var day = 1; day <= 20; day++)
-        _expense(30, DateTime(2026, 10, day, 10)),
-      for (var day = 1; day <= 20; day++)
-        _expense(15, DateTime(2026, 9, day, 10)),
-    ]);
+    final facts = _facts(
+      expenses: [
+        for (var day = 1; day <= 20; day++)
+          _expense(30, DateTime(2026, 10, day, 10)),
+        for (var day = 1; day <= 20; day++)
+          _expense(15, DateTime(2026, 9, day, 10)),
+      ],
+    );
 
     final report = InsightEngine(facts, seed: 3).analyze(InsightScope.reports);
-    final trend = report.insights.firstWhere((item) => item.id == 'month-trend');
+    final trend = report.insights.firstWhere(
+      (item) => item.id == 'month-trend',
+    );
 
     expect(trend.tone, InsightTone.warning);
     expect(trend.detail, contains('600'));
@@ -176,17 +186,20 @@ void main() {
   });
 
   test('a category spike is reported with its name', () {
-    final facts = _facts(expenses: [
-      for (var day = 1; day <= 10; day++)
-        _expense(100, DateTime(2026, 10, day), category: 'ترفيه'),
-      for (var day = 1; day <= 10; day++)
-        _expense(20, DateTime(2026, 9, day), category: 'ترفيه'),
-      _expense(50, DateTime(2026, 10, 2), category: 'طعام'),
-    ]);
+    final facts = _facts(
+      expenses: [
+        for (var day = 1; day <= 10; day++)
+          _expense(100, DateTime(2026, 10, day), category: 'ترفيه'),
+        for (var day = 1; day <= 10; day++)
+          _expense(20, DateTime(2026, 9, day), category: 'ترفيه'),
+        _expense(50, DateTime(2026, 10, 2), category: 'طعام'),
+      ],
+    );
 
     final report = InsightEngine(facts, seed: 2).analyze(InsightScope.reports);
-    final spike =
-        report.insights.firstWhere((item) => item.id == 'category-spike');
+    final spike = report.insights.firstWhere(
+      (item) => item.id == 'category-spike',
+    );
 
     expect(spike.title + spike.body, contains('ترفيه'));
   });
@@ -209,7 +222,10 @@ void main() {
   });
 
   test('savings scope suggests a goal when there is none', () {
-    final report = InsightEngine(_facts(), seed: 4).analyze(InsightScope.savings);
+    final report = InsightEngine(
+      _facts(),
+      seed: 4,
+    ).analyze(InsightScope.savings);
     final noGoals = report.insights.firstWhere((item) => item.id == 'no-goals');
 
     expect(noGoals.action, InsightAction.createGoal);
@@ -225,9 +241,10 @@ void main() {
       plannedMonths: 3,
     );
     final report = InsightEngine(
-      _facts(goals: [goal], transfers: [
-        _transfer(100, DateTime(2026, 9, 25), goalId: 'g1'),
-      ]),
+      _facts(
+        goals: [goal],
+        transfers: [_transfer(100, DateTime(2026, 9, 25), goalId: 'g1')],
+      ),
       seed: 9,
     ).analyze(InsightScope.savings);
 
@@ -236,10 +253,12 @@ void main() {
 
   test('frequent withdrawals are flagged', () {
     final report = InsightEngine(
-      _facts(transfers: [
-        _transfer(50, DateTime(2026, 10, 5), out: true),
-        _transfer(50, DateTime(2026, 10, 12), out: true),
-      ]),
+      _facts(
+        transfers: [
+          _transfer(50, DateTime(2026, 10, 5), out: true),
+          _transfer(50, DateTime(2026, 10, 12), out: true),
+        ],
+      ),
       seed: 1,
     ).analyze(InsightScope.savings);
 
@@ -247,10 +266,12 @@ void main() {
   });
 
   test('saving suggestion stays within income minus spending', () {
-    final facts = _facts(expenses: [
-      for (var month = 7; month <= 9; month++)
-        _expense(600, DateTime(2026, month, 10)),
-    ]);
+    final facts = _facts(
+      expenses: [
+        for (var month = 7; month <= 9; month++)
+          _expense(600, DateTime(2026, month, 10)),
+      ],
+    );
     final amount = InsightEngine(facts).suggestedMonthlySaving();
 
     expect(amount, isNotNull);
@@ -262,7 +283,8 @@ void main() {
     final facts = _facts(
       streak: 9,
       expenses: [
-        for (var day = 1; day <= 20; day++) _expense(20, DateTime(2026, 10, day)),
+        for (var day = 1; day <= 20; day++)
+          _expense(20, DateTime(2026, 10, day)),
       ],
     );
     final report = InsightEngine(facts, seed: 1).analyze(InsightScope.profile);
@@ -280,12 +302,14 @@ void main() {
   });
 
   test('different seeds word the same findings differently', () {
-    final facts = _facts(expenses: [
-      for (var day = 1; day <= 20; day++)
-        _expense(30, DateTime(2026, 10, day, 10)),
-      for (var day = 1; day <= 20; day++)
-        _expense(15, DateTime(2026, 9, day, 10)),
-    ]);
+    final facts = _facts(
+      expenses: [
+        for (var day = 1; day <= 20; day++)
+          _expense(30, DateTime(2026, 10, day, 10)),
+        for (var day = 1; day <= 20; day++)
+          _expense(15, DateTime(2026, 9, day, 10)),
+      ],
+    );
 
     final texts = {
       for (var seed = 0; seed < 12; seed++)
@@ -297,11 +321,9 @@ void main() {
     };
     final findings = {
       for (var seed = 0; seed < 12; seed++)
-        (_ids_(InsightEngine(facts, seed: seed).analyze(InsightScope.reports))
-                .difference({'tip'})
-                .toList()
-              ..sort())
-            .join(','),
+        (_ids_(
+          InsightEngine(facts, seed: seed).analyze(InsightScope.reports),
+        ).difference({'tip'}).toList()..sort()).join(','),
     };
 
     expect(texts.length, greaterThan(5));

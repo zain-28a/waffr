@@ -62,17 +62,19 @@ class SmartFactsLoader {
   }
 
   static double _months(GoalDurationPreset preset) => switch (preset) {
-        GoalDurationPreset.week => 0.25,
-        GoalDurationPreset.month => 1,
-        GoalDurationPreset.threeMonths => 3,
-        GoalDurationPreset.sixMonths => 6,
-        GoalDurationPreset.year => 12,
-      };
+    GoalDurationPreset.week => 0.25,
+    GoalDurationPreset.month => 1,
+    GoalDurationPreset.threeMonths => 3,
+    GoalDurationPreset.sixMonths => 6,
+    GoalDurationPreset.year => 12,
+  };
 
   static ObligationFact _obligation(RecurringExpense item) => ObligationFact(
-        name: item.note?.trim().isNotEmpty == true ? item.note!.trim() : item.category,
-        amount: item.amount,
-        monthlyEquivalent: item.monthlyEquivalent,
-        nextDueAt: item.nextDueAt,
-      );
+    name: item.note?.trim().isNotEmpty == true
+        ? item.note!.trim()
+        : item.category,
+    amount: item.amount,
+    monthlyEquivalent: item.monthlyEquivalent,
+    nextDueAt: item.nextDueAt,
+  );
 }

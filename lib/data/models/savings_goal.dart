@@ -126,8 +126,7 @@ class SavingsGoal {
       isPeriodic: isPeriodic ?? this.isPeriodic,
       durationCount: durationCount ?? this.durationCount,
       priority: priority ?? this.priority,
-      updatedAt: updatedAt ??
-          (touch ? DateTime.now().toUtc() : this.updatedAt),
+      updatedAt: updatedAt ?? (touch ? DateTime.now().toUtc() : this.updatedAt),
     );
   }
 
@@ -175,9 +174,8 @@ class SavingsGoal {
             (DateTime.tryParse(decoded['createdAt']?.toString() ?? '') ??
                     DateTime.now())
                 .toLocal(),
-        completedAt: DateTime.tryParse(
-          decoded['completedAt']?.toString() ?? '',
-        )?.toLocal(),
+        completedAt: DateTime.tryParse(decoded['completedAt']?.toString() ?? '')
+            ?.toLocal(),
         completedAmount: (decoded['completedAmount'] as num?)?.toDouble(),
         duration: _parseDuration(decoded['duration']?.toString()),
         allocatePercent: (decoded['allocatePercent'] as num?)?.toDouble(),

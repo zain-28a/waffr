@@ -159,8 +159,7 @@ class WaffrTransaction {
     };
   }
 
-  static RecurringFrequency frequencyFrom(String? raw) =>
-      _parseFrequency(raw);
+  static RecurringFrequency frequencyFrom(String? raw) => _parseFrequency(raw);
 
   static SavingsTransferKind? transferKindFrom(String? raw) =>
       _parseTransferKind(raw);

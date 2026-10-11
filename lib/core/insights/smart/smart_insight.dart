@@ -8,16 +8,16 @@ enum InsightScope { reports, savings, profile }
 
 extension InsightScopeLabel on InsightScope {
   String get label => switch (this) {
-        InsightScope.reports => 'المصاريف',
-        InsightScope.savings => 'التوفير',
-        InsightScope.profile => 'نظرة شاملة',
-      };
+    InsightScope.reports => 'المصاريف',
+    InsightScope.savings => 'التوفير',
+    InsightScope.profile => 'نظرة شاملة',
+  };
 
   IconData get icon => switch (this) {
-        InsightScope.reports => Icons.bar_chart_rounded,
-        InsightScope.savings => Icons.savings_outlined,
-        InsightScope.profile => Icons.person_outline_rounded,
-      };
+    InsightScope.reports => Icons.bar_chart_rounded,
+    InsightScope.savings => Icons.savings_outlined,
+    InsightScope.profile => Icons.person_outline_rounded,
+  };
 }
 
 enum InsightTone { warning, positive, tip, info }
@@ -51,14 +51,14 @@ enum InsightAction {
 
 extension InsightActionLabel on InsightAction {
   String get label => switch (this) {
-        InsightAction.addExpense => 'سجّل مصروف',
-        InsightAction.addIncome => 'أضف دخل',
-        InsightAction.createGoal => 'أنشئ هدف',
-        InsightAction.manualSave => 'وفّر الآن',
-        InsightAction.obligations => 'افتح الالتزامات',
-        InsightAction.shoppingList => 'قائمة المشتريات',
-        InsightAction.expenseHistory => 'سجل المصروفات',
-      };
+    InsightAction.addExpense => 'سجّل مصروف',
+    InsightAction.addIncome => 'أضف دخل',
+    InsightAction.createGoal => 'أنشئ هدف',
+    InsightAction.manualSave => 'وفّر الآن',
+    InsightAction.obligations => 'افتح الالتزامات',
+    InsightAction.shoppingList => 'قائمة المشتريات',
+    InsightAction.expenseHistory => 'سجل المصروفات',
+  };
 }
 
 class SmartInsight {

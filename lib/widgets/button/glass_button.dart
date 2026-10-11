@@ -143,12 +143,7 @@ class GlassIconButton extends StatelessWidget {
                 scale: Tween<double>(begin: 0.7, end: 1).animate(animation),
                 child: FadeTransition(opacity: animation, child: child),
               ),
-              child: Icon(
-                icon,
-                key: ValueKey(icon),
-                size: 23,
-                color: color,
-              ),
+              child: Icon(icon, key: ValueKey(icon), size: 23, color: color),
             ),
             PositionedDirectional(
               top: 9,

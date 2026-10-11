@@ -118,10 +118,10 @@ class RecurringExpense {
       enabled: enabled ?? this.enabled,
       requiresConfirmation: requiresConfirmation ?? this.requiresConfirmation,
       remindAt: clearReminder ? null : (remindAt ?? this.remindAt),
-      remindOnIncome:
-          clearReminder ? false : (remindOnIncome ?? this.remindOnIncome),
-      updatedAt: updatedAt ??
-          (touch ? DateTime.now().toUtc() : this.updatedAt),
+      remindOnIncome: clearReminder
+          ? false
+          : (remindOnIncome ?? this.remindOnIncome),
+      updatedAt: updatedAt ?? (touch ? DateTime.now().toUtc() : this.updatedAt),
     );
   }
 
@@ -184,9 +184,8 @@ class RecurringExpense {
         nextDueAt: nextDueAt,
         enabled: decoded['enabled'] != false,
         requiresConfirmation: decoded['requiresConfirmation'] == true,
-        remindAt: DateTime.tryParse(
-          decoded['remindAt']?.toString() ?? '',
-        )?.toLocal(),
+        remindAt: DateTime.tryParse(decoded['remindAt']?.toString() ?? '')
+            ?.toLocal(),
         remindOnIncome: decoded['remindOnIncome'] == true,
         updatedAt: DateTime.tryParse(decoded['updatedAt']?.toString() ?? ''),
       );

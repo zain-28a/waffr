@@ -52,10 +52,12 @@ class _CurrenciesSheetState extends State<_CurrenciesSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return AnimatedBuilder(
       animation: _store,
@@ -113,8 +115,9 @@ class _AddCurrencySheet extends StatelessWidget {
     final store = CurrencyStore.instance;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
     return AnimatedBuilder(
       animation: store,
@@ -237,7 +240,8 @@ class _CurrencyTile extends StatelessWidget {
                 child: Text(
                   item.symbol,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     color: accent,
@@ -252,7 +256,8 @@ class _CurrencyTile extends StatelessWidget {
                     Text(
                       item.arabicName,
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
                         color: textPrimary,
@@ -261,7 +266,8 @@ class _CurrencyTile extends StatelessWidget {
                     Text(
                       active ? '${item.code} · نشطة' : item.code,
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
                         fontSize: 12,
                         color: active ? accent : textSecondary,
                       ),

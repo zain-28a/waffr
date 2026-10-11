@@ -55,8 +55,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Future<void> _refreshDevicePermission() async {
-    final allowed =
-        await SystemNotifications.instance.deviceNotificationsEnabled();
+    final allowed = await SystemNotifications.instance
+        .deviceNotificationsEnabled();
     if (mounted) setState(() => _deviceAllowed = allowed);
   }
 
@@ -68,8 +68,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     await showAppInfoDialog(
       context,
       title: 'إشعارات الجهاز متوقفة',
-      message:
-          'لم يعد الهاتف يعرض طلب الإذن. لتفعيل الإشعارات افتح إعدادات الهاتف، ثم التطبيقات، ثم وفّر، ثم الإشعارات، وفعّلها.',
+      message: 'لم يعد الهاتف يعرض طلب الإذن. لتفعيل الإشعارات افتح إعدادات الهاتف، ثم التطبيقات، ثم وفّر، ثم الإشعارات، وفعّلها.',
     );
   }
 
@@ -98,8 +97,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     final confirmed = await showAppConfirmDialog(
       context,
       title: 'مسح سجل الإشعارات',
-      message:
-          'سيتم حذف سجل الإشعارات فقط. لن يتأثر رصيدك أو مبالغك الموفَّرة أو أهدافك، ولن يتغيّر إعداد الكتم.',
+      message: 'سيتم حذف سجل الإشعارات فقط. لن يتأثر رصيدك أو مبالغك الموفَّرة أو أهدافك، ولن يتغيّر إعداد الكتم.',
       confirmLabel: 'مسح السجل',
       destructive: true,
     );
@@ -117,94 +115,100 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         top: false,
         child: Column(
           children: [
-            WaffrBackHeader(
-              title: 'الإشعارات',
-            ),
+            WaffrBackHeader(title: 'الإشعارات'),
             Expanded(
               child: AnimatedBuilder(
-      animation: _service,
-      builder: (context, _) {
-        final items = _service.notifications;
-        final groups = NotificationTimeGroup.from(items);
-        final hasUnread = _service.unreadCount > 0;
+                animation: _service,
+                builder: (context, _) {
+                  final items = _service.notifications;
+                  final groups = NotificationTimeGroup.from(items);
+                  final hasUnread = _service.unreadCount > 0;
 
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
-              child: Column(
-                children: [
-                  Row(
+                  return Column(
                     children: [
-                      const Spacer(),
-                      if (hasUnread)
-                        _HeaderAction(
-                          icon: Icons.done_all_rounded,
-                          tooltip: 'تعيين الكل كمقروء',
-                          onTap: _service.markAllRead,
-                        ),
-                      if (items.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        _HeaderAction(
-                          icon: Icons.delete_outline_rounded,
-                          tooltip: 'مسح السجل',
-                          onTap: _confirmClear,
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _MuteControl(
-                    muted: _service.isMuted,
-                    onTap: _service.toggleMuted,
-                  ),
-                  // The permission banner comes and goes as the phone
-                  // setting changes; grow and shrink instead of jumping.
-                  AnimatedSize(
-                    duration: AppMotion.of(context, AppMotion.medium),
-                    curve: AppMotion.enter,
-                    alignment: Alignment.topCenter,
-                    child: _deviceAllowed == false
-                        ? Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: AppListTile(
-                              icon: Icons.notifications_off_outlined,
-                              title: 'إشعارات الجهاز متوقفة',
-                              subtitle:
-                                  'اسمح لوفّر بإرسال التنبيهات إلى هاتفك',
-                              status: 'سماح',
-                              statusOn: true,
-                              onTap: _allowDeviceNotifications,
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                const Spacer(),
+                                if (hasUnread)
+                                  _HeaderAction(
+                                    icon: Icons.done_all_rounded,
+                                    tooltip: 'تعيين الكل كمقروء',
+                                    onTap: _service.markAllRead,
+                                  ),
+                                if (items.isNotEmpty) ...[
+                                  const SizedBox(width: 6),
+                                  _HeaderAction(
+                                    icon: Icons.delete_outline_rounded,
+                                    tooltip: 'مسح السجل',
+                                    onTap: _confirmClear,
+                                  ),
+                                ],
+                              ],
                             ),
-                          )
-                        : const SizedBox(width: double.infinity),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: items.isEmpty
-                  ? const _EmptyNotifications()
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(18, 8, 18, 26),
-                      itemCount: groups.length,
-                      itemBuilder: (context, index) {
-                        final view = _NotificationGroupView(
-                          group: groups[index],
-                          onOpen: _open,
-                          onDismiss: _dismiss,
-                        );
-                        // Only the first screenful animates in.
-                        return index < 6
-                            ? Reveal(index: index, play: _playEntrance, child: view)
-                            : view;
-                      },
-                    ),
-            ),
-          ],
-        );
-      },
+                            const SizedBox(height: 12),
+                            _MuteControl(
+                              muted: _service.isMuted,
+                              onTap: _service.toggleMuted,
+                            ),
+                            // The permission banner comes and goes as the phone
+                            // setting changes; grow and shrink instead of jumping.
+                            AnimatedSize(
+                              duration: AppMotion.of(context, AppMotion.medium),
+                              curve: AppMotion.enter,
+                              alignment: Alignment.topCenter,
+                              child: _deviceAllowed == false
+                                  ? Padding(
+                                      padding: const EdgeInsets.only(top: 10),
+                                      child: AppListTile(
+                                        icon: Icons.notifications_off_outlined,
+                                        title: 'إشعارات الجهاز متوقفة',
+                                        subtitle: 'اسمح لوفّر بإرسال التنبيهات إلى هاتفك',
+                                        status: 'سماح',
+                                        statusOn: true,
+                                        onTap: _allowDeviceNotifications,
+                                      ),
+                                    )
+                                  : const SizedBox(width: double.infinity),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: items.isEmpty
+                            ? const _EmptyNotifications()
+                            : ListView.builder(
+                                padding: const EdgeInsets.fromLTRB(
+                                  18,
+                                  8,
+                                  18,
+                                  26,
+                                ),
+                                itemCount: groups.length,
+                                itemBuilder: (context, index) {
+                                  final view = _NotificationGroupView(
+                                    group: groups[index],
+                                    onOpen: _open,
+                                    onDismiss: _dismiss,
+                                  );
+                                  // Only the first screenful animates in.
+                                  return index < 6
+                                      ? Reveal(
+                                          index: index,
+                                          play: _playEntrance,
+                                          child: view,
+                                        )
+                                      : view;
+                                },
+                              ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -219,10 +223,7 @@ class _MuteControl extends StatelessWidget {
   final bool muted;
   final VoidCallback onTap;
 
-  const _MuteControl({
-    required this.muted,
-    required this.onTap,
-  });
+  const _MuteControl({required this.muted, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -264,7 +265,8 @@ class _MuteControl extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: colors.textPrimary,
@@ -277,7 +279,8 @@ class _MuteControl extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
                         fontSize: 12,
                         color: colors.textSecondary,
                       ),
@@ -326,7 +329,11 @@ class _HeaderAction extends StatelessWidget {
           child: SizedBox(
             width: 38,
             height: 38,
-            child: Icon(icon, size: 20, color: colors.textPrimary.withValues(alpha: 0.7)),
+            child: Icon(
+              icon,
+              size: 20,
+              color: colors.textPrimary.withValues(alpha: 0.7),
+            ),
           ),
         ),
       ),
@@ -343,7 +350,8 @@ class _EmptyNotifications extends StatelessWidget {
       child: AppEmptyState(
         icon: Icons.notifications_none_rounded,
         title: 'لا توجد إشعارات بعد',
-        message: 'ستظهر هنا تنبيهات الرصيد والأهداف والتوفير والالتزامات عند حدوثها',
+        message:
+            'ستظهر هنا تنبيهات الرصيد والأهداف والتوفير والالتزامات عند حدوثها',
       ),
     );
   }
@@ -375,7 +383,8 @@ class _NotificationGroupView extends StatelessWidget {
             child: Text(
               group.label,
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
                 color: colors.textSecondary,
@@ -432,20 +441,20 @@ class _NotificationTile extends StatelessWidget {
   final AppNotification notification;
   final VoidCallback onTap;
 
-  const _NotificationTile({
-    required this.notification,
-    required this.onTap,
-  });
+  const _NotificationTile({required this.notification, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final colors = _NotificationColors.of(context);
     final unread = !notification.isRead;
     final icon = _iconFor(notification.type);
-    final important = notification.priority == NotificationPriority.warning ||
+    final important =
+        notification.priority == NotificationPriority.warning ||
         notification.priority == NotificationPriority.important ||
         notification.priority == NotificationPriority.success;
-    final iconColor = unread || important ? colors.accent : colors.textSecondary;
+    final iconColor = unread || important
+        ? colors.accent
+        : colors.textSecondary;
 
     return Material(
       color: Colors.transparent,
@@ -467,11 +476,7 @@ class _NotificationTile extends StatelessWidget {
                   color: colors.accent.withValues(alpha: unread ? 0.16 : 0.08),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: iconColor,
-                ),
+                child: Icon(icon, size: 20, color: iconColor),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -497,9 +502,12 @@ class _NotificationTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                              fontFamily: 'Outfit',
+                              fontFamilyFallback: ['Tajawal'],
                               fontSize: 14.5,
-                              fontWeight: unread ? FontWeight.w800 : FontWeight.w700,
+                              fontWeight: unread
+                                  ? FontWeight.w800
+                                  : FontWeight.w700,
                               color: colors.textPrimary.withValues(
                                 alpha: unread ? 1 : 0.78,
                               ),
@@ -510,7 +518,8 @@ class _NotificationTile extends StatelessWidget {
                         Text(
                           formatTime(notification.createdAt),
                           style: TextStyle(
-                            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                            fontFamily: 'Outfit',
+                            fontFamilyFallback: ['Tajawal'],
                             fontSize: 11.5,
                             color: colors.textSecondary,
                           ),
@@ -523,7 +532,8 @@ class _NotificationTile extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
                         fontSize: 12.5,
                         color: colors.textSecondary,
                       ),
@@ -532,7 +542,8 @@ class _NotificationTile extends StatelessWidget {
                     Text(
                       formatDate(notification.createdAt),
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
                         fontSize: 11,
                         color: colors.textSecondary.withValues(alpha: 0.8),
                       ),
@@ -555,7 +566,8 @@ class _NotificationTile extends StatelessWidget {
       NotificationType.goalReached => Icons.emoji_events_outlined,
       NotificationType.goalProgress => Icons.flag_outlined,
       NotificationType.savingsTransferred => Icons.savings_outlined,
-      NotificationType.recurringPeriodCompleted => Icons.event_available_outlined,
+      NotificationType.recurringPeriodCompleted =>
+        Icons.event_available_outlined,
       NotificationType.recurringExpenseBlocked => Icons.block_rounded,
       NotificationType.recurringExpenseApplied => Icons.event_repeat_rounded,
       NotificationType.recurringExpenseUpcoming => Icons.event_busy_outlined,
@@ -583,10 +595,12 @@ class _NotificationColors {
     return _NotificationColors(
       surface: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-      textPrimary:
-          isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-      textSecondary:
-          isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+      textPrimary: isDark
+          ? AppColors.darkTextPrimary
+          : AppColors.lightTextPrimary,
+      textSecondary: isDark
+          ? AppColors.darkTextSecondary
+          : AppColors.lightTextSecondary,
     );
   }
 }

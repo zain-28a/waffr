@@ -80,7 +80,8 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                         Text(
                           'قائمة المشتريات',
                           style: TextStyle(
-                            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                            fontFamily: 'Outfit',
+                            fontFamilyFallback: ['Tajawal'],
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: colors.textPrimary,
@@ -91,7 +92,8 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                               ? 'أضف ما تحتاج إلى شرائه'
                               : itemsCountLabel(_store.items.length),
                           style: TextStyle(
-                            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                            fontFamily: 'Outfit',
+                            fontFamilyFallback: ['Tajawal'],
                             fontSize: 11.5,
                             color: colors.textSecondary,
                           ),
@@ -113,7 +115,8 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                       '+ ${itemsCountLabel(_store.items.length - preview.length, other: true)}',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: colors.accent,
@@ -158,7 +161,8 @@ class _PreviewItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
                 fontSize: 12.5,
                 color: item.isPurchased
                     ? colors.textSecondary
@@ -324,7 +328,10 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
                                 color: AppColors.onAccentOf(context),
                               ),
                             )
-                          : Icon(Icons.add_rounded, color: AppColors.onAccentOf(context)),
+                          : Icon(
+                              Icons.add_rounded,
+                              color: AppColors.onAccentOf(context),
+                            ),
                     ),
                   ),
                 ),
@@ -350,7 +357,8 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
                   label: Text(
                     'إفراغ القائمة',
                     style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: ['Tajawal'],
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: colors.textSecondary,
@@ -421,7 +429,8 @@ class _ShoppingItemTile extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: item.isPurchased
@@ -437,7 +446,8 @@ class _ShoppingItemTile extends StatelessWidget {
               Text(
                 item.isPurchased ? 'تم الشراء' : 'تسجيل الشراء',
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: 10.5,
                   color: item.isPurchased
                       ? colors.textSecondary
@@ -481,8 +491,9 @@ class _RenameShoppingItemDialog extends StatefulWidget {
 }
 
 class _RenameShoppingItemDialogState extends State<_RenameShoppingItemDialog> {
-  late final TextEditingController _controller =
-      TextEditingController(text: widget.initialName);
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialName,
+  );
 
   @override
   void dispose() {
@@ -558,8 +569,7 @@ class _PurchaseShoppingItemSheetState
   bool get _exceedsBalance =>
       _amount > TransactionStore.instance.balanceFor(_currencyCode);
 
-  bool get _isValid =>
-      _amount > 0 && _amount <= 999999999 && !_exceedsBalance;
+  bool get _isValid => _amount > 0 && _amount <= 999999999 && !_exceedsBalance;
 
   @override
   void initState() {

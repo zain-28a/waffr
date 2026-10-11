@@ -8,18 +8,17 @@ void main() {
     ({String name, double target, double saved})? goal,
     List<({String name, double amount, DateTime due})> obligations = const [],
     int streak = 5,
-  }) =>
-      buildHomeWidgetData(
-        now: now,
-        symbol: 'ل.س',
-        balance: 400,
-        spent: 600,
-        maxBalance: 1000,
-        remainingRatio: 0.4,
-        goal: goal,
-        obligations: obligations,
-        streak: streak,
-      );
+  }) => buildHomeWidgetData(
+    now: now,
+    symbol: 'ل.س',
+    balance: 400,
+    spent: 600,
+    maxBalance: 1000,
+    remainingRatio: 0.4,
+    goal: goal,
+    obligations: obligations,
+    streak: streak,
+  );
 
   test('balance text and remaining percent', () {
     final data = build();
@@ -37,23 +36,28 @@ void main() {
   });
 
   test('nearest obligation wins and its date reads naturally', () {
-    final data = build(obligations: [
-      (name: 'إنترنت', amount: 50, due: DateTime(2026, 10, 25)),
-      (name: 'إيجار', amount: 300, due: DateTime(2026, 10, 21)),
-    ]);
+    final data = build(
+      obligations: [
+        (name: 'إنترنت', amount: 50, due: DateTime(2026, 10, 25)),
+        (name: 'إيجار', amount: 300, due: DateTime(2026, 10, 21)),
+      ],
+    );
 
     expect(data['obligation_name'], 'إيجار');
     expect(data['obligation_when'], 'غداً');
     expect(
-      build(obligations: [
-        (name: 'x', amount: 1, due: DateTime(2026, 10, 25)),
-      ])['obligation_when'],
+      build(
+        obligations: [(name: 'x', amount: 1, due: DateTime(2026, 10, 25))],
+      )['obligation_when'],
       'بعد 5 أيام',
     );
   });
 
   test('goal percent and streak label agree with the number', () {
-    final data = build(goal: (name: 'سفر', target: 1000, saved: 250), streak: 12);
+    final data = build(
+      goal: (name: 'سفر', target: 1000, saved: 250),
+      streak: 12,
+    );
 
     expect(data['goal_percent'], '25');
     expect(data['goal_empty'], false);

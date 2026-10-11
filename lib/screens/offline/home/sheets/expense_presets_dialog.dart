@@ -65,7 +65,8 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
     final confirmed = await showAppConfirmDialog(
       context,
       title: 'حذف المصروف المحفوظ',
-      message: 'سيُحذف «${_titleOf(preset)}» من المصروفات المحفوظة. '
+      message:
+          'سيُحذف «${_titleOf(preset)}» من المصروفات المحفوظة. '
           'المصروفات المسجّلة لا تتأثر.',
       confirmLabel: 'حذف',
       destructive: true,
@@ -119,10 +120,7 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const SheetInfoButton(
-                  title: _helpTitle,
-                  message: _helpMessage,
-                ),
+                const SheetInfoButton(title: _helpTitle, message: _helpMessage),
               ],
             ),
             const SizedBox(height: 14),
@@ -139,19 +137,19 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
                     itemCount: presets.length,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 6,
-                      crossAxisSpacing: 6,
-                      childAspectRatio: 0.92,
-                    ),
+                          crossAxisCount: 3,
+                          mainAxisSpacing: 6,
+                          crossAxisSpacing: 6,
+                          childAspectRatio: 0.92,
+                        ),
                     itemBuilder: (context, index) {
                       final preset = presets[index];
                       return _PresetTile(
                         key: ValueKey(preset.id),
                         preset: preset,
-                        onTap: () => Navigator.of(context).pop(
-                          ExpensePresetSelected(preset),
-                        ),
+                        onTap: () =>
+                            Navigator.of(context)
+                                .pop(ExpensePresetSelected(preset)),
                         onLongPress: () => _delete(preset),
                       );
                     },
@@ -240,10 +238,12 @@ class _PresetTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final category = categoryFor(preset.category);
     final note = preset.note?.trim() ?? '';
 

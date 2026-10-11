@@ -70,8 +70,7 @@ class _AccountScreenState extends State<AccountScreen> {
     final confirm = await showAppConfirmDialog(
       context,
       title: 'تسجيل الخروج',
-      message:
-          'سيتم تسجيل الخروج من حسابك على هذا الجهاز. تبقى بياناتك محفوظة هنا، وتعود إلى شاشة الدخول حيث يمكنك المتابعة كضيف أو تسجيل الدخول بحساب آخر.',
+      message: 'سيتم تسجيل الخروج من حسابك على هذا الجهاز. تبقى بياناتك محفوظة هنا، وتعود إلى شاشة الدخول حيث يمكنك المتابعة كضيف أو تسجيل الدخول بحساب آخر.',
       confirmLabel: 'تسجيل الخروج',
     );
 
@@ -92,8 +91,7 @@ class _AccountScreenState extends State<AccountScreen> {
     final confirm = await showAppConfirmDialog(
       context,
       title: 'حذف الحساب',
-      message:
-          'سيتم حذف حسابك وكل بياناته من الخادم ومن هذا الجهاز ومن النسخة الاحتياطية إن وُجدت. لا يمكن التراجع عن هذا الإجراء.',
+      message: 'سيتم حذف حسابك وكل بياناته من الخادم ومن هذا الجهاز ومن النسخة الاحتياطية إن وُجدت. لا يمكن التراجع عن هذا الإجراء.',
       confirmLabel: 'حذف الحساب',
       destructive: true,
     );
@@ -119,26 +117,22 @@ class _AccountScreenState extends State<AccountScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: WaffrBackHeader(
-        title: 'الحساب',
-      ),
+      appBar: WaffrBackHeader(title: 'الحساب'),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: staggered([
           Center(
-            child: ProfileAvatar(
-              accent: accent,
-              radius: 42,
-              signedIn: true,
-            ),
+            child: ProfileAvatar(accent: accent, radius: 42, signedIn: true),
           ),
           const SizedBox(height: 18),
           Text(
@@ -176,7 +170,11 @@ class _AccountScreenState extends State<AccountScreen> {
               onPressed: _savingName ? null : _saveName,
               child: Text(
                 _savingName ? 'جارٍ الحفظ...' : 'حفظ الاسم',
-                style: TextStyle(color: accent, fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
+                style: TextStyle(
+                  color: accent,
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
+                ),
               ),
             ),
           ),

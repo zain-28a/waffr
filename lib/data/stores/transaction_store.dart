@@ -85,8 +85,9 @@ class TransactionStore extends ChangeNotifier {
   // right away instead of keeping it across an await.
   List<WaffrTransaction> get transactions => _transactionsView;
 
-  late final List<WaffrTransaction> _transactionsView =
-      UnmodifiableListView(_transactions);
+  late final List<WaffrTransaction> _transactionsView = UnmodifiableListView(
+    _transactions,
+  );
 
   List<WaffrTransaction> get expenses => expensesFor(_activeCode);
 
@@ -154,7 +155,8 @@ class TransactionStore extends ChangeNotifier {
 
   List<SavingsGoal> completedGoalsFor(String currencyCode) {
     final code = Currencies.normalize(currencyCode);
-    return _goals.where((goal) => goal.isCompleted && goal.currencyCode == code)
+    return _goals
+        .where((goal) => goal.isCompleted && goal.currencyCode == code)
         .toList(growable: false)
       ..sort(
         (a, b) => (b.completedAt ?? b.createdAt).compareTo(
@@ -216,9 +218,8 @@ class TransactionStore extends ChangeNotifier {
       return true;
     }
 
-    return incomesFor(currencyCode).any(
-      (item) => item.frequency == RecurringFrequency.monthly,
-    );
+    return incomesFor(currencyCode)
+        .any((item) => item.frequency == RecurringFrequency.monthly);
   }
 
   // Settings override only — independent of whether income rows exist.
@@ -247,9 +248,8 @@ class TransactionStore extends ChangeNotifier {
       return true;
     }
 
-    return incomesFor(currencyCode).any(
-      (item) => item.frequency == RecurringFrequency.weekly,
-    );
+    return incomesFor(currencyCode)
+        .any((item) => item.frequency == RecurringFrequency.weekly);
   }
 
   bool get hasRecurringIncome => hasMonthlyIncome || hasWeeklyIncome;
@@ -286,22 +286,22 @@ class TransactionStore extends ChangeNotifier {
     final code = Currencies.normalize(currencyCode);
     // Monthly income also restarts the cycle on the 1st, so the month and
     // the income frequency are part of the cache key.
-    final key = '$code|${preferredIncomeFrequencyFor(code).name}|'
+    final key =
+        '$code|${preferredIncomeFrequencyFor(code).name}|'
         '${CalendarPeriod.monthStart(deviceNow()).millisecondsSinceEpoch}';
     if (_cycleStarts.containsKey(key)) return _cycleStarts[key];
     return _cycleStarts[key] = _computeCycleStart(code);
   }
 
   DateTime? _computeCycleStart(String code) {
-    final rows = _transactions
-        .where((item) => item.currencyCode == code)
-        .toList()
-      ..sort((a, b) {
-        final byTime = a.dateTime.compareTo(b.dateTime);
-        if (byTime != 0) return byTime;
-        // Same moment: the carry-over transfer comes before its income.
-        return (a.isIncome ? 1 : 0).compareTo(b.isIncome ? 1 : 0);
-      });
+    final rows =
+        _transactions.where((item) => item.currencyCode == code).toList()
+          ..sort((a, b) {
+            final byTime = a.dateTime.compareTo(b.dateTime);
+            if (byTime != 0) return byTime;
+            // Same moment: the carry-over transfer comes before its income.
+            return (a.isIncome ? 1 : 0).compareTo(b.isIncome ? 1 : 0);
+          });
 
     DateTime? start;
     var running = 0.0;
@@ -320,7 +320,8 @@ class TransactionStore extends ChangeNotifier {
         running += back;
         saved -= back;
       }
-      if (_isCarryOver(item) && (start == null || item.dateTime.isAfter(start))) {
+      if (_isCarryOver(item) &&
+          (start == null || item.dateTime.isAfter(start))) {
         start = item.dateTime;
       }
     }
@@ -343,7 +344,9 @@ class TransactionStore extends ChangeNotifier {
     final start = cycleStartFor(code);
     var total = 0.0;
     for (final item in _transactions) {
-      if (item.currencyCode == code && item.isExpense && _inCycle(item, start)) {
+      if (item.currencyCode == code &&
+          item.isExpense &&
+          _inCycle(item, start)) {
         total += item.amount;
       }
     }
@@ -425,8 +428,11 @@ class TransactionStore extends ChangeNotifier {
     String? currencyCode,
   }) {
     final code = Currencies.normalize(currencyCode ?? _activeCode);
-    return _savingsNets[(code, start, end)] ??=
-        _computeSavingsNet(code, start, end);
+    return _savingsNets[(code, start, end)] ??= _computeSavingsNet(
+      code,
+      start,
+      end,
+    );
   }
 
   double _computeSavingsNet(String code, DateTime start, DateTime end) {
@@ -498,10 +504,7 @@ class TransactionStore extends ChangeNotifier {
   }
 
   // Income used for plans: settings override, else current/previous period, else calendar sum.
-  double referenceIncome(
-    RecurringFrequency frequency, {
-    String? currencyCode,
-  }) {
+  double referenceIncome(RecurringFrequency frequency, {String? currencyCode}) {
     final code = Currencies.normalize(currencyCode ?? _activeCode);
     final override = _overrideFor(frequency, code);
     if (override != null && override > 0) {
@@ -701,7 +704,10 @@ class TransactionStore extends ChangeNotifier {
       return false;
     }
 
-    _clearOverride(frequency, Currencies.normalize(currencyCode ?? _activeCode));
+    _clearOverride(
+      frequency,
+      Currencies.normalize(currencyCode ?? _activeCode),
+    );
     await SyncDirty.mark(settings: true);
 
     final prefs = await AppPrefs.instance;
@@ -878,7 +884,10 @@ class TransactionStore extends ChangeNotifier {
   }
 
   // Moves money from savings back to operating balance.
-  Future<bool> withdrawFromSavings(double amount, {String? currencyCode}) async {
+  Future<bool> withdrawFromSavings(
+    double amount, {
+    String? currencyCode,
+  }) async {
     await ensureLoaded();
 
     final code = Currencies.normalize(currencyCode ?? _activeCode);
@@ -1956,7 +1965,9 @@ class TransactionStore extends ChangeNotifier {
     _weeklyIncomeByCurrency.removeWhere(
       (code, _) => code != defaultCurrencyCode,
     );
-    if (monthly != null) _monthlyIncomeByCurrency[defaultCurrencyCode] = monthly;
+    if (monthly != null) {
+      _monthlyIncomeByCurrency[defaultCurrencyCode] = monthly;
+    }
     if (weekly != null) _weeklyIncomeByCurrency[defaultCurrencyCode] = weekly;
     _applyIncomeOverridesJson(raw);
   }

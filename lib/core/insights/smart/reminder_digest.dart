@@ -52,13 +52,10 @@ class ReminderDigest {
 
   ReminderText? _obligation(DateTime fireAt) {
     final day = _day(fireAt);
-    final upcoming = facts.obligations
-        .where((item) {
-          final due = _day(item.nextDueAt).difference(day).inDays;
-          return due >= 0 && due <= 4;
-        })
-        .toList()
-      ..sort((a, b) => a.nextDueAt.compareTo(b.nextDueAt));
+    final upcoming = facts.obligations.where((item) {
+      final due = _day(item.nextDueAt).difference(day).inDays;
+      return due >= 0 && due <= 4;
+    }).toList()..sort((a, b) => a.nextDueAt.compareTo(b.nextDueAt));
     if (upcoming.isEmpty) return null;
     final next = upcoming.first;
     final name = Ar.quote(next.name);
@@ -100,14 +97,13 @@ class ReminderDigest {
     final count = Ar.payments.of(week.length);
     return (
       kind: 'payments',
-      title: _pick([
-        '$count خلال الأيام السبعة القادمة',
-        'أسبوع فيه $count مستحقة',
-      ].where((text) => week.length > 2 || text.startsWith(count)).toList()),
-      body: _pick([
-        'مجموعها ${_m(total)}.',
-        'بإجمالي ${_m(total)}.',
-      ]),
+      title: _pick(
+        [
+          '$count خلال الأيام السبعة القادمة',
+          'أسبوع فيه $count مستحقة',
+        ].where((text) => week.length > 2 || text.startsWith(count)).toList(),
+      ),
+      body: _pick(['مجموعها ${_m(total)}.', 'بإجمالي ${_m(total)}.']),
     );
   }
 
@@ -145,7 +141,10 @@ class ReminderDigest {
     final days = Ar.days.of(left);
     // Title and body are paired so neither repeats the other.
     final (title, body) = _pick([
-      ('متبقٍّ في رصيدك $balance', 'والدخل القادم بعد $days، أي نحو $perDay لكل يوم.'),
+      (
+        'متبقٍّ في رصيدك $balance',
+        'والدخل القادم بعد $days، أي نحو $perDay لكل يوم.',
+      ),
       ('رصيدك الحالي $balance', 'ما يعادل $perDay يومياً حتى الدخل القادم.'),
       ('الدخل القادم بعد $days', 'ورصيدك $balance، بمعدل $perDay لليوم.'),
     ]);
@@ -207,8 +206,9 @@ class ReminderDigest {
 
   ReminderText? _topShare() {
     if (facts.monthSpent <= 0 || facts.monthCategories.length < 2) return null;
-    final top = facts.monthCategories.entries
-        .reduce((a, b) => a.value >= b.value ? a : b);
+    final top = facts.monthCategories.entries.reduce(
+      (a, b) => a.value >= b.value ? a : b,
+    );
     final share = top.value / facts.monthSpent;
     if (share < 0.3) return null;
     final name = Ar.category(top.key);
@@ -276,7 +276,9 @@ class ReminderDigest {
     if (facts.monthSpent <= 0) return null;
     final top = facts.monthCategories.entries.isEmpty
         ? null
-        : facts.monthCategories.entries.reduce((a, b) => a.value >= b.value ? a : b);
+        : facts.monthCategories.entries.reduce(
+            (a, b) => a.value >= b.value ? a : b,
+          );
     return (
       kind: 'month',
       title: _pick([

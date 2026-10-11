@@ -14,9 +14,7 @@ bool mergeRemoteRecords<T>({
   required DateTime Function(T item) updatedOf,
 }) {
   var changed = false;
-  final byId = <String, T>{
-    for (final item in items) idOf(item): item,
-  };
+  final byId = <String, T>{for (final item in items) idOf(item): item};
 
   for (final tombstone in deletes) {
     final existing = byId[tombstone.clientId];
@@ -44,8 +42,7 @@ bool mergeRemoteRecords<T>({
     // those as changes re-saved every store and rebuilt every screen after
     // each sync.
     final existing = byId[id];
-    if (existing != null &&
-        !updatedOf(incoming).isAfter(updatedOf(existing))) {
+    if (existing != null && !updatedOf(incoming).isAfter(updatedOf(existing))) {
       continue;
     }
 

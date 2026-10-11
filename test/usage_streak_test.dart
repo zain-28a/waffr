@@ -20,7 +20,11 @@ void main() {
     final service = UsageStreakService.instance..resetCache();
 
     await service.recordToday(now: DateTime(2026, 9, 1, 9));
-    expect(service.takeIncrease(), isNull, reason: 'day one is not an increase');
+    expect(
+      service.takeIncrease(),
+      isNull,
+      reason: 'day one is not an increase',
+    );
 
     await service.recordToday(now: DateTime(2026, 9, 1, 20));
     expect(service.takeIncrease(), isNull, reason: 'same day again');

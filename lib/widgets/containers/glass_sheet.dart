@@ -30,8 +30,9 @@ Future<T?> showGlassSheet<T>({
     backgroundColor: Colors.transparent,
     barrierColor: kSheetBarrierColor,
     elevation: 0,
-    sheetAnimationStyle:
-        AppMotion.reduced(context) ? AnimationStyle.noAnimation : null,
+    sheetAnimationStyle: AppMotion.reduced(context)
+        ? AnimationStyle.noAnimation
+        : null,
     // The content is built once (inside a Builder child) so keyboard frames
     // only re-pad the sheet instead of rebuilding the whole form.
     builder: (context) => _GlassSheetShell(
@@ -46,18 +47,17 @@ class _GlassSheetShell extends StatelessWidget {
   final Widget child;
   final double? heightFactor;
 
-  const _GlassSheetShell({
-    required this.child,
-    this.heightFactor,
-  });
+  const _GlassSheetShell({required this.child, this.heightFactor});
 
   @override
   Widget build(BuildContext context) {
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final screenHeight = MediaQuery.sizeOf(context).height;
 
-    final maxSheetHeight =
-        (screenHeight - keyboard - 28).clamp(220.0, screenHeight);
+    final maxSheetHeight = (screenHeight - keyboard - 28).clamp(
+      220.0,
+      screenHeight,
+    );
 
     return Padding(
       padding: EdgeInsets.only(bottom: keyboard),
@@ -67,7 +67,10 @@ class _GlassSheetShell extends StatelessWidget {
               child: child,
             )
           : SizedBox(
-              height: (screenHeight * heightFactor!).clamp(220.0, maxSheetHeight),
+              height: (screenHeight * heightFactor!).clamp(
+                220.0,
+                maxSheetHeight,
+              ),
               child: child,
             ),
     );
@@ -168,8 +171,9 @@ class GlassSheetHeader extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return Column(
       children: [
@@ -197,7 +201,8 @@ class GlassSheetHeader extends StatelessWidget {
                       title,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: accent,
@@ -208,7 +213,8 @@ class GlassSheetHeader extends StatelessWidget {
                       subtitle,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
                         fontSize: 13,
                         color: textSecondary,
                       ),
@@ -244,18 +250,15 @@ class SheetCircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const SheetCircleButton({
-    super.key,
-    required this.icon,
-    required this.onTap,
-  });
+  const SheetCircleButton({super.key, required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
     return Material(
       color: sheetFieldColor(context),
@@ -294,8 +297,9 @@ class SheetFieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -305,29 +309,28 @@ class SheetFieldLabel extends StatelessWidget {
           Text(
             text,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
               color: textSecondary,
             ),
           ),
-          
+
           if (optional)
             Padding(
               padding: const EdgeInsetsDirectional.only(end: 6),
               child: Text(
                 ' (اختياري)',
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: 11,
                   color: textSecondary.withValues(alpha: 0.6),
                 ),
               ),
             ),
-          if (action != null) ...[
-            const SizedBox(width: 8),
-            action!,
-          ],
+          if (action != null) ...[const SizedBox(width: 8), action!],
         ],
       ),
     );
@@ -389,10 +392,12 @@ class SheetOptionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final destructiveColor = AppColors.destructiveOf(context);
     final tint = destructive ? destructiveColor : accent;
 
@@ -423,7 +428,8 @@ class SheetOptionTile extends StatelessWidget {
                     Text(
                       label,
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: const ['Tajawal'],
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
                         color: destructive ? destructiveColor : textPrimary,
@@ -434,7 +440,8 @@ class SheetOptionTile extends StatelessWidget {
                       Text(
                         hint!,
                         style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                          fontFamily: 'Outfit',
+                          fontFamilyFallback: const ['Tajawal'],
                           fontSize: 12,
                           color: textSecondary,
                         ),
@@ -543,7 +550,9 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
 
   /// Drops a scrollable list over the sheet, narrower than the sheet itself.
   void _showMenu(_AmountMenu menu) {
-    final anchorKey = menu == _AmountMenu.currency ? _currencyKey : _multiplierKey;
+    final anchorKey = menu == _AmountMenu.currency
+        ? _currencyKey
+        : _multiplierKey;
     final anchor = anchorKey.currentContext?.findRenderObject() as RenderBox?;
     if (anchor == null || !anchor.hasSize) return;
 
@@ -564,10 +573,12 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
     final tiles = menu == _AmountMenu.currency
@@ -646,10 +657,12 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return ListenableBuilder(
       listenable: CurrencyStore.instance,
@@ -671,7 +684,8 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
               Text(
                 widget.label,
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: 13,
                   color: textSecondary,
                 ),
@@ -700,58 +714,61 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
                             child: widget.leading ?? const SizedBox.shrink(),
                           ),
                   ),
-              Expanded(
-                child: TextField(
-                  controller: widget.controller,
-                  onChanged: widget.onChanged,
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [ThousandsInputFormatter()],
-                  cursorColor: textPrimary,
-                  style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                    fontSize: 34,
-                    fontWeight: FontWeight.bold,
-                    color: textPrimary,
-                  ),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    border: InputBorder.none,
-                    hintText: '0',
-                    hintStyle: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
-                      color: textSecondary.withValues(alpha: 0.55),
+                  Expanded(
+                    child: TextField(
+                      controller: widget.controller,
+                      onChanged: widget.onChanged,
+                      textAlign: TextAlign.center,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [ThousandsInputFormatter()],
+                      cursorColor: textPrimary,
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
+                        fontSize: 34,
+                        fontWeight: FontWeight.bold,
+                        color: textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        border: InputBorder.none,
+                        hintText: '0',
+                        hintStyle: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontFamilyFallback: ['Tajawal'],
+                          fontSize: 34,
+                          fontWeight: FontWeight.bold,
+                          color: textSecondary.withValues(alpha: 0.55),
+                        ),
+                      ),
                     ),
                   ),
+                  KeyedSubtree(
+                    key: _currencyKey,
+                    child: _AmountSlotButton(
+                      label: symbol,
+                      color: textSecondary,
+                      open: selectable && _menu == _AmountMenu.currency,
+                      showChevron: selectable,
+                      onTap: selectable
+                          ? () => _toggle(_AmountMenu.currency)
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
+              if (widget.helper != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  widget.helper!,
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
+                    fontSize: 11.5,
+                    color: textSecondary.withValues(alpha: 0.75),
+                  ),
                 ),
-              ),
-              KeyedSubtree(
-                key: _currencyKey,
-                child: _AmountSlotButton(
-                  label: symbol,
-                  color: textSecondary,
-                  open: selectable && _menu == _AmountMenu.currency,
-                  showChevron: selectable,
-                  onTap: selectable
-                      ? () => _toggle(_AmountMenu.currency)
-                      : null,
-                ),
-              ),
-            ],
-          ),
-          if (widget.helper != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              widget.helper!,
-              style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
-                fontSize: 11.5,
-                color: textSecondary.withValues(alpha: 0.75),
-              ),
-            ),
-          ],
+              ],
             ],
           ),
         );
@@ -829,10 +846,7 @@ class _AmountMenuDropState extends State<_AmountMenuDrop>
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _curved,
-      child: SlideTransition(
-        position: _slide,
-        child: widget.child,
-      ),
+      child: SlideTransition(position: _slide, child: widget.child),
     );
   }
 }
@@ -867,7 +881,8 @@ class _AmountSlotButton extends StatelessWidget {
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: color,
@@ -942,7 +957,8 @@ class _AmountMenuTile extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       textAlign: centered ? TextAlign.center : TextAlign.start,
       style: TextStyle(
-        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+        fontFamily: 'Outfit',
+        fontFamilyFallback: ['Tajawal'],
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: selected ? accent : textSecondary,
@@ -1021,10 +1037,12 @@ class _SheetCurrencySelectorState extends State<SheetCurrencySelector> {
       listenable: CurrencyStore.instance,
       builder: (context, _) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final textPrimary =
-            isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-        final textSecondary =
-            isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+        final textPrimary = isDark
+            ? AppColors.darkTextPrimary
+            : AppColors.lightTextPrimary;
+        final textSecondary = isDark
+            ? AppColors.darkTextSecondary
+            : AppColors.lightTextSecondary;
         final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
         final options = CurrencyStore.instance.enabledCurrencies;
         final selectable = widget.onChanged != null && options.length > 1;
@@ -1044,7 +1062,8 @@ class _SheetCurrencySelectorState extends State<SheetCurrencySelector> {
                     symbol,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: ['Tajawal'],
                       fontSize: widget.dense ? 14 : 16,
                       fontWeight: FontWeight.w600,
                       color: textSecondary,
@@ -1109,10 +1128,12 @@ class SheetTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return TextField(
       controller: controller,
@@ -1123,7 +1144,8 @@ class SheetTextField extends StatelessWidget {
       textAlign: TextAlign.right,
       cursorColor: textPrimary,
       style: TextStyle(
-        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+        fontFamily: 'Outfit',
+        fontFamilyFallback: ['Tajawal'],
         fontSize: 15,
         color: enabled ? textPrimary : textSecondary.withValues(alpha: 0.55),
       ),
@@ -1132,11 +1154,15 @@ class SheetTextField extends StatelessWidget {
         fillColor: sheetFieldColor(context),
         hintText: hint,
         hintStyle: TextStyle(
-          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+          fontFamily: 'Outfit',
+          fontFamilyFallback: ['Tajawal'],
           fontSize: 14,
           color: textSecondary.withValues(alpha: 0.7),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 18,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
           borderSide: BorderSide.none,
@@ -1174,12 +1200,15 @@ class SheetChoiceChips extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
     if (options.isEmpty) return const SizedBox.shrink();
 
-    final selectedIndex = options.indexOf(selected).clamp(0, options.length - 1);
+    final selectedIndex = options
+        .indexOf(selected)
+        .clamp(0, options.length - 1);
 
     return Opacity(
       opacity: enabled ? 1 : 0.45,
@@ -1226,11 +1255,14 @@ class SheetChoiceChips extends StatelessWidget {
                               duration: AppMotion.of(context, AppMotion.fast),
                               curve: AppMotion.soft,
                               style: TextStyle(
-                                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                                fontFamily: 'Outfit',
+                                fontFamilyFallback: ['Tajawal'],
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 height: 1.1,
-                                color: option == selected ? accent : textPrimary,
+                                color: option == selected
+                                    ? accent
+                                    : textPrimary,
                               ),
                               child: Text(
                                 option,

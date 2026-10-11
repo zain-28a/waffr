@@ -23,19 +23,17 @@ class SyncTombstone {
   final String clientId;
   final DateTime deletedAt;
 
-  const SyncTombstone({
-    required this.clientId,
-    required this.deletedAt,
-  });
+  const SyncTombstone({required this.clientId, required this.deletedAt});
 
   Map<String, dynamic> toJson() => {
-        'client_id': clientId,
-        'deleted_at': toSyncIso(deletedAt),
-      };
+    'client_id': clientId,
+    'deleted_at': toSyncIso(deletedAt),
+  };
 
   static SyncTombstone? decode(Object? raw) {
     if (raw is! Map) return null;
-    final id = raw['client_id']?.toString().trim() ??
+    final id =
+        raw['client_id']?.toString().trim() ??
         raw['clientId']?.toString().trim() ??
         '';
     if (id.isEmpty) return null;
@@ -69,10 +67,7 @@ class SyncTombstones {
     await ensureLoaded();
     final id = clientId.trim();
     if (id.isEmpty) return;
-    _items[collection]![id] = SyncTombstone(
-      clientId: id,
-      deletedAt: syncNow(),
-    );
+    _items[collection]![id] = SyncTombstone(clientId: id, deletedAt: syncNow());
     await _persist();
   }
 
@@ -147,8 +142,7 @@ class SyncTombstones {
       _key,
       jsonEncode({
         for (final collection in SyncCollection.values)
-          collection.name: _items[collection]!
-              .values
+          collection.name: _items[collection]!.values
               .map((item) => item.toJson())
               .toList(),
       }),

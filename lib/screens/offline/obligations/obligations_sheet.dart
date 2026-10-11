@@ -107,8 +107,7 @@ String obligationStatus(
 
 // True when the obligation has a charge that has not been deducted yet.
 bool obligationNeedsAttention(RecurringExpense item, {DateTime? now}) {
-  return item.enabled &&
-      item.dueDates(now ?? deviceNow(), max: 1).isNotEmpty;
+  return item.enabled && item.dueDates(now ?? deviceNow(), max: 1).isNotEmpty;
 }
 
 class _ObligationColors {
@@ -128,10 +127,12 @@ class _ObligationColors {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return _ObligationColors(
       accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-      textPrimary:
-          isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-      textSecondary:
-          isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+      textPrimary: isDark
+          ? AppColors.darkTextPrimary
+          : AppColors.lightTextPrimary,
+      textSecondary: isDark
+          ? AppColors.darkTextSecondary
+          : AppColors.lightTextSecondary,
       warning: AppColors.warningOf(context),
     );
   }
@@ -191,7 +192,8 @@ class _ObligationsSheetState extends State<ObligationsSheet> {
           children: [
             const GlassSheetHeader(
               title: 'الالتزامات',
-              subtitle: 'المصروفات التي تتكرر بانتظام، مثل الإيجار والاشتراكات.',
+              subtitle:
+                  'المصروفات التي تتكرر بانتظام، مثل الإيجار والاشتراكات.',
             ),
             const SizedBox(height: 16),
             if (items.isEmpty)
@@ -279,7 +281,11 @@ class _SummaryBox extends StatelessWidget {
         children: [
           Text(
             'المجموع الشهري التقريبي',
-            style: _text(colors.textSecondary, size: 12.5, weight: FontWeight.w700),
+            style: _text(
+              colors.textSecondary,
+              size: 12.5,
+              weight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -324,14 +330,22 @@ class _AwaitingBanner extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
           child: Row(
             children: [
-              Icon(Icons.pending_actions_rounded, size: 22, color: colors.warning),
+              Icon(
+                Icons.pending_actions_rounded,
+                size: 22,
+                color: colors.warning,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   count == 1
                       ? 'لديك التزام بانتظار تأكيدك'
                       : 'لديك ${obligationsCountLabel(count)} بانتظار تأكيدك',
-                  style: _text(colors.textPrimary, size: 13.5, weight: FontWeight.w700),
+                  style: _text(
+                    colors.textPrimary,
+                    size: 13.5,
+                    weight: FontWeight.w700,
+                  ),
                 ),
               ),
               Text(
@@ -409,7 +423,11 @@ class _ObligationTile extends StatelessWidget {
                         obligationTitle(item),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: _text(colors.textPrimary, size: 14, weight: FontWeight.w700),
+                        style: _text(
+                          colors.textPrimary,
+                          size: 14,
+                          weight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -553,7 +571,11 @@ class _ObligationDetailsSheetState extends State<_ObligationDetailsSheet> {
                       Expanded(
                         child: Text(
                           '${formatMoney(item.amount)} ${currencyLabelFor(item.currencyCode)}',
-                          style: _text(colors.textPrimary, size: 17, weight: FontWeight.bold),
+                          style: _text(
+                            colors.textPrimary,
+                            size: 17,
+                            weight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       Icon(Icons.edit_rounded, size: 19, color: colors.accent),
@@ -620,7 +642,6 @@ class _ObligationDetailsSheetState extends State<_ObligationDetailsSheet> {
   }
 }
 
-
 // ---------------------------------------------------------------------------
 // Charges waiting for approval
 // ---------------------------------------------------------------------------
@@ -631,11 +652,11 @@ enum _PostponeOption { day, threeDays, week, nextIncome }
 
 extension on _PostponeOption {
   String get label => switch (this) {
-        _PostponeOption.day => 'يوم',
-        _PostponeOption.threeDays => '3 أيام',
-        _PostponeOption.week => 'أسبوع',
-        _PostponeOption.nextIncome => 'دخل جديد',
-      };
+    _PostponeOption.day => 'يوم',
+    _PostponeOption.threeDays => '3 أيام',
+    _PostponeOption.week => 'أسبوع',
+    _PostponeOption.nextIncome => 'دخل جديد',
+  };
 }
 
 class DueObligationsSheet extends StatefulWidget {
@@ -765,11 +786,7 @@ class _DueObligationsSheetState extends State<DueObligationsSheet> {
             const SizedBox(height: 10),
           ],
           const SizedBox(height: 8),
-          SheetSaveButton(
-            label: 'تأكيد',
-            enabled: !_saving,
-            onTap: _confirm,
-          ),
+          SheetSaveButton(label: 'تأكيد', enabled: !_saving, onTap: _confirm),
         ],
       ],
     );
@@ -829,7 +846,11 @@ class _DueItemCard extends StatelessWidget {
                   obligationTitle(item),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: _text(colors.textPrimary, size: 15, weight: FontWeight.bold),
+                  style: _text(
+                    colors.textPrimary,
+                    size: 15,
+                    weight: FontWeight.bold,
+                  ),
                 ),
               ),
               Text(
@@ -863,7 +884,9 @@ class _DueItemCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 const SheetFieldLabel(text: 'ذكّرني بعد'),
                 SheetChoiceChips(
-                  options: [for (final option in _PostponeOption.values) option.label],
+                  options: [
+                    for (final option in _PostponeOption.values) option.label,
+                  ],
                   selected: postpone.label,
                   onSelected: (value) => onPostpone(
                     _PostponeOption.values.firstWhere(

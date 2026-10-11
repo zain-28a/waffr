@@ -97,11 +97,7 @@ class _EditAmountDialogState extends State<EditAmountDialog> {
             onPressed: () =>
                 Navigator.of(context).pop(AmountDialogCleared(_currencyCode)),
           ),
-        AppDialogAction(
-          label: 'حفظ',
-          primary: true,
-          onPressed: _submit,
-        ),
+        AppDialogAction(label: 'حفظ', primary: true, onPressed: _submit),
       ],
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -117,10 +113,7 @@ class _EditAmountDialogState extends State<EditAmountDialog> {
               if (_error != null) setState(() => _error = null);
             },
             onSubmitted: (_) => _submit(),
-            decoration: InputDecoration(
-              hintText: 'المبلغ',
-              errorText: _error,
-            ),
+            decoration: InputDecoration(hintText: 'المبلغ', errorText: _error),
           ),
           const SizedBox(height: 10),
           Align(

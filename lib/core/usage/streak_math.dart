@@ -5,11 +5,7 @@ class StreakSnapshot {
   final DateTime? lastDay;
   final DateTime? startedAt;
 
-  const StreakSnapshot({
-    this.count = 0,
-    this.lastDay,
-    this.startedAt,
-  });
+  const StreakSnapshot({this.count = 0, this.lastDay, this.startedAt});
 
   bool get hasActivity => lastDay != null && count > 0;
 
@@ -46,9 +42,8 @@ class StreakMath {
   static int currentCount(StreakSnapshot state, DateTime now) {
     final last = state.lastDay;
     if (last == null || state.count < 1) return 0;
-    final yesterday = StreakSnapshot.dateOnly(now).subtract(
-      const Duration(days: 1),
-    );
+    final yesterday = StreakSnapshot.dateOnly(now)
+        .subtract(const Duration(days: 1));
     if (StreakSnapshot.dateOnly(last).isBefore(yesterday)) return 0;
     return state.count;
   }
@@ -123,11 +118,7 @@ class StreakMath {
     if (gap == 1 && count <= 1 && earlier.count > 1) {
       count = earlier.count + 1;
     }
-    return StreakSnapshot(
-      count: count,
-      lastDay: laterDay,
-      startedAt: started,
-    );
+    return StreakSnapshot(count: count, lastDay: laterDay, startedAt: started);
   }
 
   static bool differs(StreakSnapshot left, StreakSnapshot right) {

@@ -21,11 +21,7 @@ class UserInfoScreen extends StatefulWidget {
   final ValueChanged<RegistrationProfile> onContinue;
   final VoidCallback? onBack;
 
-  const UserInfoScreen({
-    super.key,
-    required this.onContinue,
-    this.onBack,
-  });
+  const UserInfoScreen({super.key, required this.onContinue, this.onBack});
 
   @override
   State<UserInfoScreen> createState() => _UserInfoScreenState();
@@ -130,8 +126,12 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
     return Scaffold(
@@ -177,7 +177,10 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
               GestureDetector(
                 onTap: _pickBirthDate,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: surface,
                     borderRadius: BorderRadius.circular(14),
@@ -186,7 +189,9 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _birthDate != null ? formatDate(_birthDate!) : 'DD/MM/YYYY',
+                        _birthDate != null
+                            ? formatDate(_birthDate!)
+                            : 'DD/MM/YYYY',
                         textDirection: TextDirection.ltr,
                         style: TextStyle(
                           color: _birthDate != null
@@ -195,7 +200,11 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                           fontSize: 16,
                         ),
                       ),
-                      Icon(Icons.calendar_today_outlined, size: 20, color: accent),
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 20,
+                        color: accent,
+                      ),
                     ],
                   ),
                 ),
@@ -241,7 +250,10 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
               GestureDetector(
                 onTap: _pickCountry,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: surface,
                     borderRadius: BorderRadius.circular(14),
@@ -279,7 +291,10 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
-              AuthFieldLabel(text: 'العنوان (الشارع اختياري)', color: textPrimary),
+              AuthFieldLabel(
+                text: 'العنوان (الشارع اختياري)',
+                color: textPrimary,
+              ),
               const SizedBox(height: 8),
               TextField(
                 controller: _addressController,
@@ -492,8 +507,9 @@ class _PhoneField extends StatelessWidget {
                 ),
                 decoration: InputDecoration(
                   hintText: hasCountry ? '9XX XXX XXX' : 'اختر الدولة أولاً',
-                  hintTextDirection:
-                      hasCountry ? TextDirection.ltr : TextDirection.rtl,
+                  hintTextDirection: hasCountry
+                      ? TextDirection.ltr
+                      : TextDirection.rtl,
                   hintStyle: TextStyle(
                     color: textSecondary.withValues(alpha: 0.6),
                     fontSize: hasCountry ? 16 : 14,

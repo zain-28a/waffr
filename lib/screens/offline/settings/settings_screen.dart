@@ -159,7 +159,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final prefs = await AppPrefs.instance;
           await prefs.setBool('app_lock', true);
 
-
           setState(() {
             _appLock = true;
           });
@@ -185,7 +184,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final prefs = await AppPrefs.instance;
       await prefs.setBool('app_lock', false);
 
-
       if (!mounted) return;
 
       setState(() {
@@ -207,8 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showAppInfoDialog(
       context,
       title: 'اللغة',
-      message:
-          'العربية هي اللغة الوحيدة المتاحة حالياً. نعمل على إضافة لغات أخرى في التحديثات القادمة.',
+      message: 'العربية هي اللغة الوحيدة المتاحة حالياً. نعمل على إضافة لغات أخرى في التحديثات القادمة.',
     );
   }
 
@@ -260,10 +257,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted || result == null) return;
 
     if (result is AmountDialogCleared) {
-      final cleared = await TransactionStore.instance.clearPreferredIncomeAmount(
-        frequency: frequency,
-        currencyCode: result.currencyCode,
-      );
+      final cleared = await TransactionStore.instance
+          .clearPreferredIncomeAmount(
+            frequency: frequency,
+            currencyCode: result.currencyCode,
+          );
       if (!mounted) return;
       if (!cleared) {
         showAppSnackBar(context, 'تعذّر إزالة الدخل. حاول مرة أخرى.');
@@ -365,10 +363,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         top: false,
         child: Column(
           children: [
-            WaffrBackHeader(
-              elevated: _headerElevated,
-              title: 'الإعدادات',
-            ),
+            WaffrBackHeader(elevated: _headerElevated, title: 'الإعدادات'),
             Expanded(
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
@@ -380,288 +375,295 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   return false;
                 },
                 child: ListView(
-        padding: const EdgeInsets.all(20),
-
-        children: staggered([
-          _SectionTitle(title: 'الحساب', color: textSecondary),
-
-          GestureDetector(
-            onTap: _openAccount,
-            child: _ProfileCard(
-              name: _loggedIn
-                  ? (_userName.isEmpty ? 'حساب وفّر' : _userName)
-                  : 'لا يوجد حساب',
-              email: _loggedIn
-                  ? _userEmail
-                  : 'اضغط لتسجيل الدخول أو إنشاء حساب',
-              accent: accent,
-              surface: surface,
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
-              signedIn: _loggedIn,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-          _SettingsTile(
-            icon: Icons.payments_outlined,
-            title: 'الدخل الشهري',
-            subtitle: _hasMonthlyIncome
-                ? '${formatMoney(_monthlyIncome)} $currencyLabel'
-                : 'لم يُحدَّد بعد',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-            onTap: () => _editIncome(RecurringFrequency.monthly),
-          ),
-
-          if (_weeklyIncomeChoiceEnabled && _hasWeeklyIncome) ...[
-            const SizedBox(height: 12),
-            _SettingsTile(
-              icon: Icons.date_range_outlined,
-              title: 'الدخل الأسبوعي',
-              subtitle: '${formatMoney(_weeklyIncome)} $currencyLabel',
-              accent: accent,
-              surface: surface,
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
-              onTap: () => _editIncome(RecurringFrequency.weekly),
-            ),
-          ],
-
-          const SizedBox(height: 12),
-          _SettingsTile(
-            icon: Icons.currency_exchange_rounded,
-            title: 'العملات',
-            subtitle: 'إضافة عملة أو اختيار العملة النشطة',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-            onTap: () => showCurrenciesSheet(context),
-          ),
-
-          const SizedBox(height: 12),
-          _SettingsTile(
-            icon: Icons.event_repeat_rounded,
-            title: 'الالتزامات',
-            subtitle: 'المصروفات المتكررة وطريقة خصمها',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-            onTap: () => showObligationsSheet(context),
-          ),
+                  padding: const EdgeInsets.all(20),
+
+                  children: staggered([
+                    _SectionTitle(title: 'الحساب', color: textSecondary),
+
+                    GestureDetector(
+                      onTap: _openAccount,
+                      child: _ProfileCard(
+                        name: _loggedIn
+                            ? (_userName.isEmpty ? 'حساب وفّر' : _userName)
+                            : 'لا يوجد حساب',
+                        email: _loggedIn
+                            ? _userEmail
+                            : 'اضغط لتسجيل الدخول أو إنشاء حساب',
+                        accent: accent,
+                        surface: surface,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        signedIn: _loggedIn,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+                    _SettingsTile(
+                      icon: Icons.payments_outlined,
+                      title: 'الدخل الشهري',
+                      subtitle: _hasMonthlyIncome
+                          ? '${formatMoney(_monthlyIncome)} $currencyLabel'
+                          : 'لم يُحدَّد بعد',
+                      accent: accent,
+                      surface: surface,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      onTap: () => _editIncome(RecurringFrequency.monthly),
+                    ),
+
+                    if (_weeklyIncomeChoiceEnabled && _hasWeeklyIncome) ...[
+                      const SizedBox(height: 12),
+                      _SettingsTile(
+                        icon: Icons.date_range_outlined,
+                        title: 'الدخل الأسبوعي',
+                        subtitle:
+                            '${formatMoney(_weeklyIncome)} $currencyLabel',
+                        accent: accent,
+                        surface: surface,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        onTap: () => _editIncome(RecurringFrequency.weekly),
+                      ),
+                    ],
+
+                    const SizedBox(height: 12),
+                    _SettingsTile(
+                      icon: Icons.currency_exchange_rounded,
+                      title: 'العملات',
+                      subtitle: 'إضافة عملة أو اختيار العملة النشطة',
+                      accent: accent,
+                      surface: surface,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      onTap: () => showCurrenciesSheet(context),
+                    ),
+
+                    const SizedBox(height: 12),
+                    _SettingsTile(
+                      icon: Icons.event_repeat_rounded,
+                      title: 'الالتزامات',
+                      subtitle: 'المصروفات المتكررة وطريقة خصمها',
+                      accent: accent,
+                      surface: surface,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      onTap: () => showObligationsSheet(context),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    _SectionTitle(title: 'المظهر', color: textSecondary),
+
+                    _SettingsTile(
+                      icon: Icons.dark_mode_outlined,
+
+                      title: 'الوضع الداكن',
+
+                      subtitle: isDark ? 'مفعّل' : 'غير مفعّل',
+
+                      accent: accent,
+                      surface: surface,
 
-          const SizedBox(height: 25),
+                      textPrimary: textPrimary,
 
-          _SectionTitle(title: 'المظهر', color: textSecondary),
+                      textSecondary: textSecondary,
 
-          _SettingsTile(
-            icon: Icons.dark_mode_outlined,
+                      trailing: Switch(
+                        value: isDark,
+                        onChanged: (_) {
+                          widget.onThemeChanged();
+                        },
+                      ),
 
-            title: 'الوضع الداكن',
+                      onTap: widget.onThemeChanged,
+                    ),
 
-            subtitle: isDark ? 'مفعّل' : 'غير مفعّل',
+                    const SizedBox(height: 12),
 
-            accent: accent,
-            surface: surface,
+                    _SettingsTile(
+                      icon: Icons.language_rounded,
 
-            textPrimary: textPrimary,
+                      title: 'اللغة',
 
-            textSecondary: textSecondary,
+                      subtitle: 'العربية (اللغة الوحيدة المتاحة)',
 
-            trailing: Switch(
-              value: isDark,
-              onChanged: (_) {
-                widget.onThemeChanged();
-              },
-            ),
+                      accent: accent,
+                      surface: surface,
 
-            onTap: widget.onThemeChanged,
-          ),
+                      textPrimary: textPrimary,
 
-          const SizedBox(height: 12),
+                      textSecondary: textSecondary,
 
-          _SettingsTile(
-            icon: Icons.language_rounded,
+                      onTap: _showLanguageInfo,
+                    ),
 
-            title: 'اللغة',
+                    const SizedBox(height: 25),
 
-            subtitle: 'العربية (اللغة الوحيدة المتاحة)',
+                    _SectionTitle(
+                      title: 'الحماية والخصوصية',
+                      color: textSecondary,
+                    ),
 
-            accent: accent,
-            surface: surface,
+                    _SettingsTile(
+                      icon: Icons.lock_outline_rounded,
 
-            textPrimary: textPrimary,
+                      title: 'قفل التطبيق',
 
-            textSecondary: textSecondary,
+                      subtitle: 'طلب البصمة أو رمز الجهاز عند فتح وفّر',
 
-            onTap: _showLanguageInfo,
-          ),
+                      accent: accent,
+                      surface: surface,
 
-          const SizedBox(height: 25),
+                      textPrimary: textPrimary,
 
-          _SectionTitle(title: 'الحماية والخصوصية', color: textSecondary),
+                      textSecondary: textSecondary,
 
-          _SettingsTile(
-            icon: Icons.lock_outline_rounded,
+                      trailing: Switch(
+                        value: _appLock,
+                        onChanged: _toggleAppLock,
+                      ),
 
-            title: 'قفل التطبيق',
+                      onTap: () => _toggleAppLock(!_appLock),
+                    ),
 
-            subtitle: 'طلب البصمة أو رمز الجهاز عند فتح وفّر',
+                    const SizedBox(height: 12),
 
-            accent: accent,
-            surface: surface,
+                    _SettingsTile(
+                      icon: Icons.auto_graph_rounded,
+                      leading: const SmartSpark(size: 32),
 
-            textPrimary: textPrimary,
+                      title: 'التحليل الذكي',
 
-            textSecondary: textSecondary,
+                      subtitle: 'ملاحظات واقتراحات وتنبيهات ذكية',
 
-            trailing: Switch(
-              value: _appLock,
-              onChanged: _toggleAppLock,
-            ),
+                      accent: accent,
+                      surface: surface,
 
-            onTap: () => _toggleAppLock(!_appLock),
-          ),
+                      textPrimary: textPrimary,
 
-          const SizedBox(height: 12),
+                      textSecondary: textSecondary,
 
-          _SettingsTile(
-            icon: Icons.auto_graph_rounded,
-            leading: const SmartSpark(size: 32),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AIPermissionsScreen(),
+                          ),
+                        );
+                      },
+                    ),
 
-            title: 'التحليل الذكي',
+                    const SizedBox(height: 12),
 
-            subtitle: 'ملاحظات واقتراحات وتنبيهات ذكية',
+                    _SettingsTile(
+                      icon: Icons.privacy_tip_outlined,
 
-            accent: accent,
-            surface: surface,
+                      title: 'الخصوصية والأمان',
 
-            textPrimary: textPrimary,
+                      subtitle: 'البيانات والمزامنة وحماية الجهاز',
 
-            textSecondary: textSecondary,
+                      accent: accent,
+                      surface: surface,
 
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AIPermissionsScreen()),
-              );
-            },
-          ),
+                      textPrimary: textPrimary,
 
-          const SizedBox(height: 12),
+                      textSecondary: textSecondary,
 
-          _SettingsTile(
-            icon: Icons.privacy_tip_outlined,
+                      onTap: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => PrivacySecurityScreen(
+                              appFlowController: widget.appFlowController,
+                            ),
+                          ),
+                        );
+                        await _loadSettings();
+                      },
+                    ),
 
-            title: 'الخصوصية والأمان',
+                    const SizedBox(height: 25),
 
-            subtitle: 'البيانات والمزامنة وحماية الجهاز',
+                    _SectionTitle(title: 'الدعم', color: textSecondary),
 
-            accent: accent,
-            surface: surface,
+                    _SettingsTile(
+                      icon: Icons.help_outline_rounded,
 
-            textPrimary: textPrimary,
+                      title: 'المساعدة',
 
-            textSecondary: textSecondary,
+                      subtitle: 'الأسئلة الشائعة والدعم',
 
-            onTap: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => PrivacySecurityScreen(
-                    appFlowController: widget.appFlowController,
-                  ),
-                ),
-              );
-              await _loadSettings();
-            },
-          ),
+                      accent: accent,
+                      surface: surface,
 
-          const SizedBox(height: 25),
+                      textPrimary: textPrimary,
 
-          _SectionTitle(title: 'الدعم', color: textSecondary),
+                      textSecondary: textSecondary,
 
-          _SettingsTile(
-            icon: Icons.help_outline_rounded,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const HelpScreen()),
+                        );
+                      },
+                    ),
 
-            title: 'المساعدة',
+                    const SizedBox(height: 12),
 
-            subtitle: 'الأسئلة الشائعة والدعم',
+                    _SettingsTile(
+                      icon: Icons.info_outline_rounded,
 
-            accent: accent,
-            surface: surface,
+                      title: 'عن وفّر',
 
-            textPrimary: textPrimary,
+                      subtitle: 'معلومات عن التطبيق',
 
-            textSecondary: textSecondary,
+                      accent: accent,
+                      surface: surface,
 
-            onTap: () {
-              Navigator.of(context)
-                  .push(MaterialPageRoute(builder: (_) => const HelpScreen()));
-            },
-          ),
+                      textPrimary: textPrimary,
 
-          const SizedBox(height: 12),
+                      textSecondary: textSecondary,
 
-          _SettingsTile(
-            icon: Icons.info_outline_rounded,
+                      onTap: _showAbout,
+                    ),
 
-            title: 'عن وفّر',
+                    const SizedBox(height: 25),
 
-            subtitle: 'معلومات عن التطبيق',
+                    if (!_loggedIn) ...[
+                      _SectionTitle(title: 'البيانات', color: textSecondary),
 
-            accent: accent,
-            surface: surface,
+                      _SettingsTile(
+                        icon: Icons.delete_outline_rounded,
 
-            textPrimary: textPrimary,
+                        title: 'إعادة ضبط التطبيق',
 
-            textSecondary: textSecondary,
+                        subtitle: 'حذف جميع البيانات والبدء من جديد',
 
-            onTap: _showAbout,
-          ),
+                        accent: accent,
+                        surface: surface,
 
-          const SizedBox(height: 25),
+                        textPrimary: textPrimary,
 
-          if (!_loggedIn) ...[
-            _SectionTitle(title: 'البيانات', color: textSecondary),
+                        textSecondary: textSecondary,
 
-            _SettingsTile(
-              icon: Icons.delete_outline_rounded,
+                        onTap: _resetApp,
+                      ),
 
-              title: 'إعادة ضبط التطبيق',
+                      const SizedBox(height: 30),
+                    ] else
+                      const SizedBox(height: 5),
 
-              subtitle: 'حذف جميع البيانات والبدء من جديد',
+                    Center(
+                      child: Text(
+                        'waffr 2.10.0',
 
-              accent: accent,
-              surface: surface,
+                        style: TextStyle(
+                          color: textSecondary.withValues(alpha: 0.6),
 
-              textPrimary: textPrimary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
 
-              textSecondary: textSecondary,
-
-              onTap: _resetApp,
-            ),
-
-            const SizedBox(height: 30),
-          ] else
-            const SizedBox(height: 5),
-
-          Center(
-            child: Text(
-              'waffr 2.10.0',
-
-              style: TextStyle(
-                color: textSecondary.withValues(alpha: 0.6),
-
-                fontSize: 12,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-        ]),
+                    const SizedBox(height: 20),
+                  ]),
                 ),
               ),
             ),
@@ -706,11 +708,7 @@ class _ProfileCard extends StatelessWidget {
 
       child: Row(
         children: [
-          ProfileAvatar(
-            accent: accent,
-            radius: 27,
-            signedIn: signedIn,
-          ),
+          ProfileAvatar(accent: accent, radius: 27, signedIn: signedIn),
 
           const SizedBox(width: 15),
 
@@ -798,4 +796,3 @@ class _SettingsTile extends StatelessWidget {
     );
   }
 }
-

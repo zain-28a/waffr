@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -67,8 +68,9 @@ class WafarApp extends StatefulWidget {
 
 /// Applies [WafarApp]'s theme notifier to [MaterialApp].
 class _WafarAppState extends State<WafarApp> {
-  final ValueNotifier<ThemeMode> _themeMode =
-      ValueNotifier<ThemeMode>(ThemeMode.system);
+  final ValueNotifier<ThemeMode> _themeMode = ValueNotifier<ThemeMode>(
+    ThemeMode.system,
+  );
 
   bool _themeLoaded = false;
 
@@ -105,23 +107,20 @@ class _WafarAppState extends State<WafarApp> {
 
     final prefs = await AppPrefs.instance;
 
-    await prefs.setBool(
-      'dark_mode',
-      mode == ThemeMode.dark,
-    );
+    await prefs.setBool('dark_mode', mode == ThemeMode.dark);
 
     unawaited(SyncDirty.mark(settings: true));
   }
 
   /// Flips between the two explicit themes. Used by the settings toggle.
   Future<void> _toggleTheme() async {
-    final newMode =
-        _themeMode.value == ThemeMode.dark
-            ? ThemeMode.light
-            : ThemeMode.dark;
+    final newMode = _themeMode.value == ThemeMode.dark
+        ? ThemeMode.light
+        : ThemeMode.dark;
 
     await _changeTheme(newMode);
   }
+
   @override
   void dispose() {
     _themeMode.dispose();
@@ -196,13 +195,12 @@ class AppFlowController extends StatefulWidget {
   });
 
   @override
-  State<AppFlowController> createState() =>
-      _AppFlowControllerState();
+  State<AppFlowController> createState() => _AppFlowControllerState();
 }
 
 /// Gate state: login, theme pick, lock, then [AppShell].
-class _AppFlowControllerState
-    extends State<AppFlowController> with WidgetsBindingObserver {
+class _AppFlowControllerState extends State<AppFlowController>
+    with WidgetsBindingObserver {
   bool? _authChoiceMade;
   bool? _isFirstLaunch;
   bool? _appLockEnabled;
@@ -253,11 +251,9 @@ class _AppFlowControllerState
   }
 
   void _applyFlags(SharedPreferences prefs) {
-    final firstLaunch =
-        prefs.getBool('first_launch') ?? true;
+    final firstLaunch = prefs.getBool('first_launch') ?? true;
 
-    final appLockEnabled =
-        prefs.getBool('app_lock') ?? false;
+    final appLockEnabled = prefs.getBool('app_lock') ?? false;
 
     final authChoiceMade =
         prefs.getBool(BackupService.authChoiceKey) ?? !firstLaunch;
@@ -306,10 +302,7 @@ class _AppFlowControllerState
   Future<void> _markFirstLaunchDone() async {
     final prefs = await AppPrefs.instance;
 
-    await prefs.setBool(
-      'first_launch',
-      false,
-    );
+    await prefs.setBool('first_launch', false);
 
     if (!mounted) return;
 
@@ -371,29 +364,27 @@ class _AppFlowControllerState
 
     final Widget page = switch (baseStage) {
       _FlowStage.splash => const WaffrSplash(),
-      _FlowStage.login => LoginScreen(
-          onCompleted: _onAuthChoiceCompleted,
-        ),
+      _FlowStage.login => LoginScreen(onCompleted: _onAuthChoiceCompleted),
       _FlowStage.themeSelect => ThemeSelectScreen(
-          onThemeChanged: widget.onThemeChanged,
-          onContinue: () {
-            unawaited(_markFirstLaunchDone());
-          },
-        ),
+        onThemeChanged: widget.onThemeChanged,
+        onContinue: () {
+          unawaited(_markFirstLaunchDone());
+        },
+      ),
       _FlowStage.lock => const SizedBox.expand(),
       _FlowStage.shell => Offstage(
-          // Not painted while locked, so the ledger never shows behind the
-          // lock (or in the app switcher), and its tickers are paused.
-          offstage: locked,
-          child: TickerMode(
-            enabled: !locked,
-            child: AppShell(
-              themeNotifier: widget.themeNotifier,
-              onThemeChanged: widget.onToggleTheme,
-              appFlowController: this,
-            ),
+        // Not painted while locked, so the ledger never shows behind the
+        // lock (or in the app switcher), and its tickers are paused.
+        offstage: locked,
+        child: TickerMode(
+          enabled: !locked,
+          child: AppShell(
+            themeNotifier: widget.themeNotifier,
+            onThemeChanged: widget.onToggleTheme,
+            appFlowController: this,
           ),
         ),
+      ),
     };
 
     final switcher = AnimatedSwitcher(
@@ -403,10 +394,7 @@ class _AppFlowControllerState
       transitionBuilder: (child, animation) {
         return FadeTransition(opacity: animation, child: child);
       },
-      child: KeyedSubtree(
-        key: ValueKey<_FlowStage>(baseStage),
-        child: page,
-      ),
+      child: KeyedSubtree(key: ValueKey<_FlowStage>(baseStage), child: page),
     );
 
     // The lock covers everything at once, with no fade.
@@ -427,10 +415,12 @@ SystemUiOverlayStyle _systemBarsFor(Brightness brightness) {
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
     statusBarBrightness: brightness,
-    systemNavigationBarColor:
-        dark ? AppColors.darkBackground : AppColors.lightBackground,
-    systemNavigationBarIconBrightness:
-        dark ? Brightness.light : Brightness.dark,
+    systemNavigationBarColor: dark
+        ? AppColors.darkBackground
+        : AppColors.lightBackground,
+    systemNavigationBarIconBrightness: dark
+        ? Brightness.light
+        : Brightness.dark,
   );
 }
 

@@ -57,8 +57,7 @@ class NotificationService extends ChangeNotifier {
 
   bool get isMuted => _muted;
 
-  int get unreadCount =>
-      _items.where((item) => !item.isRead).length;
+  int get unreadCount => _items.where((item) => !item.isRead).length;
 
   List<AppNotification> get notifications => List.unmodifiable(_items);
 
@@ -345,10 +344,7 @@ class NotificationService extends ChangeNotifier {
           ? 'بقي $left فقط من أصل $income.'
           : 'المتاح الآن $left من أصل $income. راجع مصروفاتك حتى الدخل القادم.',
       eventKey: 'balanceWarning:$percent:$cycle',
-      metadata: {
-        'percent': '$percent',
-        'cycle': cycle,
-      },
+      metadata: {'percent': '$percent', 'cycle': cycle},
     );
   }
 
@@ -388,7 +384,8 @@ class NotificationService extends ChangeNotifier {
     return _tryAdd(
       type: NotificationType.balanceWarning,
       title: 'قد ينفد رصيدك قبل الدخل',
-      message: 'بوتيرتك الحالية سينفد رصيدك قبل الدخل القادم بنحو '
+      message:
+          'بوتيرتك الحالية سينفد رصيدك قبل الدخل القادم بنحو '
           '${Ar.days.of(gap)}. حاول ألا تتجاوز '
           '${formatMoney(dailyLimit)} $currencyLabel يومياً.',
       eventKey: 'balanceForecast:$cycle:$week',
@@ -418,14 +415,12 @@ class NotificationService extends ChangeNotifier {
     return _tryAdd(
       type: NotificationType.highSpending,
       title: 'صرفت \u2066$percent%\u2069 من رصيد الدورة',
-      message: 'صرفت ${formatMoney(store.cycleSpent)} من '
+      message:
+          'صرفت ${formatMoney(store.cycleSpent)} من '
           '${formatMoney(store.maxBalance)} $currencyLabel، '
           'والمتاح الآن ${formatMoney(store.balance)} $currencyLabel.',
       eventKey: 'highSpending:$percent:$cycle',
-      metadata: {
-        'percent': '$percent',
-        'cycle': cycle,
-      },
+      metadata: {'percent': '$percent', 'cycle': cycle},
     );
   }
 
@@ -441,14 +436,12 @@ class NotificationService extends ChangeNotifier {
         changed |= _tryAdd(
           type: NotificationType.goalReached,
           title: 'اكتمل هدف ${Ar.quote(goal.name)}',
-          message: 'جمعت ${formatMoney(goal.targetAmount)} '
+          message:
+              'جمعت ${formatMoney(goal.targetAmount)} '
               '${currencyLabelFor(goal.currencyCode)} المطلوبة لهذا الهدف.',
           eventKey: _goalReachedKey(goal.id),
           relatedId: goal.id,
-          metadata: {
-            'goalName': goal.name,
-            'percent': '100',
-          },
+          metadata: {'goalName': goal.name, 'percent': '100'},
           createdAt: goal.completedAt,
         );
         continue;
@@ -470,14 +463,12 @@ class NotificationService extends ChangeNotifier {
       changed |= _tryAdd(
         type: NotificationType.goalProgress,
         title: 'هدف ${Ar.quote(goal.name)}: \u2066$percent%\u2069',
-        message: 'وفّرت ${formatMoney(store.currentSaved(goal))} من '
+        message:
+            'وفّرت ${formatMoney(store.currentSaved(goal))} من '
             '${formatMoney(goal.targetAmount)} $symbol.',
         eventKey: _goalProgressKey(goal.id, percent),
         relatedId: goal.id,
-        metadata: {
-          'goalName': goal.name,
-          'percent': '$percent',
-        },
+        metadata: {'goalName': goal.name, 'percent': '$percent'},
       );
     }
 
@@ -510,7 +501,7 @@ class NotificationService extends ChangeNotifier {
         message: kind == SavingsTransferKind.goalPeriodic
             ? 'الدفعة الدورية${goalName == null ? '' : ' لهدف $goalName'}.'
             : 'المتبقي من دخل ${weekly ? 'الأسبوع' : 'الشهر'} الماضي'
-                '${goalName == null ? '' : '، ضمن هدف $goalName'}.',
+                  '${goalName == null ? '' : '، ضمن هدف $goalName'}.',
         eventKey: 'savingsTransfer:${item.id}',
         relatedId: item.id,
         metadata: {
@@ -518,8 +509,8 @@ class NotificationService extends ChangeNotifier {
           'periodType': kind == SavingsTransferKind.goalPeriodic
               ? 'goalPeriodic'
               : (item.processedPeriodKey?.startsWith('w:') == true
-                  ? 'weekly'
-                  : 'monthly'),
+                    ? 'weekly'
+                    : 'monthly'),
           'periodKey': ?item.processedPeriodKey,
           'goalName': ?goalName,
         },
@@ -594,16 +585,19 @@ class NotificationService extends ChangeNotifier {
 
       final prior = chronological.sublist(0, i);
       final average =
-          prior.fold<double>(0, (sum, item) => sum + item.amount) / prior.length;
+          prior.fold<double>(0, (sum, item) => sum + item.amount) /
+          prior.length;
       if (average <= 0) continue;
-      if (expense.amount < average * NotificationThresholds.largeExpenseMultiplier) {
+      if (expense.amount <
+          average * NotificationThresholds.largeExpenseMultiplier) {
         continue;
       }
 
       changed |= _tryAdd(
         type: NotificationType.largeExpense,
         title: 'مصروف أعلى من المعتاد',
-        message: '${formatMoney(expense.amount)} '
+        message:
+            '${formatMoney(expense.amount)} '
             '${currencyLabelFor(expense.currencyCode)} على '
             '${Ar.category(categoryFor(expense.category).label)}، أي ضعف متوسط مصروفاتك أو أكثر.',
         eventKey: 'largeExpense:${expense.id}',
@@ -769,8 +763,9 @@ class _NotificationSnapshot {
 
   /// Builds a snapshot from the live [TransactionStore].
   factory _NotificationSnapshot.fromStore(TransactionStore store) {
-    final spent =
-        store.maxBalance <= 0 ? 0.0 : store.cycleSpent / store.maxBalance;
+    final spent = store.maxBalance <= 0
+        ? 0.0
+        : store.cycleSpent / store.maxBalance;
     return _NotificationSnapshot(
       initialized: true,
       remainingRatio: store.remainingRatio,
@@ -778,21 +773,19 @@ class _NotificationSnapshot {
       goalRatios: {
         for (final goal in store.goals) goal.id: store.goalRatio(goal),
       },
-      knownTransactionIds: {
-        for (final item in store.transactions) item.id,
-      },
+      knownTransactionIds: {for (final item in store.transactions) item.id},
       knownProcessedTokens: Set<String>.of(store.processedPeriodTokens),
     );
   }
 
   String encode() => jsonEncode({
-        'initialized': initialized,
-        'remainingRatio': remainingRatio,
-        'spentRatio': spentRatio,
-        'goalRatios': goalRatios,
-        'knownTransactionIds': knownTransactionIds.toList(),
-        'knownProcessedTokens': knownProcessedTokens.toList(),
-      });
+    'initialized': initialized,
+    'remainingRatio': remainingRatio,
+    'spentRatio': spentRatio,
+    'goalRatios': goalRatios,
+    'knownTransactionIds': knownTransactionIds.toList(),
+    'knownProcessedTokens': knownProcessedTokens.toList(),
+  });
 
   /// Restores a snapshot from prefs JSON; empty on missing or corrupt input.
   static _NotificationSnapshot decode(String? raw) {
@@ -820,11 +813,13 @@ class _NotificationSnapshot {
         spentRatio: (decoded['spentRatio'] as num?)?.toDouble(),
         goalRatios: ratios,
         knownTransactionIds: {
-          for (final item in decoded['knownTransactionIds'] as List? ?? const [])
+          for (final item
+              in decoded['knownTransactionIds'] as List? ?? const [])
             item.toString(),
         },
         knownProcessedTokens: {
-          for (final item in decoded['knownProcessedTokens'] as List? ?? const [])
+          for (final item
+              in decoded['knownProcessedTokens'] as List? ?? const [])
             item.toString(),
         },
       );
@@ -839,10 +834,7 @@ class NotificationTimeGroup {
   final String label;
   final List<AppNotification> items;
 
-  const NotificationTimeGroup({
-    required this.label,
-    required this.items,
-  });
+  const NotificationTimeGroup({required this.label, required this.items});
 
   /// Buckets by calendar day relative to [now] (Arabic section labels).
   static List<NotificationTimeGroup> from(

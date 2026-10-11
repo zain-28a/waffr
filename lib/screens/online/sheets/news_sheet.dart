@@ -27,10 +27,12 @@ class _NewsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return GlassSheetFixedBody(
       header: const GlassSheetHeader(
@@ -85,7 +87,8 @@ class _NewsArticleBlock extends StatelessWidget {
         Text(
           article.title,
           style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+            fontFamily: 'Outfit',
+            fontFamilyFallback: ['Tajawal'],
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: textPrimary,
@@ -97,7 +100,8 @@ class _NewsArticleBlock extends StatelessWidget {
           Text(
             article.body,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 13.5,
               fontWeight: FontWeight.w400,
               color: textPrimary.withValues(alpha: 0.82),
@@ -109,7 +113,8 @@ class _NewsArticleBlock extends StatelessWidget {
         Text(
           '${article.source} · ${formatDate(article.publishedAt)} · ${formatTime(article.publishedAt)}',
           style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+            fontFamily: 'Outfit',
+            fontFamilyFallback: ['Tajawal'],
             fontSize: 12,
             fontWeight: FontWeight.w500,
             color: textSecondary,

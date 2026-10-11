@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
 
 TextStyle _tileText(Color color, double size, FontWeight weight) => TextStyle(
-      fontFamily: 'Outfit',
-      fontFamilyFallback: const ['Tajawal'],
-      fontSize: size,
-      fontWeight: weight,
-      color: color,
-    );
+  fontFamily: 'Outfit',
+  fontFamilyFallback: const ['Tajawal'],
+  fontSize: size,
+  fontWeight: weight,
+  color: color,
+);
 
 class AppListTile extends StatelessWidget {
   final IconData icon;
@@ -51,10 +51,12 @@ class AppListTile extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final danger = AppColors.destructiveOf(context);
     final tint = destructive ? danger : accent;
 
@@ -128,10 +130,7 @@ class AppListTile extends StatelessWidget {
                   muted: textSecondary,
                 ),
               ],
-              if (end != null) ...[
-                const SizedBox(width: 8),
-                end,
-              ],
+              if (end != null) ...[const SizedBox(width: 8), end],
             ],
           ),
         ),
@@ -176,8 +175,9 @@ class AppSectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: 5, bottom: 10),

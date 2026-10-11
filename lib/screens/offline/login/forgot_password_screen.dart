@@ -20,8 +20,9 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  late final TextEditingController _emailController =
-      TextEditingController(text: widget.initialEmail);
+  late final TextEditingController _emailController = TextEditingController(
+    text: widget.initialEmail,
+  );
   final TextEditingController _codeController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
@@ -58,15 +59,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> _sendCode() async {
     if (!_canSend) return;
     setState(() => _busy = true);
-    final result =
-        await AuthSession.instance.requestPasswordReset(_emailController.text);
+    final result = await AuthSession.instance.requestPasswordReset(
+      _emailController.text,
+    );
     if (!mounted) return;
     setState(() {
       _busy = false;
       if (result.ok) _codeSent = true;
     });
     _show(
-      result.ok ? 'إذا كان البريد مسجّلاً، سيصلك رمز خلال دقائق' : result.message,
+      result.ok
+          ? 'إذا كان البريد مسجّلاً، سيصلك رمز خلال دقائق'
+          : result.message,
       success: result.ok,
     );
   }
@@ -108,9 +112,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!_emailValid) return 'أدخل بريداً إلكترونياً صالحاً';
     if (!_codeSent) return null;
     final password = _passwordController.text;
-    if (_codeController.text.trim().length != 6) return 'أدخل الرمز المكوّن من 6 أرقام';
-    if (password.length < 8) return 'كلمة المرور يجب أن تتكون من 8 أحرف على الأقل';
-    if (password != _confirmController.text) return 'كلمتا المرور غير متطابقتين';
+    if (_codeController.text.trim().length != 6) {
+      return 'أدخل الرمز المكوّن من 6 أرقام';
+    }
+    if (password.length < 8) {
+      return 'كلمة المرور يجب أن تتكون من 8 أحرف على الأقل';
+    }
+    if (password != _confirmController.text) {
+      return 'كلمتا المرور غير متطابقتين';
+    }
     return null;
   }
 
@@ -120,10 +130,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
     InputDecoration decoration(String hint, {Widget? suffixIcon}) {
@@ -145,10 +157,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: WaffrBackHeader(
-        enabled: !_busy,
-        title: 'نسيت كلمة المرور',
-      ),
+      appBar: WaffrBackHeader(enabled: !_busy, title: 'نسيت كلمة المرور'),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
@@ -170,7 +179,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AuthFieldLabel(text: 'البريد الإلكتروني', color: textPrimary),
+                    AuthFieldLabel(
+                      text: 'البريد الإلكتروني',
+                      color: textPrimary,
+                    ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _emailController,
@@ -260,7 +272,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       color: accent,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: ['Tajawal'],
                     ),
                   ),
                 ),

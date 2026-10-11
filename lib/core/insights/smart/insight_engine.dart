@@ -38,7 +38,8 @@ class InsightEngine {
     final limited = found.take(_limits[scope]!).toList();
     final jitter = {for (final item in limited) item.id: _random.nextInt(8)};
     limited.sort(
-      (a, b) => (b.priority + jitter[b.id]!).compareTo(a.priority + jitter[a.id]!),
+      (a, b) =>
+          (b.priority + jitter[b.id]!).compareTo(a.priority + jitter[a.id]!),
     );
     limited.add(_tip(scope));
 
@@ -155,22 +156,22 @@ class InsightEngine {
   }
 
   SmartInsight _noExpensesYet() => SmartInsight(
-        id: 'no-expenses',
-        tone: InsightTone.tip,
-        icon: Icons.edit_note_rounded,
-        title: _pick([
-          'ابدأ بأول مصروف',
-          'التحليل بانتظار بياناتك',
-          'سجّل مصاريفك لأفهم عاداتك',
-        ]),
-        body: _pick([
-          'لا توجد مصاريف مسجّلة بعد. سجّل ما تصرفه يومياً، وسأبدأ بإظهار وجهة أموالك وطرق التوفير.',
-          'كل مصروف تسجّله يجعل التحليل أدق. ابدأ اليوم ولو بمصروف صغير.',
-          'بعد أسبوع من التسجيل ستظهر هنا مقارنات واتجاهات ونصائح مصمّمة لك.',
-        ]),
-        priority: 100,
-        action: InsightAction.addExpense,
-      );
+    id: 'no-expenses',
+    tone: InsightTone.tip,
+    icon: Icons.edit_note_rounded,
+    title: _pick([
+      'ابدأ بأول مصروف',
+      'التحليل بانتظار بياناتك',
+      'سجّل مصاريفك لأفهم عاداتك',
+    ]),
+    body: _pick([
+      'لا توجد مصاريف مسجّلة بعد. سجّل ما تصرفه يومياً، وسأبدأ بإظهار وجهة أموالك وطرق التوفير.',
+      'كل مصروف تسجّله يجعل التحليل أدق. ابدأ اليوم ولو بمصروف صغير.',
+      'بعد أسبوع من التسجيل ستظهر هنا مقارنات واتجاهات ونصائح مصمّمة لك.',
+    ]),
+    priority: 100,
+    action: InsightAction.addExpense,
+  );
 
   SmartInsight? _monthTrend() {
     final now = facts.monthSpent;
@@ -254,7 +255,11 @@ class InsightEngine {
       tone: tone,
       icon: up ? Icons.north_east_rounded : Icons.south_east_rounded,
       title: up
-          ? _pick(['أسبوع أغلى من سابقه', 'ارتفاع في صرف هذا الأسبوع', 'الأسبوع الحالي مكلف'])
+          ? _pick([
+              'أسبوع أغلى من سابقه',
+              'ارتفاع في صرف هذا الأسبوع',
+              'الأسبوع الحالي مكلف',
+            ])
           : _pick(['أسبوع أوفر', 'هذا الأسبوع أهدأ', 'صرف أسبوعي أقل']),
       body: up
           ? _say(tone, [
@@ -265,7 +270,8 @@ class InsightEngine {
               'صرفت هذا الأسبوع ${_m(now)}، أي أقل بنسبة ${_pct(change)} من الأسبوع الماضي.',
               'أسبوع جيد! انخفض صرفك بنسبة ${_pct(change)} مقارنةً بالأسبوع الماضي.',
             ]),
-      detail: 'هذا الأسبوع: ${_m(now)}\nالأسبوع الماضي في الأيام نفسها: ${_m(before)}',
+      detail:
+          'هذا الأسبوع: ${_m(now)}\nالأسبوع الماضي في الأيام نفسها: ${_m(before)}',
       priority: up ? 62 : 48,
     );
   }
@@ -297,9 +303,10 @@ class InsightEngine {
         'إن أردت أثراً سريعاً في ميزانيتك فابدأ ب$name، إذ صرفت عليه ${_m(top.value)} حتى الآن.',
       ]),
       detail: [
-        for (final entry in (facts.monthCategories.entries.toList()
-              ..sort((a, b) => b.value.compareTo(a.value)))
-            .take(4))
+        for (final entry
+            in (facts.monthCategories.entries.toList()
+                  ..sort((a, b) => b.value.compareTo(a.value)))
+                .take(4))
           '${entry.key}: ${_m(entry.value)} (${_pct(entry.value / facts.monthSpent)})',
       ].join('\n'),
       priority: share > 0.5 ? 72 : 55,
@@ -337,7 +344,8 @@ class InsightEngine {
         'زاد صرفك على $name بمقدار ${_m(worst.value - before)} عن الشهر الماضي. هل هو مصروف طارئ أم عادة جديدة؟',
         'سجّل $name أكبر زيادة هذا الشهر بنسبة ${_pct(worstGrowth)}، فحدّد له سقفاً أسبوعياً.',
       ]),
-      detail: 'هذا الشهر: ${_m(worst.value)}\nالشهر الماضي في الفترة نفسها: ${_m(before)}',
+      detail:
+          'هذا الشهر: ${_m(worst.value)}\nالشهر الماضي في الفترة نفسها: ${_m(before)}',
       priority: 85,
       action: InsightAction.expenseHistory,
     );
@@ -362,11 +370,7 @@ class InsightEngine {
       id: 'category-drop',
       tone: InsightTone.positive,
       icon: Icons.thumb_up_alt_outlined,
-      title: _pick([
-        'تحسّن في $name',
-        'وفّرت على $name',
-        'صرف أقل على $name',
-      ]),
+      title: _pick(['تحسّن في $name', 'وفّرت على $name', 'صرف أقل على $name']),
       body: _say(InsightTone.positive, [
         'صرفك على $name أقل بمقدار ${_m(bestSaving)} من الفترة نفسها في الشهر الماضي.',
         'نجحت في خفض الصرف على $name، والفارق حتى الآن ${_m(bestSaving)}.',
@@ -381,7 +385,8 @@ class InsightEngine {
     if (facts.dayOfMonth < 5 || facts.monthSpent <= 0) return null;
     final projected = facts.projectedMonthSpend;
     final income = facts.effectiveMonthlyIncome;
-    final detail = 'متوسطك اليومي الأخير: ${_m(facts.dailyAverageRecent)}\n'
+    final detail =
+        'متوسطك اليومي الأخير: ${_m(facts.dailyAverageRecent)}\n'
         'المتبقي من الشهر: ${_days(facts.daysLeftInMonth)}\n'
         'التوقع لنهاية الشهر: ${_m(projected)}';
 
@@ -439,12 +444,14 @@ class InsightEngine {
         tone: InsightTone.warning,
         icon: Icons.account_balance_wallet_outlined,
         title: _pick(['نفد رصيدك', 'الرصيد صفر']),
-        body: 'لم يبقَ رصيد حتى الدخل القادم بعد ${_days(untilIncome)}، فأجّل غير الضروري إن استطعت.',
+        body:
+            'لم يبقَ رصيد حتى الدخل القادم بعد ${_days(untilIncome)}، فأجّل غير الضروري إن استطعت.',
         priority: 95,
       );
     }
     final dailyLimit = facts.balance / untilIncome;
-    final detail = 'الرصيد الحالي: ${_m(facts.balance)}\n'
+    final detail =
+        'الرصيد الحالي: ${_m(facts.balance)}\n'
         'متوسطك اليومي الأخير: ${_m(facts.dailyAverageRecent)}\n'
         'الدخل القادم بعد: ${_days(untilIncome)}';
     if (runway < untilIncome) {
@@ -558,10 +565,7 @@ class InsightEngine {
       id: 'largest-expense',
       tone: InsightTone.info,
       icon: Icons.receipt_long_outlined,
-      title: _pick([
-        'مصروف كبير واحد',
-        'أكبر مصروف هذا الشهر',
-      ]),
+      title: _pick(['مصروف كبير واحد', 'أكبر مصروف هذا الشهر']),
       body: _say(InsightTone.info, [
         'يمثّل مصروفك $label بقيمة ${_m(biggest.amount)} نسبة ${_pct(share)} من صرفك هذا الشهر.',
         'استحوذ مصروف واحد ($label، ${_m(biggest.amount)}) على ${_pct(share)} من صرف الشهر. إن كان متوقعاً فخطّط له في الأشهر القادمة.',
@@ -607,10 +611,7 @@ class InsightEngine {
       id: 'payment-mix',
       tone: InsightTone.tip,
       icon: Icons.credit_card_rounded,
-      title: _pick([
-        'معظم صرفك بالبطاقة',
-        '${_pct(share)} من صرفك بالبطاقة',
-      ]),
+      title: _pick(['معظم صرفك بالبطاقة', '${_pct(share)} من صرفك بالبطاقة']),
       body: _say(InsightTone.tip, [
         'الدفع بالبطاقة يجعل الصرف أسهل وأقل إحساساً، فراجع مصاريف البطاقة أسبوعياً.',
         'دفعت ${_pct(share)} من صرفك هذا الشهر بالبطاقة، وقد يخفّض الدفع النقدي المصاريف الصغيرة.',
@@ -634,10 +635,7 @@ class InsightEngine {
       id: 'night-spending',
       tone: InsightTone.tip,
       icon: Icons.nightlight_round,
-      title: _pick([
-        'صرف ليلي ملحوظ',
-        'السهر مكلف',
-      ]),
+      title: _pick(['صرف ليلي ملحوظ', 'السهر مكلف']),
       body: _say(InsightTone.tip, [
         'كان ${Ar.expenses.of(night.length)} من مصاريفك الأخيرة في وقت متأخر ليلاً، بمجموع ${_m(sum)}.',
         'جزء واضح من صرفك يحدث بعد العاشرة مساءً، وقرارات الليل غالباً أقل تخطيطاً.',
@@ -653,10 +651,7 @@ class InsightEngine {
       id: 'uncategorized',
       tone: InsightTone.tip,
       icon: Icons.label_outline_rounded,
-      title: _pick([
-        'الكثير تحت «أخرى»',
-        'صنّف مصاريفك بدقة',
-      ]),
+      title: _pick(['الكثير تحت «أخرى»', 'صنّف مصاريفك بدقة']),
       body: _say(InsightTone.tip, [
         'يقع ${_pct(other / facts.monthSpent)} من صرفك تحت تصنيف «أخرى»، وتصنيفه بدقة يجعل التحليل أوضح.',
         'كلما قلّ ما تضعه تحت «أخرى» كانت نصائحي أدق، فجرّب إنشاء تصنيف خاص لما يتكرر.',
@@ -683,10 +678,7 @@ class InsightEngine {
       id: 'obligations-soon',
       tone: tone,
       icon: Icons.event_repeat_rounded,
-      title: _pick([
-        'التزامات خلال أيام',
-        'دفعات قادمة قريباً',
-      ]),
+      title: _pick(['التزامات خلال أيام', 'دفعات قادمة قريباً']),
       body: _say(tone, [
         'تستحق خلال الأيام القليلة القادمة: $names، بمجموع ${_m(total)}.',
         'جهّز ${_m(total)} لالتزامات قريبة: $names.',
@@ -773,85 +765,85 @@ class InsightEngine {
     for (final goal in facts.goals.take(3)) {
       if (goal.ratio >= 1) continue;
       final name = Ar.quote(goal.name);
-      final detail = 'الهدف: ${_m(goal.target)}\nتم توفير: ${_m(goal.saved)}\n'
+      final detail =
+          'الهدف: ${_m(goal.target)}\nتم توفير: ${_m(goal.saved)}\n'
           'المتبقي: ${_m(goal.remaining)}';
 
       if (goal.ratio >= 0.8) {
-        results.add(SmartInsight(
-          id: 'goal-near-${goal.id}',
-          tone: InsightTone.positive,
-          icon: Icons.emoji_events_outlined,
-          title: _pick([
-            'اقتربت من $name',
-            '$name على وشك الاكتمال',
-            'أنجزت ${_pct(goal.ratio)} من $name',
-          ]),
-          body: _say(InsightTone.positive, [
-            'بقي ${_m(goal.remaining)} فقط لتحقيق $name. دفعة أخيرة!',
-            'أنجزت ${_pct(goal.ratio)} من $name، وخطوة صغيرة تفصلك عن الوصول.',
-          ]),
-          detail: detail,
-          priority: 74,
-          action: InsightAction.manualSave,
-        ));
+        results.add(
+          SmartInsight(
+            id: 'goal-near-${goal.id}',
+            tone: InsightTone.positive,
+            icon: Icons.emoji_events_outlined,
+            title: _pick([
+              'اقتربت من $name',
+              '$name على وشك الاكتمال',
+              'أنجزت ${_pct(goal.ratio)} من $name',
+            ]),
+            body: _say(InsightTone.positive, [
+              'بقي ${_m(goal.remaining)} فقط لتحقيق $name. دفعة أخيرة!',
+              'أنجزت ${_pct(goal.ratio)} من $name، وخطوة صغيرة تفصلك عن الوصول.',
+            ]),
+            detail: detail,
+            priority: 74,
+            action: InsightAction.manualSave,
+          ),
+        );
         continue;
       }
 
       final monthsToDeadline =
           goal.deadline.difference(facts.today).inDays / 30;
       if (monthsToDeadline <= 0) {
-        results.add(SmartInsight(
-          id: 'goal-late-${goal.id}',
-          tone: InsightTone.warning,
-          icon: Icons.event_busy_outlined,
-          title: _pick([
-            'انتهى موعد $name',
-            '$name تجاوز موعده',
-          ]),
-          body: _say(InsightTone.warning, [
-            'انتهت المدة التي حدّدتها لـ$name وما زال ينقصه ${_m(goal.remaining)}، فمدّد المدة أو زِد المبلغ الشهري.',
-            'بلغ $name ${_pct(goal.ratio)} بعد انتهاء موعده. لا بأس، عدّل الخطة وتابع.',
-          ]),
-          detail: detail,
-          priority: 70,
-        ));
+        results.add(
+          SmartInsight(
+            id: 'goal-late-${goal.id}',
+            tone: InsightTone.warning,
+            icon: Icons.event_busy_outlined,
+            title: _pick(['انتهى موعد $name', '$name تجاوز موعده']),
+            body: _say(InsightTone.warning, [
+              'انتهت المدة التي حدّدتها لـ$name وما زال ينقصه ${_m(goal.remaining)}، فمدّد المدة أو زِد المبلغ الشهري.',
+              'بلغ $name ${_pct(goal.ratio)} بعد انتهاء موعده. لا بأس، عدّل الخطة وتابع.',
+            ]),
+            detail: detail,
+            priority: 70,
+          ),
+        );
         continue;
       }
 
       final needed = goal.remaining / math.max(0.25, monthsToDeadline);
       if (pace <= 0 || goal.remaining / pace > monthsToDeadline + 0.25) {
-        results.add(SmartInsight(
-          id: 'goal-behind-${goal.id}',
-          tone: InsightTone.warning,
-          icon: Icons.speed_rounded,
-          title: _pick([
-            '$name يحتاج إلى تسريع',
-            'وتيرة $name بطيئة',
-          ]),
-          body: _say(InsightTone.warning, [
-            'لتحقيق $name في موعده تحتاج إلى قرابة ${_m(needed)} شهرياً.',
-            'بوتيرتك الحالية لن يكتمل $name في موعده، فخصّص له ${_m(needed)} شهرياً.',
-          ]),
-          detail: '$detail\nالمطلوب شهرياً: ${_m(needed)}',
-          priority: 68,
-          action: InsightAction.manualSave,
-        ));
+        results.add(
+          SmartInsight(
+            id: 'goal-behind-${goal.id}',
+            tone: InsightTone.warning,
+            icon: Icons.speed_rounded,
+            title: _pick(['$name يحتاج إلى تسريع', 'وتيرة $name بطيئة']),
+            body: _say(InsightTone.warning, [
+              'لتحقيق $name في موعده تحتاج إلى قرابة ${_m(needed)} شهرياً.',
+              'بوتيرتك الحالية لن يكتمل $name في موعده، فخصّص له ${_m(needed)} شهرياً.',
+            ]),
+            detail: '$detail\nالمطلوب شهرياً: ${_m(needed)}',
+            priority: 68,
+            action: InsightAction.manualSave,
+          ),
+        );
       } else {
-        results.add(SmartInsight(
-          id: 'goal-ontrack-${goal.id}',
-          tone: InsightTone.positive,
-          icon: Icons.track_changes_rounded,
-          title: _pick([
-            '$name على المسار',
-            'تقدّم جيد في $name',
-          ]),
-          body: _say(InsightTone.positive, [
-            'وصلت إلى ${_pct(goal.ratio)} من $name، وبهذه الوتيرة ستحققه في موعده.',
-            'يسير $name كما خطّطت (${_pct(goal.ratio)}).',
-          ]),
-          detail: detail,
-          priority: 46,
-        ));
+        results.add(
+          SmartInsight(
+            id: 'goal-ontrack-${goal.id}',
+            tone: InsightTone.positive,
+            icon: Icons.track_changes_rounded,
+            title: _pick(['$name على المسار', 'تقدّم جيد في $name']),
+            body: _say(InsightTone.positive, [
+              'وصلت إلى ${_pct(goal.ratio)} من $name، وبهذه الوتيرة ستحققه في موعده.',
+              'يسير $name كما خطّطت (${_pct(goal.ratio)}).',
+            ]),
+            detail: detail,
+            priority: 46,
+          ),
+        );
       }
     }
     return results;
@@ -868,10 +860,7 @@ class InsightEngine {
         id: 'goal-stalled-${goal.id}',
         tone: InsightTone.tip,
         icon: Icons.pause_circle_outline_rounded,
-        title: _pick([
-          '$name متوقف',
-          'لم توفّر لـ$name مؤخراً',
-        ]),
+        title: _pick(['$name متوقف', 'لم توفّر لـ$name مؤخراً']),
         body: _say(InsightTone.tip, [
           'مرّ أكثر من شهر دون إضافة إلى $name، وحتى مبلغ صغير يعيد الزخم.',
           '$name بانتظارك. جرّب تحويل مبلغ ثابت مع كل دخل.',
@@ -892,10 +881,7 @@ class InsightEngine {
         id: 'savings-rate',
         tone: InsightTone.positive,
         icon: Icons.savings_outlined,
-        title: _pick([
-          'نسبة توفير ممتازة',
-          'توفّر ${_pct(rate)} من دخلك',
-        ]),
+        title: _pick(['نسبة توفير ممتازة', 'توفّر ${_pct(rate)} من دخلك']),
         body: _say(InsightTone.positive, [
           'وفّرت ${_m(facts.savedLast30)} خلال آخر 30 يوماً، أي ${_pct(rate)} من دخلك، وهذا فوق نسبة ${_pct(0.2)} الموصى بها.',
           'نسبة توفيرك ${_pct(rate)}، وأنت تبني أماناً مالياً حقيقياً.',
@@ -964,7 +950,8 @@ class InsightEngine {
         'بحسب دخلك وصرفك المعتاد، يُعدّ ${_m(amount)} شهرياً مبلغاً مريحاً للتوفير، أي ${_m(amount * 12)} في السنة.',
         'جرّب تحويل ${_m(amount)} إلى التوفير فور وصول دخلك، قبل أن تبدأ بالصرف.',
       ]),
-      detail: 'الدخل الشهري: ${_m(income)}\n'
+      detail:
+          'الدخل الشهري: ${_m(income)}\n'
           'الالتزامات: ${_m(facts.obligationsMonthly)}\n'
           'متوسط الصرف: ${_m(facts.averageMonthlySpend)}',
       priority: 62,
@@ -982,10 +969,7 @@ class InsightEngine {
       id: 'withdrawals',
       tone: InsightTone.warning,
       icon: Icons.output_rounded,
-      title: _pick([
-        'سحوبات متكررة من التوفير',
-        'سحبت من التوفير $times',
-      ]),
+      title: _pick(['سحوبات متكررة من التوفير', 'سحبت من التوفير $times']),
       body: _say(InsightTone.warning, [
         'سحبت من التوفير $times خلال آخر 30 يوماً، والتوفير ينجح أكثر حين يبقى بعيداً عن الصرف اليومي.',
         'قد يعني السحب المتكرر أن الميزانية الشهرية ضيقة، فراجع أكبر تصنيفاتك قبل السحب القادم.',
@@ -1001,10 +985,7 @@ class InsightEngine {
       id: 'leftover-habit',
       tone: InsightTone.positive,
       icon: Icons.move_down_rounded,
-      title: _pick([
-        'عادة ذكية',
-        'تنقل الفائض إلى التوفير',
-      ]),
+      title: _pick(['عادة ذكية', 'تنقل الفائض إلى التوفير']),
       body: _say(InsightTone.positive, [
         'نقلت باقي رصيدك إلى التوفير ${Ar.times.of(count)}، وهذه من أفضل العادات المالية.',
         'كل مرة تنقل فيها ما تبقّى إلى التوفير تبني رصيداً دون جهد إضافي.',
@@ -1058,10 +1039,7 @@ class InsightEngine {
       id: 'emergency-fund',
       tone: InsightTone.tip,
       icon: Icons.shield_outlined,
-      title: _pick([
-        'ابنِ صندوق طوارئ',
-        'كم يغطي توفيرك؟',
-      ]),
+      title: _pick(['ابنِ صندوق طوارئ', 'كم يغطي توفيرك؟']),
       body: _say(InsightTone.tip, [
         'يغطي توفيرك صرفك المعتاد لمدة \u2066$covered\u2069 شهر فقط، والحدّ الآمن ثلاثة أشهر، أي ${_m(monthly * 3)}.',
         'يحميك صندوق الطوارئ من المفاجآت، فاجعل هدفك الأول ${_m(monthly * 3)}، أي صرف ثلاثة أشهر.',
@@ -1081,10 +1059,7 @@ class InsightEngine {
       id: 'shopping-list',
       tone: InsightTone.tip,
       icon: Icons.checklist_rounded,
-      title: _pick([
-        '$counted في قائمة المشتريات',
-        'قائمتك بانتظارك',
-      ]),
+      title: _pick(['$counted في قائمة المشتريات', 'قائمتك بانتظارك']),
       body: _say(InsightTone.tip, [
         'لديك $counted لم تشترِها بعد، فحدّد ميزانية للقائمة قبل الخروج للتسوق.',
         'التسوق من قائمة يقلّل الشراء العشوائي، فراجع العناصر واحذف غير الضروري منها.',
@@ -1154,7 +1129,8 @@ class InsightEngine {
     }
 
     if (facts.prevMonthSpentSameSpan > 0 && facts.monthSpent > 0) {
-      final change = (facts.monthSpent - facts.prevMonthSpentSameSpan) /
+      final change =
+          (facts.monthSpent - facts.prevMonthSpentSameSpan) /
           facts.prevMonthSpentSameSpan;
       final points = (1 - ((change + 0.1) / 0.4).clamp(0.0, 1.0)) * 15;
       earned += points;
@@ -1172,11 +1148,11 @@ class InsightEngine {
   }
 
   String _healthLabel(int score) => switch (HealthBand.of(score)) {
-        HealthBand.excellent => 'ممتازة',
-        HealthBand.good => 'جيدة',
-        HealthBand.fair => 'مقبولة',
-        HealthBand.low => 'تحتاج إلى اهتمام',
-      };
+    HealthBand.excellent => 'ممتازة',
+    HealthBand.good => 'جيدة',
+    HealthBand.fair => 'مقبولة',
+    HealthBand.low => 'تحتاج إلى اهتمام',
+  };
 
   SmartInsight _healthInsight() {
     final parts = _healthParts();
@@ -1213,10 +1189,12 @@ class InsightEngine {
     final rate = income == null || income <= 0
         ? null
         : (facts.savedLast90 / 3) / income;
-    final top = _largestCategory(facts.categoryTotals(
-      facts.today.subtract(const Duration(days: 60)),
-      facts.today.add(const Duration(days: 1)),
-    ));
+    final top = _largestCategory(
+      facts.categoryTotals(
+        facts.today.subtract(const Duration(days: 60)),
+        facts.today.add(const Duration(days: 1)),
+      ),
+    );
 
     final String name;
     final String body;
@@ -1301,10 +1279,7 @@ class InsightEngine {
       id: 'usage-duration',
       tone: InsightTone.info,
       icon: Icons.history_rounded,
-      title: _pick([
-        '${_days(days)} مع وفّر',
-        'رحلتك مستمرة',
-      ]),
+      title: _pick(['${_days(days)} مع وفّر', 'رحلتك مستمرة']),
       body: _pick([
         'بدأت قبل ${_days(days)}، وسجّلت ${Ar.expenses.of(facts.expenses.length)} منذ ذلك الحين.',
         'خلال ${_days(days)} جمعت بيانات تكفي لفهم عاداتك، وكل يوم إضافي يجعل التحليل أدق.',
@@ -1324,10 +1299,7 @@ class InsightEngine {
         id: 'logging-habit',
         tone: InsightTone.tip,
         icon: Icons.edit_calendar_outlined,
-        title: _pick([
-          'آخر مصروف قبل ${_days(idle)}',
-          'هل نسيت التسجيل؟',
-        ]),
+        title: _pick(['آخر مصروف قبل ${_days(idle)}', 'هل نسيت التسجيل؟']),
         body: _say(InsightTone.tip, [
           'لم تسجّل أي مصروف منذ ${_days(idle)}، والتحليل أدق حين تكون البيانات كاملة.',
           'سجّل ما صرفته في الأيام الماضية ولو تقريبياً، ليبقى رصيدك واقعياً.',
@@ -1342,7 +1314,8 @@ class InsightEngine {
         tone: InsightTone.positive,
         icon: Icons.edit_calendar_outlined,
         title: _pick(['تسجيل منتظم', 'بياناتك دقيقة']),
-        body: 'سجّلت مصاريف في ${_days(facts.activeDaysLast30)} من آخر 30 يوماً، وهذا ما يجعل الأرقام هنا موثوقة.',
+        body:
+            'سجّلت مصاريف في ${_days(facts.activeDaysLast30)} من آخر 30 يوماً، وهذا ما يجعل الأرقام هنا موثوقة.',
         priority: 32,
       );
     }
@@ -1375,16 +1348,14 @@ class InsightEngine {
   SmartInsight _tip(InsightScope scope) {
     final scoped = switch (scope) {
       InsightScope.reports => [
-          'تقسيم الميزانية على الأسابيع يجعل التحكم في الصرف أسهل من متابعة الشهر كاملاً.',
-          'راجع أكبر ثلاثة مصاريف كل أسبوع واسأل نفسك: هل كانت ضرورية؟',
-        ],
+        'تقسيم الميزانية على الأسابيع يجعل التحكم في الصرف أسهل من متابعة الشهر كاملاً.',
+        'راجع أكبر ثلاثة مصاريف كل أسبوع واسأل نفسك: هل كانت ضرورية؟',
+      ],
       InsightScope.savings => [
-          'التوفير التلقائي مع كل دخل أسهل من التوفير مما يتبقّى آخر الشهر.',
-          'قسّم الهدف الكبير إلى مراحل شهرية صغيرة.',
-        ],
-      InsightScope.profile => [
-          'أفضل وقت لمراجعة وضعك المالي بداية كل شهر.',
-        ],
+        'التوفير التلقائي مع كل دخل أسهل من التوفير مما يتبقّى آخر الشهر.',
+        'قسّم الهدف الكبير إلى مراحل شهرية صغيرة.',
+      ],
+      InsightScope.profile => ['أفضل وقت لمراجعة وضعك المالي بداية كل شهر.'],
     };
     return SmartInsight(
       id: 'tip',
@@ -1396,11 +1367,17 @@ class InsightEngine {
     );
   }
 
-  String _headline(InsightScope scope, List<SmartInsight> insights, int? score) {
-    final warnings =
-        insights.where((item) => item.tone == InsightTone.warning).length;
-    final positives =
-        insights.where((item) => item.tone == InsightTone.positive).length;
+  String _headline(
+    InsightScope scope,
+    List<SmartInsight> insights,
+    int? score,
+  ) {
+    final warnings = insights
+        .where((item) => item.tone == InsightTone.warning)
+        .length;
+    final positives = insights
+        .where((item) => item.tone == InsightTone.positive)
+        .length;
 
     if (scope == InsightScope.profile && score != null) {
       final label = _healthLabel(score);
@@ -1443,13 +1420,10 @@ class InsightEngine {
     }
     return switch (scope) {
       InsightScope.savings => _pick([
-          'هذه قراءتي لتوفيرك وأهدافك.',
-          'إليك وضع توفيرك واقتراحاتي.',
-        ]),
-      _ => _pick([
-          'هذه قراءتي لمصاريفك.',
-          'إليك أهم ما لاحظته في صرفك.',
-        ]),
+        'هذه قراءتي لتوفيرك وأهدافك.',
+        'إليك وضع توفيرك واقتراحاتي.',
+      ]),
+      _ => _pick(['هذه قراءتي لمصاريفك.', 'إليك أهم ما لاحظته في صرفك.']),
     };
   }
 
@@ -1458,35 +1432,43 @@ class InsightEngine {
     switch (scope) {
       case InsightScope.reports:
         if (facts.monthSpent > 0) {
-          parts.add(_pick([
-            'صرفت هذا الشهر ${_m(facts.monthSpent)} بمعدل ${_m(facts.dailyAverageThisMonth)} يومياً.',
-            'حتى اليوم ${facts.dayOfMonth} من الشهر بلغ صرفك ${_m(facts.monthSpent)}.',
-            'إجمالي صرفك منذ بداية الشهر ${_m(facts.monthSpent)}.',
-          ]));
+          parts.add(
+            _pick([
+              'صرفت هذا الشهر ${_m(facts.monthSpent)} بمعدل ${_m(facts.dailyAverageThisMonth)} يومياً.',
+              'حتى اليوم ${facts.dayOfMonth} من الشهر بلغ صرفك ${_m(facts.monthSpent)}.',
+              'إجمالي صرفك منذ بداية الشهر ${_m(facts.monthSpent)}.',
+            ]),
+          );
         }
         final top = _largestCategory(facts.monthCategories);
         if (top != null) {
           final name = Ar.category(top.key);
-          parts.add(_pick([
-            'أكبر تصنيف هو $name.',
-            'ذهب معظم الصرف إلى $name.',
-            'يتصدّر $name قائمة مصاريفك.',
-          ]));
+          parts.add(
+            _pick([
+              'أكبر تصنيف هو $name.',
+              'ذهب معظم الصرف إلى $name.',
+              'يتصدّر $name قائمة مصاريفك.',
+            ]),
+          );
         }
       case InsightScope.savings:
-        parts.add(_pick([
-          'رصيد توفيرك ${_m(facts.savingsBalance)}.',
-          'لديك ${_m(facts.savingsBalance)} في التوفير.',
-        ]));
+        parts.add(
+          _pick([
+            'رصيد توفيرك ${_m(facts.savingsBalance)}.',
+            'لديك ${_m(facts.savingsBalance)} في التوفير.',
+          ]),
+        );
         if (facts.goals.isNotEmpty) {
           parts.add('لديك ${Ar.activeGoals.of(facts.goals.length)}.');
         }
       case InsightScope.profile:
-        parts.add(_pick([
-          'جمعت هنا أهم ما في مصاريفك وتوفيرك وعاداتك.',
-          'قراءة شاملة مبنية على كل ما سجّلته.',
-          'هذه خلاصة ما تقوله أرقامك.',
-        ]));
+        parts.add(
+          _pick([
+            'جمعت هنا أهم ما في مصاريفك وتوفيرك وعاداتك.',
+            'قراءة شاملة مبنية على كل ما سجّلته.',
+            'هذه خلاصة ما تقوله أرقامك.',
+          ]),
+        );
     }
     return parts.join(' ');
   }

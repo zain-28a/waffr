@@ -130,14 +130,8 @@ void main() {
   });
 
   test('country search folds hamza and matches calling codes', () {
-    expect(
-      Countries.search('الاردن').map((item) => item.iso),
-      contains('JO'),
-    );
-    expect(
-      Countries.search('+963').map((item) => item.iso),
-      contains('SY'),
-    );
+    expect(Countries.search('الاردن').map((item) => item.iso), contains('JO'));
+    expect(Countries.search('+963').map((item) => item.iso), contains('SY'));
     expect(Countries.byName('سوريا')?.dialLabel, '+963');
   });
 }
