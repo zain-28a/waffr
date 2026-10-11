@@ -12,6 +12,7 @@ import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 Future<void> showManageGoalsSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -103,7 +104,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
                               return AnimatedBuilder(
                                 animation: animation,
                                 builder: (context, _) {
-                                  final t = Curves.easeOut.transform(
+                                  final t = AppMotion.soft.transform(
                                     animation.value,
                                   );
                                   return Material(

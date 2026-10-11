@@ -521,7 +521,7 @@ class _MethodButton extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: AppMotion.of(context, AppMotion.medium),
-        curve: Curves.easeOutCubic,
+        curve: AppMotion.enter,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
           color: selected

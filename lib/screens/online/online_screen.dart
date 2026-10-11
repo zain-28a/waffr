@@ -116,14 +116,16 @@ class _OnlineScreenState extends State<OnlineScreen>
       if (!mounted) return;
       setState(() {
         _articles = articles;
-        _newsState =
-            articles.isEmpty ? _NewsLoadState.empty : _NewsLoadState.ready;
+        _newsState = articles.isEmpty
+            ? _NewsLoadState.empty
+            : _NewsLoadState.ready;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _newsState =
-            _articles.isEmpty ? _NewsLoadState.error : _NewsLoadState.ready;
+        _newsState = _articles.isEmpty
+            ? _NewsLoadState.error
+            : _NewsLoadState.ready;
       });
     } finally {
       _newsRequestInFlight = false;
@@ -200,7 +202,7 @@ class _OnlineScreenState extends State<OnlineScreen>
           child: AnimatedOpacity(
             opacity: locked ? 1 : 0,
             duration: AppMotion.of(context, AppMotion.slow),
-            curve: Curves.easeOutCubic,
+            curve: AppMotion.enter,
             child: _SignInGate(onLogin: _openLogin),
           ),
         ),
@@ -298,10 +300,7 @@ class _ExchangeRateCard extends StatefulWidget {
   final ExchangeRate rate;
   final ValueChanged<String> onSelected;
 
-  const _ExchangeRateCard({
-    required this.rate,
-    required this.onSelected,
-  });
+  const _ExchangeRateCard({required this.rate, required this.onSelected});
 
   @override
   State<_ExchangeRateCard> createState() => _ExchangeRateCardState();
@@ -388,7 +387,8 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
           Text(
             'سعر الصرف',
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 13,
               color: colors.textSecondary,
             ),
@@ -404,8 +404,8 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
                   Flexible(
                     child: AnimatedSwitcher(
                       duration: AppMotion.of(context, AppMotion.medium),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
+                      switchInCurve: AppMotion.enter,
+                      switchOutCurve: AppMotion.exit,
                       transitionBuilder: (child, animation) {
                         return FadeTransition(
                           opacity: animation,
@@ -422,7 +422,8 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
                         'الليرة السورية · ${rate.pairLabel}',
                         key: ValueKey(rate.code),
                         style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                          fontFamily: 'Outfit',
+                          fontFamilyFallback: ['Tajawal'],
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: colors.textPrimary,
@@ -434,7 +435,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
                   AnimatedRotation(
                     turns: _menuOpen ? 0.5 : 0,
                     duration: AppMotion.of(context, AppMotion.medium),
-                    curve: Curves.easeOutBack,
+                    curve: AppMotion.overshoot,
                     child: Icon(
                       Icons.keyboard_arrow_down_rounded,
                       color: colors.accent,
@@ -503,6 +504,11 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
   late final Animation<Offset> _slide;
   late final CurvedAnimation _curve;
 
+  // One staggered curve per row, made once and disposed with the menu.
+  // Building them in itemBuilder left a status listener on the controller
+  // for every row on every rebuild.
+  late final List<CurvedAnimation> _rowCurves;
+
   @override
   void initState() {
     super.initState();
@@ -513,8 +519,8 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
     );
     _curve = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
+      curve: AppMotion.enter,
+      reverseCurve: AppMotion.exit,
     );
     _fade = _curve;
     _scale = Tween<double>(begin: 0.92, end: 1).animate(_curve);
@@ -522,6 +528,19 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
       begin: const Offset(0, -0.06),
       end: Offset.zero,
     ).animate(_curve);
+
+    final count = OnlineFeedService.rates.length;
+    _rowCurves = [
+      for (var i = 0; i < count; i++)
+        CurvedAnimation(
+          parent: _controller,
+          curve: Interval(
+            i / count * 0.35,
+            (i / count * 0.35 + 0.65).clamp(0.0, 1.0).toDouble(),
+            curve: AppMotion.enter,
+          ),
+        ),
+    ];
   }
 
   @override
@@ -544,6 +563,9 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
 
   @override
   void dispose() {
+    for (final curve in _rowCurves) {
+      curve.dispose();
+    }
     _curve.dispose();
     _controller.dispose();
     super.dispose();
@@ -562,9 +584,12 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
         CompositedTransformFollower(
           link: widget.link,
           showWhenUnlinked: false,
-          targetAnchor:
-              AlignmentDirectional.bottomStart.resolve(widget.direction),
-          followerAnchor: AlignmentDirectional.topStart.resolve(widget.direction),
+          targetAnchor: AlignmentDirectional.bottomStart.resolve(
+            widget.direction,
+          ),
+          followerAnchor: AlignmentDirectional.topStart.resolve(
+            widget.direction,
+          ),
           offset: const Offset(0, 8),
           child: FadeTransition(
             opacity: _fade,
@@ -572,7 +597,9 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
               position: _slide,
               child: ScaleTransition(
                 scale: _scale,
-                alignment: AlignmentDirectional.topStart.resolve(widget.direction),
+                alignment: AlignmentDirectional.topStart.resolve(
+                  widget.direction,
+                ),
                 child: Material(
                   color: Colors.transparent,
                   child: ConstrainedBox(
@@ -595,26 +622,18 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
                           thickness: 1,
                           indent: 14,
                           endIndent: 14,
-                          color: widget.colors.textSecondary
-                              .withValues(alpha: 0.12),
+                          color: widget.colors.textSecondary.withValues(
+                            alpha: 0.12,
+                          ),
                         ),
                         itemBuilder: (context, i) {
-                          final start =
-                              i / OnlineFeedService.rates.length * 0.35;
                           return _CurrencyOption(
                             option: OnlineFeedService.rates[i],
                             selected:
                                 OnlineFeedService.rates[i].code ==
                                 widget.selected,
                             colors: widget.colors,
-                            animation: CurvedAnimation(
-                              parent: _controller,
-                              curve: Interval(
-                                start,
-                                (start + 0.65).clamp(0.0, 1.0).toDouble(),
-                                curve: Curves.easeOutCubic,
-                              ),
-                            ),
+                            animation: _rowCurves[i],
                             onTap: () => widget.onSelected(
                               OnlineFeedService.rates[i].code,
                             ),
@@ -670,7 +689,8 @@ class _CurrencyOption extends StatelessWidget {
                         ? '${option.pairLabel} · ${option.code}'
                         : option.pairLabel,
                     style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: ['Tajawal'],
                       fontSize: 15,
                       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                       color: selected ? colors.accent : colors.textPrimary,
@@ -715,7 +735,8 @@ class _RateValue extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
               color: colors.textSecondary,
@@ -726,8 +747,8 @@ class _RateValue extends StatelessWidget {
             fit: BoxFit.scaleDown,
             child: AnimatedSwitcher(
               duration: AppMotion.of(context, AppMotion.medium),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
+              switchInCurve: AppMotion.enter,
+              switchOutCurve: AppMotion.exit,
               transitionBuilder: (child, animation) {
                 return FadeTransition(
                   opacity: animation,
@@ -746,7 +767,8 @@ class _RateValue extends StatelessWidget {
                     : _rateFormat.format(value),
                 key: ValueKey(valueKey),
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   color: colors.accent,
@@ -758,7 +780,8 @@ class _RateValue extends StatelessWidget {
           Text(
             sypCurrencyLabel,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 12,
               color: colors.textSecondary,
             ),
@@ -789,7 +812,8 @@ class _NearbyPlacesCard extends StatelessWidget {
           Text(
             'مواقع قريبة',
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 16,
               fontWeight: FontWeight.w800,
               color: colors.textPrimary,
@@ -812,7 +836,10 @@ class _NearbyPlacesCard extends StatelessWidget {
                 onTap: () => onOpen(category),
                 colorType: GlassColorType.background,
                 borderRadius: 16,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 child: Row(
                   children: [
                     Icon(category.icon, size: 18, color: colors.accent),
@@ -823,7 +850,8 @@ class _NearbyPlacesCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                          fontFamily: 'Outfit',
+                          fontFamilyFallback: ['Tajawal'],
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           height: 1.15,
@@ -922,7 +950,8 @@ class _NewsPreviewCardState extends State<_NewsPreviewCard> {
                     child: Text(
                       'الأخبار',
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: colors.textPrimary,
@@ -937,7 +966,8 @@ class _NewsPreviewCardState extends State<_NewsPreviewCard> {
                         key: ValueKey(_index),
                         textDirection: TextDirection.ltr,
                         style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                          fontFamily: 'Outfit',
+                          fontFamilyFallback: ['Tajawal'],
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: colors.textSecondary,
@@ -952,46 +982,55 @@ class _NewsPreviewCardState extends State<_NewsPreviewCard> {
                 ],
               ),
               const SizedBox(height: 17),
-              if (ready)
-                SizedBox(
-                  height: _pageHeight,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: NotificationListener<OverscrollNotification>(
-                          onNotification: _forwardOverscroll,
-                          child: PageView.builder(
-                            controller: _pages,
-                            scrollDirection: Axis.vertical,
-                            physics: const PageScrollPhysics(
-                              parent: ClampingScrollPhysics(),
+              // Loading, the headline pager and the empty/error copy have
+              // different heights; grow and shrink between them smoothly.
+              AnimatedSize(
+                duration: AppMotion.of(context, AppMotion.medium),
+                curve: AppMotion.enter,
+                alignment: Alignment.topCenter,
+                child: ready
+                    ? SizedBox(
+                        height: _pageHeight,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child:
+                                  NotificationListener<OverscrollNotification>(
+                                    onNotification: _forwardOverscroll,
+                                    child: PageView.builder(
+                                      controller: _pages,
+                                      scrollDirection: Axis.vertical,
+                                      physics: const PageScrollPhysics(
+                                        parent: ClampingScrollPhysics(),
+                                      ),
+                                      itemCount: count,
+                                      onPageChanged: (index) =>
+                                          setState(() => _index = index),
+                                      itemBuilder: (context, index) =>
+                                          _NewsHeadline(
+                                            article: widget.articles[index],
+                                            colors: colors,
+                                          ),
+                                    ),
+                                  ),
                             ),
-                            itemCount: count,
-                            onPageChanged: (index) =>
-                                setState(() => _index = index),
-                            itemBuilder: (context, index) => _NewsHeadline(
-                              article: widget.articles[index],
-                              colors: colors,
-                            ),
-                          ),
+                            if (count > 1) ...[
+                              const SizedBox(width: 10),
+                              _NewsPageDots(
+                                controller: _pages,
+                                count: count,
+                                activeColor: colors.accent,
+                                inactiveColor: colors.textSecondary.withValues(
+                                  alpha: 0.35,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                      ),
-                      if (count > 1) ...[
-                        const SizedBox(width: 10),
-                        _NewsPageDots(
-                          controller: _pages,
-                          count: count,
-                          activeColor: colors.accent,
-                          inactiveColor:
-                              colors.textSecondary.withValues(alpha: 0.35),
-                        ),
-                      ],
-                    ],
-                  ),
-                )
-              else
-                _NewsStatus(state: widget.state, colors: colors),
+                      )
+                    : _NewsStatus(state: widget.state, colors: colors),
+              ),
             ],
           ),
         ),
@@ -1018,7 +1057,8 @@ class _NewsHeadline extends StatelessWidget {
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 13.5,
               fontWeight: FontWeight.w500,
               height: 1.55,
@@ -1035,7 +1075,8 @@ class _NewsHeadline extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                   color: colors.textSecondary,
@@ -1046,7 +1087,8 @@ class _NewsHeadline extends StatelessWidget {
             Text(
               '${formatDate(article.publishedAt)} · ${formatTime(article.publishedAt)}',
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
                 fontSize: 11.5,
                 color: colors.textSecondary,
               ),
@@ -1118,10 +1160,7 @@ class _NewsStatus extends StatelessWidget {
   final _NewsLoadState state;
   final AppPalette colors;
 
-  const _NewsStatus({
-    required this.state,
-    required this.colors,
-  });
+  const _NewsStatus({required this.state, required this.colors});
 
   @override
   Widget build(BuildContext context) {
@@ -1149,7 +1188,8 @@ class _NewsStatus extends StatelessWidget {
         Text(
           message,
           style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+            fontFamily: 'Outfit',
+            fontFamilyFallback: ['Tajawal'],
             fontSize: 13.5,
             fontWeight: FontWeight.w500,
             height: 1.55,
@@ -1161,7 +1201,8 @@ class _NewsStatus extends StatelessWidget {
           Text(
             'اضغط لإعادة المحاولة',
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
               color: colors.textSecondary,

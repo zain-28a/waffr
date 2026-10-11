@@ -212,8 +212,8 @@ class _BalanceCard extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: AnimatedSwitcher(
               duration: AppMotion.of(context, AppMotion.medium),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
+              switchInCurve: AppMotion.enter,
+              switchOutCurve: AppMotion.exit,
               transitionBuilder: (child, animation) {
                 return FadeTransition(
                   opacity: animation,
@@ -388,7 +388,7 @@ class _CurrencyDots extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 3),
             child: AnimatedContainer(
               duration: AppMotion.of(context, AppMotion.medium),
-              curve: Curves.easeOutCubic,
+              curve: AppMotion.enter,
               width: 6,
               height: index == activeIndex ? 18 : 6,
               decoration: BoxDecoration(
