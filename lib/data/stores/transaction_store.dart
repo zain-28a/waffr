@@ -1,5 +1,6 @@
 // Sole source of truth for transactions, operating balance, and savings goals.
 
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -80,8 +81,12 @@ class TransactionStore extends ChangeNotifier {
     }
   }
 
-  // Newest first.
-  List<WaffrTransaction> get transactions => List.unmodifiable(_transactions);
+  // Newest first. A read-only view of the ledger, not a copy: iterate it
+  // right away instead of keeping it across an await.
+  List<WaffrTransaction> get transactions => _transactionsView;
+
+  late final List<WaffrTransaction> _transactionsView =
+      UnmodifiableListView(_transactions);
 
   List<WaffrTransaction> get expenses => expensesFor(_activeCode);
 
@@ -354,6 +359,10 @@ class TransactionStore extends ChangeNotifier {
   double maxBalanceFor(String currencyCode) {
     final code = Currencies.normalize(currencyCode);
     final start = cycleStartFor(code);
+    return _maxBalances[(code, start)] ??= _computeMaxBalance(code, start);
+  }
+
+  double _computeMaxBalance(String code, DateTime? start) {
     var used = 0.0;
     for (final item in _transactions) {
       if (item.currencyCode != code || !_inCycle(item, start)) continue;
@@ -407,13 +416,20 @@ class TransactionStore extends ChangeNotifier {
     return entries;
   }
 
-  // Net savings inside [start, end): in minus out, floored at 0.
+  // Net savings inside [start, end): in minus out, floored at 0. Cached per
+  // window, because the savings pager asks for each page and its previous
+  // page on every rebuild.
   double savingsNetDuring(
     DateTime start,
     DateTime end, {
     String? currencyCode,
   }) {
     final code = Currencies.normalize(currencyCode ?? _activeCode);
+    return _savingsNets[(code, start, end)] ??=
+        _computeSavingsNet(code, start, end);
+  }
+
+  double _computeSavingsNet(String code, DateTime start, DateTime end) {
     var incoming = 0.0;
     var outgoing = 0.0;
 
@@ -525,6 +541,19 @@ class TransactionStore extends ChangeNotifier {
 
   // Weekly vs monthly plan cadence from the latest recurring income row.
   RecurringFrequency preferredIncomeFrequencyFor(String currencyCode) {
+    final code = Currencies.normalize(currencyCode);
+    // The calendar fallback reads this week and this month, so both starts
+    // are part of the cache key.
+    final now = deviceNow();
+    final key = (
+      code,
+      CalendarPeriod.weekStart(now).millisecondsSinceEpoch,
+      CalendarPeriod.monthStart(now).millisecondsSinceEpoch,
+    );
+    return _preferredFrequencies[key] ??= _computePreferredFrequency(code);
+  }
+
+  RecurringFrequency _computePreferredFrequency(String currencyCode) {
     WaffrTransaction? latestRecurringIncome;
 
     for (final income in incomesFor(currencyCode)) {
@@ -2023,11 +2052,17 @@ class TransactionStore extends ChangeNotifier {
 
   final Map<(TransactionType, String), double> _totals = {};
   final Map<String, DateTime?> _cycleStarts = {};
+  final Map<(String, int, int), RecurringFrequency> _preferredFrequencies = {};
+  final Map<(String, DateTime?), double> _maxBalances = {};
+  final Map<(String, DateTime, DateTime), double> _savingsNets = {};
 
   /// Drops the caches. Called whenever the ledger changes.
   void _touch() {
     _totals.clear();
     _cycleStarts.clear();
+    _preferredFrequencies.clear();
+    _maxBalances.clear();
+    _savingsNets.clear();
   }
 
   @override
