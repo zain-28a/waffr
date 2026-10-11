@@ -1,5 +1,5 @@
-// The smart analysis mark: a four-point spark with a small companion spark,
-// in the smart glow colors, so every place that opens or labels the
+// The smart analysis mark: a faceted four-point spark with a companion
+// spark and a dot, in the smart glow colors, so every place that opens or labels the
 // analysis shows the same sign.
 
 import 'dart:math' as math;
@@ -10,7 +10,7 @@ import 'package:waffr/widgets/smart/smart_glow.dart';
 class SmartMark extends StatelessWidget {
   final double size;
 
-  /// 0..1; animating it makes the small spark breathe.
+  /// 0..1; animating it makes the small spark and dot breathe.
   final double phase;
 
   /// Draws every part in one flat color instead of the gradient, e.g. on an
@@ -66,14 +66,42 @@ class SmartMarkPainter extends CustomPainter {
       ).createShader(bounds);
     }
 
-    // One clear spark, and a small one that breathes while it "thinks".
-    canvas.drawPath(
-      _spark(Offset(size.width * 0.42, size.height * 0.58), s * 0.42),
-      paint,
-    );
+    final main = Offset(size.width * 0.42, size.height * 0.58);
     final pulse = 0.85 + 0.15 * math.cos(phase * 2 * math.pi);
+
+    // Soft halo so the mark has some depth on any background.
+    if (flat == null) {
+      final halo = s * 0.46;
+      canvas.drawCircle(
+        main,
+        halo,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [
+              colors[2].withValues(alpha: 0.22),
+              colors[2].withValues(alpha: 0),
+            ],
+          ).createShader(Rect.fromCircle(center: main, radius: halo)),
+      );
+    }
+
+    // Main spark, with a lighter inner facet that catches the light.
+    canvas.drawPath(_spark(main, s * 0.42), paint);
+    canvas.drawPath(
+      _spark(main, s * 0.2),
+      Paint()
+        ..isAntiAlias = true
+        ..color = Colors.white.withValues(alpha: flat == null ? 0.45 : 0.3),
+    );
+
+    // Companion spark (breathes while it "thinks") and a small dot.
     canvas.drawPath(
       _spark(Offset(size.width * 0.82, size.height * 0.2), s * 0.17 * pulse),
+      paint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.84, size.height * 0.8),
+      s * 0.05 * (2 - pulse),
       paint,
     );
   }
