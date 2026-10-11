@@ -125,6 +125,7 @@ class HomeWidgetSync {
             ),
       ],
       streak: streak.count,
+      streakLastDay: streak.lastDay,
     );
   }
 }
@@ -141,6 +142,7 @@ Map<String, Object> buildHomeWidgetData({
   required ({String name, double target, double saved})? goal,
   required List<({String name, double amount, DateTime due})> obligations,
   required int streak,
+  DateTime? streakLastDay,
 }) {
   final remaining = (remainingRatio * 100).round().clamp(0, 100);
   final data = <String, Object>{
@@ -194,6 +196,18 @@ Map<String, Object> buildHomeWidgetData({
 
   final count = streak < 1 ? 1 : streak;
   data['streak_count'] = '$count';
+  // The widget is not redrawn by the app on days it stays closed, so it
+  // checks this date itself: past it, a whole day was skipped and the
+  // streak shows as broken.
+  if (streakLastDay != null) {
+    final aliveUntil = DateTime(
+      streakLastDay.year,
+      streakLastDay.month,
+      streakLastDay.day + 1,
+    );
+    data['streak_alive_until'] = StreakSnapshot.dayKey(aliveUntil)!;
+  }
+  data['streak_reset_label'] = 'ابدأ من جديد';
   // The ring fills toward the next milestone, as on the profile card.
   data['streak_percent'] =
       '${(count / nextStreakMilestone(count) * 100).round().clamp(0, 100)}';

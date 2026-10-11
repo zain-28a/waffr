@@ -72,10 +72,10 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
     return Scaffold(
       backgroundColor: colors.background,
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
             WaffrBackHeader(
-              applySafeArea: false,
               elevated: _headerElevated,
               title: 'الخصوصية والأمان',
             ),

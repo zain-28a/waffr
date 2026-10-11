@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/stores/category_store.dart';
@@ -1113,8 +1114,16 @@ class _ExpensesAndObligationsCard extends StatefulWidget {
 
 class _ExpensesAndObligationsCardState
     extends State<_ExpensesAndObligationsCard> {
-  final PageController _controller = PageController();
-  int _page = 0;
+  // The page the user last swiped to stays selected, across restarts too.
+  static const String _pageKey = 'home_expenses_card_page';
+
+  late int _page = (AppPrefs.cached?.getInt(_pageKey) ?? 0).clamp(0, 1);
+  late final PageController _controller = PageController(initialPage: _page);
+
+  void _onPageChanged(int index) {
+    _page = index;
+    AppPrefs.instance.then((prefs) => prefs.setInt(_pageKey, index));
+  }
 
   @override
   void dispose() {
@@ -1176,7 +1185,7 @@ class _ExpensesAndObligationsCardState
                     physics: const PageScrollPhysics(
                       parent: ClampingScrollPhysics(),
                     ),
-                    onPageChanged: (index) => _page = index,
+                    onPageChanged: _onPageChanged,
                     children: pages(),
                   ),
                 ),

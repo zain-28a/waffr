@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -125,6 +126,9 @@ def _apply_settings(
     created: bool = False,
 ) -> None:
     incoming = as_utc(data.updated_at)
+    # The streak merges by calendar day, not by the settings timestamp, so a
+    # device whose other settings are older still records today's open.
+    _merge_streak(row, data)
     if (
         not created
         and incoming is not None
@@ -181,17 +185,50 @@ def _apply_settings(
     if data.display_name is not None:
         name = data.display_name.strip()
         user.name = name or None
-    if data.usage_started_at is not None:
-        row.usage_started_at = data.usage_started_at.strip() or None
-    if data.streak_count is not None:
-        row.streak_count = data.streak_count
-    if data.streak_last_date is not None:
-        row.streak_last_date = data.streak_last_date.strip() or None
     keys = set(row.processed_period_keys or [])
     keys.update(data.processed_period_keys or [])
     row.processed_period_keys = sorted(keys)
     if incoming is not None:
         row.updated_at = incoming
+
+
+_DAY_KEY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _merge_streak(row: UserSettings, data: SettingsSyncIn) -> None:
+    """Keep the streak with the later last day; same day keeps the longer one.
+
+    ``usage_started_at`` keeps the earliest value seen. Mirrors
+    ``StreakMath.merge`` in the app.
+    """
+    started = (data.usage_started_at or "").strip()
+    if started:
+        current = (row.usage_started_at or "").strip()
+        parsed = as_utc(_parse_iso(started))
+        if not current:
+            row.usage_started_at = started
+        elif parsed is not None:
+            existing = as_utc(_parse_iso(current))
+            if existing is None or parsed < existing:
+                row.usage_started_at = started
+
+    day = (data.streak_last_date or "").strip()
+    if data.streak_count is None or not _DAY_KEY_RE.match(day):
+        return
+    count = max(int(data.streak_count), 0)
+    current_day = (row.streak_last_date or "").strip()
+    if not _DAY_KEY_RE.match(current_day) or day > current_day:
+        row.streak_last_date = day
+        row.streak_count = count
+    elif day == current_day:
+        row.streak_count = max(count, row.streak_count or 0)
+
+
+def _parse_iso(value: str) -> datetime | None:
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
 
 
 def _clean_labels(raw: list[str]) -> list[str]:

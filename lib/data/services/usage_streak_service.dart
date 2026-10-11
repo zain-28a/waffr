@@ -1,4 +1,6 @@
 // Local daily streak. Signed-in users also ship it inside settings sync.
+// A local change stays flagged until a sync that carried it succeeds, so a
+// streak update is never lost to a sync that was already in flight.
 
 import 'package:flutter/foundation.dart';
 import 'package:waffr/core/sync/sync_dirty.dart';
@@ -23,22 +25,40 @@ class UsageStreakService extends ChangeNotifier {
   static const String countKey = 'waffer_streak_count';
   static const String lastDayKey = 'waffer_streak_last_date';
   static const String startedKey = 'waffer_usage_started_at';
+  static const String unsyncedKey = 'waffer_streak_unsynced';
+
+  /// Clock for "today"; tests replace it.
+  @visibleForTesting
+  static DateTime Function() clock = DateTime.now;
 
   StreakSnapshot _state = const StreakSnapshot();
   Future<void>? _loader;
   bool _loaded = false;
-  bool _needsPush = false;
   StreakIncrease? _pendingIncrease;
+
+  // True while the server may hold an older streak than this device.
+  bool _unsynced = true;
+
+  // Bumped on every change the server has not seen yet.
+  int _revision = 0;
 
   bool get isLoaded => _loaded;
 
-  int get count => _state.count;
+  /// Days in a row as of today. A skipped day reads as 0 until the next
+  /// open starts a new streak.
+  int get count => StreakMath.currentCount(_state, clock());
+
+  /// True when the streak must be sent on the next sync.
+  bool get hasUnsyncedChange => _unsynced;
+
+  /// Pass to [markSynced] after a sync that carried [syncFields].
+  int get revision => _revision;
 
   DateTime? get lastDay => _state.lastDay;
 
   DateTime? get startedAt => _state.startedAt;
 
-  String get label => _state.hasActivity ? _state.label : 'اليوم الأول';
+  String get label => count > 1 ? '$count أيام متواصلة' : 'اليوم الأول';
 
   String? get lastDayKeyValue => StreakSnapshot.dayKey(_state.lastDay);
 
@@ -49,17 +69,17 @@ class UsageStreakService extends ChangeNotifier {
     await ensureLoaded();
     await TransactionStore.instance.ensureLoaded();
 
+    final today = now ?? clock();
     var current = _state;
     if (current.startedAt == null) {
       current = StreakSnapshot(
         count: current.count,
         lastDay: current.lastDay,
-        startedAt:
-            earliestUsageDate(TransactionStore.instance) ?? now ?? DateTime.now(),
+        startedAt: earliestUsageDate(TransactionStore.instance) ?? today,
       );
     }
 
-    final next = StreakMath.record(current, now ?? DateTime.now());
+    final next = StreakMath.record(current, today);
     if (!StreakMath.differs(_state, next)) return _state;
 
     // Opening on the next calendar day: the home screen celebrates it once.
@@ -69,6 +89,8 @@ class UsageStreakService extends ChangeNotifier {
     }
 
     _state = next;
+    _revision++;
+    _unsynced = true;
     await _persist(markDirty: true);
     notifyListeners();
     return _state;
@@ -95,7 +117,9 @@ class UsageStreakService extends ChangeNotifier {
     final merged = StreakMath.merge(_state, remote);
     final changedLocal = StreakMath.differs(_state, merged);
     if (StreakMath.differs(remote, merged)) {
-      _needsPush = true;
+      // The server is behind this device; send the merged streak back.
+      _revision++;
+      await _setUnsynced(true);
     }
     if (!changedLocal) return;
 
@@ -122,20 +146,28 @@ class UsageStreakService extends ChangeNotifier {
     return value;
   }
 
-  /// True once when local streak should be pushed after a pull.
-  bool consumePushRequest() {
-    final value = _needsPush;
-    _needsPush = false;
-    return value;
+  /// Called after a successful sync that sent the streak at [sentRevision].
+  /// Returns true when a newer change still has to be sent.
+  Future<bool> markSynced(int sentRevision) async {
+    await ensureLoaded();
+    if (_revision == sentRevision) await _setUnsynced(false);
+    return _unsynced;
   }
 
   void resetCache() {
     _state = const StreakSnapshot();
     _loaded = false;
     _loader = null;
-    _needsPush = false;
+    _unsynced = true;
+    _revision = 0;
     _pendingIncrease = null;
     notifyListeners();
+  }
+
+  Future<void> _setUnsynced(bool value) async {
+    _unsynced = value;
+    final prefs = await AppPrefs.instance;
+    await prefs.setBool(unsyncedKey, value);
   }
 
   Future<void> _load() async {
@@ -146,6 +178,8 @@ class UsageStreakService extends ChangeNotifier {
       lastDay: StreakSnapshot.parseDayKey(prefs.getString(lastDayKey)),
       startedAt: started?.toLocal(),
     );
+    // Missing on installs from before this flag: send the streak once.
+    _unsynced = prefs.getBool(unsyncedKey) ?? true;
     _loaded = true;
     notifyListeners();
   }
@@ -165,6 +199,7 @@ class UsageStreakService extends ChangeNotifier {
     } else {
       await prefs.setString(startedKey, started.toUtc().toIso8601String());
     }
+    await prefs.setBool(unsyncedKey, _unsynced);
     if (markDirty) {
       await SyncDirty.mark(settings: true);
     }

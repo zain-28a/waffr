@@ -43,6 +43,9 @@ FEED_ATTEMPTS = 3
 FEED_RETRY_DELAY_SECONDS = 2
 MAX_FEED_BYTES = 2_000_000
 NEWS_LIST_LIMIT = 30
+# Rows kept in the table. Older articles are deleted after each refresh so
+# the store does not grow forever.
+NEWS_KEEP_LIMIT = 60
 NEWS_REFRESH_INTERVAL_SECONDS = 60 * 60
 TITLE_LIMIT = 500
 URL_LIMIT = 1000
@@ -432,8 +435,30 @@ def _store_articles(db: Session, articles: list[NormalizedArticle]) -> int:
             saved += 1
         except IntegrityError:
             logger.warning("skipped news row that conflicted with an existing article")
+    db.flush()
+    pruned = _prune_old(db, NEWS_KEEP_LIMIT)
     db.commit()
+    if pruned:
+        logger.info("deleted %s old news articles", pruned)
     return saved
+
+
+def _prune_old(db: Session, keep: int) -> int:
+    """Delete everything past the newest [keep] articles."""
+    keep_ids = [
+        row_id
+        for (row_id,) in db.query(NewsArticle.id)
+        .order_by(NewsArticle.published_at.desc(), NewsArticle.id.desc())
+        .limit(keep)
+        .all()
+    ]
+    if len(keep_ids) < keep:
+        return 0
+    return (
+        db.query(NewsArticle)
+        .filter(NewsArticle.id.notin_(keep_ids))
+        .delete(synchronize_session=False)
+    )
 
 
 def _collect_articles() -> tuple[int, list[NormalizedArticle], int]:

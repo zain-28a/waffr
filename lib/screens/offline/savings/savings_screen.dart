@@ -21,8 +21,6 @@ import 'package:waffr/screens/offline/savings/sheets/withdraw_savings_sheet.dart
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
-import 'package:waffr/core/insights/smart/smart_insight.dart';
-import 'package:waffr/widgets/smart/smart_analysis_button.dart';
 
 // Range chips + swipeable period card, total savings, goal progress, and sheet launches.
 class SavingsScreen extends StatefulWidget {
@@ -152,16 +150,13 @@ class _SavingsScreenState extends State<SavingsScreen>
 
               const SizedBox(height: 12),
 
-              _SplitActionRow(
-                leading: _TotalSavingsCard(total: _store.savingsBalance),
-                first: _ActionButton(
-                  label: 'توفير مبلغ',
-                  onTap: () => showManualSaveSheet(context),
-                ),
-                second: _ActionButton(
-                  label: 'سحب إلى الرصيد',
-                  onTap: () => showWithdrawSavingsSheet(context),
-                ),
+              _PlanButtonsRow(
+                periodicLabel: _store.hasActivePeriodicPlan
+                    ? 'خطة جارية'
+                    : 'خطط التوفير',
+                periodicActive: _store.hasActivePeriodicPlan,
+                onPeriodic: () => showPeriodicGoalsSheet(context),
+                onCompleted: () => showCompletedGoalsSheet(context),
               ),
 
               const SizedBox(height: 12),
@@ -175,13 +170,16 @@ class _SavingsScreenState extends State<SavingsScreen>
 
               const SizedBox(height: 12),
 
-              _PlanButtonsRow(
-                periodicLabel: _store.hasActivePeriodicPlan
-                    ? 'خطة جارية'
-                    : 'خطط التوفير',
-                periodicActive: _store.hasActivePeriodicPlan,
-                onPeriodic: () => showPeriodicGoalsSheet(context),
-                onCompleted: () => showCompletedGoalsSheet(context),
+              _SplitActionRow(
+                leading: _TotalSavingsCard(total: _store.savingsBalance),
+                first: _ActionButton(
+                  label: 'توفير مبلغ',
+                  onTap: () => showManualSaveSheet(context),
+                ),
+                second: _ActionButton(
+                  label: 'سحب إلى الرصيد',
+                  onTap: () => showWithdrawSavingsSheet(context),
+                ),
               ),
 
               const SizedBox(height: 12),
@@ -435,7 +433,7 @@ class _SplitActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 132,
+      height: 92,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -448,7 +446,7 @@ class _SplitActionRow extends StatelessWidget {
             child: Column(
               children: [
                 Expanded(child: first),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Expanded(child: second),
               ],
             ),
@@ -459,8 +457,10 @@ class _SplitActionRow extends StatelessWidget {
   }
 }
 
-// Active goals list (or empty create CTA); tap opens manage goals sheet.
-class _ActiveGoalsPanel extends StatelessWidget {
+// Active goals (or empty create CTA). Collapsed it shows the first goal; a
+// tap opens the rest in place, about two and a half goals tall with the
+// remainder scrolling. The arrow under the list folds it back.
+class _ActiveGoalsPanel extends StatefulWidget {
   final List<SavingsGoal> goals;
   final TransactionStore store;
   final VoidCallback onManage;
@@ -474,10 +474,27 @@ class _ActiveGoalsPanel extends StatelessWidget {
   });
 
   @override
+  State<_ActiveGoalsPanel> createState() => _ActiveGoalsPanelState();
+}
+
+class _ActiveGoalsPanelState extends State<_ActiveGoalsPanel> {
+  // Height of one goal row plus the gap after it, before text scaling.
+  static const double _goalExtent = 78;
+  static const double _goalGap = 14;
+
+  bool _expanded = false;
+
+  void _setExpanded(bool value) {
+    if (_expanded == value) return;
+    AppHaptics.selection();
+    setState(() => _expanded = value);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
 
-    final ordered = List<SavingsGoal>.from(goals)
+    final ordered = List<SavingsGoal>.from(widget.goals)
       ..sort((a, b) => a.priority.compareTo(b.priority));
 
     if (ordered.isEmpty) {
@@ -492,6 +509,7 @@ class _ActiveGoalsPanel extends StatelessWidget {
             _SavingsGoalsHeader(
               colors: colors,
               count: 0,
+              onManage: widget.onManage,
             ),
             const SizedBox(height: 14),
             const AppEmptyState(
@@ -502,54 +520,140 @@ class _ActiveGoalsPanel extends StatelessWidget {
             const SizedBox(height: 12),
             SizedBox(
               height: 48,
-              child: _CreateGoalCard(onCreate: onCreate),
+              child: _CreateGoalCard(onCreate: widget.onCreate),
             ),
           ],
         ),
       );
     }
 
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.45;
-    final goalsContent = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < ordered.length; i++) ...[
-          if (i > 0) const SizedBox(height: 14),
-          _GoalProgressCard(
-            goal: ordered[i],
-            saved: store.currentSaved(ordered[i]),
-          ),
-        ],
-      ],
-    );
+    final canExpand = ordered.length > 1;
+    final expanded = _expanded && canExpand;
 
-    final content = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _SavingsGoalsHeader(
-          colors: colors,
-          count: ordered.length,
-        ),
-        const SizedBox(height: 14),
-        ordered.length > 3
-            ? ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: maxHeight),
-                child: SingleChildScrollView(child: goalsContent),
-              )
-            : goalsContent,
-      ],
-    );
+    Widget goalRow(int i) => _GoalProgressCard(
+          goal: ordered[i],
+          saved: widget.store.currentSaved(ordered[i]),
+        );
+
+    final Widget goalsBody;
+    if (!expanded) {
+      goalsBody = goalRow(0);
+    } else {
+      final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+      final maxHeight =
+          (2.5 * (_goalExtent * scale + _goalGap)).clamp(0.0, double.infinity);
+      final list = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < ordered.length; i++) ...[
+            if (i > 0) const SizedBox(height: _goalGap),
+            goalRow(i),
+          ],
+        ],
+      );
+      goalsBody = ordered.length > 2
+          ? ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: SingleChildScrollView(child: list),
+            )
+          : list;
+    }
 
     return GestureDetector(
-      onTap: onManage,
+      onTap: canExpand
+          ? (expanded ? null : () => _setExpanded(true))
+          : widget.onManage,
       behavior: HitTestBehavior.opaque,
       child: GlassContainer(
         colorType: GlassColorType.surface,
         borderRadius: 28,
-        padding: const EdgeInsets.fromLTRB(16, 15, 16, 16),
-        child: content,
+        padding: EdgeInsets.fromLTRB(16, 15, 16, canExpand ? 4 : 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SavingsGoalsHeader(
+              colors: colors,
+              count: ordered.length,
+              onManage: widget.onManage,
+            ),
+            const SizedBox(height: 14),
+            AnimatedSize(
+              duration: AppMotion.of(context, AppMotion.medium),
+              curve: AppMotion.standard,
+              alignment: Alignment.topCenter,
+              child: goalsBody,
+            ),
+            if (canExpand)
+              _ExpandToggle(
+                expanded: expanded,
+                totalCount: ordered.length,
+                onTap: () => _setExpanded(!expanded),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Arrow under the goals list: opens the rest, or folds them back.
+class _ExpandToggle extends StatelessWidget {
+  final bool expanded;
+  final int totalCount;
+  final VoidCallback onTap;
+
+  const _ExpandToggle({
+    required this.expanded,
+    required this.totalCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppPalette.of(context);
+    return Semantics(
+      button: true,
+      label: expanded ? 'إخفاء باقي الأهداف' : 'عرض باقي الأهداف',
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          height: 34,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedSwitcher(
+                duration: AppMotion.of(context, AppMotion.fast),
+                child: expanded
+                    ? const SizedBox.shrink()
+                    : Text(
+                        'عرض كل الأهداف (\u2066$totalCount\u2069)',
+                        key: ValueKey(totalCount),
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontFamilyFallback: const ['Tajawal'],
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 4),
+              AnimatedRotation(
+                turns: expanded ? 0.5 : 0,
+                duration: AppMotion.of(context, AppMotion.medium),
+                curve: AppMotion.standard,
+                child: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 24,
+                  color: colors.accent,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -559,10 +663,12 @@ class _ActiveGoalsPanel extends StatelessWidget {
 class _SavingsGoalsHeader extends StatelessWidget {
   final AppPalette colors;
   final int count;
+  final VoidCallback onManage;
 
   const _SavingsGoalsHeader({
     required this.colors,
     required this.count,
+    required this.onManage,
   });
 
   @override
@@ -602,7 +708,21 @@ class _SavingsGoalsHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        
+        if (count > 0) ...[
+          const SizedBox(width: 2),
+          IconButton(
+            onPressed: onManage,
+            tooltip: 'إدارة الأهداف',
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            padding: EdgeInsets.zero,
+            icon: Icon(
+              Icons.tune_rounded,
+              size: 20,
+              color: colors.textSecondary,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -666,8 +786,8 @@ class _TotalSavingsCard extends StatelessWidget {
 
     return GlassContainer(
       colorType: GlassColorType.surface,
-      borderRadius: 28,
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      borderRadius: 24,
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -675,19 +795,19 @@ class _TotalSavingsCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 30,
-                height: 30,
+                width: 26,
+                height: 26,
                 decoration: BoxDecoration(
                   color: colors.accent.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.attach_money,
-                  size: 19,
+                  size: 17,
                   color: colors.accent,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'إجمالي المبالغ الموفرة',
@@ -695,7 +815,7 @@ class _TotalSavingsCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                    fontSize: 13,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: colors.textSecondary,
                   ),
@@ -704,14 +824,16 @@ class _TotalSavingsCard extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
 
           if (total <= 0)
             Text(
-              'لا توجد مبالغ موفَّرة بعد',
+              'وفّر أول مبلغ ليظهر هنا',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: colors.textSecondary.withValues(alpha: 0.65),
               ),
@@ -728,14 +850,14 @@ class _TotalSavingsCard extends StatelessWidget {
                       value: total,
                       style: TextStyle(
                         fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                        fontSize: 27,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: colors.accent,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 7),
+                const SizedBox(width: 6),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 3),
                   child: Text(
@@ -750,10 +872,6 @@ class _TotalSavingsCard extends StatelessWidget {
                 ),
               ],
             ),
-
-          const SizedBox(height: 7),
-
-          
         ],
       ),
     );
@@ -905,26 +1023,29 @@ class _GoalProgressCard extends StatelessWidget {
 
         FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(
-            '${formatMoney(saved)} / ${formatMoney(goal.targetAmount)}',
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text:
+                      '${formatMoney(saved)} / ${formatMoney(goal.targetAmount)}',
+                ),
+                TextSpan(
+                  text: ' $currencyLabel',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
             style: TextStyle(
               fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: colors.textPrimary,
             ),
-          ),
-        ),
-
-        const SizedBox(height: 2),
-
-        Text(
-          currencyLabel,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-            fontSize: 11,
-            color: colors.textSecondary,
           ),
         ),
       ],

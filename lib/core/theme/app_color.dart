@@ -5,23 +5,26 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  static const Color lightBackground   = Color.fromARGB(255, 255, 254, 253); 
-  static const Color lightSurface      = Color.fromARGB(255, 248, 247, 246); 
-  static const Color lightTextPrimary  = Color.fromARGB(255, 0, 0, 0);
-  static const Color lightTextSecondary= Color.fromARGB(255, 111, 111, 111);
+  // Light: soft grey-green page with white cards, so cards lift off the
+  // page without heavy shadows.
+  static const Color lightBackground   = Color.fromARGB(255, 238, 241, 237);
+  static const Color lightSurface      = Color.fromARGB(255, 255, 255, 255);
+  static const Color lightTextPrimary  = Color.fromARGB(255, 17, 20, 18);
+  static const Color lightTextSecondary= Color.fromARGB(255, 102, 107, 104);
   static const Color lightAccent       = Color.fromARGB(255, 37, 74, 35);
   static const Color lightOnAccent     = Color.fromARGB(255, 255, 255, 255);
 
-  // Dark keeps a hint of the brand green. Cards sit lighter than the
-  // background so they read as raised, like the light theme's cards.
-  static const Color darkBackground    = Color.fromARGB(255, 15, 19, 17);
-  static const Color darkSurface       = Color.fromARGB(255, 26, 32, 28);
-  static const Color darkTextPrimary   = Color.fromARGB(255, 255, 255, 255);
-  static const Color darkTextSecondary = Color.fromARGB(255, 155, 165, 158);
-  static const Color darkAccent        = Color.fromARGB(255, 123, 193, 122);
+  // Dark is a near-neutral charcoal; the brand green is kept for the accent
+  // only, and that accent is a calm sage so it does not take over the
+  // screen. Cards sit lighter than the background so they read as raised.
+  static const Color darkBackground    = Color.fromARGB(255, 15, 16, 16);
+  static const Color darkSurface       = Color.fromARGB(255, 28, 30, 29);
+  static const Color darkTextPrimary   = Color.fromARGB(255, 243, 245, 244);
+  static const Color darkTextSecondary = Color.fromARGB(255, 158, 163, 160);
+  static const Color darkAccent        = Color.fromARGB(255, 140, 184, 139);
   // Text and icons drawn on an accent fill. The dark accent is bright, so
   // it takes deep green text instead of white.
-  static const Color darkOnAccent      = Color.fromARGB(255, 12, 26, 13);
+  static const Color darkOnAccent      = Color.fromARGB(255, 13, 25, 14);
 
   // Delete / remove / errors. One red for every destructive control.
   static const Color lightDestructive  = Color(0xFF8E3B3B);
