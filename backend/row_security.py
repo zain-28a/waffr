@@ -31,7 +31,7 @@ _CURRENT_USER = "NULLIF(current_setting('app.user_id', true), '')::integer"
 _SYSTEM = "current_setting('app.system', true) = 'on'"
 # The read-only pgAdmin login from sql/admin_readonly.sql. Its views run
 # with the owner's rights, so the policies need to let it read.
-_ADMIN_READ = "current_user = 'waffer_admin'"
+_ADMIN_READ = "current_user = 'waffr_admin'"
 
 # Tables whose rows belong to one user through user_id.
 OWNED_TABLES = (
