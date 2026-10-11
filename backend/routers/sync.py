@@ -1,3 +1,4 @@
+import logging
 import re
 from datetime import datetime
 
@@ -46,6 +47,7 @@ from sync_schemas import (
 from transaction_model import RecurringExpense, Transaction
 
 router = APIRouter(tags=["sync"])
+logger = logging.getLogger("waffr.sync")
 
 
 def _newer_or_equal(incoming: datetime | None, current: datetime | None) -> bool:
@@ -507,6 +509,7 @@ def sync_changes(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # Its rate limit runs in RateLimitMiddleware, before the body is read.
     user_id = current_user.id
     last_sync = as_utc(payload.last_sync_at)
 
@@ -721,4 +724,6 @@ def sync_changes(
         raise
     except Exception as error:
         db.rollback()
-        raise HTTPException(status_code=400, detail=str(error)) from error
+        # The details name tables and SQL; they stay in the server log.
+        logger.exception("sync failed for user %s", user_id)
+        raise HTTPException(status_code=400, detail="Sync failed") from error
