@@ -6,6 +6,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
@@ -29,16 +30,34 @@ class SmartAnalysisButton extends StatefulWidget {
 
 class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
     with SingleTickerProviderStateMixin {
-  // Slow turn of the gradient border so the button reads as "alive".
+  // Set once the user has opened the analysis; shared by every button.
+  static const String _seenKey = 'smart_analysis_seen';
+  static final ValueNotifier<bool> _seen = ValueNotifier<bool>(
+    AppPrefs.cached?.getBool(_seenKey) ?? false,
+  );
+
+  // Slow turn of the gradient border so the button reads as "alive" until
+  // the user has opened the analysis once; after that the border rests.
   late final AnimationController _turn = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 6),
+    duration: const Duration(seconds: 10),
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _seen.addListener(_syncTurn);
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (AppMotion.reduced(context)) {
+    _syncTurn();
+  }
+
+  void _syncTurn() {
+    if (!mounted) return;
+    if (_seen.value || AppMotion.reduced(context)) {
       _turn.stop();
     } else if (!_turn.isAnimating) {
       _turn.repeat();
@@ -47,12 +66,17 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
 
   @override
   void dispose() {
+    _seen.removeListener(_syncTurn);
     _turn.dispose();
     super.dispose();
   }
 
   void _open() {
     AppHaptics.selection();
+    if (!_seen.value) {
+      _seen.value = true;
+      AppPrefs.instance.then((prefs) => prefs.setBool(_seenKey, true));
+    }
     openSmartAnalysis(context, widget.scope);
   }
 
@@ -60,6 +84,7 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final colors = smartGlowColors(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final style = widget.style;
     final radius = BorderRadius.circular(switch (style) {
       SmartButtonStyle.pill => 999,
@@ -169,7 +194,18 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             },
             decoration: BoxDecoration(
-              color: palette.surface,
+              // A faint wash of the border colors over the surface.
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [
+                  for (final color in [colors[1], colors[3]])
+                    Color.alphaBlend(
+                      color.withValues(alpha: isDark ? 0.10 : 0.07),
+                      palette.surface,
+                    ),
+                ],
+              ),
               borderRadius: radius,
             ),
             child: content,

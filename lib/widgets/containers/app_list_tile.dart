@@ -14,9 +14,6 @@ TextStyle _tileText(Color color, double size, FontWeight weight) => TextStyle(
 
 class AppListTile extends StatelessWidget {
   final IconData icon;
-
-  /// Drawn in the icon box instead of [icon] (e.g. the smart mark).
-  final Widget? leading;
   final String title;
   final String? subtitle;
 
@@ -35,7 +32,6 @@ class AppListTile extends StatelessWidget {
     super.key,
     required this.icon,
     required this.title,
-    this.leading,
     this.subtitle,
     this.status,
     this.statusOn = false,
@@ -92,9 +88,7 @@ class AppListTile extends StatelessWidget {
                   color: tint.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Center(
-                  child: leading ?? Icon(icon, color: tint, size: 22),
-                ),
+                child: Icon(icon, color: tint, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
