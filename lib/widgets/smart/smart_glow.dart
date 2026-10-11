@@ -73,8 +73,10 @@ class _SmartGlowBackgroundState extends State<SmartGlowBackground>
     _syncDrift();
   }
 
+  // The glow drifts only at full strength ("thinking"). The calm resting
+  // glow stays still, so a finished report lets the screen stop drawing.
   void _syncDrift() {
-    if (!AppMotion.enabled(context) || widget.intensity <= 0.01) {
+    if (!AppMotion.enabled(context) || widget.intensity < 0.99) {
       _drift.stop();
     } else if (!_drift.isAnimating) {
       _drift.repeat();

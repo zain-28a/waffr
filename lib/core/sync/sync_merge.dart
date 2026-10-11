@@ -29,6 +29,8 @@ bool mergeRemoteRecords<T>({
     changed = true;
   }
 
+  // Built lazily on the first replacement; appends do not move indexes.
+  Map<String, int>? indexById;
   for (final incoming in upserts) {
     final id = idOf(incoming);
     final localTomb = SyncTombstones.instance.find(collection, id);
@@ -37,18 +39,27 @@ bool mergeRemoteRecords<T>({
       continue;
     }
 
+    // Only strictly newer rows replace local ones. The server echoes back
+    // the rows this device just pushed with the same timestamp; counting
+    // those as changes re-saved every store and rebuilt every screen after
+    // each sync.
     final existing = byId[id];
     if (existing != null &&
-        !newerOrEqual(updatedOf(incoming), updatedOf(existing))) {
+        !updatedOf(incoming).isAfter(updatedOf(existing))) {
       continue;
     }
 
     if (existing == null) {
       items.add(incoming);
     } else {
-      final index = items.indexWhere((item) => idOf(item) == id);
-      if (index >= 0) {
+      final index = (indexById ??= {
+        for (var i = 0; i < items.length; i++) idOf(items[i]): i,
+      })[id];
+      if (index != null && index < items.length && idOf(items[index]) == id) {
         items[index] = incoming;
+      } else {
+        final found = items.indexWhere((item) => idOf(item) == id);
+        if (found >= 0) items[found] = incoming;
       }
     }
     byId[id] = incoming;

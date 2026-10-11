@@ -1146,7 +1146,12 @@ class _ExpensesAndObligationsCardState
                 maintainSize: true,
                 maintainAnimation: true,
                 maintainState: true,
-                child: IndexedStack(children: pages()),
+                // Never painted: its tickers stay off so the hidden copy's
+                // entrance animations do not run in the background.
+                child: TickerMode(
+                  enabled: false,
+                  child: IndexedStack(children: pages()),
+                ),
               ),
               Positioned.fill(
                 child: NotificationListener<ScrollNotification>(

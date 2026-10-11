@@ -75,7 +75,15 @@ class _WafarAppState extends State<WafarApp> {
   @override
   void initState() {
     super.initState();
-    _loadTheme();
+    // Prefs are warmed before runApp, so the theme is usually known now and
+    // the first frame is already the real app (no throwaway splash frame).
+    final cached = AppPrefs.cached;
+    if (cached != null) {
+      _themeMode.value = _themeModeFromPrefs(cached);
+      _themeLoaded = true;
+    } else {
+      _loadTheme();
+    }
   }
 
   /// Reads the saved theme. System mode is the default until the user picks one.
@@ -205,8 +213,19 @@ class _AppFlowControllerState
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     BackupService.instance.addRestoreListener(_onRemoteRestored);
-    _checkAppState();
+    // Same as the theme: decide the first gate synchronously when prefs are
+    // already cached, so startup does not cross-fade from a splash.
+    final cached = AppPrefs.cached;
+    if (cached != null) {
+      _applyFlags(cached);
+    } else {
+      _checkAppState();
+    }
   }
+
+  // True once the shell has been shown; the lock then covers it instead of
+  // replacing it, so tabs, scroll positions and animations survive a lock.
+  bool _shellBuilt = false;
 
   @override
   void dispose() {
@@ -229,7 +248,11 @@ class _AppFlowControllerState
   /// Loads the flags that decide which gate the user sees.
   Future<void> _checkAppState() async {
     final prefs = await AppPrefs.instance;
+    if (!mounted) return;
+    setState(() => _applyFlags(prefs));
+  }
 
+  void _applyFlags(SharedPreferences prefs) {
     final firstLaunch =
         prefs.getBool('first_launch') ?? true;
 
@@ -239,14 +262,10 @@ class _AppFlowControllerState
     final authChoiceMade =
         prefs.getBool(BackupService.authChoiceKey) ?? !firstLaunch;
 
-    if (!mounted) return;
-
-    setState(() {
-      _authChoiceMade = authChoiceMade;
-      _isFirstLaunch = firstLaunch;
-      _appLockEnabled = appLockEnabled;
-      _isAuthenticated = false;
-    });
+    _authChoiceMade = authChoiceMade;
+    _isFirstLaunch = firstLaunch;
+    _appLockEnabled = appLockEnabled;
+    _isAuthenticated = false;
   }
 
   /// Login finished. Re-read theme and flags in case a restore changed them.
@@ -343,8 +362,14 @@ class _AppFlowControllerState
   @override
   Widget build(BuildContext context) {
     final stage = _stage;
+    final locked = stage == _FlowStage.lock;
+    if (stage == _FlowStage.shell) _shellBuilt = true;
 
-    final Widget page = switch (stage) {
+    // While locked, the page underneath stays the (hidden, paused) shell
+    // when it was already built, instead of being thrown away.
+    final baseStage = locked && _shellBuilt ? _FlowStage.shell : stage;
+
+    final Widget page = switch (baseStage) {
       _FlowStage.splash => const WaffrSplash(),
       _FlowStage.login => LoginScreen(
           onCompleted: _onAuthChoiceCompleted,
@@ -355,37 +380,42 @@ class _AppFlowControllerState
             unawaited(_markFirstLaunchDone());
           },
         ),
-      _FlowStage.lock => LockScreen(
-          onAuthenticated: _unlockApp,
-        ),
-      _FlowStage.shell => AppShell(
-          themeNotifier: widget.themeNotifier,
-          onThemeChanged: widget.onToggleTheme,
-          appFlowController: this,
+      _FlowStage.lock => const SizedBox.expand(),
+      _FlowStage.shell => Offstage(
+          // Not painted while locked, so the ledger never shows behind the
+          // lock (or in the app switcher), and its tickers are paused.
+          offstage: locked,
+          child: TickerMode(
+            enabled: !locked,
+            child: AppShell(
+              themeNotifier: widget.themeNotifier,
+              onThemeChanged: widget.onToggleTheme,
+              appFlowController: this,
+            ),
+          ),
         ),
     };
 
-    // The lock replaces the shell at once, so the ledger never fades out
-    // visibly behind it when the app comes back from the background.
-    if (stage == _FlowStage.lock) return page;
-
-    return AnimatedSwitcher(
+    final switcher = AnimatedSwitcher(
       duration: AppMotion.of(context, AppMotion.slow),
       switchInCurve: AppMotion.enter,
       switchOutCurve: AppMotion.exit,
       transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.97, end: 1).animate(animation),
-            child: child,
-          ),
-        );
+        return FadeTransition(opacity: animation, child: child);
       },
       child: KeyedSubtree(
-        key: ValueKey<_FlowStage>(stage),
+        key: ValueKey<_FlowStage>(baseStage),
         child: page,
       ),
+    );
+
+    // The lock covers everything at once, with no fade.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        switcher,
+        if (locked) LockScreen(onAuthenticated: _unlockApp),
+      ],
     );
   }
 }

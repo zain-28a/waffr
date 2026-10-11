@@ -279,6 +279,15 @@ class TransactionStore extends ChangeNotifier {
   /// every month when the income is monthly.
   DateTime? cycleStartFor(String currencyCode) {
     final code = Currencies.normalize(currencyCode);
+    // Monthly income also restarts the cycle on the 1st, so the month and
+    // the income frequency are part of the cache key.
+    final key = '$code|${preferredIncomeFrequencyFor(code).name}|'
+        '${CalendarPeriod.monthStart(deviceNow()).millisecondsSinceEpoch}';
+    if (_cycleStarts.containsKey(key)) return _cycleStarts[key];
+    return _cycleStarts[key] = _computeCycleStart(code);
+  }
+
+  DateTime? _computeCycleStart(String code) {
     final rows = _transactions
         .where((item) => item.currencyCode == code)
         .toList()
@@ -782,6 +791,7 @@ class TransactionStore extends ChangeNotifier {
     if (index < 0) return false;
 
     _transactions.removeAt(index);
+    _touch();
     await SyncTombstones.instance.add(SyncCollection.transactions, id);
 
     final prefs = await AppPrefs.instance;
@@ -800,6 +810,7 @@ class TransactionStore extends ChangeNotifier {
     if (index < 0) return false;
 
     _transactions.removeAt(index);
+    _touch();
     await SyncTombstones.instance.add(SyncCollection.transactions, id);
 
     final prefs = await AppPrefs.instance;
@@ -1065,11 +1076,13 @@ class TransactionStore extends ChangeNotifier {
 
     _reindexPriorities();
 
+    // Notify before the write so a dragged goal does not snap back while
+    // the list rebuilds from the old order.
+    notifyListeners();
+
     final prefs = await AppPrefs.instance;
 
     await _persistGoals(prefs);
-
-    notifyListeners();
   }
 
   Future<void> applyRemoteSync({
@@ -1179,6 +1192,7 @@ class TransactionStore extends ChangeNotifier {
   // Drops in-memory state so the next ensureLoaded re-reads prefs.
   void resetCache() {
     _transactions.clear();
+    _touch();
     _goals.clear();
     _processedPeriods.clear();
     _pendingExpenseSources.clear();
@@ -1246,14 +1260,16 @@ class TransactionStore extends ChangeNotifier {
 
     _completeGoalIfNeeded();
 
+    // Screens update first; the disk write follows. Waiting for the write
+    // before notifying kept sheets open and balances stale until it ended.
+    if (notify) {
+      notifyListeners();
+    }
+
     if (persist) {
       final prefs = await AppPrefs.instance;
 
       await _persistAll(prefs);
-    }
-
-    if (notify) {
-      notifyListeners();
     }
   }
 
@@ -1269,6 +1285,7 @@ class TransactionStore extends ChangeNotifier {
     final stored = prefs.getStringList(transactionsKey);
 
     _transactions.clear();
+    _touch();
     _goals.clear();
     _processedPeriods.clear();
 
@@ -1984,13 +2001,38 @@ class TransactionStore extends ChangeNotifier {
   }
 
   void _sort() {
+    _touch();
     _transactions.sort((a, b) => b.dateTime.compareTo(a.dateTime));
   }
 
   double _totalOf(TransactionType type, String currencyCode) {
     final code = Currencies.normalize(currencyCode);
-    return _transactions
-        .where((item) => item.type == type && item.currencyCode == code)
-        .fold<double>(0, (sum, item) => sum + item.amount);
+    return _totals.putIfAbsent(
+      (type, code),
+      () => _transactions
+          .where((item) => item.type == type && item.currencyCode == code)
+          .fold<double>(0, (sum, item) => sum + item.amount),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Derived-value caches. Screens read balances and the cycle start many
+  // times per build; these are computed once per ledger change instead of
+  // rescanning (and re-sorting) every transaction on every read.
+  // ---------------------------------------------------------------------
+
+  final Map<(TransactionType, String), double> _totals = {};
+  final Map<String, DateTime?> _cycleStarts = {};
+
+  /// Drops the caches. Called whenever the ledger changes.
+  void _touch() {
+    _totals.clear();
+    _cycleStarts.clear();
+  }
+
+  @override
+  void notifyListeners() {
+    _touch();
+    super.notifyListeners();
   }
 }

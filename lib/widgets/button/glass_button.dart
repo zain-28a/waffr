@@ -72,9 +72,12 @@ class _GlassButtonState extends State<GlassButton> {
       onTapCancel: () => _setPressed(false),
       child: AnimatedScale(
         scale: _pressed ? 0.95 : 1.0,
-        duration: _pressed
-            ? const Duration(milliseconds: 90)
-            : const Duration(milliseconds: 320),
+        duration: AppMotion.of(
+          context,
+          _pressed
+              ? const Duration(milliseconds: 90)
+              : const Duration(milliseconds: 320),
+        ),
         curve: _pressed ? Curves.easeOut : Curves.easeOutBack,
         child: GlassContainer(
           width: widget.width,

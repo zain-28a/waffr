@@ -60,10 +60,16 @@ class ProfileIdentity extends ChangeNotifier {
     final prefs = await AppPrefs.instance;
     final loggedIn = await AuthSession.instance.isLoggedIn();
     final accountEmail = await AuthSession.instance.email() ?? '';
+    final name = prefs.getString('user_name') ?? '';
+    final email = loggedIn ? accountEmail : '';
+    // Profile reloads on every visit; only rebuild listeners when something
+    // actually changed.
+    final changed =
+        !_loaded || loggedIn != _loggedIn || name != _name || email != _email;
     _loggedIn = loggedIn;
-    _name = prefs.getString('user_name') ?? '';
-    _email = loggedIn ? accountEmail : '';
+    _name = name;
+    _email = email;
     _loaded = true;
-    notifyListeners();
+    if (changed) notifyListeners();
   }
 }
