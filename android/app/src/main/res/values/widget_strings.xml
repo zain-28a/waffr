@@ -3,8 +3,8 @@
     <string name="widget_balance_title">الرصيد الحالي</string>
     <string name="widget_balance_description">رصيدك ونسبة المتبقي منه</string>
     <string name="widget_quick_add_description">أضف مصروفاً أو دخلاً بلمسة</string>
-    <string name="widget_add_expense">+ مصروف</string>
-    <string name="widget_add_income">+ دخل</string>
+    <string name="widget_add_expense">إضافة مصروف</string>
+    <string name="widget_add_income">إضافة دخل</string>
     <string name="widget_goal_title">هدف التوفير</string>
     <string name="widget_goal_description">تقدّم هدف التوفير الحالي</string>
     <string name="widget_goal_empty_title">لا يوجد هدف بعد</string>
@@ -12,6 +12,6 @@
     <string name="widget_obligation_title">الالتزام القادم</string>
     <string name="widget_obligation_description">أقرب دفعة متكررة وموعدها</string>
     <string name="widget_obligation_empty">لا توجد التزامات قادمة</string>
-    <string name="widget_streak_label">أيام متتالية</string>
+    <string name="widget_streak_word">يوم</string>
     <string name="widget_streak_description">سلسلة أيامك المتواصلة مع وفّر</string>
 </resources>
