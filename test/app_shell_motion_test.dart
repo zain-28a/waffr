@@ -44,6 +44,19 @@ void main() {
     await tester.tap(find.byIcon(Icons.home_rounded).last);
     await tester.pumpAndSettle();
     expect(TickerMode.valuesOf(profileContext).enabled, isFalse);
+    final inactiveTab = tester.widget<TickerMode>(
+      find
+          .ancestor(
+            of: find.byType(WalletBackdrop, skipOffstage: false),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is TickerMode && widget.child is ExcludeSemantics,
+              skipOffstage: false,
+            ),
+          )
+          .first,
+    );
+    expect((inactiveTab.child as ExcludeSemantics).excluding, isTrue);
     expect(tester.binding.transientCallbackCount, 0);
     await tester.pumpWidget(const SizedBox());
     // The app-wide home-widget service outlives the shell. Flush its
