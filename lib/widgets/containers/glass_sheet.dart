@@ -32,20 +32,22 @@ Future<T?> showGlassSheet<T>({
     elevation: 0,
     sheetAnimationStyle:
         AppMotion.reduced(context) ? AnimationStyle.noAnimation : null,
+    // The content is built once (inside a Builder child) so keyboard frames
+    // only re-pad the sheet instead of rebuilding the whole form.
     builder: (context) => _GlassSheetShell(
-      builder: builder,
       heightFactor: heightFactor,
+      child: Builder(builder: builder),
     ),
   );
 }
 
 /// Positions the sheet above the keyboard and optionally pins its height.
 class _GlassSheetShell extends StatelessWidget {
-  final WidgetBuilder builder;
+  final Widget child;
   final double? heightFactor;
 
   const _GlassSheetShell({
-    required this.builder,
+    required this.child,
     this.heightFactor,
   });
 
@@ -62,11 +64,11 @@ class _GlassSheetShell extends StatelessWidget {
       child: heightFactor == null
           ? ConstrainedBox(
               constraints: BoxConstraints(maxHeight: maxSheetHeight),
-              child: builder(context),
+              child: child,
             )
           : SizedBox(
               height: (screenHeight * heightFactor!).clamp(220.0, maxSheetHeight),
-              child: builder(context),
+              child: child,
             ),
     );
   }
@@ -799,23 +801,33 @@ class _AmountMenuDropState extends State<_AmountMenuDrop>
 
   @override
   void dispose() {
+    _curved.dispose();
     _controller.dispose();
     super.dispose();
   }
 
+  late final CurvedAnimation _curved = CurvedAnimation(
+    parent: _controller,
+    curve: AppMotion.enter,
+  );
+  late final Animation<Offset> _slide = Tween<Offset>(
+    begin: const Offset(0, -0.08),
+    end: Offset.zero,
+  ).animate(_curved);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduced(context)) _controller.value = 1;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final curved = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    );
+    final curved = _curved;
     return FadeTransition(
       opacity: curved,
       child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, -0.08),
-          end: Offset.zero,
-        ).animate(curved),
+        position: _slide,
         child: widget.child,
       ),
     );
@@ -1251,7 +1263,7 @@ class SheetExpand extends StatelessWidget {
       duration: AppMotion.of(context, AppMotion.slow),
       curve: Curves.easeOutCubic,
       alignment: Alignment.topCenter,
-      clipBehavior: Clip.none,
+      clipBehavior: Clip.hardEdge,
       child: AnimatedSwitcher(
         duration: AppMotion.of(context, AppMotion.medium),
         switchInCurve: Curves.easeOutCubic,
@@ -1268,8 +1280,7 @@ class SheetExpand extends StatelessWidget {
             ),
           );
         },
-        layoutBuilder: (currentChild, _) =>
-            currentChild ?? const SizedBox(width: double.infinity),
+        layoutBuilder: _keepOutgoing,
         child: visible
             ? KeyedSubtree(key: const ValueKey('sheet-expand-on'), child: child)
             : const SizedBox(width: double.infinity, key: ValueKey('off')),
@@ -1303,8 +1314,7 @@ class SheetSwap extends StatelessWidget {
           ),
         );
       },
-      layoutBuilder: (currentChild, _) =>
-          currentChild ?? const SizedBox(width: double.infinity),
+      layoutBuilder: _keepOutgoing,
       child: KeyedSubtree(key: ValueKey(switchKey), child: child),
     );
   }
@@ -1417,4 +1427,19 @@ class ThousandsInputFormatter extends TextInputFormatter {
 /// Parses a formatted amount string after stripping commas.
 double parseAmount(String text) {
   return double.tryParse(text.replaceAll(',', '').trim()) ?? 0;
+}
+
+// AnimatedSwitcher layout that keeps the outgoing child painted (so its
+// fade-out plays) without letting it set the height; the incoming child
+// decides the size.
+Widget _keepOutgoing(Widget? current, List<Widget> previous) {
+  return Stack(
+    alignment: Alignment.topCenter,
+    clipBehavior: Clip.none,
+    children: [
+      for (final child in previous)
+        Positioned(top: 0, left: 0, right: 0, child: child),
+      current ?? const SizedBox(width: double.infinity),
+    ],
+  );
 }

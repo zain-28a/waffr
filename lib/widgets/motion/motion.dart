@@ -10,16 +10,25 @@ import 'package:waffr/core/utils/money.dart';
 
 /// Fades and lifts [child] in once, the first time it is built.
 /// [index] staggers siblings so a screen settles top to bottom.
+///
+/// The widget tree keeps the same shape before, during and after the
+/// entrance, so the child is never rebuilt from scratch when it ends (that
+/// used to replay the child's own animations a second time).
 class Reveal extends StatefulWidget {
   final Widget child;
   final int index;
   final double offset;
+
+  /// False shows [child] at rest without an entrance (e.g. a list row that
+  /// scrolled back into view).
+  final bool play;
 
   const Reveal({
     super.key,
     required this.child,
     this.index = 0,
     this.offset = 18,
+    this.play = true,
   });
 
   @override
@@ -29,7 +38,7 @@ class Reveal extends StatefulWidget {
 class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 520),
+    duration: AppMotion.emphasized,
   );
   late final Animation<double> _curve = CurvedAnimation(
     parent: _controller,
@@ -42,14 +51,19 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    if (AppMotion.reduced(context)) {
+    if (!widget.play || AppMotion.reduced(context)) {
       _controller.value = 1;
       return;
     }
-    final delay = Duration(milliseconds: 55 * math.min(widget.index, 8));
-    Future<void>.delayed(delay, () {
-      if (mounted) _controller.forward();
-    });
+    // Short stagger, capped, so a full screen settles within ~650 ms.
+    final delay = Duration(milliseconds: 35 * math.min(widget.index, 6));
+    if (delay == Duration.zero) {
+      _controller.forward();
+    } else {
+      Future<void>.delayed(delay, () {
+        if (mounted) _controller.forward();
+      });
+    }
   }
 
   @override
@@ -60,20 +74,21 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _curve,
-      child: widget.child,
-      builder: (context, child) {
-        final t = _curve.value;
-        if (t >= 1) return child!;
-        return Opacity(
-          opacity: t,
-          child: Transform.translate(
+    // FadeTransition only changes the layer alpha, and the child is painted
+    // once into its own layer, so moving it does not repaint it each frame.
+    return FadeTransition(
+      opacity: _curve,
+      child: AnimatedBuilder(
+        animation: _curve,
+        child: RepaintBoundary(child: widget.child),
+        builder: (context, child) {
+          final t = _curve.value;
+          return Transform.translate(
             offset: Offset(0, (1 - t) * widget.offset),
             child: Transform.scale(scale: 0.97 + 0.03 * t, child: child),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -347,8 +362,13 @@ class RevealClip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (fraction >= 1) return child;
-    return ClipRect(clipper: _FractionClipper(fraction), child: child);
+    // Always the same ClipRect, so the child is not rebuilt when the reveal
+    // completes; a finished reveal simply stops clipping.
+    return ClipRect(
+      clipper: _FractionClipper(fraction.clamp(0.0, 1.0)),
+      clipBehavior: fraction >= 1 ? Clip.none : Clip.hardEdge,
+      child: child,
+    );
   }
 }
 

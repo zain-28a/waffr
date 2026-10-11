@@ -11,6 +11,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/widgets/brand/waffr_logo.dart';
 
@@ -80,14 +81,37 @@ class _StreakCelebrationOverlayState extends State<StreakCelebrationOverlay>
   );
 
   bool _ticked = false;
+  bool _started = false;
+  bool _finished = false;
 
   @override
   void initState() {
     super.initState();
     _controller.addListener(_onTick);
-    _controller.forward().whenComplete(() {
-      if (mounted) widget.onFinished();
+    // A status listener (not the first forward's future) so a skip, which
+    // restarts the controller, still reports the end and the overlay leaves.
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) _finish();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    if (AppMotion.reduced(context)) {
+      // No celebration sequence when the device asks for less motion.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _finish());
+      return;
+    }
+    _controller.forward();
+  }
+
+  void _finish() {
+    if (_finished || !mounted) return;
+    _finished = true;
+    widget.onFinished();
   }
 
   @override
@@ -106,8 +130,7 @@ class _StreakCelebrationOverlayState extends State<StreakCelebrationOverlay>
 
   void _skip() {
     if (_controller.value >= _fadeOutStart) return;
-    _controller.value = _fadeOutStart;
-    _controller.forward();
+    _controller.forward(from: _fadeOutStart);
   }
 
   @override

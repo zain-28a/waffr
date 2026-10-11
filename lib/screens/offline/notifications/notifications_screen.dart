@@ -24,6 +24,11 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen>
     with WidgetsBindingObserver {
+  // Rows animate in only while the screen first opens; rows that scroll
+  // back into view later appear at rest instead of replaying the entrance.
+  final Stopwatch _sinceOpened = Stopwatch()..start();
+  bool get _playEntrance => _sinceOpened.elapsedMilliseconds < 700;
+
   final NotificationService _service = NotificationService.instance;
 
   // False when the phone blocks Waffr's notifications; null when unknown.
@@ -182,7 +187,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                         );
                         // Only the first screenful animates in.
                         return index < 6
-                            ? Reveal(index: index, child: view)
+                            ? Reveal(index: index, play: _playEntrance, child: view)
                             : view;
                       },
                     ),
