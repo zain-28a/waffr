@@ -43,7 +43,7 @@ class FloatingGlass extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: liquidGlassFill(
-                  surface.withValues(alpha: isDark ? 0.34 : 0.3),
+                  surface.withValues(alpha: isDark ? 0.15 : 0.11),
                   isDark: isDark,
                   sheen: isDark ? null : 0.2,
                 ),
