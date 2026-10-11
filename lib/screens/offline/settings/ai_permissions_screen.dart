@@ -8,6 +8,7 @@ import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/smart/smart_glow.dart';
 
 class AIPermissionsScreen extends StatefulWidget {
   const AIPermissionsScreen({super.key});
@@ -45,6 +46,7 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
             children: [
               AppListTile(
                 icon: Icons.auto_awesome,
+                leading: const SmartSpark(size: 32),
                 title: 'افتح التحليل الشامل',
                 subtitle: 'ملاحظات واقتراحات عن مصاريفك وتوفيرك وعاداتك',
                 onTap: () => openSmartAnalysis(context, InsightScope.profile),
@@ -53,6 +55,9 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
               const AppSectionTitle(title: 'الميزات'),
               AppListTile(
                 icon: Icons.notifications_active_outlined,
+                leading: const SmartGradientIcon(
+                  Icons.notifications_active_outlined,
+                ),
                 title: 'تنبيهات ذكية',
                 subtitle: 'تنبيه قبل نفاد الرصيد، وتذكيرات قصيرة إن غبت عن التطبيق',
                 showChevron: false,
@@ -66,6 +71,7 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
               const SizedBox(height: 10),
               AppListTile(
                 icon: Icons.category_outlined,
+                leading: const SmartGradientIcon(Icons.category_outlined),
                 title: 'تصنيف تلقائي للمصروف',
                 subtitle: 'يقترح التصنيف من الملاحظة التي تكتبها',
                 showChevron: false,
