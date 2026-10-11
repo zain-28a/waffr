@@ -7,14 +7,16 @@ import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-// The four glow hues: the app accent plus cooler companions.
+// The four glow hues: the app accent, then greens and teals that cool
+// toward a soft blue. Kept mostly green so the smart features carry the
+// app's own identity.
 List<Color> smartGlowColors(BuildContext context) {
   final accent = AppPalette.of(context).accent;
   return [
     accent,
+    const Color(0xFF4CB782),
     const Color(0xFF3FB6A8),
-    const Color(0xFF6E8BEF),
-    const Color(0xFFB98AE6),
+    const Color(0xFF5E9FD6),
   ];
 }
 
@@ -195,7 +197,7 @@ class _SmartSparkState extends State<SmartSpark>
           child: ShaderMask(
             blendMode: BlendMode.srcIn,
             shaderCallback: (bounds) => LinearGradient(
-              colors: [colors[0], colors[2], colors[3]],
+              colors: [colors[0], colors[1], colors[2]],
             ).createShader(bounds),
             child: SizedBox.square(
               dimension: widget.size * 0.7,
@@ -210,7 +212,7 @@ class _SmartSparkState extends State<SmartSpark>
                     alignment: Alignment.topRight,
                     child: Icon(
                       Icons.auto_awesome,
-                      size: widget.size * 0.42,
+                      size: widget.size * 0.4,
                     ),
                   ),
                 ],
@@ -232,16 +234,16 @@ class _TrendLinePainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     final path = Path()
-      ..moveTo(w * 0.06, h * 0.9)
-      ..lineTo(w * 0.32, h * 0.62)
-      ..lineTo(w * 0.5, h * 0.76)
-      ..lineTo(w * 0.8, h * 0.46);
+      ..moveTo(w * 0.06, h * 0.92)
+      ..lineTo(w * 0.27, h * 0.7)
+      ..lineTo(w * 0.42, h * 0.81)
+      ..lineTo(w * 0.6, h * 0.62);
     canvas.drawPath(
       path,
       Paint()
         ..color = Colors.white
         ..style = PaintingStyle.stroke
-        ..strokeWidth = w * 0.11
+        ..strokeWidth = w * 0.1
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round,
     );

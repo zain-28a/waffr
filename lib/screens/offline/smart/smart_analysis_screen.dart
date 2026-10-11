@@ -620,7 +620,7 @@ class _InsightCard extends StatelessWidget {
         InsightTone.warning => AppColors.warningOf(context),
         InsightTone.positive => palette.accent,
         InsightTone.tip => const Color(0xFF3FA7C9),
-        InsightTone.info => const Color(0xFF8A7CD8),
+        InsightTone.info => const Color(0xFF6E93C9),
       };
 
   @override
