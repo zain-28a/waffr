@@ -1,5 +1,6 @@
-// How the user's saving weighs against their spending over a rolling window.
-// Drives the balance scale on the profile. Pure: no Flutter, no I/O.
+// How the user's saving weighs against their spending lately. Drives the
+// balance scale on the profile, which shows only the overall state (good or
+// not), never amounts. Pure: no Flutter, no I/O.
 
 import 'package:waffr/data/models/transaction.dart';
 
@@ -7,84 +8,66 @@ import 'package:waffr/data/models/transaction.dart';
 enum BalanceState { empty, spendingHeavy, leaningSpending, balanced, savingHeavy }
 
 class MoneyBalance {
-  /// Days in each window. Long enough that one big purchase does not swing
-  /// the scale, short enough that a change in habits shows within weeks.
+  /// Days looked back. Long enough that one big purchase does not swing the
+  /// scale, short enough that a change in habits shows within weeks.
   static const int windowDays = 30;
 
-  /// Share of money moved that went to savings at which the scale is level.
+  /// Share of money moved that went to savings at which the beam is level.
   static const double target = 0.2;
 
   final double saved;
   final double spent;
 
-  /// The same figures for the window before, or null when there was no
-  /// money movement then.
-  final double? previousShare;
-
-  const MoneyBalance({
-    required this.saved,
-    required this.spent,
-    this.previousShare,
-  });
+  const MoneyBalance({required this.saved, required this.spent});
 
   /// Sums [transactions] in [currencyCode] over the last [windowDays] up to
-  /// [now], and the window before it for the trend. Withdrawals from
-  /// savings count against what was saved.
+  /// [now]. Withdrawals from savings count against what was saved.
   factory MoneyBalance.fromTransactions(
     Iterable<WaffrTransaction> transactions, {
     required String currencyCode,
     required DateTime now,
   }) {
     final start = now.subtract(const Duration(days: windowDays));
-    final previousStart = start.subtract(const Duration(days: windowDays));
-    var saved = 0.0, spent = 0.0, prevSaved = 0.0, prevSpent = 0.0;
+    var saved = 0.0;
+    var spent = 0.0;
 
     for (final item in transactions) {
       if (item.currencyCode != currencyCode) continue;
       final at = item.dateTime;
-      if (at.isAfter(now)) continue;
-      final current = !at.isBefore(start);
-      if (!current && at.isBefore(previousStart)) continue;
+      if (at.isBefore(start) || at.isAfter(now)) continue;
 
-      final double savedDelta = item.isSavingsIn
-          ? item.amount
-          : item.isSavingsOut
-              ? -item.amount
-              : 0.0;
-      final double spentDelta = item.isExpense ? item.amount : 0.0;
-      if (current) {
-        saved += savedDelta;
-        spent += spentDelta;
-      } else {
-        prevSaved += savedDelta;
-        prevSpent += spentDelta;
+      if (item.isSavingsIn) {
+        saved += item.amount;
+      } else if (item.isSavingsOut) {
+        saved -= item.amount;
+      } else if (item.isExpense) {
+        spent += item.amount;
       }
     }
 
-    return MoneyBalance(
-      saved: saved < 0 ? 0 : saved,
-      spent: spent,
-      previousShare: _share(prevSaved < 0 ? 0 : prevSaved, prevSpent),
-    );
-  }
-
-  static double? _share(double saved, double spent) {
-    final total = saved + spent;
-    if (total <= 0) return null;
-    return saved / total;
+    return MoneyBalance(saved: saved < 0 ? 0 : saved, spent: spent);
   }
 
   bool get isEmpty => saved + spent <= 0;
 
   /// Part of the money moved that went to savings, 0..1.
-  double get share => _share(saved, spent) ?? 0;
+  double get share => isEmpty ? 0 : saved / (saved + spent);
 
   /// Beam tilt, -1 (spending pan down) to 1 (saving pan down); 0 is level
   /// at [target].
   double get tilt {
     if (isEmpty) return 0;
-    final raw = (share - target) / target;
-    return raw.clamp(-1.0, 1.0);
+    return ((share - target) / target).clamp(-1.0, 1.0);
+  }
+
+  /// How full each pan looks, 0..1, relative to the heavier one.
+  double get savedLoad => _load(saved);
+  double get spentLoad => _load(spent);
+
+  double _load(double amount) {
+    final heavier = saved > spent ? saved : spent;
+    if (heavier <= 0 || amount <= 0) return 0;
+    return (amount / heavier).clamp(0.15, 1.0);
   }
 
   BalanceState get state {
@@ -95,41 +78,21 @@ class MoneyBalance {
     return BalanceState.savingHeavy;
   }
 
-  String get title => switch (state) {
-        BalanceState.empty => 'ميزانك ينتظر',
-        BalanceState.spendingHeavy => 'الصرف طاغٍ',
-        BalanceState.leaningSpending => 'يميل إلى الصرف',
-        BalanceState.balanced => 'متوازن',
-        BalanceState.savingHeavy => 'يميل إلى التوفير',
+  /// One word for the chip: how the user is doing overall.
+  String get verdict => switch (state) {
+        BalanceState.empty => 'لا بيانات بعد',
+        BalanceState.spendingHeavy => 'يحتاج انتباهاً',
+        BalanceState.leaningSpending => 'مقبول',
+        BalanceState.balanced => 'جيد',
+        BalanceState.savingHeavy => 'ممتاز',
       };
 
-  String get caption => switch (state) {
+  /// One short line under the scale, without numbers.
+  String get message => switch (state) {
         BalanceState.empty => 'سجّل مصروفك وتوفيرك ليظهر ميزانك',
-        BalanceState.spendingHeavy =>
-          'وفّر ولو مبلغاً صغيراً هذا الأسبوع ليبدأ الميزان بالاعتدال',
-        BalanceState.leaningSpending =>
-          'قريب من التوازن. توفير ${_percent(target)} من حركة مالك يعدّله',
-        BalanceState.balanced => 'توفيرك وصرفك في توازن جيد، حافظ عليه',
-        BalanceState.savingHeavy => 'توفيرك قوي هذه الفترة، أحسنت',
+        BalanceState.spendingHeavy => 'الصرف يغلب على التوفير مؤخراً',
+        BalanceState.leaningSpending => 'قريب من التوازن، خطوة توفير صغيرة تعدّله',
+        BalanceState.balanced => 'توفيرك وصرفك في توازن جيد',
+        BalanceState.savingHeavy => 'توفيرك قوي، أحسنت',
       };
-
-  /// Compared with the window before: positive when more went to savings.
-  double? get trend {
-    final previous = previousShare;
-    if (previous == null || isEmpty) return null;
-    return share - previous;
-  }
-
-  String? get trendText {
-    final change = trend;
-    if (change == null || change.abs() < 0.02) return null;
-    return change > 0
-        ? 'أفضل من الفترة السابقة'
-        : 'أقل توفيراً من الفترة السابقة';
-  }
-
-  static String _percent(double value) =>
-      '\u2066${(value * 100).round()}%\u2069';
-
-  String get shareText => _percent(share);
 }
