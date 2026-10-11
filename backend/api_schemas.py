@@ -4,6 +4,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
+from input_rules import INT_MAX, MONEY_MAX, CleanModel
+
 
 def parse_decimal(value: Any) -> Decimal | None:
     if value is None or value == "":
@@ -22,10 +24,10 @@ def money_str(value: Decimal | None) -> str | None:
     return format(quantized, "f")
 
 
-class TransactionCreate(BaseModel):
+class TransactionCreate(CleanModel):
     client_id: str | None = Field(default=None, max_length=64)
     type: str = Field(pattern="^(income|expense)$")
-    amount: Decimal = Field(gt=0)
+    amount: Decimal = Field(gt=0, le=MONEY_MAX)
     category: str | None = Field(default=None, max_length=100)
     payment_method: str | None = Field(default=None, max_length=100)
     note: str | None = Field(default=None, max_length=255)
@@ -43,8 +45,8 @@ class TransactionCreate(BaseModel):
         return parsed
 
 
-class TransactionUpdate(BaseModel):
-    amount: Decimal | None = Field(default=None, gt=0)
+class TransactionUpdate(CleanModel):
+    amount: Decimal | None = Field(default=None, gt=0, le=MONEY_MAX)
     category: str | None = Field(default=None, max_length=100)
     payment_method: str | None = Field(default=None, max_length=100)
     note: str | None = Field(default=None, max_length=255)
@@ -79,26 +81,26 @@ class TransactionOut(ApiModel):
         return money_str(value) or "0.00"
 
 
-class SavingsGoalCreate(BaseModel):
+class SavingsGoalCreate(CleanModel):
     client_id: str | None = Field(default=None, max_length=64)
     name: str = Field(min_length=1, max_length=100)
-    target_amount: Decimal = Field(gt=0)
+    target_amount: Decimal = Field(gt=0, le=MONEY_MAX)
     duration: str = Field(
         default="month",
         pattern="^(week|month|threeMonths|sixMonths|year)$",
     )
     deadline: datetime | None = None
-    allocate_percent: Decimal | None = Field(default=None, ge=0)
-    allocate_amount: Decimal | None = Field(default=None, ge=0)
+    allocate_percent: Decimal | None = Field(default=None, ge=0, le=MONEY_MAX)
+    allocate_amount: Decimal | None = Field(default=None, ge=0, le=MONEY_MAX)
     deduct_frequency: str = Field(
         default="monthly",
         pattern="^(none|weekly|monthly)$",
     )
     is_periodic: bool = False
-    duration_count: int | None = Field(default=None, ge=1)
-    priority: int | None = Field(default=None, ge=0)
+    duration_count: int | None = Field(default=None, ge=1, le=INT_MAX)
+    priority: int | None = Field(default=None, ge=0, le=INT_MAX)
     completed_at: datetime | None = None
-    completed_amount: Decimal | None = Field(default=None, ge=0)
+    completed_amount: Decimal | None = Field(default=None, ge=0, le=MONEY_MAX)
 
     @field_validator("name")
     @classmethod
@@ -120,25 +122,25 @@ class SavingsGoalCreate(BaseModel):
         return parse_decimal(value)
 
 
-class SavingsGoalUpdate(BaseModel):
+class SavingsGoalUpdate(CleanModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
-    target_amount: Decimal | None = Field(default=None, gt=0)
+    target_amount: Decimal | None = Field(default=None, gt=0, le=MONEY_MAX)
     duration: str | None = Field(
         default=None,
         pattern="^(week|month|threeMonths|sixMonths|year)$",
     )
     deadline: datetime | None = None
-    allocate_percent: Decimal | None = Field(default=None, ge=0)
-    allocate_amount: Decimal | None = Field(default=None, ge=0)
+    allocate_percent: Decimal | None = Field(default=None, ge=0, le=MONEY_MAX)
+    allocate_amount: Decimal | None = Field(default=None, ge=0, le=MONEY_MAX)
     deduct_frequency: str | None = Field(
         default=None,
         pattern="^(none|weekly|monthly)$",
     )
     is_periodic: bool | None = None
-    duration_count: int | None = Field(default=None, ge=1)
-    priority: int | None = Field(default=None, ge=0)
+    duration_count: int | None = Field(default=None, ge=1, le=INT_MAX)
+    priority: int | None = Field(default=None, ge=0, le=INT_MAX)
     completed_at: datetime | None = None
-    completed_amount: Decimal | None = Field(default=None, ge=0)
+    completed_amount: Decimal | None = Field(default=None, ge=0, le=MONEY_MAX)
     is_completed: bool | None = None
 
     @field_validator("name")
@@ -195,11 +197,11 @@ class SavingsGoalOut(ApiModel):
         return money_str(value)
 
 
-class SavingsTransferCreate(BaseModel):
+class SavingsTransferCreate(CleanModel):
     client_id: str | None = Field(default=None, max_length=64)
     goal_id: int | None = None
     goal_client_id: str | None = Field(default=None, max_length=64)
-    amount: Decimal = Field(gt=0)
+    amount: Decimal = Field(gt=0, le=MONEY_MAX)
     direction: str | None = Field(
         default=None,
         pattern="^(to_savings|to_balance)$",
@@ -239,7 +241,7 @@ class SavingsTransferOut(ApiModel):
         return money_str(value) or "0.00"
 
 
-class ShoppingListCreate(BaseModel):
+class ShoppingListCreate(CleanModel):
     client_id: str | None = Field(default=None, max_length=64)
     name: str = Field(min_length=1, max_length=100)
 
@@ -252,7 +254,7 @@ class ShoppingListCreate(BaseModel):
         return trimmed
 
 
-class ShoppingListUpdate(BaseModel):
+class ShoppingListUpdate(CleanModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
 
     @field_validator("name")
@@ -266,11 +268,11 @@ class ShoppingListUpdate(BaseModel):
         return trimmed
 
 
-class ShoppingItemCreate(BaseModel):
+class ShoppingItemCreate(CleanModel):
     client_id: str | None = Field(default=None, max_length=64)
     name: str = Field(min_length=1, max_length=255)
-    quantity: int = Field(default=1, ge=1)
-    price: Decimal | None = Field(default=None, ge=0)
+    quantity: int = Field(default=1, ge=1, le=INT_MAX)
+    price: Decimal | None = Field(default=None, ge=0, le=MONEY_MAX)
     is_purchased: bool = False
     purchased_at: datetime | None = None
     expense_client_id: str | None = Field(default=None, max_length=64)
@@ -289,10 +291,10 @@ class ShoppingItemCreate(BaseModel):
         return parse_decimal(value)
 
 
-class ShoppingItemUpdate(BaseModel):
+class ShoppingItemUpdate(CleanModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
-    quantity: int | None = Field(default=None, ge=1)
-    price: Decimal | None = Field(default=None, ge=0)
+    quantity: int | None = Field(default=None, ge=1, le=INT_MAX)
+    price: Decimal | None = Field(default=None, ge=0, le=MONEY_MAX)
     is_purchased: bool | None = None
     purchased_at: datetime | None = None
     expense_client_id: str | None = Field(default=None, max_length=64)
@@ -340,14 +342,14 @@ class ShoppingListOut(ApiModel):
     items: list[ShoppingItemOut] = []
 
 
-class RecurringExpenseCreate(BaseModel):
+class RecurringExpenseCreate(CleanModel):
     client_id: str | None = Field(default=None, max_length=64)
-    amount: Decimal = Field(gt=0)
+    amount: Decimal = Field(gt=0, le=MONEY_MAX)
     category: str = Field(min_length=1, max_length=100)
     payment_method: str = Field(default="", max_length=100)
     note: str | None = Field(default=None, max_length=255)
     unit: str = Field(pattern="^(day|week|month|daily|weekly|monthly)$")
-    interval_count: int = Field(default=1, ge=1)
+    interval_count: int = Field(default=1, ge=1, le=INT_MAX)
     next_due_at: datetime | None = None
     enabled: bool = True
 
@@ -368,8 +370,8 @@ class RecurringExpenseCreate(BaseModel):
         return parsed
 
 
-class RecurringExpenseUpdate(BaseModel):
-    amount: Decimal | None = Field(default=None, gt=0)
+class RecurringExpenseUpdate(CleanModel):
+    amount: Decimal | None = Field(default=None, gt=0, le=MONEY_MAX)
     category: str | None = Field(default=None, min_length=1, max_length=100)
     payment_method: str | None = Field(default=None, max_length=100)
     note: str | None = Field(default=None, max_length=255)
@@ -377,7 +379,7 @@ class RecurringExpenseUpdate(BaseModel):
         default=None,
         pattern="^(day|week|month|daily|weekly|monthly)$",
     )
-    interval_count: int | None = Field(default=None, ge=1)
+    interval_count: int | None = Field(default=None, ge=1, le=INT_MAX)
     next_due_at: datetime | None = None
     enabled: bool | None = None
 
@@ -407,19 +409,19 @@ class RecurringExpenseOut(ApiModel):
         return money_str(value) or "0.00"
 
 
-class NotificationCreate(BaseModel):
+class NotificationCreate(CleanModel):
     client_id: str | None = Field(default=None, max_length=64)
     type: str = Field(min_length=1, max_length=50)
     title: str = Field(min_length=1, max_length=255)
-    message: str = Field(min_length=1)
+    message: str = Field(min_length=1, max_length=20_000)
     event_key: str = Field(min_length=1, max_length=255)
     related_id: str | None = Field(default=None, max_length=64)
-    metadata: dict[str, str] = Field(default_factory=dict)
+    metadata: dict[str, str] = Field(default_factory=dict, max_length=50)
     is_read: bool = False
     created_at: datetime | None = None
 
 
-class NotificationUpdate(BaseModel):
+class NotificationUpdate(CleanModel):
     is_read: bool | None = None
 
 
@@ -436,7 +438,7 @@ class NotificationOut(ApiModel):
     created_at: datetime
 
 
-class UserSettingsUpdate(BaseModel):
+class UserSettingsUpdate(CleanModel):
     notifications_enabled: bool | None = None
     notifications_muted: bool | None = None
     notify_low_balance: bool | None = None
@@ -444,9 +446,9 @@ class UserSettingsUpdate(BaseModel):
     notify_goal_reached: bool | None = None
     notify_recurring_expense: bool | None = None
     ai_data_enabled: bool | None = None
-    monthly_income_amount: Decimal | None = Field(default=None, ge=0)
-    weekly_income_amount: Decimal | None = Field(default=None, ge=0)
-    processed_period_keys: list[str] | None = None
+    monthly_income_amount: Decimal | None = Field(default=None, ge=0, le=MONEY_MAX)
+    weekly_income_amount: Decimal | None = Field(default=None, ge=0, le=MONEY_MAX)
+    processed_period_keys: list[str] | None = Field(default=None, max_length=20_000)
 
     @field_validator("monthly_income_amount", "weekly_income_amount", mode="before")
     @classmethod

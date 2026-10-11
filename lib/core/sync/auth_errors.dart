@@ -1,7 +1,14 @@
 // Maps FastAPI auth HTTP errors into Arabic messages for login/register UI.
 
+// The server refuses for a while after too many attempts (HTTP 429).
+const String tooManyAttemptsMessage =
+    'محاولات كثيرة. انتظر قليلاً ثم حاول مرة أخرى';
+
 String describeAuthError(int status, Object? body) {
   final detail = _authDetail(body);
+  if (status == 429) {
+    return tooManyAttemptsMessage;
+  }
   if (status == 401) {
     return 'البريد أو كلمة المرور غير صحيحة';
   }
