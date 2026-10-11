@@ -61,7 +61,7 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
 
   void _syncTurn() {
     if (!mounted) return;
-    if (_seen.value || AppMotion.reduced(context)) {
+    if (_seen.value || !AppMotion.enabled(context)) {
       _turn.stop();
     } else if (!_turn.isAnimating) {
       _turn.repeat();

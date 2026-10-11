@@ -490,6 +490,7 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
   late final Animation<double> _fade;
   late final Animation<double> _scale;
   late final Animation<Offset> _slide;
+  late final CurvedAnimation _curve;
 
   @override
   void initState() {
@@ -499,24 +500,40 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
       duration: AppMotion.slow,
       reverseDuration: AppMotion.fast,
     );
-    final curve = CurvedAnimation(
+    _curve = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOutCubic,
       reverseCurve: Curves.easeInCubic,
     );
-    _fade = curve;
-    _scale = Tween<double>(begin: 0.92, end: 1).animate(curve);
+    _fade = _curve;
+    _scale = Tween<double>(begin: 0.92, end: 1).animate(_curve);
     _slide = Tween<Offset>(
       begin: const Offset(0, -0.06),
       end: Offset.zero,
-    ).animate(curve);
-    _controller.forward();
+    ).animate(_curve);
   }
 
-  Future<void> collapse() => _controller.reverse();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduced(context)) {
+      _controller.value = 1;
+    } else if (_controller.isDismissed) {
+      _controller.forward();
+    }
+  }
+
+  Future<void> collapse() async {
+    if (AppMotion.reduced(context)) {
+      _controller.value = 0;
+    } else {
+      await _controller.reverse();
+    }
+  }
 
   @override
   void dispose() {
+    _curve.dispose();
     _controller.dispose();
     super.dispose();
   }
