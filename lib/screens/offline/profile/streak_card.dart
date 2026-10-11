@@ -5,6 +5,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/usage/streak_math.dart';
 import 'package:waffr/core/utils/money.dart';
@@ -45,17 +46,28 @@ class _StreakCardState extends State<StreakCard>
     curve: const Interval(0.08, 0.75, curve: Curves.easeOutCubic),
   );
 
+  bool _started = false;
+
   @override
-  void initState() {
-    super.initState();
-    _controller.forward();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    _play();
   }
 
   @override
   void didUpdateWidget(covariant StreakCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.replayToken != widget.replayToken ||
-        oldWidget.count != widget.count) {
+    // Replay only for a real revisit. A count that changes while shown
+    // (e.g. the streak service finishing its load) updates in place.
+    if (oldWidget.replayToken != widget.replayToken) _play();
+  }
+
+  void _play() {
+    if (AppMotion.reduced(context)) {
+      _controller.value = 1;
+    } else {
       _controller.forward(from: 0);
     }
   }

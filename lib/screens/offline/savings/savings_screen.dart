@@ -119,9 +119,8 @@ class _SavingsScreenState extends State<SavingsScreen>
                   controller: _periodController,
                   itemCount: _maxPeriodOffset,
                   clipBehavior: Clip.none,
-                  onPageChanged: (index) {
-                    setState(() => _periodOffset = index);
-                  },
+                  // Only the arrows read the offset; no rebuild needed.
+                  onPageChanged: (index) => _periodOffset = index,
                   itemBuilder: (context, offset) {
                     final pagePeriod = CalendarPeriod.forRange(_range, offset);
 
@@ -548,30 +547,30 @@ class _ActiveGoalsPanelState extends State<_ActiveGoalsPanel> {
           saved: widget.store.currentSaved(ordered[i]),
         );
 
-    final Widget goalsBody;
-    if (!expanded) {
-      goalsBody = goalRow(0);
-    } else {
-      final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-      final maxHeight =
-          (2.5 * (_goalExtent * scale + _goalGap)).clamp(0.0, double.infinity);
-      final list = Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < ordered.length; i++) ...[
-            if (i > 0) const SizedBox(height: _goalGap),
-            goalRow(i),
+    // One tree shape for both states, so the first goal keeps its state
+    // (its bar does not refill) when the panel opens or closes; only the
+    // added rows animate in.
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final maxHeight = expanded && ordered.length > 2
+        ? 2.5 * (_goalExtent * scale + _goalGap)
+        : double.infinity;
+    final shown = expanded ? ordered.length : 1;
+    final Widget goalsBody = ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: SingleChildScrollView(
+        physics: expanded ? null : const NeverScrollableScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < shown; i++) ...[
+              if (i > 0) const SizedBox(height: _goalGap),
+              KeyedSubtree(key: ValueKey(ordered[i].id), child: goalRow(i)),
+            ],
           ],
-        ],
-      );
-      goalsBody = ordered.length > 2
-          ? ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxHeight),
-              child: SingleChildScrollView(child: list),
-            )
-          : list;
-    }
+        ),
+      ),
+    );
 
     return GestureDetector(
       onTap: canExpand

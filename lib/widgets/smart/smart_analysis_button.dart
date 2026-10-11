@@ -59,12 +59,17 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
     _syncTurn();
   }
 
+  bool _turned = false;
+
   void _syncTurn() {
     if (!mounted) return;
     if (_seen.value || AppMotion.reduced(context)) {
       _turn.stop();
-    } else if (!_turn.isAnimating) {
-      _turn.repeat();
+    } else if (!_turn.isAnimating && !_turned) {
+      // A couple of slow turns to draw the eye, then it rests; an endless
+      // loop kept the app drawing frames on every tab that holds a button.
+      _turned = true;
+      _turn.repeat(count: 2);
     }
   }
 
@@ -109,64 +114,64 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
 
     final Widget content = switch (style) {
       SmartButtonStyle.banner => Row(
-          children: [
-            spark,
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'التحليل الذكي',
-                    style: _text(palette.textPrimary, 15, FontWeight.w800),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'اكتشف أين يذهب مالك واحصل على اقتراحات',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: _text(palette.textSecondary, 12.5, FontWeight.w500),
-                  ),
-                ],
-              ),
+        children: [
+          spark,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'التحليل الذكي',
+                  style: _text(palette.textPrimary, 15, FontWeight.w800),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'اكتشف أين يذهب مالك واحصل على اقتراحات',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _text(palette.textSecondary, 12.5, FontWeight.w500),
+                ),
+              ],
             ),
-            Icon(
-              Icons.chevron_left_rounded,
-              color: palette.textSecondary,
-            ),
-          ],
-        ),
+          ),
+          Icon(Icons.chevron_left_rounded, color: palette.textSecondary),
+        ],
+      ),
       SmartButtonStyle.tile => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            spark,
-            const SizedBox(height: 6),
-            // Wraps onto two centered lines when the tile is narrow.
-            Text(
-              'التحليل الذكي',
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              style: _text(palette.textPrimary, 12, FontWeight.w800)
-                  .copyWith(height: 1.15),
-            ),
-          ],
-        ),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          spark,
+          const SizedBox(height: 6),
+          // Wraps onto two centered lines when the tile is narrow.
+          Text(
+            'التحليل الذكي',
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            style: _text(
+              palette.textPrimary,
+              12,
+              FontWeight.w800,
+            ).copyWith(height: 1.15),
+          ),
+        ],
+      ),
       SmartButtonStyle.pill => Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            spark,
-            SizedBox(width: widget.large ? 8 : 6),
-            Text(
-              'تحليل ذكي',
-              style: _text(
-                palette.textPrimary,
-                widget.large ? 14.5 : 12.5,
-                widget.large ? FontWeight.w800 : FontWeight.w700,
-              ),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          spark,
+          SizedBox(width: widget.large ? 8 : 6),
+          Text(
+            'تحليل ذكي',
+            style: _text(
+              palette.textPrimary,
+              widget.large ? 14.5 : 12.5,
+              widget.large ? FontWeight.w800 : FontWeight.w700,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     };
 
     return Semantics(
@@ -174,56 +179,64 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
       label: 'التحليل الذكي',
       child: GestureDetector(
         onTap: _open,
-        child: AnimatedBuilder(
-          animation: _turn,
-          builder: (context, child) {
-            return Container(
-              padding: const EdgeInsets.all(1.6),
-              decoration: BoxDecoration(
-                borderRadius: radius,
-                gradient: SweepGradient(
-                  colors: [...colors, colors.first],
-                  transform: GradientRotation(_turn.value * 2 * math.pi),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors[2].withValues(alpha: 0.18),
-                    blurRadius: style == SmartButtonStyle.pill ? 10 : 18,
+        child: RepaintBoundary(
+          child: AnimatedBuilder(
+            animation: _turn,
+            builder: (context, child) {
+              return Container(
+                padding: const EdgeInsets.all(1.6),
+                decoration: BoxDecoration(
+                  borderRadius: radius,
+                  gradient: SweepGradient(
+                    colors: [...colors, colors.first],
+                    transform: GradientRotation(_turn.value * 2 * math.pi),
                   ),
-                ],
-              ),
-              child: child,
-            );
-          },
-          child: Container(
-            // The tile fills whatever box it is given, content centered.
-            alignment:
-                style == SmartButtonStyle.tile ? Alignment.center : null,
-            padding: switch (style) {
-              SmartButtonStyle.pill => widget.large
-                  ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
-                  : const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              SmartButtonStyle.tile =>
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              SmartButtonStyle.banner =>
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            },
-            decoration: BoxDecoration(
-              // A faint wash of the border colors over the surface.
-              gradient: LinearGradient(
-                begin: AlignmentDirectional.topStart,
-                end: AlignmentDirectional.bottomEnd,
-                colors: [
-                  for (final color in [colors[1], colors[3]])
-                    Color.alphaBlend(
-                      color.withValues(alpha: isDark ? 0.10 : 0.07),
-                      palette.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors[2].withValues(alpha: 0.18),
+                      blurRadius: style == SmartButtonStyle.pill ? 10 : 18,
                     ),
-                ],
+                  ],
+                ),
+                child: child,
+              );
+            },
+            child: Container(
+              // The tile fills whatever box it is given, content centered.
+              alignment: style == SmartButtonStyle.tile
+                  ? Alignment.center
+                  : null,
+              padding: switch (style) {
+                SmartButtonStyle.pill =>
+                  widget.large
+                      ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
+                      : const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                SmartButtonStyle.tile => const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                SmartButtonStyle.banner => const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+              },
+              decoration: BoxDecoration(
+                // A faint wash of the border colors over the surface.
+                gradient: LinearGradient(
+                  begin: AlignmentDirectional.topStart,
+                  end: AlignmentDirectional.bottomEnd,
+                  colors: [
+                    for (final color in [colors[1], colors[3]])
+                      Color.alphaBlend(
+                        color.withValues(alpha: isDark ? 0.10 : 0.07),
+                        palette.surface,
+                      ),
+                  ],
+                ),
+                borderRadius: radius,
               ),
-              borderRadius: radius,
+              child: content,
             ),
-            child: content,
           ),
         ),
       ),
