@@ -43,6 +43,6 @@ serves memory.
 | --- | --- |
 | `notification_service.dart` | Builds and stores in-app notifications. |
 | `online_feed_service.dart` | Static exchange rates and news from the API. |
-| `profile_photo.dart` | The local profile image. |
+| `legacy_profile_photo.dart` | Deletes the profile photo older versions saved. |
 | `local_data_reset.dart` | Wipes restorable local data. |
 | `backup_service.dart` | Local account data: guest choice, display name, wiping data on account delete or switch. |

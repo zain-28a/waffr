@@ -18,7 +18,7 @@ lib/
   data/
     models/                 plain types and catalogs (no I/O)
     stores/                 in-memory ledger backed by SharedPreferences
-    services/               notifications, photos, online feed, local account data
+    services/               notifications, online feed, local account data
   screens/                  one folder per feature; routes stay here
   widgets/                  shared controls used by more than one screen
 ```
@@ -55,7 +55,7 @@ sheets. Shared sheet pieces (glass body, amount field, save button) live in
 | Sign-in and cloud sync | `lib/core/sync/` (`auth_session.dart`, `sync_service.dart`). Login UI: `lib/screens/offline/login/`. |
 | App lock | `lib/core/security/app_lock.dart` and `lib/screens/offline/applock/applockscreen.dart`. |
 | Encryption of synced private text | `lib/core/security/data_key.dart` (data key, wrapped with the password) and `lib/core/sync/sync_crypto.dart` (which fields are sealed). Amounts, dates and the profile stay readable on the server. A forgotten password cannot recover the sealed text. |
-| Profile photo | `lib/data/services/profile_photo.dart`. |
+| Profile icon (no photos: crossed out for guests, plain when signed in) | `lib/widgets/brand/profile_avatar.dart`. |
 | Local account data (guest, display name, wipe on delete/switch) | `lib/data/services/backup_service.dart`. |
 | On-device preferences | `lib/core/prefs/app_prefs.dart`. Call `AppPrefs.instance` instead of `SharedPreferences.getInstance()`. |
 

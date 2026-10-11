@@ -20,11 +20,11 @@ from crud_utils import (
     utc_now,
 )
 from database import get_db, scrub_private_text
+from legacy_photo import photo_meta
 from category_model import ExpenseCategory
 from goal_model import SavingsGoal, SavingsTransfer
 from models import Notification, User, UserSettings
 from preset_model import ExpensePreset
-import profile_photo as stored_photo
 from shopping_model import ShoppingItem, ShoppingList
 from sync_schemas import (
     CategorySyncIn,
@@ -267,8 +267,7 @@ def _settings_out(row: UserSettings, user: User) -> SettingsSyncOut:
         streak_count=row.streak_count,
         streak_last_date=row.streak_last_date,
         hidden_categories=list(row.hidden_categories or []),
-        has_photo=stored_photo.has_photo(user.id),
-        photo_updated_at=user.photo_updated_at,
+        **photo_meta(),
         updated_at=row.updated_at,
     )
 
