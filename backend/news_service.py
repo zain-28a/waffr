@@ -35,6 +35,7 @@ from sqlalchemy.orm import Session
 
 from database import SessionLocal, utc_now
 from online_model import NewsArticle
+from row_security import bind_system
 
 logger = logging.getLogger("waffr.news")
 
@@ -338,11 +339,31 @@ def _request_failure_detail(exc: BaseException) -> str:
     return f"{type(reason).__name__}: {reason}"
 
 
+class _SourceRedirects(urllib.request.HTTPRedirectHandler):
+    """Follow redirects only to the source's own HTTPS hosts.
+
+    Without this a compromised feed could bounce the server's request to an
+    internal address before the host check below runs.
+    """
+
+    def __init__(self, allowed_hosts: frozenset[str]):
+        super().__init__()
+        self._allowed_hosts = allowed_hosts
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        target = urlparse(newurl)
+        host = (target.hostname or "").lower()
+        if target.scheme != "https" or host not in self._allowed_hosts:
+            raise NewsFeedUnavailable()
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def fetch_feed(source: NewsSource) -> bytes:
     last_error: Exception | None = None
+    opener = urllib.request.build_opener(_SourceRedirects(source.allowed_hosts))
     for attempt in range(1, FEED_ATTEMPTS + 1):
         try:
-            with urllib.request.urlopen(
+            with opener.open(
                 _feed_request(source),
                 timeout=FEED_TIMEOUT_SECONDS,
             ) as response:
@@ -499,6 +520,7 @@ def _refresh_unlocked() -> NewsRefreshResult:
         return NewsRefreshResult(ok=False, error="feed_unavailable")
 
     db = SessionLocal()
+    bind_system(db)
     try:
         saved = _store_articles(db, articles)
     except Exception:

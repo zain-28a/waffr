@@ -19,5 +19,9 @@ void main() {
       }),
       'أدخل بريداً إلكترونياً صالحاً',
     );
+    expect(
+      describeAuthError(429, {'detail': 'Too many requests'}),
+      tooManyAttemptsMessage,
+    );
   });
 }

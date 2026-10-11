@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from sqlalchemy import DateTime, Numeric, String, create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
+import row_security
+
 load_dotenv()
 
 
@@ -30,6 +32,7 @@ SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
 )
+row_security.attach(SessionLocal)
 
 
 class Base(DeclarativeBase):
@@ -124,6 +127,8 @@ def _ensure_schema_updates() -> None:
     tables = set(inspector.get_table_names())
 
     with engine.begin() as connection:
+        # Migrations touch every account's rows.
+        connection.execute(text("SELECT set_config('app.system', 'on', true)"))
         _ensure_user_timestamp_columns(connection, inspector, tables)
         _ensure_user_photo_column(connection, inspector, tables)
         _ensure_user_profile_columns(connection, inspector, tables)
@@ -142,6 +147,7 @@ def _ensure_schema_updates() -> None:
         _ensure_user_key_columns(connection, inspector, tables)
         _ensure_private_text_columns(connection, inspector, tables)
         _scrub_deleted_private_text(connection, tables)
+        row_security.install(connection, Base.metadata.tables.keys())
 
 
 def _columns(inspector, table: str) -> set[str]:
@@ -699,6 +705,8 @@ def _ensure_user_key_columns(connection, inspector, tables: set[str]) -> None:
         ("reset_code_expires_at", "reset_code_expires_at TIMESTAMPTZ"),
         ("reset_code_sent_at", "reset_code_sent_at TIMESTAMPTZ"),
         ("reset_attempts", "reset_attempts INTEGER NOT NULL DEFAULT 0"),
+        ("failed_login_count", "failed_login_count INTEGER NOT NULL DEFAULT 0"),
+        ("locked_until", "locked_until TIMESTAMPTZ"),
     ):
         _add_column(connection, inspector, tables, "users", name, ddl)
 

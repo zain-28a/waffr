@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from api_schemas import NewsArticleOut, NewsRefreshOut
+from auth import get_current_user
 from database import get_db
+from models import User
 from news_service import NewsFeedUnavailable, latest_articles, refresh_news
+from rate_limit import NEWS_REFRESH_ALL, NEWS_REFRESH_USER, enforce
 
 router = APIRouter(prefix="/online", tags=["online"])
 
@@ -19,8 +22,15 @@ def list_news(db: Session = Depends(get_db)):
         ) from None
 
 
+# Fetching the feeds is slow and runs hourly anyway, so a manual refresh
+# needs an account and is tightly limited.
 @router.post("/news/refresh", response_model=NewsRefreshOut)
-def refresh_news_now():
+def refresh_news_now(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    enforce(request, f"news-refresh:user:{current_user.id}", NEWS_REFRESH_USER)
+    enforce(request, "news-refresh:all", NEWS_REFRESH_ALL)
     result = refresh_news(wait=True)
     return NewsRefreshOut(
         ok=result.ok,

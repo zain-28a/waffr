@@ -10,6 +10,12 @@
 --
 -- Before running: replace CHANGE_ME with a strong password. Do not commit
 -- the real password.
+--
+-- Row level security: the API turns it on for every table (row_security.py)
+-- and adds a read policy for waffer_admin, so these views keep working.
+-- Connected as waffer_user the tables look empty unless you first run
+--   SET app.system = 'on';
+-- in that Query Tool session.
 
 BEGIN;
 
