@@ -268,35 +268,6 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
               ],
             ),
           ),
-          PositionedDirectional(
-            start: 0,
-            end: 0,
-            bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: Center(
-                  child: AnimatedSwitcher(
-                    duration: AppMotion.of(context, AppMotion.medium),
-                    transitionBuilder: (child, animation) => FadeTransition(
-                      opacity: animation,
-                      child: ScaleTransition(scale: animation, child: child),
-                    ),
-                    child: _phase == _Phase.done
-                        ? _RegenerateButton(
-                            key: const ValueKey('regen'),
-                            onTap: () {
-                              AppHaptics.selection();
-                              _generate(quick: true);
-                            },
-                          )
-                        : const SizedBox.shrink(key: ValueKey('none')),
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -382,7 +353,7 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
 
     return ListView(
       key: ValueKey('report-$_run'),
-      padding: const EdgeInsets.fromLTRB(18, 4, 18, 96),
+      padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
       children: [
         if (report.healthScore != null && _revealed > summaryAt) ...[
           const SizedBox(height: 8),
@@ -916,53 +887,4 @@ class _GaugePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_GaugePainter old) => old.value != value;
-}
-
-class _RegenerateButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _RegenerateButton({super.key, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    final colors = smartGlowColors(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(1.6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          gradient: LinearGradient(colors: colors),
-          boxShadow: [
-            BoxShadow(color: colors[2].withValues(alpha: 0.25), blurRadius: 16),
-          ],
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-          decoration: BoxDecoration(
-            color: palette.surface,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SmartSpark(size: 24),
-              const SizedBox(width: 8),
-              Text(
-                'تحليل جديد',
-                style: TextStyle(
-                  fontFamily: 'Outfit',
-                  fontFamilyFallback: const ['Tajawal'],
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: palette.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
