@@ -1,18 +1,23 @@
 // Usage profile. Account editing stays in Settings.
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/core/insights/profile_snapshot.dart';
+import 'package:waffr/core/insights/smart/insight_engine.dart';
+import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/usage/usage_duration.dart';
 import 'package:waffr/data/services/profile_identity.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/widgets/brand/profile_avatar.dart';
 import 'package:waffr/screens/offline/profile/streak_card.dart';
-import 'package:waffr/widgets/charts/savings_spending_bar.dart';
+import 'package:waffr/screens/offline/profile/wallet_backdrop.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/widgets/smart/smart_analysis_button.dart';
@@ -41,6 +46,20 @@ class _ProfileScreenState extends State<ProfileScreen>
     ProfileIdentity.instance,
   ]);
 
+  // What the health score reads from.
+  late final Listenable _healthData = Listenable.merge([
+    _store,
+    CurrencyStore.instance,
+    RecurringExpenseStore.instance,
+  ]);
+
+  // Band behind the wallet's smile; null until the first read.
+  HealthBand? _health;
+  int _healthRun = 0;
+
+  // Whether this tab is the one on screen.
+  late bool _active = widget.tabIndex.value == _tab;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -48,21 +67,46 @@ class _ProfileScreenState extends State<ProfileScreen>
   void initState() {
     super.initState();
     widget.tabIndex.addListener(_onTab);
+    _healthData.addListener(_readHealth);
     _store.ensureLoaded();
     UsageStreakService.instance.ensureLoaded();
     ProfileIdentity.instance.reload();
+    _readHealth();
   }
 
   @override
   void dispose() {
     widget.tabIndex.removeListener(_onTab);
+    _healthData.removeListener(_readHealth);
     super.dispose();
   }
 
   void _onTab() {
-    if (widget.tabIndex.value != _tab) return;
+    if (widget.tabIndex.value != _tab) {
+      if (_active) setState(() => _active = false);
+      return;
+    }
     ProfileIdentity.instance.reload();
-    setState(() => _streakReplay++);
+    _readHealth();
+    setState(() {
+      _active = true;
+      _streakReplay++;
+    });
+  }
+
+  // Same score as the smart analysis. With nothing logged yet the wallet
+  // keeps the logo's own smile.
+  Future<void> _readHealth() async {
+    final run = ++_healthRun;
+    final facts = await SmartFactsLoader.load();
+    if (!mounted || run != _healthRun) return;
+    final empty = facts.expenses.isEmpty &&
+        facts.incomes.isEmpty &&
+        facts.savingsTransfers.isEmpty;
+    final band = empty
+        ? HealthBand.excellent
+        : HealthBand.of(InsightEngine(facts).healthScore());
+    if (band != _health) setState(() => _health = band);
   }
 
   @override
@@ -70,6 +114,42 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.build(context);
     final palette = AppPalette.of(context);
 
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final page = constraints.biggest;
+        final bottom = math.max(
+          kFloatingNavClearance,
+          WalletBackdrop.contentClearance(page),
+        );
+
+        // The wallet hangs from the bottom of the content, which is at least
+        // a page tall, so its smile lands just below the stats and the cards
+        // are painted over the rest of it.
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: page.height),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: WalletBackdrop(
+                    page: page,
+                    band: _health,
+                    active: _active,
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(18, 18, 18, bottom),
+                  child: _cards(palette),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _cards(AppPalette palette) {
     return AnimatedBuilder(
       animation: _data,
       builder: (context, _) {
@@ -78,8 +158,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         final identity = ProfileIdentity.instance;
         final started = streak.startedAt;
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: staggered([
             _ProfileHeader(identity: identity, palette: palette),
             const SizedBox(height: kCardGap),
@@ -109,33 +190,6 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
             const SizedBox(height: kCardGap),
             _UsageStats(snapshot: snapshot, palette: palette),
-            const SizedBox(height: kCardGap),
-            GlassContainer(
-              colorType: GlassColorType.surface,
-              borderRadius: 22,
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'الصرف والتوفير',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontFamilyFallback: const ['Tajawal'],
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: palette.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SavingsSpendingBar(
-                    savings: snapshot.saved,
-                    spending: snapshot.spent,
-                  ),
-                ],
-              ),
-            ),
           ]),
         );
       },
