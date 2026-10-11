@@ -1076,11 +1076,13 @@ class TransactionStore extends ChangeNotifier {
 
     _reindexPriorities();
 
+    // Notify before the write so a dragged goal does not snap back while
+    // the list rebuilds from the old order.
+    notifyListeners();
+
     final prefs = await AppPrefs.instance;
 
     await _persistGoals(prefs);
-
-    notifyListeners();
   }
 
   Future<void> applyRemoteSync({
@@ -1258,14 +1260,16 @@ class TransactionStore extends ChangeNotifier {
 
     _completeGoalIfNeeded();
 
+    // Screens update first; the disk write follows. Waiting for the write
+    // before notifying kept sheets open and balances stale until it ended.
+    if (notify) {
+      notifyListeners();
+    }
+
     if (persist) {
       final prefs = await AppPrefs.instance;
 
       await _persistAll(prefs);
-    }
-
-    if (notify) {
-      notifyListeners();
     }
   }
 
