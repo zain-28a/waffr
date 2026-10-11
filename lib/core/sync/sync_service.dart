@@ -24,7 +24,6 @@ import 'package:waffr/core/sync/sync_crypto.dart';
 import 'package:waffr/core/sync/sync_dirty.dart';
 import 'package:waffr/core/sync/sync_mapper.dart';
 import 'package:waffr/core/sync/sync_pull_policy.dart';
-import 'package:waffr/core/sync/profile_photo_sync.dart';
 import 'package:waffr/core/sync/profile_sync.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/core/sync/sync_tombstones.dart';
@@ -82,8 +81,8 @@ class SyncService with WidgetsBindingObserver {
     });
   }
 
-  // Run push+pull now: require a logged-in session, flush pending photo work,
-  // optionally skip a clean pull, POST /sync, then merge the response.
+  // Run push+pull now: require a logged-in session, optionally skip a clean
+  // pull, POST /sync, then merge the response.
   Future<SyncResult> syncNow({bool force = false}) async {
     _debounceTimer?.cancel();
 
@@ -102,8 +101,6 @@ class SyncService with WidgetsBindingObserver {
           'في وضع الضيف تبقى بياناتك على جهازك فقط. سجّل الدخول للمزامنة',
         );
       }
-
-      await ProfilePhotoSync.flush();
 
       // A streak change that no successful sync carried yet (marked while
       // another sync was in flight, or before the app was closed) still
@@ -222,12 +219,6 @@ class SyncService with WidgetsBindingObserver {
           'تعذّر تحديث بياناتك من الحساب، فبقيت النسخة المحفوظة على جهازك',
         );
       }
-
-      await ProfilePhotoSync.applyFromSettings(
-        body['settings'] is Map
-            ? Map<String, dynamic>.from(body['settings'] as Map)
-            : null,
-      );
 
       final DateTime serverTime = parseSyncDateOrNow(
         body['server_time']?.toString(),

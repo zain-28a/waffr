@@ -1,14 +1,10 @@
-// Signed-in profile: name, photo, and sign-out.
+// Signed-in profile: name and sign-out.
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
-import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/data/services/backup_service.dart';
-import 'package:waffr/data/services/profile_photo.dart';
 import 'package:waffr/core/sync/auth_session.dart';
-import 'package:waffr/core/sync/profile_photo_sync.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/widgets/brand/profile_avatar.dart';
@@ -16,7 +12,7 @@ import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/screens/offline/settings/change_password_screen.dart';
 
-// Edit display name and photo, or sign out of the synced account.
+// Edit display name, or sign out of the synced account.
 class AccountScreen extends StatefulWidget {
   final Future<void> Function()? onSignedOut;
 
@@ -30,7 +26,6 @@ class _AccountScreenState extends State<AccountScreen> {
   final TextEditingController _nameController = TextEditingController();
 
   String _email = '';
-  String? _photoPath;
   bool _busy = false;
   bool _savingName = false;
 
@@ -49,68 +44,13 @@ class _AccountScreenState extends State<AccountScreen> {
   Future<void> _load() async {
     final prefs = await AppPrefs.instance;
     final email = await AuthSession.instance.email() ?? '';
-    final photoPath = await ProfilePhoto.path();
 
     if (!mounted) return;
 
     setState(() {
       _email = email;
-      _photoPath = photoPath;
       _nameController.text = prefs.getString('user_name') ?? '';
     });
-  }
-
-  // Picks from gallery/camera, then uploads the new photo to sync.
-  Future<void> _pickPhoto(ImageSource source) async {
-    Navigator.of(context).pop();
-    final path = await ProfilePhoto.pick(source: source);
-    if (!mounted) return;
-    setState(() => _photoPath = path);
-    await ProfilePhotoSync.uploadCurrent();
-  }
-
-  Future<void> _removePhoto() async {
-    Navigator.of(context).pop();
-    await ProfilePhoto.clear(rememberDelete: true);
-    if (!mounted) return;
-    setState(() => _photoPath = null);
-    await ProfilePhotoSync.deleteRemote();
-  }
-
-  // Camera / gallery / remove options for the avatar.
-  Future<void> _showPhotoOptions() async {
-    await showGlassSheet<void>(
-      context: context,
-      builder: (context) => GlassSheetBody(
-        children: [
-          const GlassSheetHeader(
-            title: 'صورة الملف الشخصي',
-            subtitle: 'اختر مصدر الصورة.',
-          ),
-          const SizedBox(height: 16),
-          SheetOptionTile(
-            icon: Icons.photo_library_outlined,
-            label: 'اختيار من المعرض',
-            onTap: () => _pickPhoto(ImageSource.gallery),
-          ),
-          const SizedBox(height: 8),
-          SheetOptionTile(
-            icon: Icons.photo_camera_outlined,
-            label: 'التقاط صورة',
-            onTap: () => _pickPhoto(ImageSource.camera),
-          ),
-          if (_photoPath != null) ...[
-            const SizedBox(height: 8),
-            SheetOptionTile(
-              icon: Icons.delete_outline_rounded,
-              label: 'إزالة الصورة',
-              destructive: true,
-              onTap: _removePhoto,
-            ),
-          ],
-        ],
-      ),
-    );
   }
 
   // Writes the display name through BackupService and shows a snackbar.
@@ -195,20 +135,9 @@ class _AccountScreenState extends State<AccountScreen> {
         children: staggered([
           Center(
             child: ProfileAvatar(
-              photoPath: _photoPath,
               accent: accent,
               radius: 42,
-              onTap: _showPhotoOptions,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: TextButton(
-              onPressed: _showPhotoOptions,
-              child: Text(
-                _photoPath == null ? 'إضافة صورة' : 'تغيير الصورة',
-                style: TextStyle(color: accent, fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal']),
-              ),
+              signedIn: true,
             ),
           ),
           const SizedBox(height: 18),
@@ -318,7 +247,7 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 }
 
-// Icon + label row used for photo options and other account actions.
+// Icon + label row used for account actions.
 class _ActionTile extends StatelessWidget {
   final IconData icon;
   final String title;

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffr/data/services/backup_service.dart';
+import 'package:waffr/data/services/legacy_profile_photo.dart';
 import 'package:waffr/data/services/notification_service.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/sync/auth_session.dart';
@@ -34,6 +35,7 @@ Future<void> main() async {
       NotificationService.instance.seedIfNeeded;
 
   unawaited(SyncService.instance.initialize());
+  unawaited(LegacyProfilePhoto.remove());
   _registerFontLicenses();
 
   runApp(const WafarApp());
