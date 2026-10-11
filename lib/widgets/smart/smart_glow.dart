@@ -3,6 +3,7 @@
 
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
@@ -63,7 +64,17 @@ class _SmartGlowBackgroundState extends State<SmartGlowBackground>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (AppMotion.reduced(context)) {
+    _syncDrift();
+  }
+
+  @override
+  void didUpdateWidget(covariant SmartGlowBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncDrift();
+  }
+
+  void _syncDrift() {
+    if (!AppMotion.enabled(context) || widget.intensity <= 0.01) {
       _drift.stop();
     } else if (!_drift.isAnimating) {
       _drift.repeat();
@@ -151,7 +162,7 @@ class _GlowPainter extends CustomPainter {
   bool shouldRepaint(_GlowPainter old) =>
       old.intensity != intensity ||
       old.strength != strength ||
-      old.colors != colors;
+      !listEquals(old.colors, colors);
 }
 
 // A sparkle inside a rotating color ring, the "thinking" mark.
@@ -171,6 +182,7 @@ class _SmartSparkState extends State<SmartSpark>
     vsync: this,
     duration: const Duration(milliseconds: 1600),
   );
+  bool _settling = false;
 
   @override
   void didChangeDependencies() {
@@ -185,11 +197,23 @@ class _SmartSparkState extends State<SmartSpark>
   }
 
   void _sync() {
-    final run = widget.spinning && !AppMotion.reduced(context);
-    if (run && !_spin.isAnimating) {
+    if (!AppMotion.enabled(context)) {
+      _spin.stop();
+      _settling = false;
+      if (AppMotion.reduced(context)) _spin.value = 0;
+      return;
+    }
+    final run = widget.spinning;
+    if (run && (_settling || !_spin.isAnimating)) {
+      _settling = false;
       _spin.repeat();
     } else if (!run && _spin.isAnimating) {
-      _spin.animateTo(1, duration: AppMotion.medium).then((_) => _spin.value = 0);
+      // No delayed reset: it could reset a newly restarted spin or a
+      // disposed controller. One full turn has the same resting pose as 0.
+      if (!_settling) {
+        _settling = true;
+        _spin.animateTo(1, duration: AppMotion.medium);
+      }
     }
   }
 
@@ -219,9 +243,9 @@ class _SmartSparkState extends State<SmartSpark>
         child: Center(
           child: ShaderMask(
             blendMode: BlendMode.srcIn,
-            shaderCallback: (bounds) => LinearGradient(
-              colors: [colors[0], colors[1], colors[2]],
-            ).createShader(bounds),
+            shaderCallback: (bounds) =>
+                LinearGradient(colors: [colors[0], colors[1], colors[2]])
+                    .createShader(bounds),
             child: SizedBox.square(
               dimension: widget.size * 0.7,
               child: Stack(
@@ -233,10 +257,7 @@ class _SmartSparkState extends State<SmartSpark>
                   ),
                   Align(
                     alignment: Alignment.topRight,
-                    child: Icon(
-                      Icons.auto_awesome,
-                      size: widget.size * 0.4,
-                    ),
+                    child: Icon(Icons.auto_awesome, size: widget.size * 0.4),
                   ),
                 ],
               ),
@@ -299,10 +320,18 @@ class _RingPainter extends CustomPainter {
         colors: [...colors, colors.first],
         transform: GradientRotation(rotation),
       ).createShader(rect);
-    canvas.drawArc(rect.deflate(size.width * 0.04), 0, 2 * math.pi, false, paint);
+    canvas.drawArc(
+      rect.deflate(size.width * 0.04),
+      0,
+      2 * math.pi,
+      false,
+      paint,
+    );
   }
 
   @override
   bool shouldRepaint(_RingPainter old) =>
-      old.rotation != rotation || old.visible != visible;
+      old.rotation != rotation ||
+      old.visible != visible ||
+      !listEquals(old.colors, colors);
 }
