@@ -631,7 +631,7 @@ class _BottomNavBar extends StatelessWidget {
         },
         child: Center(
           child: Transform.scale(
-            scale: 1 + 0.18 * Curves.easeOut.transform(t),
+            scale: 1 + 0.18 * AppMotion.soft.transform(t),
             child: Icon(
               _icons[index],
               size: 25,

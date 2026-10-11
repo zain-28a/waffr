@@ -75,19 +75,13 @@ class _SavingsScreenState extends State<SavingsScreen>
   void _showOlderPeriod() {
     if (_periodOffset >= _maxPeriodOffset - 1) return;
 
-    _periodController.nextPage(
-      duration: AppMotion.medium,
-      curve: Curves.easeOutCubic,
-    );
+    _periodController.nextPageFor(context);
   }
 
   void _showNewerPeriod() {
     if (_periodOffset == 0) return;
 
-    _periodController.previousPage(
-      duration: AppMotion.medium,
-      curve: Curves.easeOutCubic,
-    );
+    _periodController.previousPageFor(context);
   }
 
   @override

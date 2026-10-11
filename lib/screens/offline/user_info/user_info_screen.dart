@@ -362,7 +362,7 @@ class _GenderRadio extends StatelessWidget {
             children: [
               AnimatedContainer(
                 duration: AppMotion.of(context, AppMotion.fast),
-                curve: Curves.easeOutCubic,
+                curve: AppMotion.enter,
                 width: 22,
                 height: 22,
                 decoration: BoxDecoration(
@@ -378,7 +378,7 @@ class _GenderRadio extends StatelessWidget {
                 child: AnimatedScale(
                   scale: selected ? 1 : 0,
                   duration: AppMotion.of(context, AppMotion.fast),
-                  curve: Curves.easeOutBack,
+                  curve: AppMotion.overshoot,
                   child: Container(
                     width: 11,
                     height: 11,

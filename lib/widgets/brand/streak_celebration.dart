@@ -47,37 +47,37 @@ class _StreakCelebrationOverlayState extends State<StreakCelebrationOverlay>
   // 1. Blur and tint come in first and leave last.
   late final CurvedAnimation _backdropIn = CurvedAnimation(
     parent: _controller,
-    curve: const Interval(0.0, 0.16, curve: Curves.easeOutCubic),
+    curve: const Interval(0.0, 0.16, curve: AppMotion.enter),
   );
   late final CurvedAnimation _backdropOut = CurvedAnimation(
     parent: _controller,
-    curve: const Interval(0.86, 1.0, curve: Curves.easeInOutCubic),
+    curve: const Interval(0.86, 1.0, curve: AppMotion.standard),
   );
 
   // 2. Logo rises and settles.
   late final CurvedAnimation _logoIn = CurvedAnimation(
     parent: _controller,
-    curve: const Interval(0.08, 0.30, curve: Curves.easeOutBack),
+    curve: const Interval(0.08, 0.30, curve: AppMotion.overshoot),
   );
   late final CurvedAnimation _logoFade = CurvedAnimation(
     parent: _controller,
-    curve: const Interval(0.08, 0.22, curve: Curves.easeOut),
+    curve: const Interval(0.08, 0.22, curve: AppMotion.soft),
   );
 
   // 3. The count rolls to the new value.
   late final CurvedAnimation _countIn = CurvedAnimation(
     parent: _controller,
-    curve: const Interval(0.22, 0.34, curve: Curves.easeOutCubic),
+    curve: const Interval(0.22, 0.34, curve: AppMotion.enter),
   );
   late final CurvedAnimation _roll = CurvedAnimation(
     parent: _controller,
-    curve: const Interval(0.36, 0.56, curve: Curves.easeInOutCubic),
+    curve: const Interval(0.36, 0.56, curve: AppMotion.standard),
   );
 
   // 5. Content leaves before the blur does.
   late final CurvedAnimation _contentOut = CurvedAnimation(
     parent: _controller,
-    curve: const Interval(_fadeOutStart, 0.94, curve: Curves.easeInCubic),
+    curve: const Interval(_fadeOutStart, 0.94, curve: AppMotion.exit),
   );
 
   bool _ticked = false;

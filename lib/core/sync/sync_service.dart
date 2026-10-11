@@ -1,57 +1,82 @@
 // Orchestrates cloud sync: push local changes to FastAPI /sync and merge
 // the server's reply back into on-device stores without wiping offline data.
+//
+// Pieces: sync_request.dart builds the plain request from the stores,
+// sync_codec.dart seals and encodes it (and decodes the reply) in a
+// background isolate, sync_apply.dart merges the reply, and
+// sync_sent_rows.dart remembers what the server already has.
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
-import 'package:waffr/data/stores/category_store.dart';
-import 'package:waffr/data/stores/currency_store.dart';
-import 'package:waffr/data/stores/expense_preset_store.dart';
-import 'package:waffr/data/services/notification_service.dart';
-import 'package:waffr/data/stores/recurring_expense_store.dart';
-import 'package:waffr/data/stores/shopping_list_store.dart';
-import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/core/security/data_key.dart';
 import 'package:waffr/core/sync/api_config.dart';
 import 'package:waffr/core/sync/auth_session.dart';
+import 'package:waffr/core/sync/sync_apply.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
-import 'package:waffr/core/sync/sync_crypto.dart';
+import 'package:waffr/core/sync/sync_codec.dart';
 import 'package:waffr/core/sync/sync_dirty.dart';
-import 'package:waffr/core/sync/sync_mapper.dart';
 import 'package:waffr/core/sync/sync_pull_policy.dart';
-import 'package:waffr/core/sync/profile_sync.dart';
-import 'package:waffr/data/services/usage_streak_service.dart';
+import 'package:waffr/core/sync/sync_request.dart';
+import 'package:waffr/core/sync/sync_sent_rows.dart';
 import 'package:waffr/core/sync/sync_tombstones.dart';
+import 'package:waffr/data/services/usage_streak_service.dart';
 
+/// How a sync attempt ended.
 enum SyncStatus { success, offline, noAccount, failed, skipped }
 
-// Outcome of one sync attempt, including a user-facing Arabic message.
+/// Outcome of one sync attempt, including a user-facing Arabic message.
 class SyncResult {
+  /// How the attempt ended.
   final SyncStatus status;
+
+  /// Arabic text for a snack bar.
   final String userMessage;
 
+  /// A result with [status] and [userMessage].
   const SyncResult(this.status, this.userMessage);
 
+  /// True when nothing went wrong (synced, or another sync is running).
   bool get ok => status == SyncStatus.success || status == SyncStatus.skipped;
 }
 
-// Singleton that pushes dirty local SharedPreferences data and pulls remote
-// upserts/deletes. Local storage stays the offline source of truth; a failed
-// HTTP call never overwrites or deletes local records.
+/// Singleton that pushes dirty local data and pulls remote upserts and
+/// deletes. Local storage stays the offline source of truth; a failed HTTP
+/// call never overwrites or deletes local records.
+///
+/// What goes out: a sign-in, a forced sync, the first sync and the
+/// one-time currency upgrade push every row. After a local edit the request
+/// is built from every row, and rows whose fingerprint matches the last
+/// successful push are dropped (see [SyncSentRows]). That check compares
+/// row contents, not timestamps: rows are stamped with the phone's clock
+/// (or the event date the user picked), while `lastSync` is the server's
+/// time, so a timestamp filter would skip edits whenever the two clocks
+/// disagree or a date is in the past.
 class SyncService with WidgetsBindingObserver {
   SyncService._();
 
+  /// The app-wide service.
   static final SyncService instance = SyncService._();
 
   static const Duration _debounce = Duration(seconds: 3);
   static const Duration _timeout = Duration(seconds: 25);
   static const Duration _minPullInterval = Duration(seconds: 20);
   static const String _currencySyncedKey = 'waffer_currency_synced';
+
+  static const SyncResult _offlineResult = SyncResult(
+    SyncStatus.offline,
+    'لا يوجد اتصال. تم حفظ التغييرات محلياً',
+  );
+  static const SyncResult _failedResult = SyncResult(
+    SyncStatus.failed,
+    'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
+  );
+
+  final SyncSentRows _sentRows = SyncSentRows();
 
   Timer? _debounceTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
@@ -63,16 +88,18 @@ class SyncService with WidgetsBindingObserver {
   bool _resealPending = false;
   DateTime? _lastNetworkAttemptAt;
 
+  /// True while a request is in flight (drives the settings spinner).
   final ValueNotifier<bool> isSyncing = ValueNotifier<bool>(false);
 
-  // Wire dirty/lifecycle/connectivity listeners, load tombstones, then sync.
+  /// Wires dirty, lifecycle and connectivity listeners, loads tombstones,
+  /// then syncs once.
   Future<void> initialize() async {
     _attachListeners();
     await SyncTombstones.instance.ensureLoaded();
     await syncNow();
   }
 
-  // Debounce rapid local edits so we batch them into one network round-trip.
+  /// Debounces rapid local edits so they share one network round-trip.
   void scheduleSync() {
     if (_applying) return;
     _debounceTimer?.cancel();
@@ -81,8 +108,8 @@ class SyncService with WidgetsBindingObserver {
     });
   }
 
-  // Run push+pull now: require a logged-in session, optionally skip a clean
-  // pull, POST /sync, then merge the response.
+  /// Runs push and pull now. Needs a signed-in session; a clean pull right
+  /// after another one is skipped. With [force] every row is pushed.
   Future<SyncResult> syncNow({bool force = false}) async {
     _debounceTimer?.cancel();
 
@@ -95,152 +122,9 @@ class SyncService with WidgetsBindingObserver {
     isSyncing.value = true;
 
     try {
-      if (!await AuthSession.instance.isLoggedIn()) {
-        return const SyncResult(
-          SyncStatus.noAccount,
-          'في وضع الضيف تبقى بياناتك على جهازك فقط. سجّل الدخول للمزامنة',
-        );
-      }
-
-      // A streak change that no successful sync carried yet (marked while
-      // another sync was in flight, or before the app was closed) still
-      // has to reach the server.
-      final streak = UsageStreakService.instance;
-      await streak.ensureLoaded();
-      final dirty = await SyncDirty.isDirty() || streak.hasUnsyncedChange;
-      final lastSync = await AuthSession.instance.lastSyncAt();
-      if (shouldSkipCleanPull(
-        force: force,
-        dirty: dirty,
-        tombstoneCount: _tombstoneCount(),
-        lastAttemptAt: _lastNetworkAttemptAt,
-        now: DateTime.now(),
-        minInterval: _minPullInterval,
-      )) {
-        return const SyncResult(SyncStatus.success, 'البيانات محدّثة');
-      }
-
-      var token = await AuthSession.instance.ensureToken();
-      if (token == null) {
-        return const SyncResult(
-          SyncStatus.noAccount,
-          'انتهت الجلسة. سجّل الدخول للمزامنة',
-        );
-      }
-
-      // Sessions from before encryption have no data key. Signing in again
-      // with the password creates or unlocks it.
-      final cipher = await DataKeyStore.instance.cipher();
-      if (cipher == null) {
-        await AuthSession.instance.clearSession();
-        return const SyncResult(
-          SyncStatus.noAccount,
-          'سجّل الدخول مجدداً لحماية بياناتك',
-        );
-      }
-
-      final prefs = await AppPrefs.instance;
-      final currencySynced = prefs.getBool(_currencySyncedKey) ?? false;
-      final streakRevision = streak.revision;
-      final payload = await _buildRequest(
-        lastSync: lastSync,
-        sendAll: dirty || lastSync == null || force || !currencySynced,
-      );
-      await sealSyncRequest(payload, cipher);
-      final base = await ApiConfig.baseUrl();
-      http.Response response;
-      try {
-        response = await http
-            .post(
-              Uri.parse('$base/sync'),
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer $token',
-              },
-              body: jsonEncode(payload),
-            )
-            .timeout(ApiConfig.timeoutFor(base, local: _timeout));
-      } on SocketException {
-        return const SyncResult(
-          SyncStatus.offline,
-          'لا يوجد اتصال. تم حفظ التغييرات محلياً',
-        );
-      } on TimeoutException {
-        return const SyncResult(
-          SyncStatus.offline,
-          'انتهت مهلة الاتصال. تم حفظ التغييرات محلياً',
-        );
-      } on http.ClientException {
-        return const SyncResult(
-          SyncStatus.offline,
-          'لا يوجد اتصال. تم حفظ التغييرات محلياً',
-        );
-      }
-
-      _lastNetworkAttemptAt = DateTime.now();
-
-      if (response.statusCode == 401) {
-        await AuthSession.instance.clearSession();
-        return const SyncResult(
-          SyncStatus.failed,
-          'انتهت الجلسة. سجّل الدخول مجدداً',
-        );
-      }
-
-      if (response.statusCode != 200) {
-        return const SyncResult(
-          SyncStatus.failed,
-          'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
-        );
-      }
-
-      Map<String, dynamic> body;
-      try {
-        final decoded = jsonDecode(response.body);
-        if (decoded is! Map) {
-          return const SyncResult(
-            SyncStatus.failed,
-            'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
-          );
-        }
-        body = Map<String, dynamic>.from(decoded);
-      } catch (_) {
-        return const SyncResult(
-          SyncStatus.failed,
-          'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
-        );
-      }
-
-      final sawPlaintext = await openSyncResponse(body, cipher);
-      final applied = await _applyResponse(body);
-      if (!applied) {
-        return const SyncResult(
-          SyncStatus.failed,
-          'تعذّر تحديث بياناتك من الحساب، فبقيت النسخة المحفوظة على جهازك',
-        );
-      }
-
-      final DateTime serverTime = parseSyncDateOrNow(
-        body['server_time']?.toString(),
-      );
-      await AuthSession.instance.saveLastSyncAt(serverTime);
-      await SyncDirty.clear();
-      if (!currencySynced) {
-        await prefs.setBool(_currencySyncedKey, true);
-      }
-      // A streak recorded during this round trip goes out next time.
-      if (await streak.markSynced(streakRevision)) {
-        await SyncDirty.mark(settings: true);
-      }
-      // Rows saved before encryption came back readable; push everything
-      // once more so the server copy is replaced with sealed text.
-      _resealPending = sawPlaintext && !force;
-      return const SyncResult(SyncStatus.success, 'تمت المزامنة');
+      return await _sync(force: force);
     } catch (_) {
-      return const SyncResult(
-        SyncStatus.failed,
-        'تعذّر المزامنة. يمكنك المحاولة لاحقاً',
-      );
+      return _failedResult;
     } finally {
       _syncing = false;
       isSyncing.value = false;
@@ -255,267 +139,166 @@ class SyncService with WidgetsBindingObserver {
     }
   }
 
+  Future<SyncResult> _sync({required bool force}) async {
+    if (!await AuthSession.instance.isLoggedIn()) {
+      return const SyncResult(
+        SyncStatus.noAccount,
+        'في وضع الضيف تبقى بياناتك على جهازك فقط. سجّل الدخول للمزامنة',
+      );
+    }
+
+    // A streak change that no successful sync carried yet (marked while
+    // another sync was in flight, or before the app was closed) still has
+    // to reach the server.
+    final streak = UsageStreakService.instance;
+    await streak.ensureLoaded();
+    final dirtyRevision = SyncDirty.revision;
+    final dirty = await SyncDirty.isDirty() || streak.hasUnsyncedChange;
+    final lastSync = await AuthSession.instance.lastSyncAt();
+    if (shouldSkipCleanPull(
+      force: force,
+      dirty: dirty,
+      tombstoneCount: _tombstoneCount(),
+      lastAttemptAt: _lastNetworkAttemptAt,
+      now: DateTime.now(),
+      minInterval: _minPullInterval,
+    )) {
+      return const SyncResult(SyncStatus.success, 'البيانات محدّثة');
+    }
+
+    final token = await AuthSession.instance.ensureToken();
+    if (token == null) {
+      return const SyncResult(
+        SyncStatus.noAccount,
+        'انتهت الجلسة. سجّل الدخول للمزامنة',
+      );
+    }
+
+    // Sessions from before encryption have no data key. Signing in again
+    // with the password creates or unlocks it.
+    final cipher = await DataKeyStore.instance.cipher();
+    if (cipher == null) {
+      await AuthSession.instance.clearSession();
+      return const SyncResult(
+        SyncStatus.noAccount,
+        'سجّل الدخول مجدداً لحماية بياناتك',
+      );
+    }
+
+    // Build the plain request, then seal and encode it off the UI isolate.
+    final prefs = await AppPrefs.instance;
+    final currencySynced = prefs.getBool(_currencySyncedKey) ?? false;
+    final fullPush = lastSync == null || force || !currencySynced;
+    final streakRevision = streak.revision;
+    final request = await buildSyncRequest(
+      lastSync: lastSync,
+      everyRow: fullPush || dirty,
+    );
+    final sentTombstones = tombstoneIdsIn(request);
+    final encoded = await encodeSyncRequestInBackground(
+      SyncRequestJob(
+        payload: request,
+        keyBytes: cipher.keyBytes,
+        known: fullPush ? null : _sentRows.known,
+      ),
+    );
+
+    final http.Response response;
+    try {
+      response = await _post(token, encoded.body);
+    } on SocketException {
+      return _offlineResult;
+    } on TimeoutException {
+      return const SyncResult(
+        SyncStatus.offline,
+        'انتهت مهلة الاتصال. تم حفظ التغييرات محلياً',
+      );
+    } on http.ClientException {
+      return _offlineResult;
+    }
+    _lastNetworkAttemptAt = DateTime.now();
+
+    if (response.statusCode == 401) {
+      await AuthSession.instance.clearSession();
+      _sentRows.clear();
+      return const SyncResult(
+        SyncStatus.failed,
+        'انتهت الجلسة. سجّل الدخول مجدداً',
+      );
+    }
+    if (response.statusCode != 200) return _failedResult;
+
+    // Decode and open the reply off the UI isolate, then merge it.
+    final DecodedSyncResponse decoded;
+    try {
+      decoded = await decodeSyncResponseInBackground(
+        response.body,
+        cipher.keyBytes,
+      );
+    } catch (_) {
+      return _failedResult;
+    }
+    final body = decoded.body;
+    if (body == null) return _failedResult;
+
+    _applying = true;
+    final bool applied;
+    try {
+      applied = await applySyncResponse(body, sentTombstones: sentTombstones);
+    } finally {
+      _applying = false;
+    }
+    if (!applied) {
+      return const SyncResult(
+        SyncStatus.failed,
+        'تعذّر تحديث بياناتك من الحساب، فبقيت النسخة المحفوظة على جهازك',
+      );
+    }
+
+    // Success: move the sync stamp, remember what the server now holds,
+    // and clear the dirty bit unless something changed meanwhile.
+    final serverTime = parseSyncDateOrNow(body['server_time']?.toString());
+    await AuthSession.instance.saveLastSyncAt(serverTime);
+    _sentRows.remember(
+      encoded.sent,
+      replace: fullPush,
+      deleted: sentTombstones,
+    );
+    await SyncDirty.clear(ifRevision: dirtyRevision);
+    if (!currencySynced) {
+      await prefs.setBool(_currencySyncedKey, true);
+    }
+    // A streak recorded during this round trip goes out next time.
+    if (await streak.markSynced(streakRevision)) {
+      await SyncDirty.mark(settings: true);
+    }
+    // Rows saved before encryption came back readable; push everything
+    // once more so the server copy is replaced with sealed text.
+    _resealPending = decoded.sawPlaintext && !force;
+    return const SyncResult(SyncStatus.success, 'تمت المزامنة');
+  }
+
+  // POST /sync with the encoded [body].
+  Future<http.Response> _post(String token, String body) async {
+    final base = await ApiConfig.baseUrl();
+    return http
+        .post(
+          Uri.parse('$base/sync'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: body,
+        )
+        .timeout(ApiConfig.timeoutFor(base, local: _timeout));
+  }
+
   int _tombstoneCount() {
     var total = 0;
     for (final collection in SyncCollection.values) {
       total += SyncTombstones.instance.of(collection).length;
     }
     return total;
-  }
-
-  // Build the push body: changed rows since lastSync (or everything when
-  // sendAll), plus delete tombstones so offline removals reach the server.
-  Future<Map<String, dynamic>> _buildRequest({
-    required DateTime? lastSync,
-    required bool sendAll,
-  }) async {
-    await Future.wait<void>([
-      TransactionStore.instance.ensureLoaded(),
-      ShoppingListStore.instance.ensureLoaded(),
-      RecurringExpenseStore.instance.ensureLoaded(),
-      NotificationService.instance.ensureLoaded(),
-      CategoryStore.instance.ensureLoaded(),
-      ExpensePresetStore.instance.ensureLoaded(),
-      SyncTombstones.instance.ensureLoaded(),
-    ]);
-
-    final store = TransactionStore.instance;
-    final txs = <Map<String, dynamic>>[];
-    final transfers = <Map<String, dynamic>>[];
-    for (final item in store.transactions) {
-      if (!_shouldSend(item.syncUpdatedAt, lastSync, sendAll)) continue;
-      if (item.isSavingsIn || item.isSavingsOut) {
-        transfers.add(transferToSync(item));
-      } else {
-        txs.add(transactionToSync(item));
-      }
-    }
-
-    final goals = [
-      for (final goal in store.goals)
-        if (_shouldSend(goal.syncUpdatedAt, lastSync, sendAll))
-          goalToSync(goal),
-    ];
-
-    final items = [
-      for (final item in ShoppingListStore.instance.items)
-        if (_shouldSend(item.syncUpdatedAt, lastSync, sendAll))
-          item.toSyncJson(),
-    ];
-
-    final lists = (sendAll || items.isNotEmpty || lastSync == null)
-        ? [shoppingListToSync()]
-        : <Map<String, dynamic>>[];
-
-    final recurring = [
-      for (final item in RecurringExpenseStore.instance.items)
-        if (_shouldSend(item.syncUpdatedAt, lastSync, sendAll))
-          recurringToSync(item),
-    ];
-
-    final notifications = [
-      for (final item in NotificationService.instance.notifications)
-        if (_shouldSend(item.syncUpdatedAt, lastSync, sendAll))
-          notificationToSync(item),
-    ];
-
-    final categories = [
-      for (final item in CategoryStore.instance.entries)
-        if (_shouldSend(item.syncUpdatedAt, lastSync, sendAll))
-          categoryToSync(item),
-    ];
-
-    final presets = [
-      for (final item in ExpensePresetStore.instance.items)
-        if (_shouldSend(item.syncUpdatedAt, lastSync, sendAll))
-          item.toSyncJson(),
-    ];
-
-    final settingsUpdated = await SyncDirty.settingsUpdatedAt();
-    final includeSettings = sendAll ||
-        lastSync == null ||
-        (settingsUpdated != null && newerOrEqual(settingsUpdated, lastSync));
-
-    return {
-      'last_sync_at': lastSync == null ? null : toSyncIso(lastSync),
-      'transactions': collectionPayload(
-        upserts: txs,
-        deletes: SyncTombstones.instance.of(SyncCollection.transactions),
-      ),
-      'savings_goals': collectionPayload(
-        upserts: goals,
-        deletes: SyncTombstones.instance.of(SyncCollection.savingsGoals),
-      ),
-      'savings_transfers': collectionPayload(
-        upserts: transfers,
-        deletes: SyncTombstones.instance.of(SyncCollection.savingsTransfers),
-      ),
-      'shopping_lists': collectionPayload(
-        upserts: lists,
-        deletes: SyncTombstones.instance.of(SyncCollection.shoppingLists),
-      ),
-      'shopping_items': collectionPayload(
-        upserts: items,
-        deletes: SyncTombstones.instance.of(SyncCollection.shoppingItems),
-      ),
-      'recurring_expenses': collectionPayload(
-        upserts: recurring,
-        deletes: SyncTombstones.instance.of(SyncCollection.recurringExpenses),
-      ),
-      'notifications': collectionPayload(
-        upserts: notifications,
-        deletes: SyncTombstones.instance.of(SyncCollection.notifications),
-      ),
-      'expense_categories': collectionPayload(
-        upserts: categories,
-        deletes: SyncTombstones.instance.of(SyncCollection.expenseCategories),
-      ),
-      'expense_presets': collectionPayload(
-        upserts: presets,
-        deletes: SyncTombstones.instance.of(SyncCollection.expensePresets),
-      ),
-      'settings': includeSettings ? await _settingsPayload() : null,
-    };
-  }
-
-  // Snapshot prefs-backed settings (income, currencies, profile) for push.
-  Future<Map<String, dynamic>> _settingsPayload() async {
-    final store = TransactionStore.instance;
-    return {
-      'notifications_muted': NotificationService.instance.isMuted,
-      'notifications_enabled': !NotificationService.instance.isMuted,
-      'monthly_income_amount': store.monthlyIncomeOverrideFor(
-        defaultCurrencyCode,
-      ),
-      'weekly_income_amount': store.weeklyIncomeOverrideFor(
-        defaultCurrencyCode,
-      ),
-      'income_overrides_by_currency': store.incomeOverridesByCurrencyPayload,
-      'enabled_currencies': CurrencyStore.instance.enabledCodes,
-      'active_currency': CurrencyStore.instance.activeCode,
-      'processed_period_keys': store.processedPeriodTokens.toList(),
-      'hidden_categories': CategoryStore.instance.hiddenBuiltIns,
-      ...await ProfileSync.fields(),
-      'updated_at': toSyncIso(await SyncDirty.settingsUpdatedAt()),
-    };
-  }
-
-  bool _shouldSend(DateTime updatedAt, DateTime? lastSync, bool sendAll) {
-    if (sendAll || lastSync == null) return true;
-    return newerOrEqual(updatedAt, lastSync);
-  }
-
-  // Pull path: apply remote upserts/deletes into each store, then drop
-  // tombstones the server has acknowledged. Suppresses dirty marks while applying.
-  Future<bool> _applyResponse(Map<String, dynamic> body) async {
-    try {
-      _applying = true;
-      SyncDirty.suppressed = true;
-
-      await TransactionStore.instance.applyRemoteSync(
-        transactions: asMapList(_collection(body, 'transactions')['upserts']),
-        transactionDeletes: tombstonesFromSync(
-          _collection(body, 'transactions')['deletes'],
-        ),
-        transfers: asMapList(
-          _collection(body, 'savings_transfers')['upserts'],
-        ),
-        transferDeletes: tombstonesFromSync(
-          _collection(body, 'savings_transfers')['deletes'],
-        ),
-        goals: asMapList(_collection(body, 'savings_goals')['upserts']),
-        goalDeletes: tombstonesFromSync(
-          _collection(body, 'savings_goals')['deletes'],
-        ),
-        settings: body['settings'] is Map
-            ? Map<String, dynamic>.from(body['settings'] as Map)
-            : null,
-      );
-
-      await CategoryStore.instance.applyRemoteSync(
-        upserts: asMapList(_collection(body, 'expense_categories')['upserts']),
-        deletes: tombstonesFromSync(
-          _collection(body, 'expense_categories')['deletes'],
-        ),
-      );
-
-      await ExpensePresetStore.instance.applyRemoteSync(
-        upserts: asMapList(_collection(body, 'expense_presets')['upserts']),
-        deletes: tombstonesFromSync(
-          _collection(body, 'expense_presets')['deletes'],
-        ),
-      );
-
-      await ShoppingListStore.instance.applyRemoteSync(
-        upserts: asMapList(_collection(body, 'shopping_items')['upserts']),
-        deletes: tombstonesFromSync(
-          _collection(body, 'shopping_items')['deletes'],
-        ),
-      );
-
-      await RecurringExpenseStore.instance.applyRemoteSync(
-        upserts: asMapList(
-          _collection(body, 'recurring_expenses')['upserts'],
-        ),
-        deletes: tombstonesFromSync(
-          _collection(body, 'recurring_expenses')['deletes'],
-        ),
-      );
-
-      await NotificationService.instance.applyRemoteSync(
-        upserts: asMapList(_collection(body, 'notifications')['upserts']),
-        deletes: tombstonesFromSync(
-          _collection(body, 'notifications')['deletes'],
-        ),
-        muted: _mutedFromSettings(body['settings']),
-      );
-
-      await _clearAcknowledgedTombstones(body);
-      return true;
-    } catch (_) {
-      return false;
-    } finally {
-      SyncDirty.suppressed = false;
-      _applying = false;
-    }
-  }
-
-  Map<String, dynamic> _collection(Map<String, dynamic> body, String key) {
-    final value = body[key];
-    if (value is Map<String, dynamic>) return value;
-    if (value is Map) return Map<String, dynamic>.from(value);
-    return const {};
-  }
-
-  bool? _mutedFromSettings(Object? raw) {
-    if (raw is! Map) return null;
-    if (raw.containsKey('notifications_muted')) {
-      return raw['notifications_muted'] == true;
-    }
-    if (raw.containsKey('notifications_enabled')) {
-      return raw['notifications_enabled'] != true;
-    }
-    return null;
-  }
-
-  // After a successful pull, remove local delete logs that the server echoed.
-  Future<void> _clearAcknowledgedTombstones(Map<String, dynamic> body) async {
-    Future<void> clear(String key, SyncCollection collection) async {
-      final sent = SyncTombstones.instance.of(collection).map((e) => e.clientId);
-      final returned = tombstonesFromSync(_collection(body, key)['deletes'])
-          .map((e) => e.clientId);
-      await SyncTombstones.instance.remove(collection, {...sent, ...returned});
-    }
-
-    await clear('transactions', SyncCollection.transactions);
-    await clear('savings_goals', SyncCollection.savingsGoals);
-    await clear('savings_transfers', SyncCollection.savingsTransfers);
-    await clear('shopping_lists', SyncCollection.shoppingLists);
-    await clear('shopping_items', SyncCollection.shoppingItems);
-    await clear('recurring_expenses', SyncCollection.recurringExpenses);
-    await clear('notifications', SyncCollection.notifications);
-    await clear('expense_categories', SyncCollection.expenseCategories);
-    await clear('expense_presets', SyncCollection.expensePresets);
   }
 
   @override

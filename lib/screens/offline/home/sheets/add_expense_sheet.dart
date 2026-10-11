@@ -66,23 +66,19 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     text: '1',
   );
 
-  static const double _maxAmount = 999999999;
   static const String _onceLabel = 'مرة واحدة';
   static const String _recurringLabel = 'مصروف متكرر';
+
+  // Typing in these fields only rebuilds what depends on the typed values
+  // (see build); the category grid is built once per state change.
+  late final Listenable _typedFields = Listenable.merge([
+    _amountController,
+    _intervalController,
+  ]);
 
   double get _enteredAmount => parseAmount(_amountController.text);
 
   double get _amount => _enteredAmount * _multiplier;
-
-  String? get _amountHelper {
-    final symbol = currencyLabelFor(_currencyCode);
-    if (_exceedsBalance) {
-      final available = TransactionStore.instance.balanceFor(_currencyCode);
-      return 'أكبر من الرصيد المتاح ${formatMoney(available)} $symbol';
-    }
-    if (_multiplier == 1) return null;
-    return 'الإجمالي ${formatMoney(_amount)} $symbol';
-  }
 
   // Fixed salary → automatic; no monthly income set → ask before deducting.
   bool get _requiresConfirmation =>
@@ -94,17 +90,16 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     return value;
   }
 
-  // One-off expenses cannot exceed the balance in that currency. Recurring
-  // bills are saved for later, so they are not blocked here.
-  bool get _exceedsBalance {
-    if (_recurring || _amount <= 0) return false;
-    return _amount > TransactionStore.instance.balanceFor(_currencyCode);
-  }
-
-  bool get _isValid {
-    if (_amount <= 0 || _amount > _maxAmount || _exceedsBalance) return false;
-    if (!_recurring) return true;
-    return _intervalCount > 0 && _intervalCount <= 99;
+  // Reads the balance once and checks the typed values against it.
+  _ExpenseInputCheck _check() {
+    return _ExpenseInputCheck(
+      amount: _amount,
+      multiplier: _multiplier,
+      recurring: _recurring,
+      intervalCount: _intervalCount,
+      available: TransactionStore.instance.balanceFor(_currencyCode),
+      currencySymbol: currencyLabelFor(_currencyCode),
+    );
   }
 
   @override
@@ -217,7 +212,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
 
   // One-off goes to TransactionStore; recurring becomes an obligation.
   Future<void> _save() async {
-    if (!_isValid || _saving) return;
+    if (!_check().isValid || _saving) return;
 
     setState(() => _saving = true);
 
@@ -264,21 +259,42 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     Navigator.of(context).maybePop();
   }
 
+  void _pickCategory(String label) {
+    setState(() {
+      _category = label;
+      _categoryTouched = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Built here, outside the builder below, so typing reuses this instance
+    // and Flutter skips rebuilding the grid and its tiles.
+    final categoryGrid = ExpenseCategoryGrid(
+      selected: _category,
+      onSelected: _pickCategory,
+    );
+
+    return ListenableBuilder(
+      listenable: _typedFields,
+      builder: (context, _) => _buildBody(_check(), categoryGrid),
+    );
+  }
+
+  Widget _buildBody(_ExpenseInputCheck check, Widget categoryGrid) {
     return GlassSheetBody(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       children: [
         GlassSheetHeader(
           title: 'إضافة مصروف',
           subtitle: 'أدخل المبلغ واختر التصنيف.',
-          onNext: _isValid ? _save : null,
+          onNext: check.isValid ? _save : null,
         ),
         const SizedBox(height: 10),
         SheetAmountField(
           label: 'المبلغ',
           controller: _amountController,
-          helper: _amountHelper,
+          helper: check.helper,
           currencyCode: _currencyCode,
           onCurrencyChanged: (code) => setState(() => _currencyCode = code),
           multiplier: _multiplier,
@@ -287,7 +303,6 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
             filled: _saveAsPreset,
             onTap: _openPresets,
           ),
-          onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 10),
         const SheetFieldLabel(text: 'نوع المصروف'),
@@ -330,7 +345,6 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(2),
                 ],
-                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 10),
               const SheetFieldLabel(
@@ -354,14 +368,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         ),
         const SizedBox(height: 10),
         const SheetFieldLabel(text: 'التصنيف'),
-        ExpenseCategoryGrid(
-          selected: _category,
-          onSelected: (label) => setState(() {
-            _category = label;
-            _categoryTouched = true;
-          }),
-        ),
-        
+        categoryGrid,
         const SizedBox(height: 10),
         const SheetFieldLabel(text: 'ملاحظة', optional: true),
         SheetTextField(
@@ -385,11 +392,53 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         const SizedBox(height: 12),
         SheetSaveButton(
           label: _recurring ? 'حفظ المصروف المتكرر' : 'حفظ المصروف',
-          enabled: _isValid && !_saving,
+          enabled: check.isValid && !_saving,
           onTap: _save,
         ),
       ],
     );
+  }
+}
+
+// The typed amount and interval checked against the balance, read once per
+// rebuild instead of by every getter that needs it.
+class _ExpenseInputCheck {
+  static const double maxAmount = 999999999;
+
+  final double amount;
+  final int multiplier;
+  final bool recurring;
+  final int intervalCount;
+  final double available;
+  final String currencySymbol;
+
+  const _ExpenseInputCheck({
+    required this.amount,
+    required this.multiplier,
+    required this.recurring,
+    required this.intervalCount,
+    required this.available,
+    required this.currencySymbol,
+  });
+
+  // One-off expenses cannot exceed the balance in that currency. Recurring
+  // bills are saved for later, so they are not blocked here.
+  bool get exceedsBalance => !recurring && amount > 0 && amount > available;
+
+  bool get isValid {
+    if (amount <= 0 || amount > maxAmount || exceedsBalance) return false;
+    if (!recurring) return true;
+    return intervalCount > 0 && intervalCount <= 99;
+  }
+
+  // Under the amount: the balance when it is exceeded, else the total
+  // after the multiplier.
+  String? get helper {
+    if (exceedsBalance) {
+      return 'أكبر من الرصيد المتاح ${formatMoney(available)} $currencySymbol';
+    }
+    if (multiplier == 1) return null;
+    return 'الإجمالي ${formatMoney(amount)} $currencySymbol';
   }
 }
 
@@ -419,8 +468,8 @@ class _PresetStarButton extends StatelessWidget {
           height: 26,
           child: AnimatedSwitcher(
             duration: AppMotion.of(context, AppMotion.medium),
-            switchInCurve: Curves.easeOutBack,
-            switchOutCurve: Curves.easeInCubic,
+            switchInCurve: AppMotion.overshoot,
+            switchOutCurve: AppMotion.exit,
             transitionBuilder: (child, animation) => ScaleTransition(
               scale: animation,
               child: FadeTransition(opacity: animation, child: child),
@@ -561,7 +610,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
   Widget build(BuildContext context) {
     return AnimatedSize(
       duration: AppMotion.of(context, AppMotion.medium),
-      curve: Curves.easeOutCubic,
+      curve: AppMotion.enter,
       alignment: Alignment.topCenter,
       child: ListenableBuilder(
         listenable: CategoryStore.instance,
@@ -820,7 +869,7 @@ class _IconChoice extends StatelessWidget {
           return Center(
             child: AnimatedContainer(
               duration: AppMotion.of(context, AppMotion.fast),
-              curve: Curves.easeOutCubic,
+              curve: AppMotion.enter,
               width: side,
               height: side,
               alignment: Alignment.center,
@@ -875,7 +924,7 @@ class _CategoryTile extends StatelessWidget {
       onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: AppMotion.of(context, AppMotion.medium),
-        curve: Curves.easeOutCubic,
+        curve: AppMotion.enter,
         decoration: BoxDecoration(
           color: isSelected
               ? accent

@@ -158,17 +158,27 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                     muted: _service.isMuted,
                     onTap: _service.toggleMuted,
                   ),
-                  if (_deviceAllowed == false) ...[
-                    const SizedBox(height: 10),
-                    AppListTile(
-                      icon: Icons.notifications_off_outlined,
-                      title: 'إشعارات الجهاز متوقفة',
-                      subtitle: 'اسمح لوفّر بإرسال التنبيهات إلى هاتفك',
-                      status: 'سماح',
-                      statusOn: true,
-                      onTap: _allowDeviceNotifications,
-                    ),
-                  ],
+                  // The permission banner comes and goes as the phone
+                  // setting changes; grow and shrink instead of jumping.
+                  AnimatedSize(
+                    duration: AppMotion.of(context, AppMotion.medium),
+                    curve: AppMotion.enter,
+                    alignment: Alignment.topCenter,
+                    child: _deviceAllowed == false
+                        ? Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: AppListTile(
+                              icon: Icons.notifications_off_outlined,
+                              title: 'إشعارات الجهاز متوقفة',
+                              subtitle:
+                                  'اسمح لوفّر بإرسال التنبيهات إلى هاتفك',
+                              status: 'سماح',
+                              statusOn: true,
+                              onTap: _allowDeviceNotifications,
+                            ),
+                          )
+                        : const SizedBox(width: double.infinity),
+                  ),
                 ],
               ),
             ),
