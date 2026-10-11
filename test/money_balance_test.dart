@@ -59,14 +59,32 @@ void main() {
     expect(balance.tilt, 1);
   });
 
-  test('the trend compares with the 30 days before', () {
+  test('the heavier pan looks full and the lighter one partly', () {
     final balance = balanceOf([
-      tx(TransactionType.savingsIn, 50, 45),
-      tx(TransactionType.expense, 950, 45),
-      tx(TransactionType.savingsIn, 300, 5),
-      tx(TransactionType.expense, 700, 5),
+      tx(TransactionType.savingsIn, 100, 2),
+      tx(TransactionType.expense, 400, 2),
     ]);
-    expect(balance.previousShare, closeTo(0.05, 1e-9));
-    expect(balance.trendText, 'أفضل من الفترة السابقة');
+    expect(balance.spentLoad, 1);
+    expect(balance.savedLoad, closeTo(0.25, 1e-9));
+    expect(balanceOf([]).savedLoad, 0);
+  });
+
+  test('every state has a verdict and a line without numbers', () {
+    for (final balance in [
+      balanceOf([]),
+      balanceOf([tx(TransactionType.expense, 100, 1)]),
+      balanceOf([
+        tx(TransactionType.savingsIn, 10, 1),
+        tx(TransactionType.expense, 90, 1),
+      ]),
+      balanceOf([
+        tx(TransactionType.savingsIn, 20, 1),
+        tx(TransactionType.expense, 80, 1),
+      ]),
+      balanceOf([tx(TransactionType.savingsIn, 100, 1)]),
+    ]) {
+      expect(balance.verdict, isNotEmpty);
+      expect(balance.message, isNot(matches(RegExp(r'[0-9٠-٩%]'))));
+    }
   });
 }
