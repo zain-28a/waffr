@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/widgets/motion/active_listenable_builder.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/calendar_period.dart';
@@ -92,8 +93,8 @@ class _SavingsScreenState extends State<SavingsScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return AnimatedBuilder(
-      animation: _store,
+    return ActiveListenableBuilder(
+      listenable: _store,
       builder: (context, _) {
         final goals = _store.activeGoals;
 

@@ -1124,7 +1124,9 @@ class InsightEngine {
     final income = facts.effectiveMonthlyIncome;
 
     if (income != null && income > 0) {
-      final rate = (facts.savedLast90 / 3) / income;
+      // A new user's first month is not three months of missed saving.
+      // The 20% target is a share of income, never of expenses.
+      final rate = facts.averageMonthlySaving / income;
       final points = (rate / 0.2).clamp(0.0, 1.0) * 30;
       earned += points;
       possible += 30;

@@ -91,6 +91,9 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
   double _charsPerMs = 0.15;
 
   Timer? _thinkingTicker;
+  Timer? _pause;
+  Completer<void>? _pauseDone;
+  Duration _lastTypingUpdate = Duration.zero;
   int _run = 0;
   final Set<String> _expanded = {};
 
@@ -104,10 +107,39 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduced(context)) {
+      _thinkingTicker?.cancel();
+      _cancelPause();
+      if (_phase == _Phase.writing) _finish();
+    }
+  }
+
+  @override
   void dispose() {
     _typing.dispose();
     _thinkingTicker?.cancel();
+    _cancelPause();
     super.dispose();
+  }
+
+  // Release waiting runs as well as their timers. A canceled generation
+  // resumes only to fail its run/mounted guard, without leaking a delay.
+  void _cancelPause() {
+    _pause?.cancel();
+    final done = _pauseDone;
+    if (done != null && !done.isCompleted) done.complete();
+    _pause = null;
+    _pauseDone = null;
+  }
+
+  Future<void> _wait(Duration duration) {
+    if (duration == Duration.zero) return Future<void>.value();
+    final done = Completer<void>();
+    _pauseDone = done;
+    _pause = Timer(duration, done.complete);
+    return done.future;
   }
 
   // Thinks, builds a fresh report with a new seed, then types it out.
@@ -115,28 +147,34 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
     final run = ++_run;
     _typing.stop();
     _thinkingTicker?.cancel();
+    _cancelPause();
+    _lastTypingUpdate = Duration.zero;
     setState(() {
       _phase = _Phase.thinking;
       _expanded.clear();
       _thinkingLine = _seeds.nextInt(_thinkingLines.length);
     });
 
-    final reduced = AppMotion.reduced(context);
-    _thinkingTicker = Timer.periodic(const Duration(milliseconds: 650), (_) {
-      if (mounted) {
-        setState(() => _thinkingLine = (_thinkingLine + 1) % _thinkingLines.length);
-      }
-    });
+    if (!AppMotion.reduced(context)) {
+      _thinkingTicker = Timer.periodic(const Duration(milliseconds: 650), (_) {
+        if (mounted) {
+          setState(() => _thinkingLine = (_thinkingLine + 1) % _thinkingLines.length);
+        }
+      });
+    }
 
     final facts = await SmartFactsLoader.load();
+    // Discard superseded scope requests before doing the analysis.
+    if (!mounted || run != _run) return;
     final report = InsightEngine(facts, seed: _seeds.nextInt(1 << 30))
         .analyze(_scope);
-    final pause = reduced
+    final pause = AppMotion.reduced(context)
         ? Duration.zero
         : Duration(milliseconds: quick ? 700 : 1500);
-    await Future<void>.delayed(pause);
+    await _wait(pause);
     if (!mounted || run != _run) return;
     _thinkingTicker?.cancel();
+    final reduced = AppMotion.reduced(context);
 
     final total = report.headline.length +
         report.summary.length +
@@ -160,6 +198,13 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
 
   void _onTypingTick(Duration elapsed) {
     final next = math.min(_total, (elapsed.inMilliseconds * _charsPerMs).round());
+    // Text layout needn't run at the display's 60/120 Hz. Limit writing
+    // updates to ~30 Hz while keeping completion tied to elapsed time.
+    if (next < _total &&
+        elapsed - _lastTypingUpdate < const Duration(milliseconds: 33)) {
+      return;
+    }
+    _lastTypingUpdate = elapsed;
     if (next != _revealed) setState(() => _revealed = next);
     if (_revealed >= _total) _finish();
   }
@@ -462,7 +507,11 @@ class _ShimmerState extends State<_Shimmer>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!AppMotion.reduced(context) && !_sweep.isAnimating) _sweep.repeat();
+    if (!AppMotion.enabled(context)) {
+      _sweep.stop();
+    } else if (!_sweep.isAnimating) {
+      _sweep.repeat();
+    }
   }
 
   @override
