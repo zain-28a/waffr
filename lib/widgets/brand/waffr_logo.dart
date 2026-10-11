@@ -13,10 +13,13 @@ class WaffrLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Decode at display size; the asset is 1440 px square.
+    final pixels = (size * MediaQuery.devicePixelRatioOf(context)).round();
     return Image.asset(
       assetPath,
       width: size,
       height: size,
+      cacheWidth: pixels,
       fit: BoxFit.contain,
       alignment: Alignment.center,
       filterQuality: FilterQuality.high,

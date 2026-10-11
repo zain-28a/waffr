@@ -402,6 +402,10 @@ class _AppShellState extends State<AppShell>
       selectTab: _onTabTapped,
       child: Scaffold(
         backgroundColor: bg,
+        // No tab has a text field; sheets handle the keyboard themselves.
+        // Resizing here would re-lay out the visible tab on every keyboard
+        // frame behind an open sheet.
+        resizeToAvoidBottomInset: false,
         body: Stack(
           fit: StackFit.expand,
           children: [
@@ -458,16 +462,19 @@ class _AppShellState extends State<AppShell>
             ),
             // Floats over the pages so content scrolls under its blur.
             // Hidden while the keyboard is up so it never covers a field.
-            if (MediaQuery.viewInsetsOf(context).bottom == 0)
             Positioned(
               left: 16,
               right: 16,
               bottom: MediaQuery.paddingOf(context).bottom + 10,
-              child: _BottomNavBar(
-                tabIndex: _tabIndex,
-                tabCount: _tabCount,
-                pageController: _pageController,
-                onTap: _onTabTapped,
+              child: _HideOnKeyboard(
+                child: RepaintBoundary(
+                  child: _BottomNavBar(
+                    tabIndex: _tabIndex,
+                    tabCount: _tabCount,
+                    pageController: _pageController,
+                    onTap: _onTabTapped,
+                  ),
+                ),
               ),
             ),
             if (increase != null)
@@ -482,6 +489,34 @@ class _AppShellState extends State<AppShell>
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// Slides the nav bar away while the keyboard is up so it never covers a
+// field. Only this small widget depends on the keyboard inset, so the
+// shell itself does not rebuild on every keyboard frame.
+class _HideOnKeyboard extends StatelessWidget {
+  final Widget child;
+
+  const _HideOnKeyboard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final hidden = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final duration = AppMotion.of(context, AppMotion.fast);
+    return IgnorePointer(
+      ignoring: hidden,
+      child: AnimatedSlide(
+        offset: hidden ? const Offset(0, 1.6) : Offset.zero,
+        duration: duration,
+        curve: hidden ? AppMotion.exit : AppMotion.enter,
+        child: AnimatedOpacity(
+          opacity: hidden ? 0 : 1,
+          duration: duration,
+          child: child,
         ),
       ),
     );

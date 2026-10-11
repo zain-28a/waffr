@@ -77,6 +77,9 @@ class CurrencyStore extends ChangeNotifier {
     await ensureLoaded();
     if (enabled == null && (active == null || active.trim().isEmpty)) return;
 
+    final beforeEnabled = List<String>.of(_enabled);
+    final beforeActive = _activeCode;
+
     if (enabled != null) {
       _enabled
         ..clear()
@@ -92,6 +95,12 @@ class CurrencyStore extends ChangeNotifier {
 
     final nextActive = Currencies.normalize(active ?? _activeCode);
     _activeCode = _enabled.contains(nextActive) ? nextActive : defaultCurrencyCode;
+    // A sync usually echoes what this device already has; then there is
+    // nothing to save and no reason to rebuild every screen.
+    if (_activeCode == beforeActive &&
+        _sameOrder(_enabled, beforeEnabled)) {
+      return;
+    }
     await _persistEnabled();
     await _persistActive();
     notifyListeners();
@@ -199,5 +208,13 @@ class CurrencyStore extends ChangeNotifier {
   Future<void> _persistActive() async {
     final prefs = await AppPrefs.instance;
     await prefs.setString(activeKey, _activeCode);
+  }
+
+  static bool _sameOrder(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 }

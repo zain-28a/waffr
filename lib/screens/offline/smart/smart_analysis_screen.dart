@@ -17,6 +17,9 @@ import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffr/screens/offline/home/sheets/add_income_sheet.dart';
 import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffr/screens/offline/report/reportscreen.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
+import 'package:waffr/data/stores/shopping_list_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/manual_save_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
@@ -229,6 +232,16 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
 
   Future<void> _runAction(InsightAction action) async {
     AppHaptics.selection();
+    // Rerun the analysis afterwards only if the action changed any data;
+    // closing a sheet without saving should not replay the whole reading.
+    var changed = false;
+    void markChanged() => changed = true;
+    final stores = Listenable.merge([
+      TransactionStore.instance,
+      RecurringExpenseStore.instance,
+      ShoppingListStore.instance,
+    ])
+      ..addListener(markChanged);
     switch (action) {
       case InsightAction.addExpense:
         await showAddExpenseSheet(context);
@@ -249,6 +262,8 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
           ),
         );
     }
+    stores.removeListener(markChanged);
+    if (!changed || !mounted) return;
     // The data may have changed; refresh the reading quietly.
     if (mounted) _generate(quick: true);
   }
@@ -274,7 +289,9 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
       body: Stack(
         children: [
           Positioned.fill(
-            child: SmartGlowBackground(intensity: generating ? 1 : 0.4),
+            child: RepaintBoundary(
+              child: SmartGlowBackground(intensity: generating ? 1 : 0.4),
+            ),
           ),
           SafeArea(
             top: false,
@@ -655,8 +672,13 @@ class _InsightCard extends StatelessWidget {
         colorType: GlassColorType.surface,
         borderRadius: 22,
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        // While the text is being typed the card simply grows with it; an
+        // animated resize lagged behind each new line and made the cards
+        // below move in steps. It animates only for expand/collapse.
         child: AnimatedSize(
-          duration: AppMotion.of(context, AppMotion.medium),
+          duration: typing
+              ? Duration.zero
+              : AppMotion.of(context, AppMotion.medium),
           curve: AppMotion.enter,
           alignment: Alignment.topCenter,
           child: Column(

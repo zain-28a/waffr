@@ -5,8 +5,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/usage/streak_math.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/brand/waffr_logo.dart';
@@ -37,42 +37,43 @@ class _StreakCardState extends State<StreakCard>
     duration: const Duration(milliseconds: 1700),
   );
 
-  late final CurvedAnimation _count = CurvedAnimation(
+  late final Animation<double> _count = CurvedAnimation(
     parent: _controller,
     curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
   );
-  late final CurvedAnimation _ring = CurvedAnimation(
+  late final Animation<double> _ring = CurvedAnimation(
     parent: _controller,
     curve: const Interval(0.08, 0.75, curve: Curves.easeOutCubic),
   );
 
+  bool _started = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (AppMotion.reduced(context)) {
-      _controller.value = 1;
-    } else if (_controller.isDismissed) {
-      _controller.forward();
-    }
+    if (_started) return;
+    _started = true;
+    _play();
   }
 
   @override
   void didUpdateWidget(covariant StreakCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.replayToken != widget.replayToken ||
-        oldWidget.count != widget.count) {
-      if (AppMotion.reduced(context)) {
-        _controller.value = 1;
-      } else {
-        _controller.forward(from: 0);
-      }
+    // Replay only for a real revisit. A count that changes while shown
+    // (e.g. the streak service finishing its load) updates in place.
+    if (oldWidget.replayToken != widget.replayToken) _play();
+  }
+
+  void _play() {
+    if (AppMotion.reduced(context)) {
+      _controller.value = 1;
+    } else {
+      _controller.forward(from: 0);
     }
   }
 
   @override
   void dispose() {
-    _count.dispose();
-    _ring.dispose();
     _controller.dispose();
     super.dispose();
   }

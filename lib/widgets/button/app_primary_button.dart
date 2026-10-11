@@ -3,6 +3,7 @@
 // main action looks and behaves the same everywhere.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 
@@ -79,9 +80,12 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
       enabled: enabled && !busy,
       child: AnimatedScale(
         scale: _pressed ? 0.97 : 1.0,
-        duration: _pressed
-            ? const Duration(milliseconds: 90)
-            : const Duration(milliseconds: 320),
+        duration: AppMotion.of(
+          context,
+          _pressed
+              ? const Duration(milliseconds: 90)
+              : const Duration(milliseconds: 320),
+        ),
         curve: _pressed ? Curves.easeOut : Curves.easeOutBack,
         child: CustomPaint(
           foregroundPainter: enabled || busy

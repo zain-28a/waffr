@@ -261,8 +261,14 @@ class NotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Store changes come in bursts (an add, then its sync echo, then the
+  // currency store). Evaluate once after they settle, and after the sheet
+  // close and number animations, instead of on every notification.
+  Timer? _evaluateTimer;
+
   void _onStoreChanged() {
-    scheduleMicrotask(() {
+    _evaluateTimer?.cancel();
+    _evaluateTimer = Timer(const Duration(milliseconds: 400), () {
       unawaited(evaluate());
     });
   }

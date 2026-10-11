@@ -104,15 +104,23 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
+  // True after the user has gone to another tab. Coming back replays the
+  // streak card; the first arrival does not (the card already animates on
+  // its first build, so replaying then made it play twice).
+  bool _leftTab = false;
+
   void _onTab() {
     if (widget.tabIndex.value != _tab) {
+      _leftTab = true;
       if (_active) setState(() => _active = false);
       return;
     }
     ProfileIdentity.instance.reload();
+    final replay = _leftTab;
+    _leftTab = false;
     setState(() {
       _active = true;
-      _streakReplay++;
+      if (replay) _streakReplay++;
     });
     _queueHealth();
   }
