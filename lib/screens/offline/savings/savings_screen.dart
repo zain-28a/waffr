@@ -21,6 +21,8 @@ import 'package:waffr/screens/offline/savings/sheets/withdraw_savings_sheet.dart
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/widgets/smart/smart_analysis_button.dart';
 
 // Range chips + swipeable period card, total savings, goal progress, and sheet launches.
 class SavingsScreen extends StatefulWidget {
@@ -109,7 +111,7 @@ class _SavingsScreenState extends State<SavingsScreen>
                 },
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: kCardGap),
 
               SizedBox(
                 height: 108,
@@ -148,7 +150,7 @@ class _SavingsScreenState extends State<SavingsScreen>
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: kCardGap),
 
               _PlanButtonsRow(
                 periodicLabel: _store.hasActivePeriodicPlan
@@ -159,7 +161,7 @@ class _SavingsScreenState extends State<SavingsScreen>
                 onCompleted: () => showCompletedGoalsSheet(context),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: kCardGap),
 
               _ActiveGoalsPanel(
                 goals: goals,
@@ -168,7 +170,7 @@ class _SavingsScreenState extends State<SavingsScreen>
                 onCreate: () => showCreateGoalSheet(context),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: kCardGap),
 
               _SplitActionRow(
                 leading: _TotalSavingsCard(total: _store.savingsBalance),
@@ -182,7 +184,7 @@ class _SavingsScreenState extends State<SavingsScreen>
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: kCardGap),
 
               const ShoppingListPreviewCard(),
 
@@ -418,7 +420,8 @@ class _PeriodArrow extends StatelessWidget {
   }
 }
 
-// Total savings card beside the manual-save and withdraw action buttons.
+// Total savings card, the smart analysis tile, and the manual-save and
+// withdraw buttons in one row.
 class _SplitActionRow extends StatelessWidget {
   final Widget leading;
   final Widget first;
@@ -437,16 +440,26 @@ class _SplitActionRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(flex: 72, child: leading),
+          Expanded(flex: 5, child: leading),
 
-          const SizedBox(width: 10),
+          const SizedBox(width: kCardGap),
+
+          const SizedBox(
+            width: 88,
+            child: SmartAnalysisButton(
+              scope: InsightScope.savings,
+              style: SmartButtonStyle.tile,
+            ),
+          ),
+
+          const SizedBox(width: kCardGap),
 
           Expanded(
-            flex: 28,
+            flex: 3,
             child: Column(
               children: [
                 Expanded(child: first),
-                const SizedBox(height: 6),
+                const SizedBox(height: kCardGap),
                 Expanded(child: second),
               ],
             ),
@@ -761,7 +774,7 @@ class _PlanButtonsRow extends StatelessWidget {
                   : null,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: kCardGap),
           Expanded(
             child: _ActionButton(
               label: 'الأهداف المحققة',
@@ -787,41 +800,21 @@ class _TotalSavingsCard extends StatelessWidget {
     return GlassContainer(
       colorType: GlassColorType.surface,
       borderRadius: 24,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  color: colors.accent.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.attach_money,
-                  size: 17,
-                  color: colors.accent,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'إجمالي المبالغ الموفرة',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            'إجمالي المبالغ الموفرة',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: colors.textSecondary,
+            ),
           ),
 
           const SizedBox(height: 4),
