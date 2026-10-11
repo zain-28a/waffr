@@ -7,15 +7,40 @@ import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-// The four glow hues: the app accent plus cooler companions.
+// The four glow hues: the app accent, then greens and teals that cool
+// toward a soft blue. Kept mostly green so the smart features carry the
+// app's own identity.
 List<Color> smartGlowColors(BuildContext context) {
   final accent = AppPalette.of(context).accent;
   return [
     accent,
+    const Color(0xFF4CB782),
     const Color(0xFF3FB6A8),
-    const Color(0xFF6E8BEF),
-    const Color(0xFFB98AE6),
+    const Color(0xFF5E9FD6),
   ];
+}
+
+// Any icon painted in the smart colors, for smart features that keep their
+// own glyph (alerts, auto category).
+class SmartGradientIcon extends StatelessWidget {
+  final IconData icon;
+  final double size;
+
+  const SmartGradientIcon(this.icon, {super.key, this.size = 22});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = smartGlowColors(context);
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [colors[0], colors[1], colors[2]],
+      ).createShader(bounds),
+      child: Icon(icon, size: size),
+    );
+  }
 }
 
 class SmartGlowBackground extends StatefulWidget {
@@ -195,14 +220,60 @@ class _SmartSparkState extends State<SmartSpark>
           child: ShaderMask(
             blendMode: BlendMode.srcIn,
             shaderCallback: (bounds) => LinearGradient(
-              colors: [colors[0], colors[2], colors[3]],
+              colors: [colors[0], colors[1], colors[2]],
             ).createShader(bounds),
-            child: Icon(Icons.auto_awesome, size: widget.size * 0.62),
+            child: SizedBox.square(
+              dimension: widget.size * 0.7,
+              child: Stack(
+                children: [
+                  // A small rising chart line under the sparkle: analysis
+                  // of the user's money, not just "magic".
+                  const Positioned.fill(
+                    child: CustomPaint(painter: _TrendLinePainter()),
+                  ),
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Icon(
+                      Icons.auto_awesome,
+                      size: widget.size * 0.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+// Three-segment trend line, painted white so the ShaderMask colors it.
+class _TrendLinePainter extends CustomPainter {
+  const _TrendLinePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final path = Path()
+      ..moveTo(w * 0.06, h * 0.92)
+      ..lineTo(w * 0.27, h * 0.7)
+      ..lineTo(w * 0.42, h * 0.81)
+      ..lineTo(w * 0.6, h * 0.62);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.1
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_TrendLinePainter oldDelegate) => false;
 }
 
 class _RingPainter extends CustomPainter {

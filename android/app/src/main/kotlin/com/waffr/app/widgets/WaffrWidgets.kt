@@ -11,6 +11,9 @@ import com.waffr.app.MainActivity
 import com.waffr.app.R
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 // Home screen widgets. The app writes ready-to-show text into the shared
 // widget storage (see lib/data/services/home_widget_sync.dart); these
@@ -129,14 +132,30 @@ class StreakWidgetProvider : HomeWidgetProvider() {
         appWidgetIds: IntArray,
         widgetData: SharedPreferences,
     ) {
+        // Past the last day the streak survives, a whole day was skipped.
+        val aliveUntil = widgetData.text("streak_alive_until")
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        val broken = aliveUntil.isNotEmpty() && today > aliveUntil
         for (id in appWidgetIds) {
             val views = RemoteViews(context.packageName, R.layout.widget_streak).apply {
-                setTextViewText(R.id.streak_count, widgetData.text("streak_count", "1"))
+                setTextViewText(
+                    R.id.streak_count,
+                    if (broken) "0" else widgetData.text("streak_count", "1"),
+                )
                 setTextViewText(
                     R.id.streak_word,
-                    widgetData.text("streak_word", context.getString(R.string.widget_streak_word)),
+                    if (broken) {
+                        widgetData.text("streak_reset_label", context.getString(R.string.widget_streak_word))
+                    } else {
+                        widgetData.text("streak_word", context.getString(R.string.widget_streak_word))
+                    },
                 )
-                setProgressBar(R.id.streak_ring, 100, widgetData.percent("streak_percent"), false)
+                setProgressBar(
+                    R.id.streak_ring,
+                    100,
+                    if (broken) 0 else widgetData.percent("streak_percent"),
+                    false,
+                )
                 setOnClickPendingIntent(R.id.widget_root, launch(context, "profile"))
             }
             appWidgetManager.updateAppWidget(id, views)

@@ -16,6 +16,8 @@ import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/screens/offline/home/dashboard.dart';
 import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffr/screens/offline/home/sheets/add_income_sheet.dart';
@@ -30,6 +32,7 @@ import 'package:waffr/screens/offline/settings/settings_screen.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/brand/streak_celebration.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/data/services/smart_settings.dart';
@@ -260,6 +263,20 @@ class _AppShellState extends State<AppShell>
     );
   }
 
+  // Long press on the bell: mute or unmute without opening the list.
+  Future<void> _toggleNotificationsMuted() async {
+    final service = NotificationService.instance;
+    await service.ensureLoaded();
+    await service.toggleMuted();
+    if (!mounted) return;
+    AppHaptics.success();
+    showAppSnackBar(
+      context,
+      service.isMuted ? 'تم كتم الإشعارات' : 'تم تفعيل الإشعارات',
+      kind: AppFeedbackKind.info,
+    );
+  }
+
   Future<void> _openSettings() async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -379,33 +396,24 @@ class _AppShellState extends State<AppShell>
           fit: StackFit.expand,
           children: [
             SafeArea(
+              // The header paints under the status bar so the two read as
+              // one surface; it applies the top inset itself.
+              top: false,
               child: Column(
                 children: [
                   WaffrPageHeader(
-                    applySafeArea: false,
-                    leadingWidth: 96,
+                    leadingWidth: 104,
                     leading: Row(
                       children: [
-                        IconButton(
-                          iconSize: 30,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints.tightFor(
-                            width: 48,
-                            height: 48,
-                          ),
-                          icon: Icon(
-                            Icons.settings_rounded,
-                            color: isDark
-                                ? AppColors.darkAccent
-                                : AppColors.lightAccent,
-                          ),
+                        _HeaderButton(
+                          icon: Icons.settings_rounded,
+                          label: 'الإعدادات',
                           onPressed: _openSettings,
                         ),
+                        const SizedBox(width: 8),
                         _NotificationsButton(
-                          accent: isDark
-                              ? AppColors.darkAccent
-                              : AppColors.lightAccent,
                           onPressed: _openNotifications,
+                          onLongPress: _toggleNotificationsMuted,
                         ),
                       ],
                     ),
@@ -530,8 +538,9 @@ class _BottomNavBar extends StatelessWidget {
               height: _height,
               decoration: BoxDecoration(
                 gradient: liquidGlassFill(
-                  surface.withValues(alpha: isDark ? 0.62 : 0.6),
+                  surface.withValues(alpha: isDark ? 0.46 : 0.42),
                   isDark: isDark,
+                  sheen: isDark ? null : 0.28,
                 ),
               ),
               child: LayoutBuilder(
@@ -628,14 +637,94 @@ class _BottomNavBar extends StatelessWidget {
   }
 }
 
-// Header bell. Unread dot comes from NotificationService, not a tab.
-class _NotificationsButton extends StatelessWidget {
-  final Color accent;
+// Round glass button in the shell header (settings, notifications).
+class _HeaderButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
   final VoidCallback onPressed;
+  final VoidCallback? onLongPress;
+  final bool dimmed;
+  final bool showDot;
+
+  const _HeaderButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.onLongPress,
+    this.dimmed = false,
+    this.showDot = false,
+  });
+
+  static const double _size = 44;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final color = dimmed ? palette.textSecondary : palette.accent;
+
+    return Semantics(
+      button: true,
+      label: label,
+      child: GlassButton(
+        onTap: onPressed,
+        onLongPress: onLongPress,
+        width: _size,
+        height: _size,
+        padding: EdgeInsets.zero,
+        borderRadius: 16,
+        colorType: GlassColorType.surface,
+        tintOpacity: 0.9,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: AppMotion.of(context, AppMotion.fast),
+              transitionBuilder: (child, animation) => ScaleTransition(
+                scale: Tween<double>(begin: 0.7, end: 1).animate(animation),
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: Icon(
+                icon,
+                key: ValueKey(icon),
+                size: 23,
+                color: color,
+              ),
+            ),
+            PositionedDirectional(
+              top: 9,
+              end: 10,
+              child: AnimatedScale(
+                scale: showDot ? 1 : 0,
+                duration: AppMotion.of(context, AppMotion.fast),
+                curve: showDot ? Curves.easeOutBack : Curves.easeIn,
+                child: Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: AppColors.destructiveOf(context),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: palette.surface, width: 1.6),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Header bell. Unread dot and muted state come from NotificationService.
+// A long press mutes or unmutes.
+class _NotificationsButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final VoidCallback onLongPress;
 
   const _NotificationsButton({
-    required this.accent,
     required this.onPressed,
+    required this.onLongPress,
   });
 
   @override
@@ -643,44 +732,19 @@ class _NotificationsButton extends StatelessWidget {
     return AnimatedBuilder(
       animation: NotificationService.instance,
       builder: (context, _) {
-        final unread = NotificationService.instance.unreadCount;
-
-        return IconButton(
-          iconSize: 30,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints.tightFor(
-            width: 48,
-            height: 48,
-          ),
+        final service = NotificationService.instance;
+        final muted = service.isMuted;
+        return _HeaderButton(
+          icon: muted
+              ? Icons.notifications_off_rounded
+              : Icons.notifications_rounded,
+          label: muted
+              ? 'الإشعارات مكتومة. اضغط مطولاً لتفعيلها'
+              : 'الإشعارات. اضغط مطولاً للكتم',
           onPressed: onPressed,
-          icon: SizedBox(
-            width: 30,
-            height: 30,
-            child: Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                Icon(
-                  Icons.notifications_rounded,
-                  size: 30,
-                  color: accent,
-                ),
-                if (unread > 0)
-                  PositionedDirectional(
-                    top: 0,
-                    start: 0,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: accent,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+          onLongPress: onLongPress,
+          dimmed: muted,
+          showDot: service.unreadCount > 0,
         );
       },
     );

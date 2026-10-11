@@ -38,6 +38,9 @@ enum _NewsLoadState { loading, ready, empty, error }
 
 class _OnlineScreenState extends State<OnlineScreen>
     with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+  // The swipe preview shows only the newest few; the sheet lists the rest.
+  static const int _newsPreviewLimit = 10;
+
   String _selectedAsset = 'USD';
   List<NewsArticle> _articles = const [];
   _NewsLoadState _newsState = _NewsLoadState.loading;
@@ -163,7 +166,9 @@ class _OnlineScreenState extends State<OnlineScreen>
           _NearbyPlacesCard(onOpen: _openPlace),
           const SizedBox(height: 6),
           _NewsPreviewCard(
-            articles: _articles,
+            articles: _articles.length > _newsPreviewLimit
+                ? _articles.sublist(0, _newsPreviewLimit)
+                : _articles,
             state: _newsState,
             onTap: _newsState == _NewsLoadState.loading ? null : _onNewsTap,
           ),

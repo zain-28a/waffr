@@ -109,10 +109,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
             WaffrBackHeader(
-              applySafeArea: false,
               title: 'الإشعارات',
             ),
             Expanded(

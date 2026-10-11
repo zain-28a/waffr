@@ -232,10 +232,10 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
             child: SmartGlowBackground(intensity: generating ? 1 : 0.4),
           ),
           SafeArea(
+            top: false,
             child: Column(
               children: [
                 WaffrBackHeader(
-                  applySafeArea: false,
                   title: 'التحليل الذكي',
                 ),
                 Padding(
@@ -620,7 +620,7 @@ class _InsightCard extends StatelessWidget {
         InsightTone.warning => AppColors.warningOf(context),
         InsightTone.positive => palette.accent,
         InsightTone.tip => const Color(0xFF3FA7C9),
-        InsightTone.info => const Color(0xFF8A7CD8),
+        InsightTone.info => const Color(0xFF6E93C9),
       };
 
   @override
@@ -947,7 +947,7 @@ class _RegenerateButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.auto_awesome, size: 18, color: colors[2]),
+              const SmartSpark(size: 24),
               const SizedBox(width: 8),
               Text(
                 'تحليل جديد',

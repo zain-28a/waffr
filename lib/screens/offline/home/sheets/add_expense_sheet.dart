@@ -942,7 +942,7 @@ class _SmartCategoryHint extends StatelessWidget {
       child = Row(
         key: ValueKey('applied-$label'),
         children: [
-          Icon(Icons.auto_awesome, size: 15, color: colors[2]),
+          const SmartSpark(size: 20),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
@@ -962,7 +962,7 @@ class _SmartCategoryHint extends StatelessWidget {
         key: ValueKey('offer-$label'),
         alignment: AlignmentDirectional.centerStart,
         child: ActionChip(
-          avatar: Icon(Icons.auto_awesome, size: 16, color: colors[2]),
+          avatar: const SmartSpark(size: 22),
           label: Text(
             'اقتراح: $label',
             style: const TextStyle(

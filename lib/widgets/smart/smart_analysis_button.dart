@@ -1,25 +1,27 @@
-// The "smart analysis" entry point: a compact pill for card headers and a
-// full-width banner for the reports tab. Both open SmartAnalysisScreen.
+// The "smart analysis" entry point: a compact pill for card headers, a
+// small square tile that sits inside a card, and a full-width banner. All
+// open SmartAnalysisScreen.
 
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/widgets/smart/smart_glow.dart';
 
+enum SmartButtonStyle { pill, tile, banner }
+
 class SmartAnalysisButton extends StatefulWidget {
   final InsightScope scope;
-
-  // Full-width card with a subtitle instead of the compact pill.
-  final bool banner;
+  final SmartButtonStyle style;
 
   const SmartAnalysisButton({
     super.key,
     required this.scope,
-    this.banner = false,
+    this.style = SmartButtonStyle.pill,
   });
 
   @override
@@ -28,16 +30,34 @@ class SmartAnalysisButton extends StatefulWidget {
 
 class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
     with SingleTickerProviderStateMixin {
-  // Slow turn of the gradient border so the button reads as "alive".
+  // Set once the user has opened the analysis; shared by every button.
+  static const String _seenKey = 'smart_analysis_seen';
+  static final ValueNotifier<bool> _seen = ValueNotifier<bool>(
+    AppPrefs.cached?.getBool(_seenKey) ?? false,
+  );
+
+  // Slow turn of the gradient border so the button reads as "alive" until
+  // the user has opened the analysis once; after that the border rests.
   late final AnimationController _turn = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 6),
+    duration: const Duration(seconds: 10),
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _seen.addListener(_syncTurn);
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (AppMotion.reduced(context)) {
+    _syncTurn();
+  }
+
+  void _syncTurn() {
+    if (!mounted) return;
+    if (_seen.value || AppMotion.reduced(context)) {
       _turn.stop();
     } else if (!_turn.isAnimating) {
       _turn.repeat();
@@ -46,12 +66,17 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
 
   @override
   void dispose() {
+    _seen.removeListener(_syncTurn);
     _turn.dispose();
     super.dispose();
   }
 
   void _open() {
     AppHaptics.selection();
+    if (!_seen.value) {
+      _seen.value = true;
+      AppPrefs.instance.then((prefs) => prefs.setBool(_seenKey, true));
+    }
     openSmartAnalysis(context, widget.scope);
   }
 
@@ -59,54 +84,79 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final colors = smartGlowColors(context);
-    final radius = BorderRadius.circular(widget.banner ? 22 : 999);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final style = widget.style;
+    final radius = BorderRadius.circular(switch (style) {
+      SmartButtonStyle.pill => 999,
+      SmartButtonStyle.tile => 20,
+      SmartButtonStyle.banner => 22,
+    });
 
     final spark = Hero(
       tag: smartSparkHeroTag(widget.scope),
-      child: SmartSpark(size: widget.banner ? 30 : 20),
+      child: SmartSpark(
+        size: switch (style) {
+          SmartButtonStyle.pill => 20,
+          SmartButtonStyle.tile => 30,
+          SmartButtonStyle.banner => 30,
+        },
+      ),
     );
 
-    final Widget content = widget.banner
-        ? Row(
-            children: [
-              spark,
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'التحليل الذكي',
-                      style: _text(palette.textPrimary, 15, FontWeight.w800),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'اكتشف أين يذهب مالك واحصل على اقتراحات',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _text(palette.textSecondary, 12.5, FontWeight.w500),
-                    ),
-                  ],
-                ),
+    final Widget content = switch (style) {
+      SmartButtonStyle.banner => Row(
+          children: [
+            spark,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'التحليل الذكي',
+                    style: _text(palette.textPrimary, 15, FontWeight.w800),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'اكتشف أين يذهب مالك واحصل على اقتراحات',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _text(palette.textSecondary, 12.5, FontWeight.w500),
+                  ),
+                ],
               ),
-              Icon(
-                Icons.chevron_left_rounded,
-                color: palette.textSecondary,
-              ),
-            ],
-          )
-        : Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              spark,
-              const SizedBox(width: 6),
-              Text(
-                'تحليل ذكي',
-                style: _text(palette.textPrimary, 12.5, FontWeight.w700),
-              ),
-            ],
-          );
+            ),
+            Icon(
+              Icons.chevron_left_rounded,
+              color: palette.textSecondary,
+            ),
+          ],
+        ),
+      SmartButtonStyle.tile => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            spark,
+            const SizedBox(height: 6),
+            Text(
+              'التحليل الذكي',
+              maxLines: 1,
+              style: _text(palette.textPrimary, 12, FontWeight.w800),
+            ),
+          ],
+        ),
+      SmartButtonStyle.pill => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            spark,
+            const SizedBox(width: 6),
+            Text(
+              'تحليل ذكي',
+              style: _text(palette.textPrimary, 12.5, FontWeight.w700),
+            ),
+          ],
+        ),
+    };
 
     return Semantics(
       button: true,
@@ -127,7 +177,7 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
                 boxShadow: [
                   BoxShadow(
                     color: colors[2].withValues(alpha: 0.18),
-                    blurRadius: widget.banner ? 18 : 10,
+                    blurRadius: style == SmartButtonStyle.pill ? 10 : 18,
                   ),
                 ],
               ),
@@ -135,11 +185,27 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
             );
           },
           child: Container(
-            padding: widget.banner
-                ? const EdgeInsets.symmetric(horizontal: 14, vertical: 12)
-                : const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: switch (style) {
+              SmartButtonStyle.pill =>
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              SmartButtonStyle.tile =>
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              SmartButtonStyle.banner =>
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            },
             decoration: BoxDecoration(
-              color: palette.surface,
+              // A faint wash of the border colors over the surface.
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [
+                  for (final color in [colors[1], colors[3]])
+                    Color.alphaBlend(
+                      color.withValues(alpha: isDark ? 0.10 : 0.07),
+                      palette.surface,
+                    ),
+                ],
+              ),
               borderRadius: radius,
             ),
             child: content,

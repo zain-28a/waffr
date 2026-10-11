@@ -63,4 +63,23 @@ void main() {
     expect(data['streak_percent'], '86'); // 12 of 14
     expect(build(streak: 1)['streak_word'], 'يوم');
   });
+
+  test('the streak widget learns the last day it stays alive', () {
+    final data = buildHomeWidgetData(
+      now: now,
+      symbol: 'ل.س',
+      balance: 0,
+      spent: 0,
+      maxBalance: 0,
+      remainingRatio: 0,
+      goal: null,
+      obligations: const [],
+      streak: 3,
+      streakLastDay: DateTime(2026, 10, 31),
+    );
+
+    expect(data['streak_alive_until'], '2026-11-01');
+    expect(data['streak_reset_label'], 'ابدأ من جديد');
+    expect(build().containsKey('streak_alive_until'), isFalse);
+  });
 }
