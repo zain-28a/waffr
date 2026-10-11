@@ -1,7 +1,8 @@
 // Shared motion pieces: staggered entrance, rolling money digits and
 // animated progress. Timings come from AppMotion. All of them are
-// implicit (no work after they settle) and turn themselves off when the
+// idle (no work after they settle) and turn themselves off when the
 // device asks for reduced motion.
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -40,34 +41,35 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
     vsync: this,
     duration: AppMotion.emphasized,
   );
-  late final Animation<double> _curve = CurvedAnimation(
+  late final CurvedAnimation _curve = CurvedAnimation(
     parent: _controller,
     curve: AppMotion.enter,
   );
   bool _started = false;
+  Timer? _delay;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_started) return;
-    _started = true;
-    if (!widget.play || AppMotion.reduced(context)) {
+    if (AppMotion.reduced(context) || !widget.play) {
+      _started = true;
+      _delay?.cancel();
       _controller.value = 1;
       return;
     }
+    if (_started) return;
+    _started = true;
     // Short stagger, capped, so a full screen settles within ~650 ms.
     final delay = Duration(milliseconds: 35 * math.min(widget.index, 6));
-    if (delay == Duration.zero) {
-      _controller.forward();
-    } else {
-      Future<void>.delayed(delay, () {
-        if (mounted) _controller.forward();
-      });
-    }
+    _delay = Timer(delay, () {
+      if (mounted) _controller.forward();
+    });
   }
 
   @override
   void dispose() {
+    _delay?.cancel();
+    _curve.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -116,12 +118,18 @@ class _RollingMoneyState extends State<RollingMoney>
   late String _to = _from;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduced(context)) _controller.value = 1;
+  }
+
+  @override
   void didUpdateWidget(covariant RollingMoney oldWidget) {
     super.didUpdateWidget(oldWidget);
     final next = formatMoney(widget.value);
     if (next == _to) return;
     // Start from what is on screen now, even mid-roll.
-    _from = _controller.value < 0.5 ? _from : _to;
+    _from = AppMotion.enter.transform(_controller.value) < 0.5 ? _from : _to;
     _to = next;
     if (AppMotion.reduced(context)) {
       _controller.value = 1;
@@ -163,7 +171,7 @@ class _RollingMoneyState extends State<RollingMoney>
 /// Odometer text: each character that changes rolls up from the old value
 /// to the new one with a slight tilt. [progress] runs 0..1. Strings are
 /// right-aligned so units line up with units.
-class RollingText extends StatelessWidget {
+class RollingText extends StatefulWidget {
   final String from;
   final String to;
   final double progress;
@@ -178,18 +186,52 @@ class RollingText extends StatelessWidget {
   });
 
   @override
+  State<RollingText> createState() => _RollingTextState();
+}
+
+class _RollingTextState extends State<RollingText> {
+  final TextPainter _painter = TextPainter(textDirection: TextDirection.ltr);
+  final Map<String, double> _glyphWidths = {};
+  TextStyle? _measuredStyle;
+  TextScaler? _measuredScaler;
+  double _height = 0;
+  double _digitWidth = 0;
+
+  // Text layout is independent of animation progress. Measure it only when
+  // the style or accessibility scale changes, and reuse separator widths.
+  void _measure() {
+    final scaler = MediaQuery.textScalerOf(context);
+    if (_measuredStyle == widget.style && _measuredScaler == scaler) return;
+    _measuredStyle = widget.style;
+    _measuredScaler = scaler;
+    _glyphWidths.clear();
+    _painter
+      ..textScaler = scaler
+      ..text = TextSpan(text: '0', style: widget.style)
+      ..layout();
+    _height = _painter.height;
+    _digitWidth = _painter.width;
+  }
+
+  double _glyphWidth(String char) => _glyphWidths.putIfAbsent(char, () {
+    _painter
+      ..text = TextSpan(text: char, style: widget.style)
+      ..layout();
+    return _painter.width;
+  });
+
+  @override
+  void dispose() {
+    _painter.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final width = math.max(from.length, to.length);
-    final oldChars = from.padLeft(width);
-    final newChars = to.padLeft(width);
-    final painter = TextPainter(
-      text: TextSpan(text: '0', style: style),
-      textDirection: TextDirection.ltr,
-      textScaler: MediaQuery.textScalerOf(context),
-    )..layout();
-    final height = painter.height;
-    final digitWidth = painter.width;
-    painter.dispose();
+    _measure();
+    final width = math.max(widget.from.length, widget.to.length);
+    final oldChars = widget.from.padLeft(width);
+    final newChars = widget.to.padLeft(width);
 
     return Directionality(
       textDirection: TextDirection.ltr,
@@ -200,12 +242,14 @@ class RollingText extends StatelessWidget {
             _RollingChar(
               from: oldChars[i],
               to: newChars[i],
-              progress: progress,
-              style: style,
-              height: height,
+              progress: widget.progress,
+              style: widget.style,
+              height: _height,
               width: _isDigit(newChars[i]) || _isDigit(oldChars[i])
-                  ? digitWidth
-                  : null,
+                  ? _digitWidth
+                  : _glyphWidth(
+                      newChars[i].trim().isEmpty ? oldChars[i] : newChars[i],
+                    ),
             ),
         ],
       ),
@@ -225,8 +269,8 @@ class _RollingChar extends StatelessWidget {
   final TextStyle style;
   final double height;
 
-  /// Fixed slot width for digits; separators size to their glyph.
-  final double? width;
+  /// Fixed slot width, measured once with the current text scale.
+  final double width;
 
   const _RollingChar({
     required this.from,
@@ -267,7 +311,7 @@ class _RollingChar extends StatelessWidget {
       );
     }
 
-    final slot = width ?? _glyphWidth(leaving ? from : to);
+    final slot = width;
     final slotWidth = appearing
         ? slot * progress
         : leaving
@@ -291,16 +335,6 @@ class _RollingChar extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  double _glyphWidth(String char) {
-    final painter = TextPainter(
-      text: TextSpan(text: char, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final w = painter.width;
-    painter.dispose();
-    return w;
   }
 }
 

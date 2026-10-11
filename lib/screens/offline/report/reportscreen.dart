@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/widgets/motion/active_listenable_builder.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/stores/category_store.dart';
@@ -22,7 +23,7 @@ import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
-import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/containers/pinned_period_scroll_view.dart';
 import 'package:waffr/widgets/dialogs/waffr_date_picker.dart';
 import 'package:waffr/screens/offline/report/expense_history_share.dart';
 import 'package:waffr/core/theme/app_motion.dart';
@@ -131,8 +132,8 @@ class _ReportScreenState extends State<ReportScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return AnimatedBuilder(
-      animation: _listenables,
+    return ActiveListenableBuilder(
+      listenable: _listenables,
       builder: (context, _) {
         final expenses = _expenses;
         final report = _reportFor(_range, _periodOffset);
@@ -150,21 +151,18 @@ class _ReportScreenState extends State<ReportScreen>
           300.0,
         );
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
+        return PinnedPeriodScrollView(
+          key: const PageStorageKey('report-period-scroll'),
+          options: [for (final range in _ReportRange.values) range.label],
+          selected: _range.label,
+          onSelected: (label) {
+            _selectRange(
+              _ReportRange.values.firstWhere((range) => range.label == label),
+            );
+          },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: staggered([
-              SheetChoiceChips(
-                options: [for (final range in _ReportRange.values) range.label],
-                selected: _range.label,
-                onSelected: (label) {
-                  _selectRange(
-                    _ReportRange.values.firstWhere((range) => range.label == label),
-                  );
-                },
-              ),
-              const SizedBox(height: kCardGap),
               SizedBox(
                 height: chartHeight,
                 child: PageView.builder(
@@ -405,9 +403,12 @@ class _SpendingChartCard extends StatelessWidget {
           const SizedBox(height: 12),
           Expanded(
             child: report.expenses.isEmpty
-                ? const _EmptyState(
-                    icon: Icons.show_chart_rounded,
-                    message: 'لا توجد مصروفات في هذه الفترة',
+                ? const Center(
+                    child: AppEmptyState(
+                      icon: Icons.show_chart_rounded,
+                      title: 'لا توجد مصروفات في هذه الفترة',
+                      compact: true,
+                    ),
                   )
                 : Directionality(
                     textDirection: TextDirection.ltr,

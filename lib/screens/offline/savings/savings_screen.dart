@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/widgets/motion/active_listenable_builder.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/calendar_period.dart';
@@ -20,7 +21,7 @@ import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/withdraw_savings_sheet.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
-import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/containers/pinned_period_scroll_view.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/widgets/smart/smart_analysis_button.dart';
 
@@ -92,27 +93,22 @@ class _SavingsScreenState extends State<SavingsScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return AnimatedBuilder(
-      animation: _store,
+    return ActiveListenableBuilder(
+      listenable: _store,
       builder: (context, _) {
         final goals = _store.activeGoals;
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
+        return PinnedPeriodScrollView(
+          key: const PageStorageKey('savings-period-scroll'),
+          options: [for (final range in SavingsRange.values) range.label],
+          selected: _range.label,
+          onSelected: (label) {
+            _selectRange(
+              SavingsRange.values.firstWhere((range) => range.label == label),
+            );
+          },
           child: Column(
             children: staggered([
-              SheetChoiceChips(
-                options: [for (final range in SavingsRange.values) range.label],
-                selected: _range.label,
-                onSelected: (label) {
-                  _selectRange(
-                    SavingsRange.values.firstWhere((range) => range.label == label),
-                  );
-                },
-              ),
-
-              const SizedBox(height: kCardGap),
-
               SizedBox(
                 height: 108,
                 child: PageView.builder(

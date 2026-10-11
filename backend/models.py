@@ -59,6 +59,12 @@ class User(TimestampMixin, Base):
         nullable=True,
     )
     reset_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # Wrong passwords in a row; reaching the limit locks sign-in for a while.
+    failed_login_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    locked_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     transactions: Mapped[list["Transaction"]] = relationship(
         back_populates="user",

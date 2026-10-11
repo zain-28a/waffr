@@ -11,8 +11,8 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/widgets/brand/waffr_logo.dart';
 
 class StreakCelebrationOverlay extends StatefulWidget {
@@ -45,78 +45,87 @@ class _StreakCelebrationOverlayState extends State<StreakCelebrationOverlay>
   );
 
   // 1. Blur and tint come in first and leave last.
-  late final Animation<double> _backdropIn = CurvedAnimation(
+  late final CurvedAnimation _backdropIn = CurvedAnimation(
     parent: _controller,
     curve: const Interval(0.0, 0.16, curve: Curves.easeOutCubic),
   );
-  late final Animation<double> _backdropOut = CurvedAnimation(
+  late final CurvedAnimation _backdropOut = CurvedAnimation(
     parent: _controller,
     curve: const Interval(0.86, 1.0, curve: Curves.easeInOutCubic),
   );
 
   // 2. Logo rises and settles.
-  late final Animation<double> _logoIn = CurvedAnimation(
+  late final CurvedAnimation _logoIn = CurvedAnimation(
     parent: _controller,
     curve: const Interval(0.08, 0.30, curve: Curves.easeOutBack),
   );
-  late final Animation<double> _logoFade = CurvedAnimation(
+  late final CurvedAnimation _logoFade = CurvedAnimation(
     parent: _controller,
     curve: const Interval(0.08, 0.22, curve: Curves.easeOut),
   );
 
   // 3. The count rolls to the new value.
-  late final Animation<double> _countIn = CurvedAnimation(
+  late final CurvedAnimation _countIn = CurvedAnimation(
     parent: _controller,
     curve: const Interval(0.22, 0.34, curve: Curves.easeOutCubic),
   );
-  late final Animation<double> _roll = CurvedAnimation(
+  late final CurvedAnimation _roll = CurvedAnimation(
     parent: _controller,
     curve: const Interval(0.36, 0.56, curve: Curves.easeInOutCubic),
   );
 
   // 5. Content leaves before the blur does.
-  late final Animation<double> _contentOut = CurvedAnimation(
+  late final CurvedAnimation _contentOut = CurvedAnimation(
     parent: _controller,
     curve: const Interval(_fadeOutStart, 0.94, curve: Curves.easeInCubic),
   );
 
   bool _ticked = false;
-  bool _started = false;
   bool _finished = false;
 
   @override
   void initState() {
     super.initState();
     _controller.addListener(_onTick);
-    // A status listener (not the first forward's future) so a skip, which
-    // restarts the controller, still reports the end and the overlay leaves.
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) _finish();
-    });
+    _controller.addStatusListener(_onStatus);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_started) return;
-    _started = true;
     if (AppMotion.reduced(context)) {
-      // No celebration sequence when the device asks for less motion.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _finish());
-      return;
+      _controller.stop();
+      _finishOnce();
+    } else if (!_finished && _controller.isDismissed) {
+      _controller.forward();
     }
-    _controller.forward();
   }
 
-  void _finish() {
-    if (_finished || !mounted) return;
+  void _onStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) _finishOnce();
+  }
+
+  // Skip and natural completion share one callback. Defer parent updates
+  // past this build, including a reduced-motion change during animation.
+  void _finishOnce() {
+    if (_finished) return;
     _finished = true;
-    widget.onFinished();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onFinished();
+    });
   }
 
   @override
   void dispose() {
     _controller.removeListener(_onTick);
+    _controller.removeStatusListener(_onStatus);
+    _backdropIn.dispose();
+    _backdropOut.dispose();
+    _logoIn.dispose();
+    _logoFade.dispose();
+    _countIn.dispose();
+    _roll.dispose();
+    _contentOut.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -130,11 +139,13 @@ class _StreakCelebrationOverlayState extends State<StreakCelebrationOverlay>
 
   void _skip() {
     if (_controller.value >= _fadeOutStart) return;
-    _controller.forward(from: _fadeOutStart);
+    _controller.value = _fadeOutStart;
+    _controller.forward();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (AppMotion.reduced(context)) return const SizedBox.shrink();
     final palette = AppPalette.of(context);
 
     return GestureDetector(

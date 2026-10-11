@@ -1,18 +1,25 @@
 // Usage profile. Account editing stays in Settings.
 
+import 'dart:math' as math;
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/widgets/motion/active_listenable_builder.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/core/insights/profile_snapshot.dart';
+import 'package:waffr/core/insights/smart/insight_engine.dart';
+import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/usage/usage_duration.dart';
 import 'package:waffr/data/services/profile_identity.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/widgets/brand/profile_avatar.dart';
 import 'package:waffr/screens/offline/profile/streak_card.dart';
-import 'package:waffr/widgets/charts/savings_spending_bar.dart';
+import 'package:waffr/screens/offline/profile/wallet_backdrop.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/widgets/smart/smart_analysis_button.dart';
@@ -41,6 +48,23 @@ class _ProfileScreenState extends State<ProfileScreen>
     ProfileIdentity.instance,
   ]);
 
+  // What the health score reads from.
+  late final Listenable _healthData = Listenable.merge([
+    _store,
+    CurrencyStore.instance,
+    RecurringExpenseStore.instance,
+  ]);
+
+  // Band behind the wallet's smile; null until the first read.
+  HealthBand? _health;
+  bool _healthDirty = true;
+  bool _healthLoading = false;
+  Timer? _healthRefresh;
+
+  // Whether this tab is the one on screen.
+  late bool _active = widget.tabIndex.value == _tab;
+  bool _tickerEnabled = true;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -48,14 +72,35 @@ class _ProfileScreenState extends State<ProfileScreen>
   void initState() {
     super.initState();
     widget.tabIndex.addListener(_onTab);
+    _healthData.addListener(_queueHealth);
     _store.ensureLoaded();
     UsageStreakService.instance.ensureLoaded();
     ProfileIdentity.instance.reload();
+    _queueHealth();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _tickerEnabled = TickerMode.valuesOf(context).enabled;
+    if (_tickerEnabled) _queueHealth();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tabIndex != widget.tabIndex) {
+      oldWidget.tabIndex.removeListener(_onTab);
+      widget.tabIndex.addListener(_onTab);
+      _onTab();
+    }
   }
 
   @override
   void dispose() {
     widget.tabIndex.removeListener(_onTab);
+    _healthData.removeListener(_queueHealth);
+    _healthRefresh?.cancel();
     super.dispose();
   }
 
@@ -67,12 +112,59 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _onTab() {
     if (widget.tabIndex.value != _tab) {
       _leftTab = true;
+      if (_active) setState(() => _active = false);
       return;
     }
     ProfileIdentity.instance.reload();
-    if (!_leftTab) return;
+    final replay = _leftTab;
     _leftTab = false;
-    setState(() => _streakReplay++);
+    setState(() {
+      _active = true;
+      if (replay) _streakReplay++;
+    });
+    _queueHealth();
+  }
+
+  // Store hydration and a sync can emit several notifications together.
+  // Collapse those into one read and defer all health work on hidden tabs.
+  void _queueHealth() {
+    _healthDirty = true;
+    if (!_active ||
+        !_tickerEnabled ||
+        _healthLoading ||
+        _healthRefresh?.isActive == true) {
+      return;
+    }
+    _healthRefresh = Timer(Duration.zero, _readHealth);
+  }
+
+  // Same score as the smart analysis. With nothing logged yet the wallet
+  // keeps the logo's own smile.
+  Future<void> _readHealth() async {
+    if (!mounted ||
+        !_active ||
+        !_tickerEnabled ||
+        _healthLoading ||
+        !_healthDirty) {
+      return;
+    }
+    _healthDirty = false;
+    _healthLoading = true;
+    try {
+      final facts = await SmartFactsLoader.load();
+      if (!mounted || !_active || !_tickerEnabled || _healthDirty) return;
+      final empty =
+          facts.expenses.isEmpty &&
+          facts.incomes.isEmpty &&
+          facts.savingsTransfers.isEmpty;
+      final band = empty
+          ? HealthBand.excellent
+          : HealthBand.of(InsightEngine(facts).healthScore());
+      if (band != _health) setState(() => _health = band);
+    } finally {
+      _healthLoading = false;
+      if (mounted && _active && _tickerEnabled && _healthDirty) _queueHealth();
+    }
   }
 
   @override
@@ -80,16 +172,53 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.build(context);
     final palette = AppPalette.of(context);
 
-    return AnimatedBuilder(
-      animation: _data,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final page = constraints.biggest;
+        final bottom = math.max(
+          kFloatingNavClearance,
+          WalletBackdrop.contentClearance(page),
+        );
+
+        // The wallet hangs from the bottom of the content, which is at least
+        // a page tall, so its smile lands just below the stats and the cards
+        // are painted over the rest of it.
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: page.height),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: WalletBackdrop(
+                    page: page,
+                    band: _health,
+                    active: _active,
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(18, 18, 18, bottom),
+                  child: _cards(palette),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _cards(AppPalette palette) {
+    return ActiveListenableBuilder(
+      listenable: _data,
       builder: (context, _) {
         final snapshot = ProfileSnapshot.fromStore(_store);
         final streak = UsageStreakService.instance;
         final identity = ProfileIdentity.instance;
         final started = streak.startedAt;
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: staggered([
             _ProfileHeader(identity: identity, palette: palette),
             const SizedBox(height: kCardGap),
@@ -119,33 +248,6 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
             const SizedBox(height: kCardGap),
             _UsageStats(snapshot: snapshot, palette: palette),
-            const SizedBox(height: kCardGap),
-            GlassContainer(
-              colorType: GlassColorType.surface,
-              borderRadius: 22,
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'الصرف والتوفير',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontFamilyFallback: const ['Tajawal'],
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: palette.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SavingsSpendingBar(
-                    savings: snapshot.saved,
-                    spending: snapshot.spent,
-                  ),
-                ],
-              ),
-            ),
           ]),
         );
       },
@@ -157,10 +259,7 @@ class _ProfileHeader extends StatelessWidget {
   final ProfileIdentity identity;
   final AppPalette palette;
 
-  const _ProfileHeader({
-    required this.identity,
-    required this.palette,
-  });
+  const _ProfileHeader({required this.identity, required this.palette});
 
   @override
   Widget build(BuildContext context) {
@@ -292,7 +391,7 @@ class _UsageStats extends StatelessWidget {
         Expanded(
           child: _StatTile(
             value: snapshot.goalCount,
-            label: 'أهداف التوفير' ,
+            label: 'أهداف التوفير',
             palette: palette,
           ),
         ),
@@ -300,7 +399,7 @@ class _UsageStats extends StatelessWidget {
         Expanded(
           child: _StatTile(
             value: snapshot.savingsCount,
-            label:  'عمليات التوفير',
+            label: 'عمليات التوفير',
             palette: palette,
           ),
         ),

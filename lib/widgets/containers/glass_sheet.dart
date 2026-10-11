@@ -797,7 +797,21 @@ class _AmountMenuDropState extends State<_AmountMenuDrop>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: AppMotion.fast,
-  )..forward();
+  );
+  late final CurvedAnimation _curved = CurvedAnimation(
+    parent: _controller,
+    curve: AppMotion.enter,
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduced(context)) {
+      _controller.value = 1;
+    } else if (_controller.isDismissed) {
+      _controller.forward();
+    }
+  }
 
   @override
   void dispose() {
@@ -806,26 +820,15 @@ class _AmountMenuDropState extends State<_AmountMenuDrop>
     super.dispose();
   }
 
-  late final CurvedAnimation _curved = CurvedAnimation(
-    parent: _controller,
-    curve: AppMotion.enter,
-  );
   late final Animation<Offset> _slide = Tween<Offset>(
     begin: const Offset(0, -0.08),
     end: Offset.zero,
   ).animate(_curved);
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (AppMotion.reduced(context)) _controller.value = 1;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final curved = _curved;
     return FadeTransition(
-      opacity: curved,
+      opacity: _curved,
       child: SlideTransition(
         position: _slide,
         child: widget.child,
