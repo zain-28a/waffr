@@ -18,10 +18,14 @@ class SmartAnalysisButton extends StatefulWidget {
   final InsightScope scope;
   final SmartButtonStyle style;
 
+  /// A roomier pill, for screens where it stands on its own.
+  final bool large;
+
   const SmartAnalysisButton({
     super.key,
     required this.scope,
     this.style = SmartButtonStyle.pill,
+    this.large = false,
   });
 
   @override
@@ -96,7 +100,7 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
       tag: smartSparkHeroTag(widget.scope),
       child: SmartSpark(
         size: switch (style) {
-          SmartButtonStyle.pill => 20,
+          SmartButtonStyle.pill => widget.large ? 26 : 20,
           SmartButtonStyle.tile => 30,
           SmartButtonStyle.banner => 30,
         },
@@ -138,10 +142,13 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
           children: [
             spark,
             const SizedBox(height: 6),
+            // Wraps onto two centered lines when the tile is narrow.
             Text(
               'التحليل الذكي',
-              maxLines: 1,
-              style: _text(palette.textPrimary, 12, FontWeight.w800),
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              style: _text(palette.textPrimary, 12, FontWeight.w800)
+                  .copyWith(height: 1.15),
             ),
           ],
         ),
@@ -149,10 +156,14 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
           mainAxisSize: MainAxisSize.min,
           children: [
             spark,
-            const SizedBox(width: 6),
+            SizedBox(width: widget.large ? 8 : 6),
             Text(
               'تحليل ذكي',
-              style: _text(palette.textPrimary, 12.5, FontWeight.w700),
+              style: _text(
+                palette.textPrimary,
+                widget.large ? 14.5 : 12.5,
+                widget.large ? FontWeight.w800 : FontWeight.w700,
+              ),
             ),
           ],
         ),
@@ -185,9 +196,13 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
             );
           },
           child: Container(
+            // The tile fills whatever box it is given, content centered.
+            alignment:
+                style == SmartButtonStyle.tile ? Alignment.center : null,
             padding: switch (style) {
-              SmartButtonStyle.pill =>
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              SmartButtonStyle.pill => widget.large
+                  ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
+                  : const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               SmartButtonStyle.tile =>
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               SmartButtonStyle.banner =>

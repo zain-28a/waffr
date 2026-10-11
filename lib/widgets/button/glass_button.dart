@@ -2,6 +2,9 @@
 // Visual chrome comes from GlassContainer (translucent fill, no BackdropFilter).
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 
 /// Pressable [GlassContainer] that scales slightly on tap.
@@ -82,6 +85,87 @@ class _GlassButtonState extends State<GlassButton> {
           colorType: widget.colorType,
           tintOpacity: widget.tintOpacity,
           child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+/// Square glass icon button: the shell header actions (settings, bell) and
+/// the balance card shortcuts share it so they look the same.
+class GlassIconButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  final VoidCallback? onLongPress;
+  final bool dimmed;
+  final bool showDot;
+
+  const GlassIconButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.onLongPress,
+    this.dimmed = false,
+    this.showDot = false,
+  });
+
+  static const double size = 44;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final color = dimmed ? palette.textSecondary : palette.accent;
+
+    return Semantics(
+      button: true,
+      label: label,
+      child: GlassButton(
+        onTap: onPressed,
+        onLongPress: onLongPress,
+        width: size,
+        height: size,
+        padding: EdgeInsets.zero,
+        borderRadius: 16,
+        colorType: GlassColorType.surface,
+        tintOpacity: 0.9,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: AppMotion.of(context, AppMotion.fast),
+              transitionBuilder: (child, animation) => ScaleTransition(
+                scale: Tween<double>(begin: 0.7, end: 1).animate(animation),
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: Icon(
+                icon,
+                key: ValueKey(icon),
+                size: 23,
+                color: color,
+              ),
+            ),
+            PositionedDirectional(
+              top: 9,
+              end: 10,
+              child: AnimatedScale(
+                scale: showDot ? 1 : 0,
+                duration: AppMotion.of(context, AppMotion.fast),
+                curve: showDot ? Curves.easeOutBack : Curves.easeIn,
+                child: Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: AppColors.destructiveOf(context),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: palette.surface, width: 1.6),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
