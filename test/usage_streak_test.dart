@@ -11,6 +11,8 @@ import 'package:waffr/core/insights/spending_improvement.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  tearDown(() => UsageStreakService.clock = DateTime.now);
+
   test('opening on the next day hands out one streak increase', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await AppPrefs.instance;
@@ -30,9 +32,62 @@ void main() {
     expect(increase?.to, 2);
     expect(service.takeIncrease(), isNull, reason: 'handed out once');
 
-    await service.recordToday(now: DateTime(2026, 9, 5, 8));
+    UsageStreakService.clock = () => DateTime(2026, 9, 5, 8);
+    await service.recordToday();
     expect(service.count, 1);
     expect(service.takeIncrease(), isNull, reason: 'a broken streak restarts');
+  });
+
+  test('a skipped day reads as a broken streak before the next open', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await AppPrefs.instance;
+    await prefs.clear();
+    TransactionStore.instance.resetCache();
+    final service = UsageStreakService.instance..resetCache();
+
+    UsageStreakService.clock = () => DateTime(2026, 9, 1, 9);
+    await service.recordToday();
+    UsageStreakService.clock = () => DateTime(2026, 9, 2, 9);
+    await service.recordToday();
+    expect(service.count, 2);
+
+    // Next day, not opened yet: still alive.
+    UsageStreakService.clock = () => DateTime(2026, 9, 3, 23);
+    expect(service.count, 2);
+
+    // A whole day skipped: broken, and day one again on the next open.
+    UsageStreakService.clock = () => DateTime(2026, 9, 4, 8);
+    expect(service.count, 0);
+    expect(service.label, 'اليوم الأول');
+    await service.recordToday();
+    expect(service.count, 1);
+  });
+
+  test('a streak change stays unsynced until a sync carried it', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await AppPrefs.instance;
+    await prefs.clear();
+    TransactionStore.instance.resetCache();
+    final service = UsageStreakService.instance..resetCache();
+    UsageStreakService.clock = () => DateTime(2026, 9, 1, 9);
+
+    await service.recordToday();
+    expect(service.hasUnsyncedChange, isTrue);
+
+    // A sync started, then the streak changed before it finished.
+    final sent = service.revision;
+    UsageStreakService.clock = () => DateTime(2026, 9, 2, 9);
+    await service.recordToday();
+    expect(await service.markSynced(sent), isTrue);
+    expect(prefs.getBool(UsageStreakService.unsyncedKey), isTrue);
+
+    expect(await service.markSynced(service.revision), isFalse);
+    expect(prefs.getBool(UsageStreakService.unsyncedKey), isFalse);
+
+    // The flag survives a restart.
+    service.resetCache();
+    await service.ensureLoaded();
+    expect(service.hasUnsyncedChange, isFalse);
   });
 
   test('the next streak milestone is the next round number', () {

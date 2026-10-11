@@ -21,6 +21,7 @@ import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/insights/smart/category_suggester.dart';
 import 'package:waffr/data/services/smart_settings.dart';
 import 'package:waffr/widgets/smart/smart_glow.dart';
+import 'package:waffr/widgets/smart/smart_mark.dart';
 
 // Glass bottom sheet for one-off or recurring expenses, plus category picks.
 
@@ -942,7 +943,7 @@ class _SmartCategoryHint extends StatelessWidget {
       child = Row(
         key: ValueKey('applied-$label'),
         children: [
-          Icon(Icons.auto_awesome, size: 15, color: colors[2]),
+          const SmartMark(size: 16),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
@@ -962,7 +963,7 @@ class _SmartCategoryHint extends StatelessWidget {
         key: ValueKey('offer-$label'),
         alignment: AlignmentDirectional.centerStart,
         child: ActionChip(
-          avatar: Icon(Icons.auto_awesome, size: 16, color: colors[2]),
+          avatar: const SmartMark(size: 17),
           label: Text(
             'اقتراح: $label',
             style: const TextStyle(

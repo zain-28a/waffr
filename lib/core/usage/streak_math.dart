@@ -40,6 +40,19 @@ class StreakSnapshot {
 }
 
 class StreakMath {
+  /// The streak as it stands at [now]. A last day before yesterday means a
+  /// whole calendar day was skipped, so the streak is broken (0) even before
+  /// the app records today.
+  static int currentCount(StreakSnapshot state, DateTime now) {
+    final last = state.lastDay;
+    if (last == null || state.count < 1) return 0;
+    final yesterday = StreakSnapshot.dateOnly(now).subtract(
+      const Duration(days: 1),
+    );
+    if (StreakSnapshot.dateOnly(last).isBefore(yesterday)) return 0;
+    return state.count;
+  }
+
   static StreakSnapshot record(StreakSnapshot current, DateTime now) {
     final today = StreakSnapshot.dateOnly(now);
     final started = _earlier(current.startedAt, today) ?? today;

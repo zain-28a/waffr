@@ -113,12 +113,14 @@ class GlassContainer extends StatelessWidget {
 
 /// Fill for a glass surface: [base] with a soft light sheen from the top
 /// corner. It sits under the content, so text and charts keep their color.
+/// [sheen] overrides the default white strength for see-through surfaces.
 LinearGradient liquidGlassFill(
   Color base, {
   required bool isDark,
   bool strong = false,
+  double? sheen,
 }) {
-  final sheen = strong ? 0.2 : (isDark ? 0.045 : 0.6);
+  sheen ??= strong ? 0.2 : (isDark ? 0.045 : 0.6);
   return LinearGradient(
     begin: Alignment.topLeft,
     end: const Alignment(0.2, 0.4),

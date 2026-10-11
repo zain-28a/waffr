@@ -48,6 +48,17 @@ struct WaffrData {
     data.obligationWhen = text("obligation_when") ?? ""
     data.streakCount = text("streak_count") ?? "1"
     data.streakLabel = text("streak_label") ?? data.streakLabel
+    // Past the last day the streak survives, a whole day was skipped.
+    if let aliveUntil = text("streak_alive_until"), !aliveUntil.isEmpty {
+      let formatter = DateFormatter()
+      formatter.calendar = Calendar(identifier: .gregorian)
+      formatter.locale = Locale(identifier: "en_US_POSIX")
+      formatter.dateFormat = "yyyy-MM-dd"
+      if formatter.string(from: Date()) > aliveUntil {
+        data.streakCount = "0"
+        data.streakLabel = text("streak_reset_label") ?? data.streakLabel
+      }
+    }
     return data
   }
 }
@@ -57,8 +68,8 @@ struct WaffrEntry: TimelineEntry {
   let data: WaffrData
 }
 
-// The app reloads the timelines whenever its data changes, so a single
-// entry with no refresh policy is enough.
+// The app reloads the timelines whenever its data changes. A refresh after
+// midnight lets the streak widget notice a skipped day on its own.
 struct WaffrProvider: TimelineProvider {
   func placeholder(in context: Context) -> WaffrEntry {
     WaffrEntry(date: Date(), data: WaffrData())
@@ -69,7 +80,13 @@ struct WaffrProvider: TimelineProvider {
   }
 
   func getTimeline(in context: Context, completion: @escaping (Timeline<WaffrEntry>) -> Void) {
-    completion(Timeline(entries: [WaffrEntry(date: Date(), data: WaffrData.load())], policy: .never))
+    let midnight = Calendar.current.startOfDay(
+      for: Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+    )
+    completion(Timeline(
+      entries: [WaffrEntry(date: Date(), data: WaffrData.load())],
+      policy: .after(midnight.addingTimeInterval(60))
+    ))
   }
 }
 

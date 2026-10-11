@@ -149,7 +149,10 @@ class _HeaderChrome extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [
             surface,
-            Color.alphaBlend(accent.withValues(alpha: 0.05), surface),
+            Color.alphaBlend(
+              accent.withValues(alpha: isDark ? 0.03 : 0.05),
+              surface,
+            ),
           ],
         ),
         boxShadow: [

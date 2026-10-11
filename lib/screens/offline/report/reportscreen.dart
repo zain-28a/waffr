@@ -138,11 +138,6 @@ class _ReportScreenState extends State<ReportScreen>
                 },
               ),
               const SizedBox(height: 10),
-              const SmartAnalysisButton(
-                scope: InsightScope.reports,
-                banner: true,
-              ),
-              const SizedBox(height: 6),
               SizedBox(
                 height: chartHeight,
                 child: PageView.builder(
@@ -175,12 +170,12 @@ class _ReportScreenState extends State<ReportScreen>
                 onHistory: _openExpenseHistory,
               ),
               const SizedBox(height: 6),
-              _ExpenseDistribution(report: report),
-              const SizedBox(height: 6),
               _ImprovementCard(
                 currentTotal: report.total,
                 previousTotal: previousTotal,
               ),
+              const SizedBox(height: 6),
+              _ExpenseDistribution(report: report),
             ]),
           ),
         );
@@ -1006,32 +1001,9 @@ class _ImprovementCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-          GlassButton(
-            onTap: () => showAppInfoDialog(
-              context,
-              title: 'التحليل الذكي',
-              message:
-                  'نعمل على ميزة تحلّل مصروفاتك وتقترح عليك طرقاً للتوفير. ستتوفر في تحديث قادم.',
-            ),
-            colorType: GlassColorType.background,
-            borderRadius: 20,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.auto_graph_rounded, size: 17, color: colors.accent),
-                const SizedBox(width: 6),
-                Text(
-                  'التحليل الذكي',
-                  style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
+          const SmartAnalysisButton(
+            scope: InsightScope.reports,
+            style: SmartButtonStyle.tile,
           ),
         ],
       ),
