@@ -25,6 +25,10 @@ class AppMotion {
   static bool reduced(BuildContext context) =>
       MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
+  /// Repeating effects should only run on the visible, motion-enabled page.
+  static bool enabled(BuildContext context) =>
+      !reduced(context) && TickerMode.valuesOf(context).enabled;
+
   // [duration], or zero when the device asks for reduced motion.
   static Duration of(BuildContext context, Duration duration) =>
       reduced(context) ? Duration.zero : duration;

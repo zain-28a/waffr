@@ -2,13 +2,18 @@ import re
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from input_rules import CleanModel
+
 # "+<calling code> <number>" as sent by the app.
 PHONE_PATTERN = re.compile(r"\+[0-9]{1,4} [0-9]{4,15}")
 
+# Long enough for any passphrase, short enough that hashing stays cheap.
+PASSWORD_MAX = 256
 
-class RegisterRequest(BaseModel):
+
+class RegisterRequest(CleanModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8, max_length=PASSWORD_MAX)
     name: str | None = Field(default=None, max_length=100)
     gender: str | None = Field(default=None, max_length=20)
     birthdate: str | None = Field(default=None, max_length=40)
@@ -55,9 +60,10 @@ class RegisterRequest(BaseModel):
         return value
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(CleanModel):
     email: EmailStr
-    password: str
+    # No minimum: accounts made before the 8-character rule still sign in.
+    password: str = Field(max_length=PASSWORD_MAX)
 
 
 class AuthResponse(BaseModel):
@@ -65,24 +71,24 @@ class AuthResponse(BaseModel):
     token_type: str
 
 
-class ForgotPasswordRequest(BaseModel):
+class ForgotPasswordRequest(CleanModel):
     email: EmailStr
 
 
-class ResetPasswordRequest(BaseModel):
+class ResetPasswordRequest(CleanModel):
     email: EmailStr
     code: str = Field(min_length=6, max_length=6, pattern="^[0-9]{6}$")
-    new_password: str = Field(min_length=8, max_length=256)
+    new_password: str = Field(min_length=8, max_length=PASSWORD_MAX)
 
 
-class DataKeyIn(BaseModel):
+class DataKeyIn(CleanModel):
     salt: str = Field(min_length=16, max_length=64)
     iterations: int = Field(ge=100_000, le=10_000_000)
     wrapped_key: str = Field(min_length=40, max_length=512)
 
 
-class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str = Field(min_length=8, max_length=256)
+class ChangePasswordRequest(CleanModel):
+    current_password: str = Field(max_length=PASSWORD_MAX)
+    new_password: str = Field(min_length=8, max_length=PASSWORD_MAX)
     # The same data key, re-wrapped with the new password.
     data_key: DataKeyIn | None = None

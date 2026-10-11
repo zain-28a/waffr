@@ -255,6 +255,7 @@ class AuthSession {
     }
     final status = await _postJson('/auth/password/forgot', {'email': address});
     if (status == 200) return const AuthResult.success();
+    if (status == 429) return const AuthResult.failure(tooManyAttemptsMessage);
     if (status == 503) {
       return const AuthResult.failure(
         'تعذّر إرسال البريد الآن. حاول لاحقاً',
@@ -285,6 +286,7 @@ class AuthSession {
       await clearSession();
       return const AuthResult.success();
     }
+    if (status == 429) return const AuthResult.failure(tooManyAttemptsMessage);
     if (status == null) {
       return const AuthResult.failure(
         'لا يوجد اتصال. تحقق من الشبكة وحاول مرة أخرى',
@@ -338,6 +340,9 @@ class AuthSession {
           .timeout(ApiConfig.timeoutFor(base, local: _timeout));
       if (response.statusCode == 400) {
         return const AuthResult.failure('كلمة المرور الحالية غير صحيحة');
+      }
+      if (response.statusCode == 429) {
+        return const AuthResult.failure(tooManyAttemptsMessage);
       }
       if (response.statusCode != 200) {
         return const AuthResult.failure(

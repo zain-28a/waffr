@@ -55,7 +55,9 @@ sheets. Shared sheet pieces (glass body, amount field, save button) live in
 | Sign-in and cloud sync | `lib/core/sync/` (`auth_session.dart`, `sync_service.dart`). Login UI: `lib/screens/offline/login/`. |
 | App lock | `lib/core/security/app_lock.dart` and `lib/screens/offline/applock/applockscreen.dart`. |
 | Encryption of synced private text | `lib/core/security/data_key.dart` (data key, wrapped with the password) and `lib/core/sync/sync_crypto.dart` (which fields are sealed). Amounts, dates and the profile stay readable on the server. A forgotten password cannot recover the sealed text. |
+| API security (row level security, rate limits, headers, lockout, security logs) | [SECURITY.md](SECURITY.md). Code: `backend/row_security.py`, `backend/rate_limit.py`, `backend/security_middleware.py`, `backend/security_log.py`. Tests: `backend/tests/`. |
 | Profile icon (no photos: crossed out for guests, plain when signed in) | `lib/widgets/brand/profile_avatar.dart`. |
+| Profile wallet backdrop (its smile follows the health score) | `lib/screens/offline/profile/wallet_backdrop.dart`. The wallet is `assets/brand/waffr_logo_backdrop.png` (the logo's green strokes without the mouth, blurred, top faded); the mouth is a vector path with one pose per `HealthBand`. |
 | Local account data (guest, display name, wipe on delete/switch) | `lib/data/services/backup_service.dart`. |
 | On-device preferences | `lib/core/prefs/app_prefs.dart`. Call `AppPrefs.instance` instead of `SharedPreferences.getInstance()`. |
 

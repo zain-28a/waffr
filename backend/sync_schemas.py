@@ -1,31 +1,39 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Annotated
 
 from pydantic import BaseModel, Field, field_serializer, field_validator
 
 from api_schemas import money_str, parse_decimal
+from input_rules import INT_MAX, MONEY_MAX, CleanModel
 
 # Private text arrives encrypted, which is longer than what the user typed.
 PRIVATE_TEXT_MAX = 4000
+# Notes and other free text the app does not cap; this only stops abuse.
+FREE_TEXT_MAX = 20_000
+# One request carries at most this many rows per collection. A first sync
+# sends the whole ledger, so this is far above any real account.
+SYNC_ROWS_MAX = 50_000
+ID_MAX = 64
 
 
-class TombstoneIn(BaseModel):
-    client_id: str = Field(min_length=1, max_length=64)
+class TombstoneIn(CleanModel):
+    client_id: str = Field(min_length=1, max_length=ID_MAX)
     deleted_at: datetime | None = None
 
 
-class TransactionSyncIn(BaseModel):
-    client_id: str = Field(min_length=1, max_length=64)
+class TransactionSyncIn(CleanModel):
+    client_id: str = Field(min_length=1, max_length=ID_MAX)
     type: str = Field(pattern="^(income|expense)$")
-    amount: Decimal = Field(gt=0)
-    category: str | None = None
-    payment_method: str | None = None
-    note: str | None = None
-    source_id: str | None = None
+    amount: Decimal = Field(gt=0, le=MONEY_MAX)
+    category: str | None = Field(default=None, max_length=FREE_TEXT_MAX)
+    payment_method: str | None = Field(default=None, max_length=FREE_TEXT_MAX)
+    note: str | None = Field(default=None, max_length=FREE_TEXT_MAX)
+    source_id: str | None = Field(default=None, max_length=255)
     occurred_at: datetime | None = None
     frequency: str = Field(default="none", pattern="^(none|weekly|monthly)$")
-    period_key: str | None = None
-    currency_code: str | None = None
+    period_key: str | None = Field(default=None, max_length=50)
+    currency_code: str | None = Field(default=None, max_length=16)
     updated_at: datetime | None = None
 
     @field_validator("amount", mode="before")
@@ -37,21 +45,24 @@ class TransactionSyncIn(BaseModel):
         return parsed
 
 
-class GoalSyncIn(BaseModel):
-    client_id: str = Field(min_length=1, max_length=64)
+class GoalSyncIn(CleanModel):
+    client_id: str = Field(min_length=1, max_length=ID_MAX)
     name: str = Field(min_length=1, max_length=PRIVATE_TEXT_MAX)
-    target_amount: Decimal = Field(gt=0)
-    duration: str = Field(default="month")
+    target_amount: Decimal = Field(gt=0, le=MONEY_MAX)
+    duration: str = Field(
+        default="month",
+        pattern="^(week|month|threeMonths|sixMonths|year)$",
+    )
     deadline: datetime | None = None
-    allocate_percent: Decimal | None = None
-    allocate_amount: Decimal | None = None
-    deduct_frequency: str = Field(default="monthly")
+    allocate_percent: Decimal | None = Field(default=None, ge=-MONEY_MAX, le=MONEY_MAX)
+    allocate_amount: Decimal | None = Field(default=None, ge=-MONEY_MAX, le=MONEY_MAX)
+    deduct_frequency: str = Field(default="monthly", pattern="^(none|weekly|monthly)$")
     is_periodic: bool = False
-    duration_count: int | None = None
-    priority: int = 0
+    duration_count: int | None = Field(default=None, ge=-INT_MAX, le=INT_MAX)
+    priority: int = Field(default=0, ge=-INT_MAX, le=INT_MAX)
     completed_at: datetime | None = None
-    completed_amount: Decimal | None = None
-    currency_code: str | None = None
+    completed_amount: Decimal | None = Field(default=None, ge=-MONEY_MAX, le=MONEY_MAX)
+    currency_code: str | None = Field(default=None, max_length=16)
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -67,19 +78,22 @@ class GoalSyncIn(BaseModel):
         return parse_decimal(value)
 
 
-class TransferSyncIn(BaseModel):
-    client_id: str = Field(min_length=1, max_length=64)
-    goal_client_id: str | None = None
-    amount: Decimal = Field(gt=0)
+class TransferSyncIn(CleanModel):
+    client_id: str = Field(min_length=1, max_length=ID_MAX)
+    goal_client_id: str | None = Field(default=None, max_length=ID_MAX)
+    amount: Decimal = Field(gt=0, le=MONEY_MAX)
     direction: str | None = Field(
         default=None,
         pattern="^(to_savings|to_balance)$",
     )
-    kind: str | None = None
-    note: str | None = None
+    kind: str | None = Field(
+        default=None,
+        pattern="^(periodLeftover|goalPeriodic|manual|withdraw)$",
+    )
+    note: str | None = Field(default=None, max_length=FREE_TEXT_MAX)
     occurred_at: datetime | None = None
-    processed_period_key: str | None = None
-    currency_code: str | None = None
+    processed_period_key: str | None = Field(default=None, max_length=50)
+    currency_code: str | None = Field(default=None, max_length=16)
     updated_at: datetime | None = None
 
     @field_validator("amount", mode="before")
@@ -91,21 +105,21 @@ class TransferSyncIn(BaseModel):
         return parsed
 
 
-class ShoppingListSyncIn(BaseModel):
-    client_id: str = Field(min_length=1, max_length=64)
+class ShoppingListSyncIn(CleanModel):
+    client_id: str = Field(min_length=1, max_length=ID_MAX)
     name: str = Field(min_length=1, max_length=100)
     updated_at: datetime | None = None
 
 
-class ShoppingItemSyncIn(BaseModel):
-    client_id: str = Field(min_length=1, max_length=64)
-    list_client_id: str = Field(default="shopping_default", max_length=64)
+class ShoppingItemSyncIn(CleanModel):
+    client_id: str = Field(min_length=1, max_length=ID_MAX)
+    list_client_id: str = Field(default="shopping_default", max_length=ID_MAX)
     name: str = Field(min_length=1, max_length=PRIVATE_TEXT_MAX)
-    quantity: int = 1
-    price: Decimal | None = None
+    quantity: int = Field(default=1, ge=-INT_MAX, le=INT_MAX)
+    price: Decimal | None = Field(default=None, ge=0, le=MONEY_MAX)
     is_purchased: bool = False
     purchased_at: datetime | None = None
-    expense_client_id: str | None = None
+    expense_client_id: str | None = Field(default=None, max_length=ID_MAX)
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -115,20 +129,20 @@ class ShoppingItemSyncIn(BaseModel):
         return parse_decimal(value)
 
 
-class RecurringSyncIn(BaseModel):
-    client_id: str = Field(min_length=1, max_length=64)
-    amount: Decimal = Field(gt=0)
-    category: str
-    payment_method: str = ""
-    note: str | None = None
-    unit: str = "month"
-    interval_count: int = 1
+class RecurringSyncIn(CleanModel):
+    client_id: str = Field(min_length=1, max_length=ID_MAX)
+    amount: Decimal = Field(gt=0, le=MONEY_MAX)
+    category: str = Field(max_length=FREE_TEXT_MAX)
+    payment_method: str = Field(default="", max_length=FREE_TEXT_MAX)
+    note: str | None = Field(default=None, max_length=FREE_TEXT_MAX)
+    unit: str = Field(default="month", max_length=10)
+    interval_count: int = Field(default=1, ge=-INT_MAX, le=INT_MAX)
     next_due_at: datetime | None = None
     enabled: bool = True
     requires_confirmation: bool = False
     remind_at: datetime | None = None
     remind_on_income: bool = False
-    currency_code: str | None = None
+    currency_code: str | None = Field(default=None, max_length=16)
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -141,32 +155,32 @@ class RecurringSyncIn(BaseModel):
         return parsed
 
 
-class NotificationSyncIn(BaseModel):
-    client_id: str = Field(min_length=1, max_length=64)
-    type: str
-    title: str
-    message: str
-    event_key: str
-    related_id: str | None = None
-    metadata: dict[str, str] = Field(default_factory=dict)
+class NotificationSyncIn(CleanModel):
+    client_id: str = Field(min_length=1, max_length=ID_MAX)
+    type: str = Field(max_length=50)
+    title: str = Field(max_length=FREE_TEXT_MAX)
+    message: str = Field(max_length=FREE_TEXT_MAX)
+    event_key: str = Field(max_length=255)
+    related_id: str | None = Field(default=None, max_length=ID_MAX)
+    metadata: dict[str, str] = Field(default_factory=dict, max_length=50)
     is_read: bool = False
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
 
-class CategorySyncIn(BaseModel):
-    client_id: str = Field(min_length=1, max_length=64)
+class CategorySyncIn(CleanModel):
+    client_id: str = Field(min_length=1, max_length=ID_MAX)
     label: str = Field(min_length=1, max_length=PRIVATE_TEXT_MAX)
-    icon_index: int = 0
+    icon_index: int = Field(default=0, ge=-INT_MAX, le=INT_MAX)
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
 
-class PresetSyncIn(BaseModel):
-    client_id: str = Field(min_length=1, max_length=64)
-    amount: Decimal = Field(gt=0)
+class PresetSyncIn(CleanModel):
+    client_id: str = Field(min_length=1, max_length=ID_MAX)
+    amount: Decimal = Field(gt=0, le=MONEY_MAX)
     multiplier: int = Field(default=1, ge=1, le=10)
-    currency_code: str | None = None
+    currency_code: str | None = Field(default=None, max_length=16)
     category: str = Field(min_length=1, max_length=PRIVATE_TEXT_MAX)
     payment_method: str = Field(default="", max_length=PRIVATE_TEXT_MAX)
     note: str | None = Field(default=None, max_length=PRIVATE_TEXT_MAX)
@@ -185,7 +199,7 @@ class PresetSyncIn(BaseModel):
         return parsed
 
 
-class SettingsSyncIn(BaseModel):
+class SettingsSyncIn(CleanModel):
     notifications_muted: bool | None = None
     notifications_enabled: bool | None = None
     notify_low_balance: bool | None = None
@@ -193,12 +207,15 @@ class SettingsSyncIn(BaseModel):
     notify_goal_reached: bool | None = None
     notify_recurring_expense: bool | None = None
     ai_data_enabled: bool | None = None
-    monthly_income_amount: Decimal | None = None
-    weekly_income_amount: Decimal | None = None
-    income_overrides_by_currency: dict | None = None
-    enabled_currencies: list[str] | None = None
-    active_currency: str | None = None
-    processed_period_keys: list[str] | None = None
+    monthly_income_amount: Decimal | None = Field(default=None, ge=-MONEY_MAX, le=MONEY_MAX)
+    weekly_income_amount: Decimal | None = Field(default=None, ge=-MONEY_MAX, le=MONEY_MAX)
+    income_overrides_by_currency: dict | None = Field(default=None, max_length=100)
+    enabled_currencies: list[str] | None = Field(default=None, max_length=100)
+    active_currency: str | None = Field(default=None, max_length=16)
+    processed_period_keys: list[Annotated[str, Field(max_length=100)]] | None = Field(
+        default=None,
+        max_length=20_000,
+    )
     display_name: str | None = Field(default=None, max_length=100)
     gender: str | None = Field(default=None, max_length=20)
     birthdate: str | None = Field(default=None, max_length=40)
@@ -208,9 +225,9 @@ class SettingsSyncIn(BaseModel):
     phone: str | None = Field(default=None, max_length=32)
     dark_mode: bool | None = None
     usage_started_at: str | None = Field(default=None, max_length=40)
-    streak_count: int | None = None
+    streak_count: int | None = Field(default=None, ge=-INT_MAX, le=INT_MAX)
     streak_last_date: str | None = Field(default=None, max_length=10)
-    hidden_categories: list[str] | None = None
+    hidden_categories: list[str] | None = Field(default=None, max_length=500)
     updated_at: datetime | None = None
 
     @field_validator("monthly_income_amount", "weekly_income_amount", mode="before")
@@ -219,9 +236,10 @@ class SettingsSyncIn(BaseModel):
         return parse_decimal(value)
 
 
+# Rows are cleaned when each one is parsed into its *SyncIn model.
 class SyncCollectionIn(BaseModel):
-    upserts: list[dict] = Field(default_factory=list)
-    deletes: list[TombstoneIn] = Field(default_factory=list)
+    upserts: list[dict] = Field(default_factory=list, max_length=SYNC_ROWS_MAX)
+    deletes: list[TombstoneIn] = Field(default_factory=list, max_length=SYNC_ROWS_MAX)
 
 
 class SyncRequest(BaseModel):

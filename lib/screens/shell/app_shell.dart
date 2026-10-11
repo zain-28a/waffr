@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
@@ -32,7 +31,7 @@ import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/brand/streak_celebration.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
-import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/containers/floating_glass.dart';
 import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/data/services/smart_settings.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
@@ -101,8 +100,20 @@ class _AppShellState extends State<AppShell>
       3 => const OnlineScreen(),
       _ => ProfileScreen(tabIndex: _tabIndex),
     };
-    _builtTabs[index] = page;
-    return page;
+    // Keep tab state, but mute its tickers and store-driven builders when
+    // another tab is selected. The child stays cached across switches.
+    final tab = ValueListenableBuilder<int>(
+      valueListenable: _tabIndex,
+      child: page,
+      builder: (context, selected, child) => TickerMode(
+        enabled: selected == index,
+        // Retained pages must not expose duplicate controls to screen readers
+        // while the next tab's period selector is on screen.
+        child: ExcludeSemantics(excluding: selected != index, child: child!),
+      ),
+    );
+    _builtTabs[index] = tab;
+    return tab;
   }
 
   @override
@@ -535,6 +546,13 @@ class _BottomNavBar extends StatelessWidget {
     Icons.public_rounded,
     Icons.person_rounded,
   ];
+  static const List<String> _labels = [
+    'الرئيسية',
+    'التقارير',
+    'التوفير',
+    'الإنترنت',
+    'الملف الشخصي',
+  ];
 
   static const double _height = 64;
   static const BorderRadius _radius = BorderRadius.all(Radius.circular(32));
@@ -542,76 +560,47 @@ class _BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
     final textPrimary =
         isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
     final rtl = Directionality.of(context) == TextDirection.rtl;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: _radius,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
-            blurRadius: 26,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: _radius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: CustomPaint(
-            foregroundPainter: LiquidGlassPainter(
-              radius: _radius,
-              isDark: isDark,
-            ),
-            child: Container(
-              height: _height,
-              decoration: BoxDecoration(
-                gradient: liquidGlassFill(
-                  surface.withValues(alpha: isDark ? 0.34 : 0.3),
-                  isDark: isDark,
-                  sheen: isDark ? null : 0.2,
-                ),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final slot = constraints.maxWidth / tabCount;
-                  return AnimatedBuilder(
-                    animation: Listenable.merge([pageController, tabIndex]),
-                    builder: (context, _) {
-                      final page = pageController.hasClients &&
-                              pageController.position.haveDimensions
-                          ? (pageController.page ?? tabIndex.value.toDouble())
-                          : tabIndex.value.toDouble();
-                      return Stack(
-                        children: [
-                          _indicator(page, slot, rtl, accent),
-                          Row(
-                            children: [
-                              for (var i = 0; i < tabCount; i++)
-                                Expanded(
-                                  child: _tab(i, page, accent, textPrimary),
-                                ),
-                            ],
+    return FloatingGlass(
+      radius: _radius,
+      child: SizedBox(
+        height: _height,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final slot = constraints.maxWidth / tabCount;
+            return AnimatedBuilder(
+              animation: Listenable.merge([pageController, tabIndex]),
+              builder: (context, _) {
+                final page = pageController.hasClients &&
+                        pageController.position.haveDimensions
+                    ? (pageController.page ?? tabIndex.value.toDouble())
+                    : tabIndex.value.toDouble();
+                return Stack(
+                  children: [
+                    _indicator(page, slot, rtl),
+                    Row(
+                      children: [
+                        for (var i = 0; i < tabCount; i++)
+                          Expanded(
+                            child: _tab(i, page, accent, textPrimary),
                           ),
-                        ],
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _indicator(double page, double slot, bool rtl, Color accent) {
+  Widget _indicator(double page, double slot, bool rtl) {
     final frac = page - page.floorToDouble();
     final stretch = math.sin(frac * math.pi);
     final width = slot * 0.66 * (1 + 0.55 * stretch);
@@ -623,20 +612,7 @@ class _BottomNavBar extends StatelessWidget {
       top: (_height - height) / 2,
       width: width,
       height: height,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(height / 2),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              accent.withValues(alpha: 0.24),
-              accent.withValues(alpha: 0.14),
-            ],
-          ),
-          border: Border.all(color: accent.withValues(alpha: 0.18)),
-        ),
-      ),
+      child: FloatingGlassHighlight(radius: height / 2),
     );
   }
 
@@ -645,6 +621,7 @@ class _BottomNavBar extends StatelessWidget {
     final t = (1 - (page - index).abs()).clamp(0.0, 1.0);
     return Semantics(
       button: true,
+      label: _labels[index],
       selected: index == tabIndex.value,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
