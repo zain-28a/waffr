@@ -22,6 +22,22 @@ extension InsightScopeLabel on InsightScope {
 
 enum InsightTone { warning, positive, tip, info }
 
+// The four bands of the 0-100 health score. The analysis names them and the
+// wallet behind the profile smiles by them.
+enum HealthBand {
+  excellent,
+  good,
+  fair,
+  low;
+
+  static HealthBand of(int score) {
+    if (score >= 80) return excellent;
+    if (score >= 65) return good;
+    if (score >= 45) return fair;
+    return low;
+  }
+}
+
 // Something the user can do straight from an insight card.
 enum InsightAction {
   addExpense,

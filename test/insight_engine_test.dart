@@ -225,4 +225,15 @@ void main() {
     expect(texts.length, greaterThan(5));
     expect(findings.length, 1);
   });
+
+  test('health bands follow the score labels', () {
+    expect(HealthBand.of(100), HealthBand.excellent);
+    expect(HealthBand.of(80), HealthBand.excellent);
+    expect(HealthBand.of(79), HealthBand.good);
+    expect(HealthBand.of(65), HealthBand.good);
+    expect(HealthBand.of(64), HealthBand.fair);
+    expect(HealthBand.of(45), HealthBand.fair);
+    expect(HealthBand.of(44), HealthBand.low);
+    expect(HealthBand.of(0), HealthBand.low);
+  });
 }
