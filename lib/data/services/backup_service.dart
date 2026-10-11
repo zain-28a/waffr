@@ -7,7 +7,6 @@ import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/services/notification_service.dart';
 import 'package:waffr/data/services/profile_identity.dart';
-import 'package:waffr/data/services/profile_photo.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/shopping_list_store.dart';
@@ -38,9 +37,6 @@ class BackupService {
     AuthSession.dataOwnerKey,
     AuthSession.legacyPasswordKey,
     ApiConfig.overrideKey,
-    ProfilePhoto.prefsKey,
-    ProfilePhoto.updatedAtKey,
-    ProfilePhoto.pendingKey,
   };
 
   final List<VoidCallback> _resetListeners = <VoidCallback>[];
@@ -63,7 +59,6 @@ class BackupService {
     final hasDarkMode = prefs.containsKey('dark_mode');
     final darkMode = prefs.getBool('dark_mode');
 
-    await ProfilePhoto.clear();
     await _clearUserData();
 
     if (firstLaunch != null) {
@@ -89,7 +84,6 @@ class BackupService {
 
     await AuthSession.instance.clearSession();
     await AuthSession.instance.clearDataOwner();
-    await ProfilePhoto.clear();
     await _clearUserData();
     _notifyReset();
   }

@@ -162,10 +162,9 @@ class _ProfileHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ProfileAvatar(
-            photoPath: identity.photoPath,
             accent: palette.accent,
             radius: 46,
-            placeholder: !identity.isLoggedIn && identity.photoPath == null,
+            signedIn: identity.isLoggedIn,
           ),
           const SizedBox(width: 18),
           Expanded(
