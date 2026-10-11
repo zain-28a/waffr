@@ -6,7 +6,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
-import 'package:waffr/widgets/smart/smart_mark.dart';
 
 // The four glow hues: the app accent plus cooler companions.
 List<Color> smartGlowColors(BuildContext context) {
@@ -130,7 +129,7 @@ class _GlowPainter extends CustomPainter {
       old.colors != colors;
 }
 
-// The smart mark inside a rotating color ring while it is "thinking".
+// A sparkle inside a rotating color ring, the "thinking" mark.
 class SmartSpark extends StatefulWidget {
   final double size;
   final bool spinning;
@@ -189,14 +188,18 @@ class _SmartSparkState extends State<SmartSpark>
               colors: colors,
               visible: widget.spinning,
             ),
-            child: Center(
-              child: SmartMark(
-                size: widget.size * (widget.spinning ? 0.62 : 0.86),
-                phase: _spin.value,
-              ),
-            ),
+            child: child,
           );
         },
+        child: Center(
+          child: ShaderMask(
+            blendMode: BlendMode.srcIn,
+            shaderCallback: (bounds) => LinearGradient(
+              colors: [colors[0], colors[2], colors[3]],
+            ).createShader(bounds),
+            child: Icon(Icons.auto_awesome, size: widget.size * 0.62),
+          ),
+        ),
       ),
     );
   }

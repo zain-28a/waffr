@@ -25,7 +25,6 @@ import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/smart/smart_glow.dart';
-import 'package:waffr/widgets/smart/smart_mark.dart';
 
 String smartSparkHeroTag(InsightScope scope) => 'smart-spark-${scope.name}';
 
@@ -948,7 +947,7 @@ class _RegenerateButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SmartMark(size: 20),
+              Icon(Icons.auto_awesome, size: 18, color: colors[2]),
               const SizedBox(width: 8),
               Text(
                 'تحليل جديد',

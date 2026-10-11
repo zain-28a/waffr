@@ -8,7 +8,6 @@ import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/widgets/containers/glass.dart';
-import 'package:waffr/widgets/smart/smart_mark.dart';
 
 class AIPermissionsScreen extends StatefulWidget {
   const AIPermissionsScreen({super.key});
@@ -46,7 +45,6 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
             children: [
               AppListTile(
                 icon: Icons.auto_awesome,
-                leading: const SmartMark(size: 26),
                 title: 'افتح التحليل الشامل',
                 subtitle: 'ملاحظات واقتراحات عن مصاريفك وتوفيرك وعاداتك',
                 onTap: () => openSmartAnalysis(context, InsightScope.profile),
