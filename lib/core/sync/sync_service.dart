@@ -105,7 +105,12 @@ class SyncService with WidgetsBindingObserver {
 
       await ProfilePhotoSync.flush();
 
-      final dirty = await SyncDirty.isDirty();
+      // A streak change that no successful sync carried yet (marked while
+      // another sync was in flight, or before the app was closed) still
+      // has to reach the server.
+      final streak = UsageStreakService.instance;
+      await streak.ensureLoaded();
+      final dirty = await SyncDirty.isDirty() || streak.hasUnsyncedChange;
       final lastSync = await AuthSession.instance.lastSyncAt();
       if (shouldSkipCleanPull(
         force: force,
@@ -139,6 +144,7 @@ class SyncService with WidgetsBindingObserver {
 
       final prefs = await AppPrefs.instance;
       final currencySynced = prefs.getBool(_currencySyncedKey) ?? false;
+      final streakRevision = streak.revision;
       final payload = await _buildRequest(
         lastSync: lastSync,
         sendAll: dirty || lastSync == null || force || !currencySynced,
@@ -231,7 +237,8 @@ class SyncService with WidgetsBindingObserver {
       if (!currencySynced) {
         await prefs.setBool(_currencySyncedKey, true);
       }
-      if (UsageStreakService.instance.consumePushRequest()) {
+      // A streak recorded during this round trip goes out next time.
+      if (await streak.markSynced(streakRevision)) {
         await SyncDirty.mark(settings: true);
       }
       // Rows saved before encryption came back readable; push everything

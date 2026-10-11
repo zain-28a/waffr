@@ -25,6 +25,7 @@ import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/smart/smart_glow.dart';
+import 'package:waffr/widgets/smart/smart_mark.dart';
 
 String smartSparkHeroTag(InsightScope scope) => 'smart-spark-${scope.name}';
 
@@ -232,10 +233,10 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
             child: SmartGlowBackground(intensity: generating ? 1 : 0.4),
           ),
           SafeArea(
+            top: false,
             child: Column(
               children: [
                 WaffrBackHeader(
-                  applySafeArea: false,
                   title: 'التحليل الذكي',
                 ),
                 Padding(
@@ -947,7 +948,7 @@ class _RegenerateButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.auto_awesome, size: 18, color: colors[2]),
+              const SmartMark(size: 20),
               const SizedBox(width: 8),
               Text(
                 'تحليل جديد',

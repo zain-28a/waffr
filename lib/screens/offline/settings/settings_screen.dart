@@ -32,6 +32,7 @@ import 'package:waffr/widgets/brand/profile_avatar.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/dialogs/edit_amount_dialog.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/widgets/smart/smart_mark.dart';
 
 // Hub for account, appearance, security shortcuts, and destructive data reset.
 class SettingsScreen extends StatefulWidget {
@@ -366,10 +367,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
             WaffrBackHeader(
-              applySafeArea: false,
               elevated: _headerElevated,
               title: 'الإعدادات',
             ),
@@ -536,6 +537,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           _SettingsTile(
             icon: Icons.auto_graph_rounded,
+            leading: const SmartMark(size: 26),
 
             title: 'التحليل الذكي',
 
@@ -777,6 +779,7 @@ class _SettingsTile extends StatelessWidget {
   final Color textPrimary;
   final Color textSecondary;
   final Widget? trailing;
+  final Widget? leading;
   final VoidCallback onTap;
 
   const _SettingsTile({
@@ -789,12 +792,14 @@ class _SettingsTile extends StatelessWidget {
     required this.textSecondary,
     required this.onTap,
     this.trailing,
+    this.leading,
   });
 
   @override
   Widget build(BuildContext context) {
     return AppListTile(
       icon: icon,
+      leading: leading,
       title: title,
       subtitle: subtitle,
       trailing: trailing,

@@ -11,6 +11,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:waffr/core/insights/smart/arabic_text.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
 import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/core/usage/streak_math.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
@@ -124,6 +125,7 @@ class HomeWidgetSync {
             ),
       ],
       streak: streak.count,
+      streakLastDay: streak.lastDay,
     );
   }
 }
@@ -140,6 +142,7 @@ Map<String, Object> buildHomeWidgetData({
   required ({String name, double target, double saved})? goal,
   required List<({String name, double amount, DateTime due})> obligations,
   required int streak,
+  DateTime? streakLastDay,
 }) {
   final remaining = (remainingRatio * 100).round().clamp(0, 100);
   final data = <String, Object>{
@@ -191,6 +194,18 @@ Map<String, Object> buildHomeWidgetData({
 
   final count = streak < 1 ? 1 : streak;
   data['streak_count'] = '$count';
+  // The widget is not redrawn by the app on days it stays closed, so it
+  // checks this date itself: past it, a whole day was skipped and the
+  // streak shows as broken.
+  if (streakLastDay != null) {
+    final aliveUntil = DateTime(
+      streakLastDay.year,
+      streakLastDay.month,
+      streakLastDay.day + 1,
+    );
+    data['streak_alive_until'] = StreakSnapshot.dayKey(aliveUntil)!;
+  }
+  data['streak_reset_label'] = 'ابدأ من جديد';
   data['streak_label'] = switch (count) {
     1 => 'اليوم الأول',
     2 => 'يومان متتاليان',

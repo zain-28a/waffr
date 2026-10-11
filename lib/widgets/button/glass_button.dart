@@ -10,6 +10,9 @@ import 'package:waffr/widgets/containers/glass.dart';
 /// and glass surfaces stay consistent and cheap to paint.
 class GlassButton extends StatefulWidget {
   final VoidCallback onTap;
+
+  /// Optional second action on a long press.
+  final VoidCallback? onLongPress;
   final Widget child;
   final double? width;
   final double? height;
@@ -23,6 +26,7 @@ class GlassButton extends StatefulWidget {
     super.key,
     required this.onTap,
     required this.child,
+    this.onLongPress,
     this.width,
     this.height,
     this.padding = const EdgeInsets.all(16),
@@ -54,6 +58,12 @@ class _GlassButtonState extends State<GlassButton> {
     // Sinks quickly on touch and springs back past its size on release.
     return GestureDetector(
       onTap: _onTap,
+      onLongPress: widget.onLongPress == null
+          ? null
+          : () {
+              _setPressed(false);
+              widget.onLongPress!();
+            },
       onTapDown: (_) => _setPressed(true),
       onTapUp: (_) => _setPressed(false),
       onTapCancel: () => _setPressed(false),
