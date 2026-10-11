@@ -1,8 +1,12 @@
 // Seals private text in the /sync request and opens it in the reply.
 // Amounts, dates, ids and the profile stay readable on the server.
+//
+// Both functions are plain async Dart. SyncService calls them through
+// sync_codec.dart, which runs them in a background isolate.
 
 import 'package:waffr/core/security/data_key.dart';
 
+/// Per collection, the row fields that hold private text and are sealed.
 const Map<String, List<String>> privateSyncFields = {
   'transactions': ['category', 'payment_method', 'note'],
   'savings_transfers': ['note'],
@@ -17,6 +21,7 @@ const Map<String, List<String>> privateSyncFields = {
 // Notification metadata can carry goal names and categories.
 const String _metadataField = 'metadata';
 
+/// Seals every private field of every upsert in [request], in place.
 Future<void> sealSyncRequest(
   Map<String, dynamic> request,
   DataCipher cipher,
@@ -39,8 +44,10 @@ Future<void> sealSyncRequest(
   }
 }
 
-// Returns true when the reply held text the server stored unencrypted, so
-// the caller can push it back sealed.
+/// Opens every sealed field of every upsert in [body], in place.
+///
+/// Returns true when the reply held text the server stored unencrypted, so
+/// the caller can push it back sealed.
 Future<bool> openSyncResponse(
   Map<String, dynamic> body,
   DataCipher cipher,
@@ -74,6 +81,7 @@ Future<bool> openSyncResponse(
   return sawPlaintext;
 }
 
+// Every upsert row of the collections that carry private text.
 Iterable<({String collection, Map data})> _rows(
   Map<String, dynamic> payload,
 ) sync* {
