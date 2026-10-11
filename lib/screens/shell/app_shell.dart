@@ -16,7 +16,6 @@ import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_motion.dart';
-import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/screens/offline/home/dashboard.dart';
 import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
@@ -405,7 +404,7 @@ class _AppShellState extends State<AppShell>
                     leadingWidth: 104,
                     leading: Row(
                       children: [
-                        _HeaderButton(
+                        GlassIconButton(
                           icon: Icons.settings_rounded,
                           label: 'الإعدادات',
                           onPressed: _openSettings,
@@ -538,9 +537,9 @@ class _BottomNavBar extends StatelessWidget {
               height: _height,
               decoration: BoxDecoration(
                 gradient: liquidGlassFill(
-                  surface.withValues(alpha: isDark ? 0.46 : 0.42),
+                  surface.withValues(alpha: isDark ? 0.34 : 0.3),
                   isDark: isDark,
-                  sheen: isDark ? null : 0.28,
+                  sheen: isDark ? null : 0.2,
                 ),
               ),
               child: LayoutBuilder(
@@ -637,85 +636,6 @@ class _BottomNavBar extends StatelessWidget {
   }
 }
 
-// Round glass button in the shell header (settings, notifications).
-class _HeaderButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
-  final VoidCallback? onLongPress;
-  final bool dimmed;
-  final bool showDot;
-
-  const _HeaderButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-    this.onLongPress,
-    this.dimmed = false,
-    this.showDot = false,
-  });
-
-  static const double _size = 44;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    final color = dimmed ? palette.textSecondary : palette.accent;
-
-    return Semantics(
-      button: true,
-      label: label,
-      child: GlassButton(
-        onTap: onPressed,
-        onLongPress: onLongPress,
-        width: _size,
-        height: _size,
-        padding: EdgeInsets.zero,
-        borderRadius: 16,
-        colorType: GlassColorType.surface,
-        tintOpacity: 0.9,
-        child: Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.center,
-          children: [
-            AnimatedSwitcher(
-              duration: AppMotion.of(context, AppMotion.fast),
-              transitionBuilder: (child, animation) => ScaleTransition(
-                scale: Tween<double>(begin: 0.7, end: 1).animate(animation),
-                child: FadeTransition(opacity: animation, child: child),
-              ),
-              child: Icon(
-                icon,
-                key: ValueKey(icon),
-                size: 23,
-                color: color,
-              ),
-            ),
-            PositionedDirectional(
-              top: 9,
-              end: 10,
-              child: AnimatedScale(
-                scale: showDot ? 1 : 0,
-                duration: AppMotion.of(context, AppMotion.fast),
-                curve: showDot ? Curves.easeOutBack : Curves.easeIn,
-                child: Container(
-                  width: 9,
-                  height: 9,
-                  decoration: BoxDecoration(
-                    color: AppColors.destructiveOf(context),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: palette.surface, width: 1.6),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // Header bell. Unread dot and muted state come from NotificationService.
 // A long press mutes or unmutes.
 class _NotificationsButton extends StatelessWidget {
@@ -734,7 +654,7 @@ class _NotificationsButton extends StatelessWidget {
       builder: (context, _) {
         final service = NotificationService.instance;
         final muted = service.isMuted;
-        return _HeaderButton(
+        return GlassIconButton(
           icon: muted
               ? Icons.notifications_off_rounded
               : Icons.notifications_rounded,

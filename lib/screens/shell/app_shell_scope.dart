@@ -6,6 +6,10 @@ import 'package:flutter/widgets.dart';
 /// card can scroll clear of the floating navigation bar.
 const double kFloatingNavClearance = 88;
 
+/// Gap between neighboring cards on every tab, across and down, so all
+/// screens share one rhythm.
+const double kCardGap = 10;
+
 class AppShellTabs {
   static const int home = 0;
   static const int report = 1;

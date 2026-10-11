@@ -113,7 +113,11 @@ class _ReportScreenState extends State<ReportScreen>
       builder: (context, _) {
         final expenses = _store.expenses;
         final period = _periodFor(_range, _periodOffset);
-        final previousPeriod = _periodFor(_range, _periodOffset + 1);
+        final previousPeriod = _comparablePeriod(
+          _periodFor(_range, _periodOffset + 1),
+          current: period,
+          now: DateTime.now(),
+        );
         final report = _ReportData.from(expenses, period);
         final previousTotal = _sumExpenses(
           _expensesInPeriod(expenses, previousPeriod),
@@ -137,7 +141,7 @@ class _ReportScreenState extends State<ReportScreen>
                   );
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: kCardGap),
               SizedBox(
                 height: chartHeight,
                 child: PageView.builder(
@@ -164,17 +168,17 @@ class _ReportScreenState extends State<ReportScreen>
                   },
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: kCardGap),
               _SpendingSummary(
                 total: report.total,
                 onHistory: _openExpenseHistory,
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: kCardGap),
               _ImprovementCard(
                 currentTotal: report.total,
                 previousTotal: previousTotal,
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: kCardGap),
               _ExpenseDistribution(report: report),
             ]),
           ),
@@ -944,7 +948,7 @@ class _ImprovementCard extends StatelessWidget {
     final icon = switch (comparison.kind) {
       SpendingChange.positive => Icons.trending_up_rounded,
       SpendingChange.negative => Icons.trending_down_rounded,
-      SpendingChange.neutral => Icons.remove_rounded,
+      SpendingChange.neutral => Icons.trending_flat_rounded,
     };
 
     return GlassContainer(
@@ -967,33 +971,37 @@ class _ImprovementCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(icon, size: 20, color: valueColor),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        comparison.text,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                          fontSize: comparison.hasPercentage ? 22 : 12.5,
-                          fontWeight: FontWeight.bold,
-                          color: valueColor,
+                // Without a previous period there is no number to show, so
+                // the reason is the whole message instead of a bare dash.
+                if (comparison.hasPercentage) ...[
+                  Row(
+                    children: [
+                      Icon(icon, size: 20, color: valueColor),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          comparison.text,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: valueColor,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                ],
                 Text(
                   comparison.detail,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                    fontSize: 12,
+                    fontSize: comparison.hasPercentage ? 12 : 13,
                     color: colors.textSecondary,
                   ),
                 ),
@@ -1982,6 +1990,26 @@ _ReportPeriod _periodFor(_ReportRange range, int offset) {
       end = DateTime(start.year + 1);
   }
   return _ReportPeriod(start: start, end: end, range: range);
+}
+
+// While [current] is still running, only the same elapsed span of
+// [previous] is fair to compare: ten days into this month against the first
+// ten days of last month, not against all of it.
+_ReportPeriod _comparablePeriod(
+  _ReportPeriod previous, {
+  required _ReportPeriod current,
+  required DateTime now,
+}) {
+  if (!now.isBefore(current.end) || now.isBefore(current.start)) {
+    return previous;
+  }
+  final elapsed = now.difference(current.start);
+  final end = previous.start.add(elapsed);
+  return _ReportPeriod(
+    start: previous.start,
+    end: end.isBefore(previous.end) ? end : previous.end,
+    range: previous.range,
+  );
 }
 
 List<WaffrTransaction> _expensesInPeriod(

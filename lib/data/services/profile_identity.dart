@@ -31,10 +31,12 @@ class ProfileIdentity extends ChangeNotifier {
 
   String? get photoPath => _photoPath;
 
+  /// The account name while signed in. The name saved from an account
+  /// stays on the device after signing out, so a guest always reads «ضيف».
   String get displayName {
+    if (!_loggedIn) return 'ضيف';
     final trimmed = _name.trim();
-    if (trimmed.isNotEmpty) return trimmed;
-    return _loggedIn ? 'مستخدم وفّر' : 'ضيف';
+    return trimmed.isNotEmpty ? trimmed : 'مستخدم وفّر';
   }
 
   String? get displayEmail {
