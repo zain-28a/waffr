@@ -1169,12 +1169,12 @@ class InsightEngine {
     return (score: score.clamp(0, 100), lines: lines);
   }
 
-  String _healthLabel(int score) {
-    if (score >= 80) return 'ممتازة';
-    if (score >= 65) return 'جيدة';
-    if (score >= 45) return 'مقبولة';
-    return 'تحتاج إلى اهتمام';
-  }
+  String _healthLabel(int score) => switch (HealthBand.of(score)) {
+        HealthBand.excellent => 'ممتازة',
+        HealthBand.good => 'جيدة',
+        HealthBand.fair => 'مقبولة',
+        HealthBand.low => 'تحتاج إلى اهتمام',
+      };
 
   SmartInsight _healthInsight() {
     final parts = _healthParts();
