@@ -20,6 +20,29 @@ List<Color> smartGlowColors(BuildContext context) {
   ];
 }
 
+// Any icon painted in the smart colors, for smart features that keep their
+// own glyph (alerts, auto category).
+class SmartGradientIcon extends StatelessWidget {
+  final IconData icon;
+  final double size;
+
+  const SmartGradientIcon(this.icon, {super.key, this.size = 22});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = smartGlowColors(context);
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [colors[0], colors[1], colors[2]],
+      ).createShader(bounds),
+      child: Icon(icon, size: size),
+    );
+  }
+}
+
 class SmartGlowBackground extends StatefulWidget {
   // 0 hides the glow, 1 is the full "generating" strength.
   final double intensity;

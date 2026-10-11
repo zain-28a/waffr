@@ -947,7 +947,7 @@ class _RegenerateButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.auto_awesome, size: 18, color: colors[2]),
+              const SmartSpark(size: 24),
               const SizedBox(width: 8),
               Text(
                 'تحليل جديد',
