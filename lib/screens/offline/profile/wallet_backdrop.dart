@@ -67,7 +67,7 @@ class _WalletBackdropState extends State<WalletBackdrop>
     vsync: this,
     duration: const Duration(milliseconds: 700),
   );
-  late final Animation<double> _shown = CurvedAnimation(
+  late final CurvedAnimation _shown = CurvedAnimation(
     parent: _appear,
     curve: AppMotion.enter,
   );
@@ -104,18 +104,20 @@ class _WalletBackdropState extends State<WalletBackdrop>
   bool get _visible => _imageReady && widget.band != null;
 
   void _sync() {
-    if (!mounted || !_visible) return;
+    if (!mounted) return;
     final reduced = AppMotion.reduced(context);
-
-    if (_appear.isDismissed) {
-      if (reduced) {
-        _appear.value = 1;
-      } else {
-        _appear.forward();
-      }
+    if (!_visible) {
+      _breath.stop();
+      return;
     }
 
-    if (widget.active && !reduced) {
+    if (reduced) {
+      _appear.value = 1;
+    } else if (_appear.isDismissed) {
+      _appear.forward();
+    }
+
+    if (widget.active && AppMotion.enabled(context)) {
       if (!_breath.isAnimating) _breath.repeat();
     } else {
       _breath.stop();
@@ -125,6 +127,7 @@ class _WalletBackdropState extends State<WalletBackdrop>
 
   @override
   void dispose() {
+    _shown.dispose();
     _appear.dispose();
     _breath.dispose();
     super.dispose();

@@ -101,8 +101,18 @@ class _AppShellState extends State<AppShell>
       3 => const OnlineScreen(),
       _ => ProfileScreen(tabIndex: _tabIndex),
     };
-    _builtTabs[index] = page;
-    return page;
+    // Keep tab state, but mute its tickers and store-driven builders when
+    // another tab is selected. The child stays cached across switches.
+    final tab = ValueListenableBuilder<int>(
+      valueListenable: _tabIndex,
+      child: page,
+      builder: (context, selected, child) => TickerMode(
+        enabled: selected == index,
+        child: child!,
+      ),
+    );
+    _builtTabs[index] = tab;
+    return tab;
   }
 
   @override
@@ -500,6 +510,13 @@ class _BottomNavBar extends StatelessWidget {
     Icons.public_rounded,
     Icons.person_rounded,
   ];
+  static const List<String> _labels = [
+    'الرئيسية',
+    'التقارير',
+    'التوفير',
+    'الإنترنت',
+    'الملف الشخصي',
+  ];
 
   static const double _height = 64;
   static const BorderRadius _radius = BorderRadius.all(Radius.circular(32));
@@ -610,6 +627,7 @@ class _BottomNavBar extends StatelessWidget {
     final t = (1 - (page - index).abs()).clamp(0.0, 1.0);
     return Semantics(
       button: true,
+      label: _labels[index],
       selected: index == tabIndex.value,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,

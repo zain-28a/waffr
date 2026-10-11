@@ -34,6 +34,7 @@ WaffrTransaction _transfer(double amount, DateTime date,
     );
 
 SmartFacts _facts({
+  DateTime? now,
   List<WaffrTransaction> expenses = const [],
   List<WaffrTransaction> transfers = const [],
   double balance = 500,
@@ -45,7 +46,7 @@ SmartFacts _facts({
   int streak = 1,
 }) {
   return SmartFacts(
-    now: _now,
+    now: now ?? _now,
     currencySymbol: 'ل.س',
     expenses: expenses,
     incomes: const [],
@@ -70,6 +71,87 @@ Set<String> _ids_(SmartReport report) =>
     report.insights.map((item) => item.id).toSet();
 
 void main() {
+  test('wallet smiles at 20 percent saving even when expenses are four times larger', () {
+    final now = DateTime(2026, 10, 31, 12);
+    final facts = _facts(
+      now: now,
+      income: 1000,
+      balance: 0,
+      savingsBalance: 200,
+      expenses: [
+        for (var day = 1; day <= 31; day++)
+          _expense(800 / 31, DateTime(2026, 10, day)),
+      ],
+      transfers: [_transfer(200, DateTime(2026, 10, 1))],
+    );
+    expect(facts.monthSpent, greaterThan(facts.savedLast30));
+    final band = HealthBand.of(InsightEngine(facts).healthScore());
+    expect(band, isIn([HealthBand.good, HealthBand.excellent]));
+  });
+
+  test(
+    '10 percent saving can smile when the remaining balance covers the month',
+    () {
+      final facts = _facts(
+        income: 1000,
+        balance: 300,
+        savingsBalance: 100,
+        expenses: [
+          for (var day = 1; day <= 20; day++)
+            _expense(30, DateTime(2026, 10, day)),
+        ],
+        transfers: [_transfer(100, DateTime(2026, 10, 1))],
+      );
+      expect(facts.monthSpent, greaterThan(facts.savedLast30));
+      expect(
+        HealthBand.of(InsightEngine(facts).healthScore()),
+        isIn([HealthBand.good, HealthBand.excellent]),
+      );
+    },
+  );
+
+  test(
+    'health score uses actual savings history instead of three empty months',
+    () {
+      final facts = _facts(
+        income: 1000,
+        recurringIncome: false,
+        balance: 500,
+        transfers: [_transfer(200, DateTime(2026, 10, 1))],
+        expenses: [
+          for (var day = 1; day <= 15; day++)
+            _expense(20, DateTime(2026, 10, day)),
+        ],
+      );
+      expect(facts.averageMonthlySaving, 200);
+      expect(InsightEngine(facts).healthScore(), greaterThanOrEqualTo(80));
+    },
+  );
+
+  test(
+    'withdrawals lower the wallet score instead of counting gross saving',
+    () {
+      final expenses = [
+        for (var day = 1; day <= 20; day++)
+          _expense(30, DateTime(2026, 10, day)),
+      ];
+      final saved = [_transfer(200, DateTime(2026, 10, 1))];
+      final healthy = InsightEngine(
+        _facts(expenses: expenses, transfers: saved),
+      );
+      final withdrawn = InsightEngine(
+        _facts(
+          expenses: expenses,
+          transfers: [
+            ...saved,
+            _transfer(200, DateTime(2026, 10, 2), out: true),
+          ],
+        ),
+      );
+      expect(withdrawn.healthScore(), lessThan(healthy.healthScore()));
+    },
+  );
+
   test('no expenses asks the user to start logging', () {
     final report = InsightEngine(_facts(), seed: 1).analyze(InsightScope.reports);
 

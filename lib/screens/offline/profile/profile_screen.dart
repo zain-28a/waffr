@@ -1,9 +1,11 @@
 // Usage profile. Account editing stays in Settings.
 
 import 'dart:math' as math;
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/widgets/motion/active_listenable_builder.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/core/insights/profile_snapshot.dart';
 import 'package:waffr/core/insights/smart/insight_engine.dart';
@@ -55,10 +57,13 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   // Band behind the wallet's smile; null until the first read.
   HealthBand? _health;
-  int _healthRun = 0;
+  bool _healthDirty = true;
+  bool _healthLoading = false;
+  Timer? _healthRefresh;
 
   // Whether this tab is the one on screen.
   late bool _active = widget.tabIndex.value == _tab;
+  bool _tickerEnabled = true;
 
   @override
   bool get wantKeepAlive => true;
@@ -67,17 +72,35 @@ class _ProfileScreenState extends State<ProfileScreen>
   void initState() {
     super.initState();
     widget.tabIndex.addListener(_onTab);
-    _healthData.addListener(_readHealth);
+    _healthData.addListener(_queueHealth);
     _store.ensureLoaded();
     UsageStreakService.instance.ensureLoaded();
     ProfileIdentity.instance.reload();
-    _readHealth();
+    _queueHealth();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _tickerEnabled = TickerMode.valuesOf(context).enabled;
+    if (_tickerEnabled) _queueHealth();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tabIndex != widget.tabIndex) {
+      oldWidget.tabIndex.removeListener(_onTab);
+      widget.tabIndex.addListener(_onTab);
+      _onTab();
+    }
   }
 
   @override
   void dispose() {
     widget.tabIndex.removeListener(_onTab);
-    _healthData.removeListener(_readHealth);
+    _healthData.removeListener(_queueHealth);
+    _healthRefresh?.cancel();
     super.dispose();
   }
 
@@ -87,26 +110,53 @@ class _ProfileScreenState extends State<ProfileScreen>
       return;
     }
     ProfileIdentity.instance.reload();
-    _readHealth();
     setState(() {
       _active = true;
       _streakReplay++;
     });
+    _queueHealth();
+  }
+
+  // Store hydration and a sync can emit several notifications together.
+  // Collapse those into one read and defer all health work on hidden tabs.
+  void _queueHealth() {
+    _healthDirty = true;
+    if (!_active ||
+        !_tickerEnabled ||
+        _healthLoading ||
+        _healthRefresh?.isActive == true) {
+      return;
+    }
+    _healthRefresh = Timer(Duration.zero, _readHealth);
   }
 
   // Same score as the smart analysis. With nothing logged yet the wallet
   // keeps the logo's own smile.
   Future<void> _readHealth() async {
-    final run = ++_healthRun;
-    final facts = await SmartFactsLoader.load();
-    if (!mounted || run != _healthRun) return;
-    final empty = facts.expenses.isEmpty &&
-        facts.incomes.isEmpty &&
-        facts.savingsTransfers.isEmpty;
-    final band = empty
-        ? HealthBand.excellent
-        : HealthBand.of(InsightEngine(facts).healthScore());
-    if (band != _health) setState(() => _health = band);
+    if (!mounted ||
+        !_active ||
+        !_tickerEnabled ||
+        _healthLoading ||
+        !_healthDirty) {
+      return;
+    }
+    _healthDirty = false;
+    _healthLoading = true;
+    try {
+      final facts = await SmartFactsLoader.load();
+      if (!mounted || !_active || !_tickerEnabled || _healthDirty) return;
+      final empty =
+          facts.expenses.isEmpty &&
+          facts.incomes.isEmpty &&
+          facts.savingsTransfers.isEmpty;
+      final band = empty
+          ? HealthBand.excellent
+          : HealthBand.of(InsightEngine(facts).healthScore());
+      if (band != _health) setState(() => _health = band);
+    } finally {
+      _healthLoading = false;
+      if (mounted && _active && _tickerEnabled && _healthDirty) _queueHealth();
+    }
   }
 
   @override
@@ -150,8 +200,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _cards(AppPalette palette) {
-    return AnimatedBuilder(
-      animation: _data,
+    return ActiveListenableBuilder(
+      listenable: _data,
       builder: (context, _) {
         final snapshot = ProfileSnapshot.fromStore(_store);
         final streak = UsageStreakService.instance;
@@ -201,10 +251,7 @@ class _ProfileHeader extends StatelessWidget {
   final ProfileIdentity identity;
   final AppPalette palette;
 
-  const _ProfileHeader({
-    required this.identity,
-    required this.palette,
-  });
+  const _ProfileHeader({required this.identity, required this.palette});
 
   @override
   Widget build(BuildContext context) {
@@ -336,7 +383,7 @@ class _UsageStats extends StatelessWidget {
         Expanded(
           child: _StatTile(
             value: snapshot.goalCount,
-            label: 'أهداف التوفير' ,
+            label: 'أهداف التوفير',
             palette: palette,
           ),
         ),
@@ -344,7 +391,7 @@ class _UsageStats extends StatelessWidget {
         Expanded(
           child: _StatTile(
             value: snapshot.savingsCount,
-            label:  'عمليات التوفير',
+            label: 'عمليات التوفير',
             palette: palette,
           ),
         ),
