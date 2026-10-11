@@ -82,13 +82,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
           children: staggered([
             _ProfileHeader(identity: identity, palette: palette),
-            const SizedBox(height: 18),
+            const SizedBox(height: kCardGap),
             StreakCard(
               count: streak.isLoaded && streak.count > 0 ? streak.count : 1,
               lastDay: streak.lastDay,
               replayToken: _streakReplay,
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: kCardGap),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -101,12 +101,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                 ),
                 const SizedBox(width: 8),
-                const SmartAnalysisButton(scope: InsightScope.profile),
+                const SmartAnalysisButton(
+                  scope: InsightScope.profile,
+                  large: true,
+                ),
               ],
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: kCardGap),
             _UsageStats(snapshot: snapshot, palette: palette),
-            const SizedBox(height: 16),
+            const SizedBox(height: kCardGap),
             GlassContainer(
               colorType: GlassColorType.surface,
               borderRadius: 22,

@@ -31,7 +31,6 @@ import 'package:waffr/widgets/containers/glass.dart';
 const double kBalanceCardActionTop = 14;
 const double kBalanceCardActionEnd = 14;
 const double kBalanceCardActionGap = 8;
-const double kDashboardCardActionSize = 48;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -88,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen>
                   );
                 },
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: kCardGap),
               Row(
                 children: [
                   Expanded(
@@ -98,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen>
                       onTap: () => showAddIncomeSheet(context),
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: kCardGap),
                   Expanded(
                     child: _ActionButton(
                       label: 'إضافة مصروف',
@@ -108,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: kCardGap),
               // expensesByCategory is rolled up in memory from the store.
               _DistributionCard(
                 totals: _store.expensesByCategory(),
@@ -118,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen>
                   AppShellTabs.report,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: kCardGap),
               IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -133,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen>
                         compact: true,
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: kCardGap),
                     Expanded(
                       flex: 4,
                       child: _SavingGoalCard(
@@ -153,35 +152,6 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         );
       },
-    );
-  }
-}
-
-class _BalanceCardIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _BalanceCardIconButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-
-    return GlassButton(
-      onTap: onTap,
-      width: kDashboardCardActionSize,
-      height: kDashboardCardActionSize,
-      borderRadius: 999,
-      padding: EdgeInsets.zero,
-      colorType: GlassColorType.surface,
-      child: Center(
-        child: Icon(
-          icon,
-          color: accent,
-          size: 22,
-        ),
-      ),
     );
   }
 }
@@ -371,14 +341,16 @@ class _BalanceCard extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _BalanceCardIconButton(
+                GlassIconButton(
                   icon: Icons.payments_outlined,
-                  onTap: onIncomeLog,
+                  label: 'سجل الدخل',
+                  onPressed: onIncomeLog,
                 ),
                 const SizedBox(width: kBalanceCardActionGap),
-                _BalanceCardIconButton(
+                GlassIconButton(
                   icon: Icons.format_list_bulleted_rounded,
-                  onTap: onShoppingList,
+                  label: 'قائمة المشتريات',
+                  onPressed: onShoppingList,
                 ),
               ],
             ),

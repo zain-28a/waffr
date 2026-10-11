@@ -162,9 +162,9 @@ class _OnlineScreenState extends State<OnlineScreen>
             rate: OnlineFeedService.rateFor(_selectedAsset),
             onSelected: (asset) => setState(() => _selectedAsset = asset),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: kCardGap),
           _NearbyPlacesCard(onOpen: _openPlace),
-          const SizedBox(height: 6),
+          const SizedBox(height: kCardGap),
           _NewsPreviewCard(
             articles: _articles.length > _newsPreviewLimit
                 ? _articles.sublist(0, _newsPreviewLimit)
