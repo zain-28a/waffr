@@ -141,7 +141,7 @@ class _HeaderChrome extends StatelessWidget {
 
     return AnimatedContainer(
       duration: AppMotion.of(context, AppMotion.fast),
-      curve: Curves.easeOut,
+      curve: AppMotion.soft,
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(

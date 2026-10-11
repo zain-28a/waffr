@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/widgets/brand/waffr_logo.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 
 // First-launch light/dark picker before entering the app. Each choice shows a
 // small preview of the home screen in that theme; picking one switches the
@@ -162,10 +163,10 @@ class _ThemeOption extends StatelessWidget {
         child: AnimatedScale(
           scale: selected ? 1 : 0.96,
           duration: duration,
-          curve: Curves.easeOutCubic,
+          curve: AppMotion.enter,
           child: AnimatedContainer(
             duration: duration,
-            curve: Curves.easeOutCubic,
+            curve: AppMotion.enter,
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: colors.surface,

@@ -39,11 +39,11 @@ class _StreakCardState extends State<StreakCard>
 
   late final Animation<double> _count = CurvedAnimation(
     parent: _controller,
-    curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
+    curve: const Interval(0.0, 0.55, curve: AppMotion.enter),
   );
   late final Animation<double> _ring = CurvedAnimation(
     parent: _controller,
-    curve: const Interval(0.08, 0.75, curve: Curves.easeOutCubic),
+    curve: const Interval(0.08, 0.75, curve: AppMotion.enter),
   );
 
   bool _started = false;
@@ -358,7 +358,7 @@ class _WeekStrip extends StatelessWidget {
               label: _initials[days[i].weekday] ?? '',
               active: !days[i].isBefore(start) && !days[i].isAfter(last),
               isToday: days[i] == today,
-              reveal: Curves.easeOutBack.transform(
+              reveal: AppMotion.overshoot.transform(
                 ((animation.value - 0.30 - i * 0.07) / 0.28).clamp(0.0, 1.0),
               ),
               palette: palette,

@@ -107,18 +107,12 @@ class _ReportScreenState extends State<ReportScreen>
 
   void _showOlderPeriod() {
     if (_periodOffset >= _maxPeriodOffset - 1) return;
-    _periodController.nextPage(
-      duration: AppMotion.medium,
-      curve: Curves.easeOutCubic,
-    );
+    _periodController.nextPageFor(context);
   }
 
   void _showNewerPeriod() {
     if (_periodOffset == 0) return;
-    _periodController.previousPage(
-      duration: AppMotion.medium,
-      curve: Curves.easeOutCubic,
-    );
+    _periodController.previousPageFor(context);
   }
 
   void _openExpenseHistory() {
@@ -648,7 +642,7 @@ class _SpendingLineChart extends StatelessWidget {
         ],
       ),
       duration: AppMotion.of(context, AppMotion.medium),
-      curve: Curves.easeOut,
+      curve: AppMotion.soft,
     );
   }
 }
@@ -866,7 +860,7 @@ class _DistributionBar extends StatelessWidget {
                 flex: math.max(1, (totals[index].amount / total * 1000).round()),
                 child: AnimatedContainer(
                   duration: AppMotion.of(context, AppMotion.slow),
-                  curve: Curves.easeOut,
+                  curve: AppMotion.soft,
                   color: categoryChartColor(context, totals[index].category),
                 ),
               ),
@@ -1107,8 +1101,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     );
     _selectionReveal = CurvedAnimation(
       parent: _selectionAnim,
-      curve: Curves.easeInOutCubic,
-      reverseCurve: Curves.easeInOutCubic,
+      curve: AppMotion.standard,
+      reverseCurve: AppMotion.standard,
     );
     _selectionAnim.addStatusListener(_onSelectionStatus);
   }

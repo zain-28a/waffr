@@ -419,7 +419,7 @@ class AppInlineMessage extends StatelessWidget {
     final text = message;
     return AnimatedSize(
       duration: AppMotion.of(context, AppMotion.medium),
-      curve: Curves.easeOutCubic,
+      curve: AppMotion.enter,
       alignment: Alignment.topCenter,
       child: AnimatedSwitcher(
         duration: AppMotion.of(context, AppMotion.fast),

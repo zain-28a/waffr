@@ -78,7 +78,7 @@ class _GlassButtonState extends State<GlassButton> {
               ? const Duration(milliseconds: 90)
               : const Duration(milliseconds: 320),
         ),
-        curve: _pressed ? Curves.easeOut : Curves.easeOutBack,
+        curve: _pressed ? AppMotion.soft : AppMotion.overshoot,
         child: GlassContainer(
           width: widget.width,
           height: widget.height,
@@ -156,7 +156,7 @@ class GlassIconButton extends StatelessWidget {
               child: AnimatedScale(
                 scale: showDot ? 1 : 0,
                 duration: AppMotion.of(context, AppMotion.fast),
-                curve: showDot ? Curves.easeOutBack : Curves.easeIn,
+                curve: showDot ? AppMotion.overshoot : AppMotion.softExit,
                 child: Container(
                   width: 9,
                   height: 9,
