@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # waffr
 
 A new Flutter project.
@@ -16,6 +15,3 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
-=======
-# waffr_prototype
->>>>>>> f95c3b7ac495ed551e1fe21e31b2db65aa033475
