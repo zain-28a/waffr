@@ -10,7 +10,11 @@ void main() {
       home: MediaQuery(
         data: MediaQueryData(disableAnimations: reduced),
         child: Scaffold(
-          body: StreakCelebrationOverlay(from: 2, to: 3, onFinished: onFinished),
+          body: StreakCelebrationOverlay(
+            from: 2,
+            to: 3,
+            onFinished: onFinished,
+          ),
         ),
       ),
     );

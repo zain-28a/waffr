@@ -22,13 +22,18 @@ class AppEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: compact ? 12 : 28, horizontal: 16),
+      padding: EdgeInsets.symmetric(
+        vertical: compact ? 12 : 28,
+        horizontal: 16,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

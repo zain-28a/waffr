@@ -106,7 +106,12 @@ class SystemNotifications {
         );
       }
       if (weekly != null) {
-        await _schedule(_weeklyId, weekly, _nextFridayEvening(), payload: smartPayload);
+        await _schedule(
+          _weeklyId,
+          weekly,
+          _nextFridayEvening(),
+          payload: smartPayload,
+        );
       }
     } catch (_) {}
   }
@@ -196,9 +201,10 @@ class SystemNotifications {
     await requestPermission();
   }
 
-  AndroidFlutterLocalNotificationsPlugin? get _android =>
-      _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+  AndroidFlutterLocalNotificationsPlugin? get _android => _plugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
 
   /// Whether the system lets the app post notifications. Null when unknown
   /// (not Android).
@@ -251,7 +257,13 @@ class SystemNotifications {
     required int minute,
   }) {
     final now = DateTime.now();
-    final local = DateTime(now.year, now.month, now.day + daysFromNow, hour, minute);
+    final local = DateTime(
+      now.year,
+      now.month,
+      now.day + daysFromNow,
+      hour,
+      minute,
+    );
     return _utc(local);
   }
 
@@ -271,6 +283,12 @@ class SystemNotifications {
 
   tz.TZDateTime _utc(DateTime local) {
     final utc = local.toUtc();
-    return tz.TZDateTime.utc(utc.year, utc.month, utc.day, utc.hour, utc.minute);
+    return tz.TZDateTime.utc(
+      utc.year,
+      utc.month,
+      utc.day,
+      utc.hour,
+      utc.minute,
+    );
   }
 }

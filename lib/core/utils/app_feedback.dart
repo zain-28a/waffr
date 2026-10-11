@@ -93,7 +93,8 @@ void showAppSnackBar(
       behavior: SnackBarBehavior.floating,
       backgroundColor: style.background,
       elevation: 8,
-      duration: resolved == AppFeedbackKind.error ||
+      duration:
+          resolved == AppFeedbackKind.error ||
               resolved == AppFeedbackKind.warning
           ? const Duration(milliseconds: 3400)
           : const Duration(milliseconds: 2400),
@@ -110,7 +111,9 @@ void showAppSnackBar(
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: style.accent.withValues(alpha: resolved == AppFeedbackKind.success ? 0.18 : 0.12),
+              color: style.accent.withValues(
+                alpha: resolved == AppFeedbackKind.success ? 0.18 : 0.12,
+              ),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(style.icon, size: 16, color: style.accent),
@@ -154,11 +157,7 @@ Future<T?> showAppDialog<T>({
     barrierColor: Colors.black.withValues(alpha: 0.38),
     transitionDuration: AppMotion.of(context, AppMotion.medium),
     pageBuilder: (context, animation, secondaryAnimation) {
-      return SafeArea(
-        child: Center(
-          child: builder(context),
-        ),
-      );
+      return SafeArea(child: Center(child: builder(context)));
     },
     transitionBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(
@@ -270,10 +269,7 @@ class AppDialogFrame extends StatelessWidget {
                 ),
               ),
             ],
-            if (child != null) ...[
-              const SizedBox(height: 14),
-              child!,
-            ],
+            if (child != null) ...[const SizedBox(height: 14), child!],
             if (actions.isNotEmpty) ...[
               const SizedBox(height: 16),
               Row(
@@ -330,9 +326,7 @@ class AppDialogActionButton extends StatelessWidget {
         disabledForegroundColor: palette.onAccent,
         elevation: 0,
         padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       child: Text(
         action.label,
@@ -428,9 +422,10 @@ class AppInlineMessage extends StatelessWidget {
             : _InlineMessageBody(
                 key: ValueKey('$kind$text'),
                 message: text,
-                style: _styleFor(context, kind == AppFeedbackKind.success
-                    ? AppFeedbackKind.info
-                    : kind),
+                style: _styleFor(
+                  context,
+                  kind == AppFeedbackKind.success ? AppFeedbackKind.info : kind,
+                ),
               ),
       ),
     );

@@ -107,8 +107,7 @@ class WaffrMaterialLocalizations extends MaterialLocalizationAr {
       _appDate(super.formatMediumDate(date));
 
   @override
-  String formatFullDate(DateTime date) =>
-      _appDate(super.formatFullDate(date));
+  String formatFullDate(DateTime date) => _appDate(super.formatFullDate(date));
 
   @override
   String formatShortDate(DateTime date) =>
@@ -119,7 +118,8 @@ class WaffrMaterialLocalizations extends MaterialLocalizationAr {
       _appDate(super.formatShortMonthDay(date));
 
   @override
-  String formatDecimal(int number) => westernDigits(super.formatDecimal(number));
+  String formatDecimal(int number) =>
+      westernDigits(super.formatDecimal(number));
 
   // Same DD/MM/YYYY shape the app shows everywhere else.
   @override

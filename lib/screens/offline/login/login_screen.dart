@@ -108,12 +108,12 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _openForgotPassword() async {
     final result = await Navigator.of(context)
         .push<({String email, String password})>(
-      MaterialPageRoute(
-        builder: (_) => ForgotPasswordScreen(
-          initialEmail: _emailController.text.trim(),
-        ),
-      ),
-    );
+          MaterialPageRoute(
+            builder: (_) => ForgotPasswordScreen(
+              initialEmail: _emailController.text.trim(),
+            ),
+          ),
+        );
     if (result == null || !mounted) return;
     _emailController.text = result.email;
     _passwordController.text = result.password;
@@ -153,10 +153,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
     return Scaffold(
@@ -185,7 +187,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: textPrimary,
                   fontSize: 34,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                 ),
               ),
               const SizedBox(height: 10),
@@ -202,7 +205,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AuthFieldLabel(text: 'البريد الإلكتروني', color: textPrimary),
+                    AuthFieldLabel(
+                      text: 'البريد الإلكتروني',
+                      color: textPrimary,
+                    ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _emailController,
@@ -255,7 +261,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: accent,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: ['Tajawal'],
                     ),
                   ),
                 ),
@@ -278,7 +285,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: accent,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                   ),
                 ),
               ),
@@ -291,7 +299,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: textSecondary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: ['Tajawal'],
                     ),
                   ),
                 ),

@@ -267,9 +267,7 @@ class _AppShellState extends State<AppShell>
 
   void _openNotifications() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const NotificationsScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
     );
   }
 
@@ -361,8 +359,9 @@ class _AppShellState extends State<AppShell>
     if (!mounted) return;
     if (_animatingToPage != index) return;
     _animatingToPage = null;
-    final settled =
-        _pageController.hasClients ? _pageController.page?.round() : null;
+    final settled = _pageController.hasClients
+        ? _pageController.page?.round()
+        : null;
     if (settled != null && settled != _tabIndex.value) {
       _tabIndex.value = settled;
     }
@@ -435,10 +434,11 @@ class _AppShellState extends State<AppShell>
                       padding: const EdgeInsets.only(top: 6),
                       child: Text(
                         'WAFFR',
-                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                          fontFamily: 'BebasNeue',
-                          fontStyle: FontStyle.italic,
-                        ),
+                        style: Theme.of(context).textTheme.displayLarge
+                            ?.copyWith(
+                              fontFamily: 'BebasNeue',
+                              fontStyle: FontStyle.italic,
+                            ),
                       ),
                     ),
                   ),
@@ -560,8 +560,9 @@ class _BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
     final rtl = Directionality.of(context) == TextDirection.rtl;
 
@@ -575,7 +576,8 @@ class _BottomNavBar extends StatelessWidget {
             return AnimatedBuilder(
               animation: Listenable.merge([pageController, tabIndex]),
               builder: (context, _) {
-                final page = pageController.hasClients &&
+                final page =
+                    pageController.hasClients &&
                         pageController.position.haveDimensions
                     ? (pageController.page ?? tabIndex.value.toDouble())
                     : tabIndex.value.toDouble();
@@ -585,9 +587,7 @@ class _BottomNavBar extends StatelessWidget {
                     Row(
                       children: [
                         for (var i = 0; i < tabCount; i++)
-                          Expanded(
-                            child: _tab(i, page, accent, textPrimary),
-                          ),
+                          Expanded(child: _tab(i, page, accent, textPrimary)),
                       ],
                     ),
                   ],
@@ -635,11 +635,7 @@ class _BottomNavBar extends StatelessWidget {
             child: Icon(
               _icons[index],
               size: 25,
-              color: Color.lerp(
-                textPrimary.withValues(alpha: 0.38),
-                accent,
-                t,
-              ),
+              color: Color.lerp(textPrimary.withValues(alpha: 0.38), accent, t),
             ),
           ),
         ),

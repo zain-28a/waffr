@@ -161,7 +161,9 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
     if (!AppMotion.reduced(context)) {
       _thinkingTicker = Timer.periodic(const Duration(milliseconds: 650), (_) {
         if (mounted) {
-          setState(() => _thinkingLine = (_thinkingLine + 1) % _thinkingLines.length);
+          setState(
+            () => _thinkingLine = (_thinkingLine + 1) % _thinkingLines.length,
+          );
         }
       });
     }
@@ -169,8 +171,10 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
     final facts = await SmartFactsLoader.load();
     // Discard superseded scope requests before doing the analysis.
     if (!mounted || run != _run) return;
-    final report = InsightEngine(facts, seed: _seeds.nextInt(1 << 30))
-        .analyze(_scope);
+    final report = InsightEngine(
+      facts,
+      seed: _seeds.nextInt(1 << 30),
+    ).analyze(_scope);
     final pause = AppMotion.reduced(context)
         ? Duration.zero
         : Duration(milliseconds: quick ? 700 : 1500);
@@ -179,7 +183,8 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
     _thinkingTicker?.cancel();
     final reduced = AppMotion.reduced(context);
 
-    final total = report.headline.length +
+    final total =
+        report.headline.length +
         report.summary.length +
         report.insights
             .where((item) => item.id != 'health-score')
@@ -200,7 +205,10 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
   }
 
   void _onTypingTick(Duration elapsed) {
-    final next = math.min(_total, (elapsed.inMilliseconds * _charsPerMs).round());
+    final next = math.min(
+      _total,
+      (elapsed.inMilliseconds * _charsPerMs).round(),
+    );
     // Text layout needn't run at the display's 60/120 Hz. Limit writing
     // updates to ~30 Hz while keeping completion tied to elapsed time.
     if (next < _total &&
@@ -223,7 +231,9 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
   }
 
   void _selectScope(String label) {
-    final next = InsightScope.values.firstWhere((scope) => scope.label == label);
+    final next = InsightScope.values.firstWhere(
+      (scope) => scope.label == label,
+    );
     if (next == _scope) return;
     AppHaptics.selection();
     _scope = next;
@@ -240,8 +250,7 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
       TransactionStore.instance,
       RecurringExpenseStore.instance,
       ShoppingListStore.instance,
-    ])
-      ..addListener(markChanged);
+    ])..addListener(markChanged);
     switch (action) {
       case InsightAction.addExpense:
         await showAddExpenseSheet(context);
@@ -297,13 +306,13 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
             top: false,
             child: Column(
               children: [
-                WaffrBackHeader(
-                  title: 'التحليل الذكي',
-                ),
+                WaffrBackHeader(title: 'التحليل الذكي'),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
                   child: SheetChoiceChips(
-                    options: [for (final scope in InsightScope.values) scope.label],
+                    options: [
+                      for (final scope in InsightScope.values) scope.label,
+                    ],
                     selected: _scope.label,
                     onSelected: _selectScope,
                   ),
@@ -453,7 +462,9 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
         const SizedBox(height: 16),
         for (var i = 0; i < insights.length; i++)
           if (_revealed >= bodyOffsets[i] &&
-              (_revealed > bodyOffsets[i] || insights[i].body.isEmpty || _phase == _Phase.done))
+              (_revealed > bodyOffsets[i] ||
+                  insights[i].body.isEmpty ||
+                  _phase == _Phase.done))
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Reveal(
@@ -934,7 +945,11 @@ class _GaugePainter extends CustomPainter {
   final Color track;
   final List<Color> colors;
 
-  _GaugePainter({required this.value, required this.track, required this.colors});
+  _GaugePainter({
+    required this.value,
+    required this.track,
+    required this.colors,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {

@@ -32,9 +32,7 @@ class CurrencyStore extends ChangeNotifier {
 
   // Currencies shown in the balance carousel and amount pickers.
   List<CurrencyInfo> get enabledCurrencies {
-    return [
-      for (final code in _enabled) Currencies.of(code),
-    ];
+    return [for (final code in _enabled) Currencies.of(code)];
   }
 
   List<String> get enabledCodes => List.unmodifiable(_enabled);
@@ -70,10 +68,7 @@ class CurrencyStore extends ChangeNotifier {
   }
 
   // Replaces the enabled list and active code from a newer account sync.
-  Future<void> applyRemote({
-    List<dynamic>? enabled,
-    String? active,
-  }) async {
+  Future<void> applyRemote({List<dynamic>? enabled, String? active}) async {
     await ensureLoaded();
     if (enabled == null && (active == null || active.trim().isEmpty)) return;
 
@@ -94,11 +89,12 @@ class CurrencyStore extends ChangeNotifier {
     }
 
     final nextActive = Currencies.normalize(active ?? _activeCode);
-    _activeCode = _enabled.contains(nextActive) ? nextActive : defaultCurrencyCode;
+    _activeCode = _enabled.contains(nextActive)
+        ? nextActive
+        : defaultCurrencyCode;
     // A sync usually echoes what this device already has; then there is
     // nothing to save and no reason to rebuild every screen.
-    if (_activeCode == beforeActive &&
-        _sameOrder(_enabled, beforeEnabled)) {
+    if (_activeCode == beforeActive && _sameOrder(_enabled, beforeEnabled)) {
       return;
     }
     await _persistEnabled();
@@ -120,8 +116,8 @@ class CurrencyStore extends ChangeNotifier {
     if (_enabled.length < 2) return;
 
     final index = _enabled.indexOf(_activeCode);
-    final previous = (index < 0 ? 0 : index - 1 + _enabled.length) %
-        _enabled.length;
+    final previous =
+        (index < 0 ? 0 : index - 1 + _enabled.length) % _enabled.length;
     await setActive(_enabled[previous]);
   }
 

@@ -6,12 +6,12 @@ enum SavingsRange { week, month, threeMonths, sixMonths, year }
 
 extension SavingsRangeLabel on SavingsRange {
   String get label => switch (this) {
-        SavingsRange.week => 'أسبوع',
-        SavingsRange.month => 'شهر',
-        SavingsRange.threeMonths => '3 أشهر',
-        SavingsRange.sixMonths => '6 أشهر',
-        SavingsRange.year => 'سنة',
-      };
+    SavingsRange.week => 'أسبوع',
+    SavingsRange.month => 'شهر',
+    SavingsRange.threeMonths => '3 أشهر',
+    SavingsRange.sixMonths => '6 أشهر',
+    SavingsRange.year => 'سنة',
+  };
 }
 
 // Half-open [start, end) calendar slice plus helpers for keys and ranges.
@@ -21,8 +21,7 @@ class CalendarPeriod {
 
   const CalendarPeriod({required this.start, required this.end});
 
-  bool contains(DateTime date) =>
-      !date.isBefore(start) && date.isBefore(end);
+  bool contains(DateTime date) => !date.isBefore(start) && date.isBefore(end);
 
   bool get isComplete {
     final now = DateTime.now();
@@ -73,7 +72,10 @@ class CalendarPeriod {
       final date = DateTime.tryParse(key.substring(2));
       if (date == null) return null;
       final start = weekStart(date);
-      return CalendarPeriod(start: start, end: start.add(const Duration(days: 7)));
+      return CalendarPeriod(
+        start: start,
+        end: start.add(const Duration(days: 7)),
+      );
     }
     if (key.startsWith('m:')) {
       final parts = key.substring(2).split('-');
@@ -90,7 +92,10 @@ class CalendarPeriod {
     return null;
   }
 
-  static CalendarPeriod ofFrequency(RecurringFrequency frequency, DateTime date) {
+  static CalendarPeriod ofFrequency(
+    RecurringFrequency frequency,
+    DateTime date,
+  ) {
     switch (frequency) {
       case RecurringFrequency.weekly:
         final start = weekStart(date);
@@ -142,7 +147,11 @@ class CalendarPeriod {
   }
 
   // Builds a savings-chart window; [offset] steps back by one range each time.
-  static CalendarPeriod forRange(SavingsRange range, int offset, {DateTime? now}) {
+  static CalendarPeriod forRange(
+    SavingsRange range,
+    int offset, {
+    DateTime? now,
+  }) {
     final moment = now ?? DateTime.now();
     final today = DateTime(moment.year, moment.month, moment.day);
     late DateTime start;

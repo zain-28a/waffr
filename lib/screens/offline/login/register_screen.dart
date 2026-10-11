@@ -120,8 +120,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? get _missingReason {
     final password = _passwordController.text;
     if (!_emailValid) return 'أدخل بريداً إلكترونياً صالحاً';
-    if (password.length < 8) return 'كلمة المرور يجب أن تتكون من 8 أحرف على الأقل';
-    if (password != _confirmController.text) return 'كلمتا المرور غير متطابقتين';
+    if (password.length < 8) {
+      return 'كلمة المرور يجب أن تتكون من 8 أحرف على الأقل';
+    }
+    if (password != _confirmController.text) {
+      return 'كلمتا المرور غير متطابقتين';
+    }
     return null;
   }
 
@@ -131,10 +135,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
     return Scaffold(
@@ -145,109 +151,107 @@ class _RegisterScreenState extends State<RegisterScreen> {
         title: 'إنشاء حساب',
       ),
       body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'أنشئ حساباً لحفظ بياناتك ومزامنتها',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: textSecondary, fontSize: 15),
-              ),
-              const SizedBox(height: 28),
-              GlassContainer(
-                colorType: GlassColorType.surface,
-                borderRadius: 28,
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AuthFieldLabel(text: 'البريد الإلكتروني', color: textPrimary),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _emailController,
-                      enabled: !_busy,
-                      keyboardType: TextInputType.emailAddress,
-                      textDirection: TextDirection.ltr,
-                      autocorrect: false,
-                      onChanged: (_) => setState(() => _message = null),
-                      style: TextStyle(color: textPrimary, fontSize: 16),
-                      decoration: authFieldDecoration(
-                        hint: 'example@email.com',
-                        fillColor: surface,
-                        textSecondary: textSecondary,
-                      ),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'أنشئ حساباً لحفظ بياناتك ومزامنتها',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: textSecondary, fontSize: 15),
+            ),
+            const SizedBox(height: 28),
+            GlassContainer(
+              colorType: GlassColorType.surface,
+              borderRadius: 28,
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AuthFieldLabel(text: 'البريد الإلكتروني', color: textPrimary),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _emailController,
+                    enabled: !_busy,
+                    keyboardType: TextInputType.emailAddress,
+                    textDirection: TextDirection.ltr,
+                    autocorrect: false,
+                    onChanged: (_) => setState(() => _message = null),
+                    style: TextStyle(color: textPrimary, fontSize: 16),
+                    decoration: authFieldDecoration(
+                      hint: 'example@email.com',
+                      fillColor: surface,
+                      textSecondary: textSecondary,
                     ),
-                    const SizedBox(height: 16),
-                    AuthFieldLabel(text: 'كلمة المرور', color: textPrimary),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _passwordController,
-                      enabled: !_busy,
-                      obscureText: _obscure,
-                      onChanged: (_) => setState(() => _message = null),
-                      style: TextStyle(color: textPrimary, fontSize: 16),
-                      decoration: authFieldDecoration(
-                        hint: '8 أحرف على الأقل',
-                        fillColor: surface,
-                        textSecondary: textSecondary,
-                        suffixIcon: IconButton(
-                          onPressed: () => setState(() => _obscure = !_obscure),
-                          icon: Icon(
-                            _obscure
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            color: textSecondary,
-                          ),
+                  ),
+                  const SizedBox(height: 16),
+                  AuthFieldLabel(text: 'كلمة المرور', color: textPrimary),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _passwordController,
+                    enabled: !_busy,
+                    obscureText: _obscure,
+                    onChanged: (_) => setState(() => _message = null),
+                    style: TextStyle(color: textPrimary, fontSize: 16),
+                    decoration: authFieldDecoration(
+                      hint: '8 أحرف على الأقل',
+                      fillColor: surface,
+                      textSecondary: textSecondary,
+                      suffixIcon: IconButton(
+                        onPressed: () => setState(() => _obscure = !_obscure),
+                        icon: Icon(
+                          _obscure
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: textSecondary,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    AuthFieldLabel(
-                      text: 'تأكيد كلمة المرور',
-                      color: textPrimary,
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _confirmController,
-                      enabled: !_busy,
-                      obscureText: _obscure,
-                      onChanged: (_) => setState(() => _message = null),
-                      style: TextStyle(color: textPrimary, fontSize: 16),
-                      decoration: authFieldDecoration(
-                        hint: 'أعد كتابة كلمة المرور',
-                        fillColor: surface,
-                        textSecondary: textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 28),
-              AppInlineMessage(message: _message, kind: _messageKind),
-              AppPrimaryButton(
-                label: 'إنشاء الحساب',
-                enabled: _canSubmit,
-                onDisabledTap: () => _show(_missingReason),
-                busy: _busy,
-                onTap: _register,
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: _busy ? null : () => Navigator.pop(context),
-                child: Text(
-                  'لديك حساب؟ تسجيل الدخول',
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                   ),
+                  const SizedBox(height: 16),
+                  AuthFieldLabel(text: 'تأكيد كلمة المرور', color: textPrimary),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _confirmController,
+                    enabled: !_busy,
+                    obscureText: _obscure,
+                    onChanged: (_) => setState(() => _message = null),
+                    style: TextStyle(color: textPrimary, fontSize: 16),
+                    decoration: authFieldDecoration(
+                      hint: 'أعد كتابة كلمة المرور',
+                      fillColor: surface,
+                      textSecondary: textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+            AppInlineMessage(message: _message, kind: _messageKind),
+            AppPrimaryButton(
+              label: 'إنشاء الحساب',
+              enabled: _canSubmit,
+              onDisabledTap: () => _show(_missingReason),
+              busy: _busy,
+              onTap: _register,
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: _busy ? null : () => Navigator.pop(context),
+              child: Text(
+                'لديك حساب؟ تسجيل الدخول',
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
     );
   }
 }

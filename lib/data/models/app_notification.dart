@@ -59,19 +59,18 @@ class AppNotification {
   DateTime get syncUpdatedAt => (updatedAt ?? createdAt).toUtc();
 
   NotificationPriority get priority => switch (type) {
-        NotificationType.balanceWarning => NotificationPriority.warning,
-        NotificationType.highSpending => NotificationPriority.important,
-        NotificationType.largeExpense => NotificationPriority.important,
-        NotificationType.goalReached => NotificationPriority.success,
-        NotificationType.goalProgress => NotificationPriority.success,
-        NotificationType.savingsTransferred => NotificationPriority.savings,
-        NotificationType.recurringPeriodCompleted => NotificationPriority.info,
-        NotificationType.recurringExpenseBlocked => NotificationPriority.warning,
-        NotificationType.recurringExpenseApplied => NotificationPriority.info,
-        NotificationType.recurringExpenseUpcoming =>
-          NotificationPriority.warning,
-        NotificationType.recurringExpenseDue => NotificationPriority.important,
-      };
+    NotificationType.balanceWarning => NotificationPriority.warning,
+    NotificationType.highSpending => NotificationPriority.important,
+    NotificationType.largeExpense => NotificationPriority.important,
+    NotificationType.goalReached => NotificationPriority.success,
+    NotificationType.goalProgress => NotificationPriority.success,
+    NotificationType.savingsTransferred => NotificationPriority.savings,
+    NotificationType.recurringPeriodCompleted => NotificationPriority.info,
+    NotificationType.recurringExpenseBlocked => NotificationPriority.warning,
+    NotificationType.recurringExpenseApplied => NotificationPriority.info,
+    NotificationType.recurringExpenseUpcoming => NotificationPriority.warning,
+    NotificationType.recurringExpenseDue => NotificationPriority.important,
+  };
 
   AppNotification copyWith({
     bool? isRead,
@@ -88,23 +87,22 @@ class AppNotification {
       isRead: isRead ?? this.isRead,
       relatedId: relatedId,
       metadata: metadata,
-      updatedAt: updatedAt ??
-          (touch ? DateTime.now().toUtc() : this.updatedAt),
+      updatedAt: updatedAt ?? (touch ? DateTime.now().toUtc() : this.updatedAt),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type.name,
-        'title': title,
-        'message': message,
-        'createdAt': createdAt.toIso8601String(),
-        'isRead': isRead,
-        'eventKey': eventKey,
-        'relatedId': relatedId,
-        'metadata': metadata,
-        'updatedAt': syncUpdatedAt.toIso8601String(),
-      };
+    'id': id,
+    'type': type.name,
+    'title': title,
+    'message': message,
+    'createdAt': createdAt.toIso8601String(),
+    'isRead': isRead,
+    'eventKey': eventKey,
+    'relatedId': relatedId,
+    'metadata': metadata,
+    'updatedAt': syncUpdatedAt.toIso8601String(),
+  };
 
   String encode() => jsonEncode(toJson());
 

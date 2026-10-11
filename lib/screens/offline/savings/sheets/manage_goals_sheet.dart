@@ -206,7 +206,8 @@ class _ManageGoalRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: textPrimary,
@@ -232,7 +233,8 @@ class _ManageGoalRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     color: textSecondary,

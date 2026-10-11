@@ -240,7 +240,8 @@ class _PeriodSavingsCard extends StatelessWidget {
                     Text(
                       'المبلغ الموفَّر',
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: const ['Tajawal'],
                         fontSize: 12,
                         color: colors.textSecondary,
                       ),
@@ -256,7 +257,8 @@ class _PeriodSavingsCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                          fontFamily: 'Outfit',
+                          fontFamilyFallback: const ['Tajawal'],
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: colors.textPrimary,
@@ -282,7 +284,8 @@ class _PeriodSavingsCard extends StatelessWidget {
               'لا يوجد توفير في هذه الفترة',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: const ['Tajawal'],
                 fontSize: 13,
                 color: colors.textPrimary.withValues(alpha: 0.55),
               ),
@@ -299,7 +302,8 @@ class _PeriodSavingsCard extends StatelessWidget {
                     child: RollingMoney(
                       value: amount,
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: const ['Tajawal'],
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
                         color: colors.accent,
@@ -311,7 +315,8 @@ class _PeriodSavingsCard extends StatelessWidget {
                 Text(
                   currencyLabel,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
                     fontSize: 13,
                     color: colors.textSecondary,
                   ),
@@ -323,7 +328,8 @@ class _PeriodSavingsCard extends StatelessWidget {
                   Text(
                     comparison.text,
                     style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: const ['Tajawal'],
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: comparison.color,
@@ -533,9 +539,9 @@ class _ActiveGoalsPanelState extends State<_ActiveGoalsPanel> {
     final expanded = _expanded && canExpand;
 
     Widget goalRow(int i) => _GoalProgressCard(
-          goal: ordered[i],
-          saved: widget.store.currentSaved(ordered[i]),
-        );
+      goal: ordered[i],
+      saved: widget.store.currentSaved(ordered[i]),
+    );
 
     // One tree shape for both states, so the first goal keeps its state
     // (its bar does not refill) when the panel opens or closes; only the
@@ -684,11 +690,7 @@ class _SavingsGoalsHeader extends StatelessWidget {
             color: colors.accent.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            Icons.wallet_rounded,
-            size: 19,
-            color: colors.accent,
-          ),
+          child: Icon(Icons.wallet_rounded, size: 19, color: colors.accent),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -700,7 +702,8 @@ class _SavingsGoalsHeader extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: const ['Tajawal'],
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: colors.textPrimary,
@@ -765,10 +768,7 @@ class _PlanButtonsRow extends StatelessWidget {
           ),
           const SizedBox(width: kCardGap),
           Expanded(
-            child: _ActionButton(
-              label: 'الأهداف المحققة',
-              onTap: onCompleted,
-            ),
+            child: _ActionButton(label: 'الأهداف المحققة', onTap: onCompleted),
           ),
         ],
       ),
@@ -799,7 +799,8 @@ class _TotalSavingsCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: const ['Tajawal'],
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
               color: colors.textSecondary,
@@ -814,7 +815,8 @@ class _TotalSavingsCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: const ['Tajawal'],
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: colors.textSecondary.withValues(alpha: 0.65),
@@ -831,7 +833,8 @@ class _TotalSavingsCard extends StatelessWidget {
                     child: RollingMoney(
                       value: total,
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: const ['Tajawal'],
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: colors.accent,
@@ -845,7 +848,8 @@ class _TotalSavingsCard extends StatelessWidget {
                   child: Text(
                     currencyLabel,
                     style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: const ['Tajawal'],
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: colors.textSecondary,
@@ -866,11 +870,7 @@ class _ActionButton extends StatelessWidget {
   final VoidCallback onTap;
   final Widget? leading;
 
-  const _ActionButton({
-    required this.label,
-    required this.onTap,
-    this.leading,
-  });
+  const _ActionButton({required this.label, required this.onTap, this.leading});
 
   @override
   Widget build(BuildContext context) {
@@ -887,16 +887,14 @@ class _ActionButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (leading != null) ...[
-                leading!,
-                const SizedBox(width: 6),
-              ],
+              if (leading != null) ...[leading!, const SizedBox(width: 6)],
               Text(
                 label,
                 maxLines: 1,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: const ['Tajawal'],
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
                   color: colors.textPrimary,
@@ -920,7 +918,8 @@ class _CreateGoalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassButton(
       onTap: onCreate,
-      colorType: GlassColorType.accent, tintOpacity: 9, 
+      colorType: GlassColorType.accent,
+      tintOpacity: 9,
       borderRadius: 22,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Center(
@@ -929,7 +928,8 @@ class _CreateGoalCard extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+            fontFamily: 'Outfit',
+            fontFamilyFallback: const ['Tajawal'],
             fontSize: 13.5,
             fontWeight: FontWeight.bold,
             color: AppPalette.of(context).onAccent,
@@ -945,10 +945,7 @@ class _GoalProgressCard extends StatelessWidget {
   final SavingsGoal goal;
   final double saved;
 
-  const _GoalProgressCard({
-    required this.goal,
-    required this.saved,
-  });
+  const _GoalProgressCard({required this.goal, required this.saved});
 
   @override
   Widget build(BuildContext context) {
@@ -966,7 +963,8 @@ class _GoalProgressCard extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+            fontFamily: 'Outfit',
+            fontFamilyFallback: const ['Tajawal'],
             fontSize: 14.5,
             fontWeight: FontWeight.bold,
             color: colors.textPrimary,
@@ -992,7 +990,8 @@ class _GoalProgressCard extends StatelessWidget {
             Text(
               '${(ratio * 100).round()}%',
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: const ['Tajawal'],
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
                 color: colors.textSecondary,
@@ -1023,7 +1022,8 @@ class _GoalProgressCard extends StatelessWidget {
               ],
             ),
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: const ['Tajawal'],
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: colors.textPrimary,

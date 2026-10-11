@@ -27,10 +27,11 @@ List<ExpenseShareDay> groupExpensesForShare(List<WaffrTransaction> expenses) {
     final date = DateTime(local.year, local.month, local.day);
     grouped.putIfAbsent(date, () => []).add(expense);
   }
-  final days = grouped.entries
-      .map((entry) => ExpenseShareDay(entry.key, entry.value))
-      .toList()
-    ..sort((a, b) => b.date.compareTo(a.date));
+  final days =
+      grouped.entries
+          .map((entry) => ExpenseShareDay(entry.key, entry.value))
+          .toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
   for (final day in days) {
     day.expenses.sort((a, b) => b.dateTime.compareTo(a.dateTime));
   }
@@ -89,8 +90,7 @@ String expenseTotalsText(List<WaffrTransaction> expenses) {
   }
   return totals.entries
       .map(
-        (entry) =>
-            '${formatMoney(entry.value)} ${currencyLabelFor(entry.key)}',
+        (entry) => '${formatMoney(entry.value)} ${currencyLabelFor(entry.key)}',
       )
       .join('  •  ');
 }

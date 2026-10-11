@@ -65,10 +65,9 @@ void main() {
       nextDueAt: past,
     );
     final prefs = await AppPrefs.instance;
-    await prefs.setStringList(
-      RecurringExpenseStore.itemsKey,
-      [scheduled.encode()],
-    );
+    await prefs.setStringList(RecurringExpenseStore.itemsKey, [
+      scheduled.encode(),
+    ]);
     RecurringExpenseStore.instance.resetCache();
 
     await RecurringExpenseStore.instance.processDue();
@@ -76,7 +75,9 @@ void main() {
     expect(posted, greaterThanOrEqualTo(3));
     expect(posted, lessThanOrEqualTo(5));
     expect(
-      RecurringExpenseStore.instance.items.single.nextDueAt.isAfter(DateTime.now()),
+      RecurringExpenseStore.instance.items.single.nextDueAt.isAfter(
+        DateTime.now(),
+      ),
       isTrue,
     );
 
@@ -100,10 +101,7 @@ void main() {
 
     await RecurringExpenseStore.instance.processDue();
     expect(TransactionStore.instance.expenses, isEmpty);
-    expect(
-      RecurringExpenseStore.instance.items.single.nextDueAt,
-      due,
-    );
+    expect(RecurringExpenseStore.instance.items.single.nextDueAt, due);
   });
 
   Future<void> seedPastConfirmed({required int daysAgo}) async {
@@ -120,10 +118,9 @@ void main() {
       requiresConfirmation: true,
     );
     final prefs = await AppPrefs.instance;
-    await prefs.setStringList(
-      RecurringExpenseStore.itemsKey,
-      [scheduled.encode()],
-    );
+    await prefs.setStringList(RecurringExpenseStore.itemsKey, [
+      scheduled.encode(),
+    ]);
     RecurringExpenseStore.instance.resetCache();
   }
 
@@ -182,8 +179,10 @@ void main() {
     final store = RecurringExpenseStore.instance;
     await store.postpone('rent-c', untilIncome: true);
     expect(store.items.single.remindOnIncome, isTrue);
-    expect(store.awaitingConfirmation(store.items.single.currencyCode),
-        hasLength(1));
+    expect(
+      store.awaitingConfirmation(store.items.single.currencyCode),
+      hasLength(1),
+    );
 
     await store.releaseIncomeReminders(store.items.single.currencyCode);
     expect(store.items.single.remindOnIncome, isFalse);

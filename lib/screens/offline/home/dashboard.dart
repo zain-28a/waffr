@@ -113,10 +113,8 @@ class _HomeScreenState extends State<HomeScreen>
               _DistributionCard(
                 totals: _store.expensesByCategory(),
                 totalExpense: _store.totalExpense,
-                onTap: () => AppShellScope.selectTabOf(
-                  context,
-                  AppShellTabs.report,
-                ),
+                onTap: () =>
+                    AppShellScope.selectTabOf(context, AppShellTabs.report),
               ),
               const SizedBox(height: kCardGap),
               IntrinsicHeight(
@@ -197,8 +195,9 @@ class _BalanceCard extends StatelessWidget {
       child: Stack(
         children: [
           GestureDetector(
-            onVerticalDragUpdate:
-                CurrencyStore.instance.enabledCodes.length > 1 ? (_) {} : null,
+            onVerticalDragUpdate: CurrencyStore.instance.enabledCodes.length > 1
+                ? (_) {}
+                : null,
             onVerticalDragEnd: CurrencyStore.instance.enabledCodes.length > 1
                 ? (details) {
                     final velocity = details.primaryVelocity ?? 0;
@@ -242,7 +241,8 @@ class _BalanceCard extends StatelessWidget {
                         Text(
                           'الرصيد الحالي',
                           style: TextStyle(
-                            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                            fontFamily: 'Outfit',
+                            fontFamilyFallback: ['Tajawal'],
                             fontSize: 13.5,
                             color: textSecondary,
                           ),
@@ -261,7 +261,8 @@ class _BalanceCard extends StatelessWidget {
                             child: RollingMoney(
                               value: balance,
                               style: TextStyle(
-                                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                                fontFamily: 'Outfit',
+                                fontFamilyFallback: ['Tajawal'],
                                 fontSize: 36,
                                 fontWeight: FontWeight.bold,
                                 color: accent,
@@ -273,7 +274,8 @@ class _BalanceCard extends StatelessWidget {
                         Text(
                           currencyLabel,
                           style: TextStyle(
-                            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                            fontFamily: 'Outfit',
+                            fontFamilyFallback: ['Tajawal'],
                             fontSize: 15,
                             color: textSecondary,
                           ),
@@ -291,7 +293,8 @@ class _BalanceCard extends StatelessWidget {
                             child: Text(
                               '${(shown * 100).round()}%',
                               style: TextStyle(
-                                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                                fontFamily: 'Outfit',
+                                fontFamilyFallback: const ['Tajawal'],
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
                                 color: textSecondary,
@@ -312,7 +315,8 @@ class _BalanceCard extends StatelessWidget {
                       'مصروف ${formatMoney(spent)} $currencyLabel '
                       'من ${formatMoney(maxBalance)} $currencyLabel',
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
                         fontSize: 12.5,
                         color: textSecondary,
                       ),
@@ -481,7 +485,8 @@ class _ActionButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
                 fontSize: 14.5,
                 fontWeight: FontWeight.w700,
                 color: textPrimary,
@@ -574,8 +579,10 @@ class _DistributionChart extends StatelessWidget {
               value: 1,
               duration: const Duration(milliseconds: 900),
               builder: (context, sweep) {
-                final total =
-                    totals.fold<double>(0, (sum, item) => sum + item.amount);
+                final total = totals.fold<double>(
+                  0,
+                  (sum, item) => sum + item.amount,
+                );
                 return PieChart(
                   PieChartData(
                     startDegreeOffset: -90,
@@ -605,8 +612,9 @@ class _DistributionChart extends StatelessWidget {
                     ],
                   ),
                   // After the first sweep, data changes glide between values.
-                  swapAnimationDuration:
-                      sweep < 1 ? Duration.zero : AppMotion.slow,
+                  swapAnimationDuration: sweep < 1
+                      ? Duration.zero
+                      : AppMotion.slow,
                   swapAnimationCurve: AppMotion.enter,
                 );
               },
@@ -618,7 +626,8 @@ class _DistributionChart extends StatelessWidget {
               Text(
                 '$topShare%',
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -627,7 +636,8 @@ class _DistributionChart extends StatelessWidget {
               Text(
                 totals.first.category,
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: 10.5,
                   color: textPrimary.withValues(alpha: 0.6),
                 ),
@@ -689,7 +699,8 @@ class _DistributionLegend extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: textPrimary,
@@ -699,7 +710,8 @@ class _DistributionLegend extends StatelessWidget {
               Text(
                 '$share%',
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: textSecondary,
@@ -819,7 +831,8 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
           'لا يوجد هدف حالياً',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+            fontFamily: 'Outfit',
+            fontFamilyFallback: ['Tajawal'],
             fontSize: compact ? 13 : 15,
             fontWeight: FontWeight.w700,
             color: textSecondary,
@@ -847,7 +860,9 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
               child: PageView.builder(
                 controller: _controller,
                 itemCount: goals.length,
-                physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
+                physics: const PageScrollPhysics(
+                  parent: ClampingScrollPhysics(),
+                ),
                 onPageChanged: (index) {
                   _goalId = goals[index].id;
                 },
@@ -998,7 +1013,8 @@ class _SavingGoalPage extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: compact ? 11 : 12.5,
                   fontWeight: FontWeight.w700,
                   color: textSecondary,
@@ -1013,7 +1029,8 @@ class _SavingGoalPage extends StatelessWidget {
           child: Text(
             '${formatMoney(saved)} / ${formatMoney(target)}',
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: compact ? 14 : 17,
               fontWeight: FontWeight.bold,
               color: textPrimary,
@@ -1126,9 +1143,9 @@ class _ExpensesAndObligationsCardState
     final compact = widget.compact;
 
     List<Widget> pages() => [
-          _RecentExpensesPage(expenses: widget.expenses, compact: compact),
-          _ObligationsPage(obligations: widget.obligations, compact: compact),
-        ];
+      _RecentExpensesPage(expenses: widget.expenses, compact: compact),
+      _ObligationsPage(obligations: widget.obligations, compact: compact),
+    ];
 
     return _SectionCard(
       onTap: _open,
@@ -1223,7 +1240,10 @@ class _RecentExpensesPage extends StatelessWidget {
                   Reveal(
                     key: ValueKey(latest[index].id),
                     index: index,
-                    child: _ExpenseRow(expense: latest[index], compact: compact),
+                    child: _ExpenseRow(
+                      expense: latest[index],
+                      compact: compact,
+                    ),
                   ),
                 ],
               ],
@@ -1341,7 +1361,8 @@ class _ExpenseRow extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       textAlign: TextAlign.end,
       style: TextStyle(
-        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+        fontFamily: 'Outfit',
+        fontFamilyFallback: ['Tajawal'],
         fontSize: compact ? 11.5 : 14,
         fontWeight: FontWeight.bold,
         color: accent,
@@ -1373,7 +1394,8 @@ class _ExpenseRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: compact ? 12.5 : 15.5,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -1386,7 +1408,8 @@ class _ExpenseRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                     fontSize: compact ? 10.5 : 12.5,
                     color: textSecondary,
                   ),
@@ -1399,7 +1422,8 @@ class _ExpenseRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: compact ? 9 : 11,
                   color: textSecondary.withValues(alpha: 0.8),
                 ),
@@ -1476,7 +1500,8 @@ class _ObligationRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: compact ? 12.5 : 15.5,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -1488,7 +1513,8 @@ class _ObligationRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: compact ? 10.5 : 12.5,
                   fontWeight: attention ? FontWeight.w700 : FontWeight.w400,
                   color: attention ? warning : textSecondary,
@@ -1508,7 +1534,8 @@ class _ObligationRow extends StatelessWidget {
               maxLines: 1,
               textAlign: TextAlign.end,
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
                 fontSize: compact ? 11.5 : 14,
                 fontWeight: FontWeight.bold,
                 color: accent,
@@ -1607,7 +1634,8 @@ class _SectionTitle extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
-        fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+        fontFamily: 'Outfit',
+        fontFamilyFallback: ['Tajawal'],
         fontSize: compact ? 14.5 : 16,
         fontWeight: FontWeight.bold,
         color: textPrimary,
@@ -1628,7 +1656,8 @@ class _SectionTitle extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: compact ? 10.5 : 11,
               fontWeight: FontWeight.w500,
               color: textSecondary,

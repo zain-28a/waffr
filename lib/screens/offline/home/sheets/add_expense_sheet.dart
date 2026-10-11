@@ -160,9 +160,8 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   // Fills every field from [preset]; the user can still edit before saving.
   Future<void> _applyPreset(ExpensePreset preset) async {
     final recurring = preset.recurring;
-    final code = CurrencyStore.instance.enabledCodes.contains(
-      preset.currencyCode,
-    )
+    final code =
+        CurrencyStore.instance.enabledCodes.contains(preset.currencyCode)
         ? preset.currencyCode
         : _currencyCode;
 
@@ -334,9 +333,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                 },
               ),
               const SizedBox(height: 10),
-              SheetFieldLabel(
-                text: 'كل كم ${_recurringUnit.label}؟',
-              ),
+              SheetFieldLabel(text: 'كل كم ${_recurringUnit.label}؟'),
               SheetTextField(
                 controller: _intervalController,
                 hint: 'مثال: 1',
@@ -379,7 +376,8 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         _SmartCategoryHint(
           suggestion: _suggestedCategory,
           current: _category,
-          applied: _suggestedCategory != null &&
+          applied:
+              _suggestedCategory != null &&
               !_categoryTouched &&
               _suggestedCategory == _category,
           onApply: () {
@@ -454,8 +452,9 @@ class _PresetStarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return Semantics(
       button: true,
@@ -533,8 +532,9 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
         title: editing == null ? 'تصنيف مخصص' : 'تعديل التصنيف',
         submitLabel: editing == null ? 'إضافة' : 'حفظ',
         initialLabel: editing?.label,
-        initialIconIndex:
-            editing == null ? 0 : store.iconIndexOf(editing.label),
+        initialIconIndex: editing == null
+            ? 0
+            : store.iconIndexOf(editing.label),
         ignoring: editing?.label,
       ),
     );
@@ -591,7 +591,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
       title: 'حذف تصنيف «$label»',
       message: store.isBuiltIn(label)
           ? 'لن يظهر في قائمة التصنيفات بعد الآن. المصروفات السابقة تبقى كما هي، '
-              'ويمكنك إعادته بإضافة تصنيف مخصص بالاسم نفسه.'
+                'ويمكنك إعادته بإضافة تصنيف مخصص بالاسم نفسه.'
           : 'لن يظهر في قائمة التصنيفات بعد الآن. المصروفات السابقة تبقى كما هي.',
       confirmLabel: 'حذف',
       destructive: true,
@@ -632,8 +632,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
                       category: category,
                       isSelected: category.label == widget.selected,
                       onTap: () => widget.onSelected(category.label),
-                      onLongPress: () =>
-                          _showActions(tileContext, category),
+                      onLongPress: () => _showActions(tileContext, category),
                     );
                   },
                 ),
@@ -656,10 +655,7 @@ class _CustomCategoryDraft {
   final String label;
   final int iconIndex;
 
-  const _CustomCategoryDraft({
-    required this.label,
-    required this.iconIndex,
-  });
+  const _CustomCategoryDraft({required this.label, required this.iconIndex});
 }
 
 // Name + icon picker used when creating or renaming a custom category.
@@ -755,7 +751,8 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
                 widget.title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: accent,
@@ -789,7 +786,8 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
                 child: Text(
                   'الأيقونة',
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: textPrimary,
@@ -929,8 +927,8 @@ class _CategoryTile extends StatelessWidget {
           color: isSelected
               ? accent
               : isAction
-                  ? sheetFieldColor(context).withValues(alpha: 0.55)
-                  : sheetFieldColor(context),
+              ? sheetFieldColor(context).withValues(alpha: 0.55)
+              : sheetFieldColor(context),
           borderRadius: BorderRadius.circular(14),
           border: isAction
               ? Border.all(color: accent.withValues(alpha: 0.32), width: 1.2)
@@ -939,18 +937,15 @@ class _CategoryTile extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              category.icon,
-              size: 18,
-              color: iconColor,
-            ),
+            Icon(category.icon, size: 18, color: iconColor),
             const SizedBox(height: 4),
             Text(
               category.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
                 fontSize: 10.5,
                 fontWeight: FontWeight.w600,
                 color: foreground,
@@ -981,8 +976,9 @@ class _SmartCategoryHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final colors = smartGlowColors(context);
     final label = suggestion;
 

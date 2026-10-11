@@ -274,12 +274,14 @@ class RecurringExpenseStore extends ChangeNotifier {
     if (index < 0) return;
 
     _items[index] = untilIncome
-        ? _items[index].copyWith(clearReminder: true).copyWith(
-              remindOnIncome: true,
-            )
-        : _items[index].copyWith(clearReminder: true).copyWith(
-              remindAt: deviceNow().add(after ?? const Duration(days: 1)),
-            );
+        ? _items[index]
+              .copyWith(clearReminder: true)
+              .copyWith(remindOnIncome: true)
+        : _items[index]
+              .copyWith(clearReminder: true)
+              .copyWith(
+                remindAt: deviceNow().add(after ?? const Duration(days: 1)),
+              );
     await _persist();
     notifyListeners();
   }
@@ -444,7 +446,8 @@ class RecurringExpenseStore extends ChangeNotifier {
     if (remindAt != null && remindAt.isAfter(now)) return false;
 
     // The first charge of a schedule just added is shown on the home screen.
-    final justAdded = dates.length == 1 &&
+    final justAdded =
+        dates.length == 1 &&
         !_hasPosted(item.id) &&
         now.difference(item.createdAt).inMinutes < 5;
     if (!justAdded) {
@@ -578,7 +581,9 @@ class RecurringExpenseStore extends ChangeNotifier {
 
     _items
       ..clear()
-      ..addAll(stored.map(RecurringExpense.decode).whereType<RecurringExpense>())
+      ..addAll(
+        stored.map(RecurringExpense.decode).whereType<RecurringExpense>(),
+      )
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     _loaded = true;

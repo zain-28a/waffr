@@ -127,8 +127,9 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
 
   List<Widget> _buildPicker(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     if (_income <= 0) {
       return [
@@ -138,7 +139,8 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
             'أضف دخلاً شهرياً أولاً لاقتراح خطط مناسبة.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 14,
               color: textSecondary,
             ),
@@ -157,7 +159,8 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
         '${formatMoney(_income)} $currencyLabel',
         textAlign: TextAlign.center,
         style: TextStyle(
-          fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+          fontFamily: 'Outfit',
+          fontFamilyFallback: ['Tajawal'],
           fontSize: 22,
           fontWeight: FontWeight.bold,
           color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
@@ -190,12 +193,15 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
 
   List<Widget> _buildPreview(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final periodWord =
-        _frequency == RecurringFrequency.weekly ? 'أسبوعياً' : 'شهرياً';
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final periodWord = _frequency == RecurringFrequency.weekly
+        ? 'أسبوعياً'
+        : 'شهرياً';
 
     return [
       GlassContainer(
@@ -270,7 +276,8 @@ class _PreviewRow extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
                 fontSize: 13.5,
                 color: textSecondary,
               ),
@@ -281,7 +288,8 @@ class _PreviewRow extends StatelessWidget {
               value,
               textAlign: TextAlign.end,
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
                 fontSize: emphasize ? 16 : 14,
                 fontWeight: FontWeight.bold,
                 color: textPrimary,
@@ -335,10 +343,12 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final periodWord = switch (widget.goal.deductFrequency) {
       RecurringFrequency.weekly => 'أسبوعياً',
       RecurringFrequency.monthly => 'شهرياً',

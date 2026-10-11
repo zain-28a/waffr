@@ -34,26 +34,20 @@ class WaffrLogo extends StatelessWidget {
 class WaffrSplash extends StatelessWidget {
   final bool followPlatformBrightness;
 
-  const WaffrSplash({
-    super.key,
-    this.followPlatformBrightness = false,
-  });
+  const WaffrSplash({super.key, this.followPlatformBrightness = false});
 
   @override
   Widget build(BuildContext context) {
     final isDark = followPlatformBrightness
         ? MediaQuery.platformBrightnessOf(context) == Brightness.dark
         : Theme.of(context).brightness == Brightness.dark;
-    final background =
-        isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final background = isDark
+        ? AppColors.darkBackground
+        : AppColors.lightBackground;
 
     return Scaffold(
       backgroundColor: background,
-      body: const SafeArea(
-        child: Center(
-          child: WaffrLogo(size: 84),
-        ),
-      ),
+      body: const SafeArea(child: Center(child: WaffrLogo(size: 84))),
     );
   }
 }

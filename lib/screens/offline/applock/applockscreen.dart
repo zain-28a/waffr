@@ -8,10 +8,7 @@ import 'package:waffr/core/theme/app_color.dart';
 class LockScreen extends StatefulWidget {
   final VoidCallback onAuthenticated;
 
-  const LockScreen({
-    super.key,
-    required this.onAuthenticated,
-  });
+  const LockScreen({super.key, required this.onAuthenticated});
 
   @override
   State<LockScreen> createState() => _LockScreenState();
@@ -63,9 +60,7 @@ class _LockScreenState extends State<LockScreen> {
     } finally {
       if (mounted) {
         // Brief pause so Android can dismiss the system auth UI first.
-        await Future.delayed(
-          const Duration(milliseconds: 300),
-        );
+        await Future.delayed(const Duration(milliseconds: 300));
 
         if (mounted) {
           setState(() {
@@ -78,20 +73,15 @@ class _LockScreenState extends State<LockScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bg = isDark
-        ? AppColors.darkBackground
-        : AppColors.lightBackground;
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
 
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
 
-    final accent = isDark
-        ? AppColors.darkAccent
-        : AppColors.lightAccent;
+    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
 
     return Scaffold(
       backgroundColor: bg,
@@ -99,11 +89,7 @@ class _LockScreenState extends State<LockScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.lock_rounded,
-              size: 70,
-              color: accent,
-            ),
+            Icon(Icons.lock_rounded, size: 70, color: accent),
 
             const SizedBox(height: 25),
 
@@ -113,7 +99,8 @@ class _LockScreenState extends State<LockScreen> {
                 color: textPrimary,
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
               ),
             ),
 
@@ -124,7 +111,8 @@ class _LockScreenState extends State<LockScreen> {
               style: TextStyle(
                 color: textPrimary.withValues(alpha: 0.6),
                 fontSize: 14,
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
               ),
             ),
 

@@ -76,8 +76,7 @@ class _WaffrDatePickerDialog extends StatefulWidget {
   });
 
   @override
-  State<_WaffrDatePickerDialog> createState() =>
-      _WaffrDatePickerDialogState();
+  State<_WaffrDatePickerDialog> createState() => _WaffrDatePickerDialogState();
 }
 
 class _WaffrDatePickerDialogState extends State<_WaffrDatePickerDialog> {
@@ -113,9 +112,7 @@ class _WaffrDatePickerDialogState extends State<_WaffrDatePickerDialog> {
     }
     _controllers = [
       for (final date in _dates)
-        TextEditingController(
-          text: date == null ? '' : formatDateInput(date),
-        ),
+        TextEditingController(text: date == null ? '' : formatDateInput(date)),
     ];
     _focusNodes = [
       for (var i = 0; i < _dates.length; i++)
@@ -222,8 +219,9 @@ class _WaffrDatePickerDialogState extends State<_WaffrDatePickerDialog> {
     final theme = Theme.of(context);
     final width = MediaQuery.sizeOf(context).width;
     final selected = _dates[_active];
-    final calendarInitial =
-        selected != null && _selectable(selected) ? selected : null;
+    final calendarInitial = selected != null && _selectable(selected)
+        ? selected
+        : null;
 
     return Material(
       color: Colors.transparent,
@@ -296,7 +294,8 @@ class _WaffrDatePickerDialogState extends State<_WaffrDatePickerDialog> {
                   currentDate: _outOfRange(_dayOnly(DateTime.now()))
                       ? _last
                       : null,
-                  initialCalendarMode: widget.startWithYear &&
+                  initialCalendarMode:
+                      widget.startWithYear &&
                           _calendarVersion == 0 &&
                           calendarInitial == null
                       ? DatePickerMode.year

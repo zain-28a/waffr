@@ -12,7 +12,16 @@ import 'package:waffr/core/insights/smart/smart_facts.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/data/models/transaction.dart';
 
-const _categories = ['طعام', 'مواصلات', 'تسوق', 'فواتير', 'صحة', 'ترفيه', 'تعليم', 'أخرى'];
+const _categories = [
+  'طعام',
+  'مواصلات',
+  'تسوق',
+  'فواتير',
+  'صحة',
+  'ترفيه',
+  'تعليم',
+  'أخرى',
+];
 const _nudges = ['افتح', 'عُد ', 'ادخل', 'سجّل', 'التطبيق', 'اضغط'];
 
 final _countNoun = RegExp(
@@ -33,7 +42,18 @@ List<String> _problems(String text, {bool reminder = false}) {
   if (text.trim().isEmpty) issues.add('empty');
   if (text != text.trim()) issues.add('edge spaces');
   if (text.contains('  ')) issues.add('double space');
-  for (final bad in ['null', r'$', '{', '}', 'NaN', 'Infinity', '..', '،،', ' ،', ' .']) {
+  for (final bad in [
+    'null',
+    r'$',
+    '{',
+    '}',
+    'NaN',
+    'Infinity',
+    '..',
+    '،،',
+    ' ،',
+    ' .',
+  ]) {
     if (text.contains(bad)) issues.add('contains "$bad"');
   }
   if ('\u2066'.allMatches(text).length != '\u2069'.allMatches(text).length) {
@@ -49,10 +69,12 @@ List<String> _problems(String text, {bool reminder = false}) {
     final n = int.parse(match.group(1)!.replaceAll(',', ''));
     final noun = match.group(2)!;
     final rest = n >= 100 ? n % 100 : n;
-    final ok = n >= 3 &&
+    final ok =
+        n >= 3 &&
         switch (noun) {
           _ when _plural.contains(noun) => rest >= 3 && rest <= 10,
-          _ when _accusative.contains(noun) => rest >= 11 || (n < 100 && n >= 11),
+          _ when _accusative.contains(noun) =>
+            rest >= 11 || (n < 100 && n >= 11),
           _ when _genitive.contains(noun) => n >= 100 && rest <= 2,
           _ when _same.contains(noun) => rest >= 11 || (n >= 100 && rest <= 2),
           _ => false,
@@ -70,26 +92,32 @@ SmartFacts _randomFacts(math.Random r, DateTime now) {
     if (r.nextDouble() < 0.25) continue;
     final day = now.subtract(Duration(days: back, hours: r.nextInt(14)));
     for (var k = 0; k < spread; k++) {
-      expenses.add(WaffrTransaction(
-        id: 'e${id++}',
-        type: TransactionType.expense,
-        amount: (5 + r.nextInt(400)) * (r.nextBool() ? 1000.0 : 1.0),
-        dateTime: day,
-        category: _categories[r.nextInt(_categories.length)],
-        paymentMethod: r.nextBool() ? 'بطاقة' : 'نقداً',
-        note: r.nextDouble() < 0.2 ? 'غداء' : null,
-      ));
+      expenses.add(
+        WaffrTransaction(
+          id: 'e${id++}',
+          type: TransactionType.expense,
+          amount: (5 + r.nextInt(400)) * (r.nextBool() ? 1000.0 : 1.0),
+          dateTime: day,
+          category: _categories[r.nextInt(_categories.length)],
+          paymentMethod: r.nextBool() ? 'بطاقة' : 'نقداً',
+          note: r.nextDouble() < 0.2 ? 'غداء' : null,
+        ),
+      );
     }
   }
   final transfers = <WaffrTransaction>[
     for (var i = 0; i < r.nextInt(6); i++)
       WaffrTransaction(
         id: 't${id++}',
-        type: r.nextDouble() < 0.3 ? TransactionType.savingsOut : TransactionType.savingsIn,
+        type: r.nextDouble() < 0.3
+            ? TransactionType.savingsOut
+            : TransactionType.savingsIn,
         amount: 1000.0 + r.nextInt(90000),
         dateTime: now.subtract(Duration(days: r.nextInt(80))),
         goalId: r.nextBool() ? 'g0' : null,
-        transferKind: r.nextBool() ? SavingsTransferKind.periodLeftover : SavingsTransferKind.manual,
+        transferKind: r.nextBool()
+            ? SavingsTransferKind.periodLeftover
+            : SavingsTransferKind.manual,
       ),
   ];
   final income = r.nextDouble() < 0.8 ? 100000.0 + r.nextInt(3000000) : null;
@@ -110,7 +138,9 @@ SmartFacts _randomFacts(math.Random r, DateTime now) {
     balance: r.nextDouble() < 0.1 ? 0 : 1000.0 + r.nextInt(2000000),
     maxBalance: 2000000,
     monthlyIncome: income,
-    incomeFrequency: r.nextBool() ? RecurringFrequency.monthly : RecurringFrequency.weekly,
+    incomeFrequency: r.nextBool()
+        ? RecurringFrequency.monthly
+        : RecurringFrequency.weekly,
     hasRecurringIncome: income != null,
     savingsBalance: r.nextInt(5000000).toDouble(),
     goals: [
@@ -172,9 +202,15 @@ void main() {
               failures.add('${text.kind}: $issue → $part');
             }
           }
-          if (text.title.endsWith('.')) failures.add('title ends with "." → ${text.title}');
-          if (!text.body.endsWith('.')) failures.add('body without "." → ${text.body}');
-          if (text.title.length > 70) failures.add('long title → ${text.title}');
+          if (text.title.endsWith('.')) {
+            failures.add('title ends with "." → ${text.title}');
+          }
+          if (!text.body.endsWith('.')) {
+            failures.add('body without "." → ${text.body}');
+          }
+          if (text.title.length > 70) {
+            failures.add('long title → ${text.title}');
+          }
           if (text.body.length > 140) failures.add('long body → ${text.body}');
         }
       }
@@ -183,8 +219,20 @@ void main() {
     expect(checked, greaterThan(3000));
     expect(
       kinds,
-      containsAll(['obligation', 'payments', 'short-balance', 'balance', 'category',
-          'goal', 'top-share', 'no-spend', 'savings', 'month', 'weekly', 'streak']),
+      containsAll([
+        'obligation',
+        'payments',
+        'short-balance',
+        'balance',
+        'category',
+        'goal',
+        'top-share',
+        'no-spend',
+        'savings',
+        'month',
+        'weekly',
+        'streak',
+      ]),
     );
   });
 
@@ -199,7 +247,11 @@ void main() {
           for (final part in [
             report.headline,
             report.summary,
-            for (final item in report.insights) ...[item.title, item.body, ?item.detail],
+            for (final item in report.insights) ...[
+              item.title,
+              item.body,
+              ?item.detail,
+            ],
           ]) {
             if (part.isEmpty) continue;
             for (final line in part.split('\n')) {

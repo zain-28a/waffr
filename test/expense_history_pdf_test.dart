@@ -40,9 +40,7 @@ void main() {
     expect(bytes.length, greaterThan(500));
     expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
 
-    final file = File(
-      '${Directory.systemTemp.path}/waffr-expenses-test.pdf',
-    );
+    final file = File('${Directory.systemTemp.path}/waffr-expenses-test.pdf');
     await file.writeAsBytes(bytes, flush: true);
     expect(await file.exists(), isTrue);
     expect(await file.length(), bytes.length);

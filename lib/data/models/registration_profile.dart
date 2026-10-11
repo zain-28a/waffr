@@ -71,7 +71,8 @@ String? normalizePhoneNumber(String raw) {
 int ageInYears(DateTime birth, [DateTime? today]) {
   final now = today ?? DateTime.now();
   var age = now.year - birth.year;
-  final birthdayPassed = now.month > birth.month ||
+  final birthdayPassed =
+      now.month > birth.month ||
       (now.month == birth.month && now.day >= birth.day);
   if (!birthdayPassed) age -= 1;
   if (age < 0) return 0;

@@ -31,14 +31,14 @@ class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     if (elevated == null) {
-        return _HeaderChrome(
-          title: title,
-          leading: leading,
-          leadingWidth: leadingWidth,
-          centerTitle: centerTitle,
-          elevated: false,
-          applySafeArea: applySafeArea,
-        );
+      return _HeaderChrome(
+        title: title,
+        leading: leading,
+        leadingWidth: leadingWidth,
+        centerTitle: centerTitle,
+        elevated: false,
+        applySafeArea: applySafeArea,
+      );
     }
 
     return ValueListenableBuilder<bool>(
@@ -89,8 +89,9 @@ class WaffrBackHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
     return WaffrPageHeader(
       centerTitle: true,
@@ -169,9 +170,7 @@ class _HeaderChrome extends StatelessWidget {
           ),
         ),
       ),
-      child: applySafeArea
-          ? SafeArea(bottom: false, child: _bar)
-          : _bar,
+      child: applySafeArea ? SafeArea(bottom: false, child: _bar) : _bar,
     );
   }
 
@@ -182,10 +181,7 @@ class _HeaderChrome extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Row(
           children: [
-            SizedBox(
-              width: leadingWidth,
-              child: leading,
-            ),
+            SizedBox(width: leadingWidth, child: leading),
             Expanded(
               child: centerTitle
                   ? Center(child: title)

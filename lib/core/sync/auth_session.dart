@@ -19,9 +19,7 @@ class AuthResult {
   final bool ok;
   final String message;
 
-  const AuthResult.success()
-      : ok = true,
-        message = '';
+  const AuthResult.success() : ok = true, message = '';
 
   const AuthResult.failure(this.message) : ok = false;
 }
@@ -121,16 +119,10 @@ class AuthSession {
     return existing;
   }
 
-  Future<AuthResult> login({
-    required String email,
-    required String password,
-  }) {
+  Future<AuthResult> login({required String email, required String password}) {
     return _authenticate(
       path: '/auth/login',
-      body: {
-        'email': email.trim().toLowerCase(),
-        'password': password,
-      },
+      body: {'email': email.trim().toLowerCase(), 'password': password},
     );
   }
 
@@ -178,7 +170,9 @@ class AuthSession {
       }
 
       if (response.statusCode != 200) {
-        return AuthResult.failure(describeAuthError(response.statusCode, decoded));
+        return AuthResult.failure(
+          describeAuthError(response.statusCode, decoded),
+        );
       }
 
       if (decoded is! Map) {
@@ -257,9 +251,7 @@ class AuthSession {
     if (status == 200) return const AuthResult.success();
     if (status == 429) return const AuthResult.failure(tooManyAttemptsMessage);
     if (status == 503) {
-      return const AuthResult.failure(
-        'تعذّر إرسال البريد الآن. حاول لاحقاً',
-      );
+      return const AuthResult.failure('تعذّر إرسال البريد الآن. حاول لاحقاً');
     }
     if (status == null) {
       return const AuthResult.failure(
@@ -345,13 +337,12 @@ class AuthSession {
         return const AuthResult.failure(tooManyAttemptsMessage);
       }
       if (response.statusCode != 200) {
-        return const AuthResult.failure(
-          'تعذّر تغيير كلمة المرور. حاول لاحقاً',
-        );
+        return const AuthResult.failure('تعذّر تغيير كلمة المرور. حاول لاحقاً');
       }
       final decoded = jsonDecode(response.body);
-      final access =
-          decoded is Map ? decoded['access_token']?.toString() ?? '' : '';
+      final access = decoded is Map
+          ? decoded['access_token']?.toString() ?? ''
+          : '';
       if (access.isEmpty) {
         return const AuthResult.failure('تعذّر الاتصال بالخادم. حاول مرة أخرى');
       }

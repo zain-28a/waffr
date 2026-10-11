@@ -20,8 +20,9 @@ Future<EditDeleteAction?> showEditDeleteMenu(
   final size = box.size;
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-  final textPrimary =
-      isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+  final textPrimary = isDark
+      ? AppColors.darkTextPrimary
+      : AppColors.lightTextPrimary;
   final deleteColor = AppColors.destructiveOf(context);
 
   return showMenu<EditDeleteAction>(

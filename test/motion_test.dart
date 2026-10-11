@@ -4,8 +4,9 @@ import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 
 void main() {
-  testWidgets('reduced-motion page transition returns the page as is',
-      (tester) async {
+  testWidgets('reduced-motion page transition returns the page as is', (
+    tester,
+  ) async {
     const builder = ReducedMotionPageTransitionsBuilder(
       ZoomPageTransitionsBuilder(),
     );
@@ -19,13 +20,15 @@ void main() {
         data: MediaQueryData(disableAnimations: disable),
         child: Builder(
           builder: (context) {
-            out(builder.buildTransitions(
-              route,
-              context,
-              kAlwaysCompleteAnimation,
-              kAlwaysDismissedAnimation,
-              page,
-            ));
+            out(
+              builder.buildTransitions(
+                route,
+                context,
+                kAlwaysCompleteAnimation,
+                kAlwaysDismissedAnimation,
+                page,
+              ),
+            );
             return const SizedBox();
           },
         ),
@@ -40,8 +43,9 @@ void main() {
     route.dispose();
   });
 
-  testWidgets('Reveal keeps its child alive when the entrance ends',
-      (tester) async {
+  testWidgets('Reveal keeps its child alive when the entrance ends', (
+    tester,
+  ) async {
     var inits = 0;
     await tester.pumpWidget(
       Directionality(
@@ -54,16 +58,17 @@ void main() {
     expect(inits, 1, reason: 'the child must not be rebuilt from scratch');
   });
 
-  testWidgets('RevealClip keeps its child alive when it completes',
-      (tester) async {
+  testWidgets('RevealClip keeps its child alive when it completes', (
+    tester,
+  ) async {
     var inits = 0;
     Widget at(double fraction) => Directionality(
-          textDirection: TextDirection.ltr,
-          child: RevealClip(
-            fraction: fraction,
-            child: _Counted(onInit: () => inits++),
-          ),
-        );
+      textDirection: TextDirection.ltr,
+      child: RevealClip(
+        fraction: fraction,
+        child: _Counted(onInit: () => inits++),
+      ),
+    );
     await tester.pumpWidget(at(0.5));
     await tester.pumpWidget(at(1));
     expect(inits, 1);

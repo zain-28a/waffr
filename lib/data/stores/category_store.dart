@@ -27,13 +27,11 @@ class CustomCategoryEntry {
     this.updatedAt,
   });
 
-  DateTime get syncUpdatedAt => (updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0)).toUtc();
+  DateTime get syncUpdatedAt =>
+      (updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0)).toUtc();
 
-  ExpenseCategory toCategory() => customCategoryNamed(
-        label,
-        iconIndex: iconIndex,
-        colorIndex: colorIndex,
-      );
+  ExpenseCategory toCategory() =>
+      customCategoryNamed(label, iconIndex: iconIndex, colorIndex: colorIndex);
 
   CustomCategoryEntry copyWith({
     String? label,
@@ -51,19 +49,19 @@ class CustomCategoryEntry {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'label': label,
-        'icon': iconIndex,
-        if (colorIndex != null) 'color': colorIndex,
-        'updatedAt': toSyncIso(syncUpdatedAt),
-      };
+    'id': id,
+    'label': label,
+    'icon': iconIndex,
+    if (colorIndex != null) 'color': colorIndex,
+    'updatedAt': toSyncIso(syncUpdatedAt),
+  };
 
   Map<String, dynamic> toSyncJson() => {
-        'client_id': id,
-        'label': label,
-        'icon_index': iconIndex,
-        'updated_at': toSyncIso(syncUpdatedAt),
-      };
+    'client_id': id,
+    'label': label,
+    'icon_index': iconIndex,
+    'updated_at': toSyncIso(syncUpdatedAt),
+  };
 
   factory CustomCategoryEntry.fromJson(Map<String, dynamic> json) {
     final label = (json['label'] as String? ?? '').trim();
@@ -77,8 +75,8 @@ class CustomCategoryEntry {
       label: label,
       iconIndex: clampCustomIconIndex(iconIndex),
       colorIndex: _readColorIndex(json['color'] ?? json['color_index']),
-      updatedAt: parseSyncDate(json['updatedAt'] ?? json['updated_at']) ??
-          syncNow(),
+      updatedAt:
+          parseSyncDate(json['updatedAt'] ?? json['updated_at']) ?? syncNow(),
     );
   }
 
@@ -148,23 +146,24 @@ class CategoryStore extends ChangeNotifier {
 
   bool get isLoaded => _loaded;
 
-  List<ExpenseCategory> get customCategories =>
-      [for (final entry in _entries) entry.toCategory()];
+  List<ExpenseCategory> get customCategories => [
+    for (final entry in _entries) entry.toCategory(),
+  ];
 
   List<CustomCategoryEntry> get entries => List.unmodifiable(_entries);
 
   /// Built-in labels the user removed, in catalog order (for settings sync).
   List<String> get hiddenBuiltIns => [
-        for (final item in expenseCategories)
-          if (_hiddenBuiltIns.contains(item.label)) item.label,
-      ];
+    for (final item in expenseCategories)
+      if (_hiddenBuiltIns.contains(item.label)) item.label,
+  ];
 
   // Visible built-ins plus customs for pickers; excludes the "custom" tile.
   List<ExpenseCategory> get selectableCategories => [
-        for (final item in expenseCategories)
-          if (!_hiddenBuiltIns.contains(item.label)) item,
-        ...customCategories,
-      ];
+    for (final item in expenseCategories)
+      if (!_hiddenBuiltIns.contains(item.label)) item,
+    ...customCategories,
+  ];
 
   /// First category a new expense starts on.
   String get defaultLabel {
@@ -182,8 +181,7 @@ class CategoryStore extends ChangeNotifier {
     return _archived[label]?.toCategory();
   }
 
-  bool isCustom(String label) =>
-      _entries.any((entry) => entry.label == label);
+  bool isCustom(String label) => _entries.any((entry) => entry.label == label);
 
   bool isBuiltIn(String label) =>
       expenseCategories.any((item) => item.label == label);
@@ -202,8 +200,7 @@ class CategoryStore extends ChangeNotifier {
   String? validateName(String rawName, {String? ignoring}) {
     final name = rawName.trim();
     if (name.isEmpty) return 'أدخل اسماً للتصنيف';
-    if (name == customCategoryActionLabel ||
-        name == fallbackCategory.label) {
+    if (name == customCategoryActionLabel || name == fallbackCategory.label) {
       return 'هذا الاسم محجوز';
     }
     if (selectableCategories.any(
@@ -408,14 +405,18 @@ class CategoryStore extends ChangeNotifier {
     for (var i = 0; i < _entries.length; i++) {
       if (_entries[i].colorIndex != null) continue;
       final used = _entries.map((entry) => entry.colorIndex).whereType<int>();
-      _entries[i] = _entries[i].copyWith(colorIndex: nextCustomColorIndex(used));
+      _entries[i] = _entries[i].copyWith(
+        colorIndex: nextCustomColorIndex(used),
+      );
       changed = true;
     }
     return changed;
   }
 
   // Prefers v2 JSON; migrates the old string-list format when needed.
-  Future<List<CustomCategoryEntry>> _readEntries(SharedPreferences prefs) async {
+  Future<List<CustomCategoryEntry>> _readEntries(
+    SharedPreferences prefs,
+  ) async {
     final json = prefs.getString(itemsJsonKey);
     if (json != null && json.trim().isNotEmpty) {
       final parsed = _parseJson(json);

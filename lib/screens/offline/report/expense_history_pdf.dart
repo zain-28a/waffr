@@ -86,11 +86,8 @@ Future<Uint8List> renderExpenseHistoryPdf(ExpenseHistoryPdfJob job) async {
         days: days,
         count: job.expenses.length,
       ),
-      footer: (context) => _pdfFooter(
-        context,
-        fonts: fonts,
-        generatedAt: job.generatedAt,
-      ),
+      footer: (context) =>
+          _pdfFooter(context, fonts: fonts, generatedAt: job.generatedAt),
       build: (context) => [
         for (final day in days) ...[
           _pdfDayCaption(day, fonts),
@@ -149,8 +146,8 @@ pw.Widget _pdfHeader({
   final range = days.isEmpty
       ? ''
       : days.length == 1
-          ? formatDate(days.first.date)
-          : 'من ${formatDate(days.last.date)} إلى ${formatDate(days.first.date)}';
+      ? formatDate(days.first.date)
+      : 'من ${formatDate(days.last.date)} إلى ${formatDate(days.first.date)}';
 
   return pw.Column(
     children: [
@@ -251,7 +248,11 @@ pw.Widget _pdfDayCaption(ExpenseShareDay day, _PdfFonts fonts) {
       pw.Expanded(
         child: pw.Text(
           label,
-          style: pw.TextStyle(font: fonts.bold, fontSize: 13, color: _brandGreen),
+          style: pw.TextStyle(
+            font: fonts.bold,
+            fontSize: 13,
+            color: _brandGreen,
+          ),
         ),
       ),
       if (!label.contains('${day.date.year}') || label == date)
@@ -276,7 +277,11 @@ pw.Widget _pdfDayTable(ExpenseShareDay day, _PdfFonts fonts) {
     );
   }
 
-  final headStyle = pw.TextStyle(font: fonts.bold, fontSize: 9.5, color: _muted);
+  final headStyle = pw.TextStyle(
+    font: fonts.bold,
+    fontSize: 9.5,
+    color: _muted,
+  );
   final bodyStyle = pw.TextStyle(font: fonts.regular, fontSize: 10.5);
   final amountStyle = pw.TextStyle(font: fonts.bold, fontSize: 10.5);
 
@@ -366,7 +371,10 @@ pw.Widget _pdfCategoryCell(WaffrTransaction expense, _PdfFonts fonts) {
           if (recurring) ...[
             pw.SizedBox(width: 6),
             pw.Container(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 5,
+                vertical: 1,
+              ),
               decoration: pw.BoxDecoration(
                 color: _headerTint,
                 borderRadius: pw.BorderRadius.circular(6),
@@ -388,7 +396,11 @@ pw.Widget _pdfCategoryCell(WaffrTransaction expense, _PdfFonts fonts) {
           padding: const pw.EdgeInsets.only(top: 1),
           child: pw.Text(
             note,
-            style: pw.TextStyle(font: fonts.regular, fontSize: 9, color: _muted),
+            style: pw.TextStyle(
+              font: fonts.regular,
+              fontSize: 9,
+              color: _muted,
+            ),
           ),
         ),
     ],

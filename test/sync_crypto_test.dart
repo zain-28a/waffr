@@ -72,7 +72,10 @@ void main() {
 
   test('the password unwraps the data key and a wrong one does not', () async {
     final created = await DataKeyStore.create('pass-1234', iterations: 1000);
-    expect(await DataKeyStore.unwrap('pass-1234', created.wrapped), created.key);
+    expect(
+      await DataKeyStore.unwrap('pass-1234', created.wrapped),
+      created.key,
+    );
     expect(await DataKeyStore.unwrap('wrong', created.wrapped), isNull);
 
     final restored = WrappedDataKey.fromJson(created.wrapped.toJson());

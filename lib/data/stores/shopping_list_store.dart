@@ -50,8 +50,7 @@ class ShoppingItem {
       isPurchased: clearPurchase ? false : (isPurchased ?? this.isPurchased),
       purchasedAt: clearPurchase ? null : (purchasedAt ?? this.purchasedAt),
       expenseId: clearPurchase ? null : (expenseId ?? this.expenseId),
-      updatedAt: updatedAt ??
-          (touch ? DateTime.now().toUtc() : this.updatedAt),
+      updatedAt: updatedAt ?? (touch ? DateTime.now().toUtc() : this.updatedAt),
     );
   }
 
@@ -114,9 +113,8 @@ class ShoppingItem {
         name: name,
         createdAt: createdAt.toLocal(),
         isPurchased: decoded['isPurchased'] == true,
-        purchasedAt: DateTime.tryParse(
-          decoded['purchasedAt']?.toString() ?? '',
-        )?.toLocal(),
+        purchasedAt: DateTime.tryParse(decoded['purchasedAt']?.toString() ?? '')
+            ?.toLocal(),
         expenseId: decoded['expenseId']?.toString(),
         updatedAt: DateTime.tryParse(decoded['updatedAt']?.toString() ?? ''),
       );

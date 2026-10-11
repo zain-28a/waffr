@@ -179,8 +179,9 @@ class _ThemeOption extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: (selected ? colors.accent : Colors.black)
-                      .withValues(alpha: selected ? 0.18 : 0.06),
+                  color: (selected ? colors.accent : Colors.black).withValues(
+                    alpha: selected ? 0.18 : 0.06,
+                  ),
                   blurRadius: selected ? 18 : 10,
                   offset: const Offset(0, 6),
                 ),
@@ -267,7 +268,9 @@ class _MiniHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final line = colors.textPrimary.withValues(alpha: 0.12);
-    final border = Border.all(color: colors.textPrimary.withValues(alpha: 0.08));
+    final border = Border.all(
+      color: colors.textPrimary.withValues(alpha: 0.08),
+    );
 
     Widget bar(double widthFactor, double height, Color color) {
       return FractionallySizedBox(

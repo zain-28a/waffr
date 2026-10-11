@@ -145,9 +145,7 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
     super.initState();
     _currencyCode = CurrencyStore.instance.activeCode;
 
-    _type = _income > 0
-        ? _ContributionType.percent
-        : _ContributionType.custom;
+    _type = _income > 0 ? _ContributionType.percent : _ContributionType.custom;
 
     _store.ensureLoaded().then((_) {
       if (!mounted) return;
@@ -295,7 +293,8 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
         Text(
           'نوع الخطة',
           style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+            fontFamily: 'Outfit',
+            fontFamilyFallback: ['Tajawal'],
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: colors.textPrimary,
@@ -353,17 +352,24 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                       controller: _percentController,
                       hint: 'مثال: 10',
                       keyboardType: TextInputType.number,
-                      inputFormatters: const [
-                        _SavingsPercentFormatter(),
-                      ],
-                    ),Row(mainAxisAlignment: MainAxisAlignment.end,
+                      inputFormatters: const [_SavingsPercentFormatter()],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(left: 25,top: 18),
-                          child: Text("%",style: TextStyle(fontSize: 20,fontWeight: FontWeight.w700,color: colors.textPrimary),),
+                          padding: const EdgeInsets.only(left: 25, top: 18),
+                          child: Text(
+                            "%",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: colors.textPrimary,
+                            ),
+                          ),
                         ),
                       ],
-                    )
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -373,7 +379,8 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                   '${currencyLabelFor(_currencyCode)} / $_periodSingular',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                     fontSize: 12,
                     color: colors.textSecondary,
                   ),
@@ -397,7 +404,8 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                           child: Text(
                             currencyLabelFor(_currencyCode),
                             style: TextStyle(
-                              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                              fontFamily: 'Outfit',
+                              fontFamilyFallback: ['Tajawal'],
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: colors.textPrimary,
@@ -414,7 +422,8 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                     'لا يمكن أن يتجاوز مبلغ التوفير الدخل.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: ['Tajawal'],
                       fontSize: 12,
                       color: colors.accent,
                     ),
@@ -426,7 +435,8 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                   '$_periodSingular.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                     fontSize: 12,
                     color: colors.textSecondary,
                   ),
@@ -436,7 +446,8 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
                   'التوفير هنا ليس تلقائياً. انقل المبلغ بنفسك من رصيدك إلى الهدف متى شئت عبر «توفير مبلغ».',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
                     fontSize: 12,
                     height: 1.5,
                     color: colors.textSecondary,
@@ -543,7 +554,8 @@ class _MethodButton extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: selected ? colors.accent : colors.textPrimary,
@@ -554,7 +566,8 @@ class _MethodButton extends StatelessWidget {
             Text(
               subtitle,
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
                 fontSize: 10.5,
                 color: colors.textSecondary,
               ),
@@ -611,7 +624,8 @@ class _GoalPreview extends StatelessWidget {
           Text(
             'معاينة الخطة',
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: colors.textSecondary,
@@ -625,7 +639,8 @@ class _GoalPreview extends StatelessWidget {
             '${currencyLabelFor(currencyCode)} / $periodSingular',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: colors.accent,
@@ -638,7 +653,8 @@ class _GoalPreview extends StatelessWidget {
             'المدة المتوقعة: $durationText',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 12,
               color: colors.textPrimary,
             ),
@@ -651,7 +667,8 @@ class _GoalPreview extends StatelessWidget {
             '${formatMoney(expected)} ${currencyLabelFor(currencyCode)}',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 11.5,
               color: colors.textSecondary,
             ),
@@ -663,7 +680,8 @@ class _GoalPreview extends StatelessWidget {
             'الهدف: ${formatMoney(target)} ${currencyLabelFor(currencyCode)}',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 11,
               color: colors.textSecondary,
             ),

@@ -25,7 +25,8 @@ Future<void> showMonthlyIncomeRequiredSheet(BuildContext context) {
             'الخطة الدورية تُحسب من دخلك الشهري. افتح الإعدادات وحدّد «الدخل الشهري» أولاً، ثم أعد المحاولة.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 14,
               height: 1.7,
               color: textSecondary,

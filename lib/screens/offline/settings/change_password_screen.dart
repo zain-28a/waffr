@@ -71,9 +71,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   String? get _missingReason {
     final next = _newController.text;
     if (_currentController.text.isEmpty) return 'أدخل كلمة المرور الحالية';
-    if (next.length < 8) return 'كلمة المرور الجديدة يجب أن تتكون من 8 أحرف على الأقل';
+    if (next.length < 8) {
+      return 'كلمة المرور الجديدة يجب أن تتكون من 8 أحرف على الأقل';
+    }
     if (next != _confirmController.text) return 'كلمتا المرور غير متطابقتين';
-    if (next == _currentController.text) return 'اختر كلمة مرور جديدة تختلف عن الحالية';
+    if (next == _currentController.text) {
+      return 'اختر كلمة مرور جديدة تختلف عن الحالية';
+    }
     return null;
   }
 
@@ -82,10 +86,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     Widget field(
       String label,
@@ -118,10 +124,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: WaffrBackHeader(
-        enabled: !_busy,
-        title: 'تغيير كلمة المرور',
-      ),
+      appBar: WaffrBackHeader(enabled: !_busy, title: 'تغيير كلمة المرور'),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

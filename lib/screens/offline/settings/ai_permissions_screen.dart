@@ -29,11 +29,13 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final background =
-        isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final background = isDark
+        ? AppColors.darkBackground
+        : AppColors.lightBackground;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return Scaffold(
       backgroundColor: background,
@@ -59,7 +61,8 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
                   Icons.notifications_active_outlined,
                 ),
                 title: 'تنبيهات ذكية',
-                subtitle: 'تنبيه قبل نفاد الرصيد، وتذكيرات قصيرة إن غبت عن التطبيق',
+                subtitle:
+                    'تنبيه قبل نفاد الرصيد، وتذكيرات قصيرة إن غبت عن التطبيق',
                 showChevron: false,
                 trailing: Switch(
                   value: _settings.alerts,

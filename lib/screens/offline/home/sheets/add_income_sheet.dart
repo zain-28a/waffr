@@ -56,10 +56,10 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
   bool get _isValid => _amount > 0 && _amount <= _maxAmount;
 
   RecurringFrequency get _frequency => switch (_frequencyLabel) {
-        _freqWeekly => RecurringFrequency.weekly,
-        _freqMonthly => RecurringFrequency.monthly,
-        _ => RecurringFrequency.none,
-      };
+    _freqWeekly => RecurringFrequency.weekly,
+    _freqMonthly => RecurringFrequency.monthly,
+    _ => RecurringFrequency.none,
+  };
 
   @override
   void initState() {
@@ -96,8 +96,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
     // settle obligations that still wait for approval.
     final obligations = RecurringExpenseStore.instance;
     await obligations.releaseIncomeReminders(_currencyCode);
-    final waiting =
-        obligations.awaitingConfirmation(_currencyCode).isNotEmpty;
+    final waiting = obligations.awaitingConfirmation(_currencyCode).isNotEmpty;
 
     if (!mounted) return;
     AppHaptics.success();
@@ -108,8 +107,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
     final review = await showAppConfirmDialog(
       navigator.context,
       title: 'التزامات بانتظار تأكيدك',
-      message:
-          'أضفت دخلاً جديداً، ولديك التزامات لم تُخصم بعد. هل تريد مراجعتها الآن؟',
+      message: 'أضفت دخلاً جديداً، ولديك التزامات لم تُخصم بعد. هل تريد مراجعتها الآن؟',
       confirmLabel: 'مراجعة',
       cancelLabel: 'لاحقاً',
       kind: AppFeedbackKind.info,
@@ -157,8 +155,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
                 text: 'الرصيد الحالي',
                 action: const SheetInfoButton(
                   title: 'الرصيد الحالي',
-                  message:
-                      'هذا هو المبلغ المتبقي لديك من الفترة السابقة. اختر ما تريد فعله به: نقله إلى التوفير، أو إبقاءه ضمن رصيدك الجديد.',
+                  message: 'هذا هو المبلغ المتبقي لديك من الفترة السابقة. اختر ما تريد فعله به: نقله إلى التوفير، أو إبقاءه ضمن رصيدك الجديد.',
                 ),
               ),
               SheetChoiceChips(

@@ -74,12 +74,15 @@ class AppTheme {
     final accent = dark ? AppColors.darkAccent : AppColors.lightAccent;
     final onAccent = dark ? AppColors.darkOnAccent : AppColors.lightOnAccent;
     final surface = dark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary =
-        dark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        dark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final destructive =
-        dark ? AppColors.darkDestructive : AppColors.lightDestructive;
+    final textPrimary = dark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = dark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final destructive = dark
+        ? AppColors.darkDestructive
+        : AppColors.lightDestructive;
     final container = accent.withValues(alpha: 0.18);
 
     return ColorScheme(
@@ -181,7 +184,7 @@ class AppTheme {
         fontFamilyFallback: fallback,
         fontSize: 40,
         fontWeight: FontWeight.bold,
-        
+
         color: accent,
       ),
       displayMedium: TextStyle(

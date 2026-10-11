@@ -88,18 +88,13 @@ class _MonthlyIncomeSheetState extends State<_MonthlyIncomeSheet> {
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 22),
-        SheetSaveButton(
-          label: 'حفظ',
-          enabled: _isValid,
-          onTap: _save,
-        ),
+        SheetSaveButton(label: 'حفظ', enabled: _isValid, onTap: _save),
         if (widget.allowClear) ...[
           const SizedBox(height: 8),
           SheetDestructiveButton(
             label: 'إزالة الدخل',
-            onTap: () => Navigator.of(context).pop(
-              AmountDialogCleared(_currencyCode),
-            ),
+            onTap: () =>
+                Navigator.of(context).pop(AmountDialogCleared(_currencyCode)),
           ),
         ],
       ],

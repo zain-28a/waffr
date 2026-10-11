@@ -38,10 +38,12 @@ class _CompletedGoalsSheetState extends State<_CompletedGoalsSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
     final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
     final goals = _store.completedGoals;
 
@@ -104,7 +106,8 @@ class _CompletedGoalCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: textPrimary,
@@ -114,7 +117,8 @@ class _CompletedGoalCard extends StatelessWidget {
           Text(
             'المستهدف: ${formatMoney(goal.targetAmount)} $currencyLabel',
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 13,
               color: textSecondary,
             ),
@@ -122,7 +126,8 @@ class _CompletedGoalCard extends StatelessWidget {
           Text(
             'المبلغ المجموع: ${formatMoney(total)} $currencyLabel',
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 13.5,
               fontWeight: FontWeight.w700,
               color: accent,
@@ -132,7 +137,8 @@ class _CompletedGoalCard extends StatelessWidget {
           Text(
             'المدة: ${goal.duration.label}',
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
               fontSize: 12.5,
               color: textSecondary,
             ),
@@ -141,7 +147,8 @@ class _CompletedGoalCard extends StatelessWidget {
             Text(
               'تاريخ الإنجاز: ${formatDate(completed)}',
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: ['Tajawal'],
                 fontSize: 12.5,
                 color: textSecondary,
               ),

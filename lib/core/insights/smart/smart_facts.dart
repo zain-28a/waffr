@@ -107,10 +107,9 @@ class SmartFacts {
   }
 
   List<WaffrTransaction> expensesBetween(DateTime start, DateTime end) => [
-        for (final item in expenses)
-          if (!item.dateTime.isBefore(start) && item.dateTime.isBefore(end))
-            item,
-      ];
+    for (final item in expenses)
+      if (!item.dateTime.isBefore(start) && item.dateTime.isBefore(end)) item,
+  ];
 
   Map<String, double> categoryTotals(DateTime start, DateTime end) {
     final totals = <String, double>{};
@@ -132,15 +131,23 @@ class SmartFacts {
   }();
 
   late final double monthSpent = spentBetween(monthStart, _tomorrow);
-  late final double prevMonthSpentSameSpan =
-      spentBetween(prevMonthStart, prevMonthSameDay);
-  late final double prevMonthSpentFull =
-      spentBetween(prevMonthStart, monthStart);
+  late final double prevMonthSpentSameSpan = spentBetween(
+    prevMonthStart,
+    prevMonthSameDay,
+  );
+  late final double prevMonthSpentFull = spentBetween(
+    prevMonthStart,
+    monthStart,
+  );
 
-  late final Map<String, double> monthCategories =
-      categoryTotals(monthStart, _tomorrow);
-  late final Map<String, double> prevMonthCategories =
-      categoryTotals(prevMonthStart, prevMonthSameDay);
+  late final Map<String, double> monthCategories = categoryTotals(
+    monthStart,
+    _tomorrow,
+  );
+  late final Map<String, double> prevMonthCategories = categoryTotals(
+    prevMonthStart,
+    prevMonthSameDay,
+  );
 
   late final DateTime weekStart = CalendarPeriod.weekStart(now);
   late final double weekSpent = spentBetween(weekStart, _tomorrow);
@@ -157,8 +164,12 @@ class SmartFacts {
     final start = today.subtract(const Duration(days: 13));
     final first = expenses.isEmpty
         ? today
-        : expenses.map((e) => e.dateTime).reduce((a, b) => a.isBefore(b) ? a : b);
-    final from = first.isAfter(start) ? DateTime(first.year, first.month, first.day) : start;
+        : expenses
+              .map((e) => e.dateTime)
+              .reduce((a, b) => a.isBefore(b) ? a : b);
+    final from = first.isAfter(start)
+        ? DateTime(first.year, first.month, first.day)
+        : start;
     final days = math.max(1, _tomorrow.difference(from).inDays);
     return spentBetween(from, _tomorrow) / days;
   }();
@@ -207,10 +218,14 @@ class SmartFacts {
     return total;
   }
 
-  late final double savedLast30 =
-      savedBetween(today.subtract(const Duration(days: 29)), _tomorrow);
-  late final double savedLast90 =
-      savedBetween(today.subtract(const Duration(days: 89)), _tomorrow);
+  late final double savedLast30 = savedBetween(
+    today.subtract(const Duration(days: 29)),
+    _tomorrow,
+  );
+  late final double savedLast90 = savedBetween(
+    today.subtract(const Duration(days: 89)),
+    _tomorrow,
+  );
 
   int get withdrawalsLast30 => savingsTransfers
       .where(
@@ -256,15 +271,17 @@ class SmartFacts {
       : expenses.map((e) => e.dateTime).reduce((a, b) => a.isAfter(b) ? a : b);
 
   int get loggedLast30 => expenses
-      .where((e) => e.dateTime.isAfter(today.subtract(const Duration(days: 30))))
+      .where(
+        (e) => e.dateTime.isAfter(today.subtract(const Duration(days: 30))),
+      )
       .length;
 
   // Distinct days with at least one expense in the last 30 days.
   int get activeDaysLast30 => {
-        for (final e in expenses)
-          if (e.dateTime.isAfter(today.subtract(const Duration(days: 30))))
-            DateTime(e.dateTime.year, e.dateTime.month, e.dateTime.day),
-      }.length;
+    for (final e in expenses)
+      if (e.dateTime.isAfter(today.subtract(const Duration(days: 30))))
+        DateTime(e.dateTime.year, e.dateTime.month, e.dateTime.day),
+  }.length;
 
   int get noSpendDaysThisMonth {
     final spentDays = {
@@ -286,7 +303,9 @@ class SmartFacts {
   int get weeksOfHistory {
     final first = expenses.isEmpty
         ? today
-        : expenses.map((e) => e.dateTime).reduce((a, b) => a.isBefore(b) ? a : b);
+        : expenses
+              .map((e) => e.dateTime)
+              .reduce((a, b) => a.isBefore(b) ? a : b);
     return today.difference(first).inDays ~/ 7;
   }
 

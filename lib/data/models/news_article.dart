@@ -20,7 +20,9 @@ class NewsArticle {
   // Builds from the API payload; skips rows missing title or publish time.
   static NewsArticle? fromApi(Map<String, dynamic> json) {
     final title = (json['title'] ?? '').toString().trim();
-    final published = DateTime.tryParse((json['published_at'] ?? '').toString());
+    final published = DateTime.tryParse(
+      (json['published_at'] ?? '').toString(),
+    );
     if (title.isEmpty || published == null) return null;
 
     final source = (json['source'] ?? '').toString().trim();

@@ -67,10 +67,10 @@ class _ReportScreenState extends State<ReportScreen>
 
   _ReportData _reportFor(_ReportRange range, int offset) {
     if (_reports.length > 48) _reports.clear();
-    return _reports.putIfAbsent(
-      (range, offset),
-      () => _ReportData.from(_expenses, _periodFor(range, offset)),
-    );
+    return _reports.putIfAbsent((
+      range,
+      offset,
+    ), () => _ReportData.from(_expenses, _periodFor(range, offset)));
   }
 
   void _invalidate() {
@@ -171,11 +171,11 @@ class _ReportScreenState extends State<ReportScreen>
                     final pageReport = _reportFor(_range, offset);
                     return RepaintBoundary(
                       child: _SpendingChartCard(
-                      report: pageReport,
-                      canShowNewer: offset > 0,
-                      onOlder: _showOlderPeriod,
-                      onNewer: _showNewerPeriod,
-                    ),
+                        report: pageReport,
+                        canShowNewer: offset > 0,
+                        onOlder: _showOlderPeriod,
+                        onNewer: _showNewerPeriod,
+                      ),
                     );
                   },
                 ),
@@ -361,7 +361,8 @@ class _SpendingChartCard extends StatelessWidget {
                     Text(
                       'الصرف خلال الفترة',
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: const ['Tajawal'],
                         fontSize: 13,
                         color: colors.textSecondary,
                       ),
@@ -371,12 +372,16 @@ class _SpendingChartCard extends StatelessWidget {
                       duration: AppMotion.of(context, AppMotion.fast),
                       child: Text(
                         report.period.label,
-                        key: ValueKey((report.period.range, report.period.start)),
+                        key: ValueKey((
+                          report.period.range,
+                          report.period.start,
+                        )),
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                          fontFamily: 'Outfit',
+                          fontFamilyFallback: const ['Tajawal'],
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: colors.textPrimary,
@@ -475,10 +480,9 @@ class _SpendingLineChart extends StatelessWidget {
     });
     final maxValue = math.max(peak, 1).toDouble();
     final yInterval = _niceInterval(maxValue);
-    final maxY = math.max(
-      yInterval,
-      (maxValue / yInterval).ceil() * yInterval,
-    ).toDouble();
+    final maxY = math
+        .max(yInterval, (maxValue / yInterval).ceil() * yInterval)
+        .toDouble();
     final maxX = math.max(1, buckets.length - 1).toDouble();
 
     return LineChart(
@@ -524,7 +528,8 @@ class _SpendingLineChart extends StatelessWidget {
                     maxLines: 1,
                     textAlign: TextAlign.right,
                     style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: const ['Tajawal'],
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: colors.textSecondary,
@@ -555,7 +560,8 @@ class _SpendingLineChart extends StatelessWidget {
                     text,
                     maxLines: 1,
                     style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: const ['Tajawal'],
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: colors.textSecondary,
@@ -607,7 +613,8 @@ class _SpendingLineChart extends StatelessWidget {
                   '${buckets[index].label}\n'
                   '${formatMoney(spot.y)} $currencyLabel',
                   TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: colors.surface,
@@ -657,7 +664,8 @@ class _SpendingSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
           child: Padding(
@@ -668,7 +676,8 @@ class _SpendingSummary extends StatelessWidget {
                 Text(
                   'الصرف',
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
                     fontSize: 13.5,
                     color: colors.textSecondary,
                   ),
@@ -685,7 +694,8 @@ class _SpendingSummary extends StatelessWidget {
                         child: RollingMoney(
                           value: total,
                           style: TextStyle(
-                            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                            fontFamily: 'Outfit',
+                            fontFamilyFallback: const ['Tajawal'],
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
                             color: colors.accent,
@@ -697,7 +707,8 @@ class _SpendingSummary extends StatelessWidget {
                     Text(
                       currencyLabel,
                       style: TextStyle(
-                        fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: const ['Tajawal'],
                         fontSize: 14,
                         color: colors.textSecondary,
                       ),
@@ -729,7 +740,8 @@ class _SpendingSummary extends StatelessWidget {
                   Text(
                     'سجل المصروفات',
                     style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: const ['Tajawal'],
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: colors.textPrimary,
@@ -768,7 +780,8 @@ class _ExpenseDistribution extends StatelessWidget {
               Text(
                 'توزيع المصروفات',
                 style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: const ['Tajawal'],
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: colors.textPrimary,
@@ -781,7 +794,8 @@ class _ExpenseDistribution extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                     color: colors.textSecondary,
@@ -857,7 +871,10 @@ class _DistributionBar extends StatelessWidget {
             for (var index = 0; index < totals.length; index++) ...[
               if (index > 0) const SizedBox(width: 2),
               Expanded(
-                flex: math.max(1, (totals[index].amount / total * 1000).round()),
+                flex: math.max(
+                  1,
+                  (totals[index].amount / total * 1000).round(),
+                ),
                 child: AnimatedContainer(
                   duration: AppMotion.of(context, AppMotion.slow),
                   curve: AppMotion.soft,
@@ -924,7 +941,8 @@ class _CategoryRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: const ['Tajawal'],
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: colors.textPrimary,
@@ -934,7 +952,8 @@ class _CategoryRow extends StatelessWidget {
         Text(
           '${percentage.round()}%',
           style: TextStyle(
-            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+            fontFamily: 'Outfit',
+            fontFamilyFallback: const ['Tajawal'],
             fontSize: 12.5,
             fontWeight: FontWeight.w700,
             color: colors.textSecondary,
@@ -948,7 +967,8 @@ class _CategoryRow extends StatelessWidget {
             child: Text(
               '${formatMoney(item.amount)} $currencyLabel',
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: const ['Tajawal'],
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: colors.accent,
@@ -1002,7 +1022,8 @@ class _ImprovementCard extends StatelessWidget {
                 Text(
                   'نسبة التحسن',
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: colors.textPrimary,
@@ -1022,7 +1043,8 @@ class _ImprovementCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                            fontFamily: 'Outfit',
+                            fontFamilyFallback: const ['Tajawal'],
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: valueColor,
@@ -1038,7 +1060,8 @@ class _ImprovementCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
                     fontSize: comparison.hasPercentage ? 12 : 13,
                     color: colors.textSecondary,
                   ),
@@ -1190,7 +1213,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       lastDate: lastDate.isBefore(firstDate) ? firstDate : lastDate,
     );
     if (!mounted || range == null) return;
-    final start = DateTime(range.start.year, range.start.month, range.start.day);
+    final start = DateTime(
+      range.start.year,
+      range.start.month,
+      range.start.day,
+    );
     final end = DateTime(range.end.year, range.end.month, range.end.day);
     final matched = <String>{
       for (final expense in expenses)
@@ -1207,7 +1234,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   }
 
   Future<void> _confirmShare(List<WaffrTransaction> expenses) async {
-    final chosen = expenses.where((item) => _selected.contains(item.id)).toList();
+    final chosen = expenses
+        .where((item) => _selected.contains(item.id))
+        .toList();
     if (chosen.isEmpty || _sharing) return;
     final format = await showAppDialog<_ExpenseShareFormat>(
       context: context,
@@ -1245,9 +1274,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: WaffrBackHeader(
-        title: title,
-      ),
+      appBar: WaffrBackHeader(title: title),
       floatingActionButton: isIncome
           ? null
           : AnimatedBuilder(
@@ -1258,9 +1285,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                 final canShare = _selecting && selectedCount > 0 && !_sharing;
                 return FloatingActionButton(
                   onPressed: _selecting
-                      ? (canShare
-                          ? () => _confirmShare(_store.expenses)
-                          : null)
+                      ? (canShare ? () => _confirmShare(_store.expenses) : null)
                       : () => _enterSelection(),
                   backgroundColor: canShare || !_selecting
                       ? colors.accent
@@ -1279,7 +1304,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
           final liveIds = items.map((item) => item.id).toSet();
           final selectedCount = _selected.where(liveIds.contains).length;
           final allSelected =
-              items.isNotEmpty && items.every((item) => _selected.contains(item.id));
+              items.isNotEmpty &&
+              items.every((item) => _selected.contains(item.id));
           return Column(
             children: [
               if (!isIncome)
@@ -1319,7 +1345,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                                fontFamily: 'Outfit',
+                                fontFamilyFallback: const ['Tajawal'],
                                 fontSize: 13,
                                 color: colors.textSecondary,
                               ),
@@ -1328,7 +1355,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                               '${formatMoney(_sumExpenses(items))} '
                               '$currencyLabel',
                               style: TextStyle(
-                                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                                fontFamily: 'Outfit',
+                                fontFamilyFallback: const ['Tajawal'],
                                 fontSize: 21,
                                 fontWeight: FontWeight.bold,
                                 color: colors.accent,
@@ -1363,42 +1391,47 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                           final row = AnimatedBuilder(
                             animation: _selectionReveal,
                             builder: (context, _) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 14),
-                            child: _HistoryDayGroup(
-                              date: group.date,
-                              expenses: group.expenses,
-                              isIncome: isIncome,
-                              selecting: !isIncome && _selectionReveal.value > 0,
-                              reveal: _selectionReveal.value,
-                              selectedIds: _selected,
-                              onToggleDay: () => _toggleDay(group.expenses),
-                              onLongPressDay: () {
-                                if (_selecting) {
-                                  _toggleDay(group.expenses);
-                                } else {
-                                  _enterSelection(
-                                    selected: group.expenses
-                                        .map((item) => item.id)
-                                        .toSet(),
-                                  );
-                                }
-                              },
-                              onToggleExpense: _toggleExpense,
-                              onLongPressExpense: (expense) {
-                                if (_selecting) {
-                                  _toggleExpense(expense.id);
-                                } else {
-                                  _enterSelection(selected: {expense.id});
-                                }
-                              },
-                            ),
-                          );
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 14),
+                                child: _HistoryDayGroup(
+                                  date: group.date,
+                                  expenses: group.expenses,
+                                  isIncome: isIncome,
+                                  selecting:
+                                      !isIncome && _selectionReveal.value > 0,
+                                  reveal: _selectionReveal.value,
+                                  selectedIds: _selected,
+                                  onToggleDay: () => _toggleDay(group.expenses),
+                                  onLongPressDay: () {
+                                    if (_selecting) {
+                                      _toggleDay(group.expenses);
+                                    } else {
+                                      _enterSelection(
+                                        selected: group.expenses
+                                            .map((item) => item.id)
+                                            .toSet(),
+                                      );
+                                    }
+                                  },
+                                  onToggleExpense: _toggleExpense,
+                                  onLongPressExpense: (expense) {
+                                    if (_selecting) {
+                                      _toggleExpense(expense.id);
+                                    } else {
+                                      _enterSelection(selected: {expense.id});
+                                    }
+                                  },
+                                ),
+                              );
                             },
                           );
                           // Only the first screenful animates in.
                           return index < 6
-                              ? Reveal(index: index, play: _playEntrance, child: row)
+                              ? Reveal(
+                                  index: index,
+                                  play: _playEntrance,
+                                  child: row,
+                                )
                               : row;
                         },
                       ),
@@ -1477,7 +1510,8 @@ class _FormatChoice extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+              fontFamily: 'Outfit',
+              fontFamilyFallback: const ['Tajawal'],
               fontWeight: FontWeight.w700,
               color: colors.textPrimary,
             ),
@@ -1525,7 +1559,8 @@ class _SelectionBar extends StatelessWidget {
             Text(
               '$count',
               style: TextStyle(
-                fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                fontFamily: 'Outfit',
+                fontFamilyFallback: const ['Tajawal'],
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: colors.textPrimary,
@@ -1577,12 +1612,8 @@ class _SelectMark extends StatelessWidget {
         child: state == _SelectState.checked
             ? Icon(Icons.check_rounded, size: 14, color: colors.onAccent)
             : state == _SelectState.partial
-                ? Container(
-                    width: 10,
-                    height: 2,
-                    color: colors.accent,
-                  )
-                : null,
+            ? Container(width: 10, height: 2, color: colors.accent)
+            : null,
       ),
     );
   }
@@ -1597,7 +1628,10 @@ class _ExpenseDayGroup {
 }
 
 // Confirms, deletes the expense, refunds balance, and undoes linked shopping purchases.
-Future<void> _undoExpense(BuildContext context, WaffrTransaction expense) async {
+Future<void> _undoExpense(
+  BuildContext context,
+  WaffrTransaction expense,
+) async {
   final confirmed = await showAppConfirmDialog(
     context,
     title: 'التراجع عن المصروف',
@@ -1675,13 +1709,14 @@ class _HistoryDayGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
-    final selectedCount =
-        expenses.where((item) => selectedIds.contains(item.id)).length;
+    final selectedCount = expenses
+        .where((item) => selectedIds.contains(item.id))
+        .length;
     final dayState = selectedCount == 0
         ? _SelectState.empty
         : selectedCount == expenses.length
-            ? _SelectState.checked
-            : _SelectState.partial;
+        ? _SelectState.checked
+        : _SelectState.partial;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1706,7 +1741,8 @@ class _HistoryDayGroup extends StatelessWidget {
                   child: Text(
                     _historyDateLabel(date),
                     style: TextStyle(
-                      fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: const ['Tajawal'],
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: colors.textSecondary,
@@ -1740,8 +1776,8 @@ class _HistoryDayGroup extends StatelessWidget {
                   onUndo: selecting
                       ? null
                       : () => isIncome
-                          ? _undoIncome(context, expenses[index])
-                          : _undoExpense(context, expenses[index]),
+                            ? _undoIncome(context, expenses[index])
+                            : _undoExpense(context, expenses[index]),
                 ),
               ],
             ],
@@ -1784,12 +1820,13 @@ class _HistoryExpenseRow extends StatelessWidget {
     final schedule = recurring ? _recurringSchedule(expense) : null;
     final title = isIncome
         ? (note != null && note.isNotEmpty
-            ? note
-            : _incomeFrequencyLabel(expense.frequency))
+              ? note
+              : _incomeFrequencyLabel(expense.frequency))
         : category.label;
     // A schedule without a note stored its "every N" text as the note; the
     // recurring badge already shows it.
-    final noteIsSchedule = recurring &&
+    final noteIsSchedule =
+        recurring &&
         note != null &&
         (note == schedule || _looksLikeSchedule(note));
     final subtitle = isIncome && note != null && note.isNotEmpty
@@ -1801,110 +1838,119 @@ class _HistoryExpenseRow extends StatelessWidget {
       onTap: selecting ? onToggle : null,
       behavior: HitTestBehavior.opaque,
       child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (selecting) ...[
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Opacity(
-              opacity: reveal,
-              child: _SelectMark(
-                state: selected ? _SelectState.checked : _SelectState.empty,
-                onTap: reveal > 0.99 ? (onToggle ?? () {}) : () {},
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-        ],
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: colors.accent.withValues(alpha: 0.12),
-          ),
-          child: Icon(icon, size: 21, color: colors.accent),
-        ),
-        const SizedBox(width: 11),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: colors.textPrimary,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (selecting) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Opacity(
+                opacity: reveal,
+                child: _SelectMark(
+                  state: selected ? _SelectState.checked : _SelectState.empty,
+                  onTap: reveal > 0.99 ? (onToggle ?? () {}) : () {},
                 ),
               ),
-              if (subtitle != null && subtitle.isNotEmpty) ...[
-                const SizedBox(height: 1),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colors.accent.withValues(alpha: 0.12),
+            ),
+            child: Icon(icon, size: 21, color: colors.accent),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  subtitle,
-                  maxLines: 2,
+                  title,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                    fontSize: 12.5,
-                    color: colors.textSecondary,
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                if (subtitle != null && subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: const ['Tajawal'],
+                      fontSize: 12.5,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
+                if (recurring) ...[
+                  const SizedBox(height: 4),
+                  _RecurringBadge(
+                    schedule: schedule ?? _scheduleFromNote(note),
+                  ),
+                ],
+                const SizedBox(height: 2),
+                Text(
+                  '${formatDate(expense.dateTime)} • '
+                  '${formatTime(expense.dateTime)}',
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 10.5,
+                    color: colors.textSecondary.withValues(alpha: 0.85),
                   ),
                 ),
               ],
-              if (recurring) ...[
-                const SizedBox(height: 4),
-                _RecurringBadge(schedule: schedule ?? _scheduleFromNote(note)),
-              ],
-              const SizedBox(height: 2),
-              Text(
-                '${formatDate(expense.dateTime)} • '
-                '${formatTime(expense.dateTime)}',
-                textDirection: TextDirection.ltr,
-                style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                  fontSize: 10.5,
-                  color: colors.textSecondary.withValues(alpha: 0.85),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerEnd,
+                child: Text(
+                  '${formatMoney(expense.amount)} $currencyLabel',
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: colors.accent,
+                  ),
                 ),
               ),
+              if (onUndo != null)
+                IconButton(
+                  tooltip: 'تراجع',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  onPressed: onUndo,
+                  icon: Icon(
+                    Icons.undo_rounded,
+                    size: 18,
+                    color: colors.textSecondary,
+                  ),
+                ),
             ],
           ),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: AlignmentDirectional.centerEnd,
-              child: Text(
-                '${formatMoney(expense.amount)} $currencyLabel',
-                style: TextStyle(
-                  fontFamily: 'Outfit', fontFamilyFallback: const ['Tajawal'],
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: colors.accent,
-                ),
-              ),
-            ),
-            if (onUndo != null)
-              IconButton(
-                tooltip: 'تراجع',
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                onPressed: onUndo,
-                icon: Icon(
-                  Icons.undo_rounded,
-                  size: 18,
-                  color: colors.textSecondary,
-                ),
-              ),
-          ],
-        ),
-      ],
+        ],
       ),
     );
   }
@@ -1995,7 +2041,9 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: AppEmptyState(icon: icon, title: message));
+    return Center(
+      child: AppEmptyState(icon: icon, title: message),
+    );
   }
 }
 
@@ -2012,9 +2060,7 @@ _ReportPeriod _periodFor(_ReportRange range, int offset) {
       end = start.add(const Duration(days: 1));
     case _ReportRange.week:
       final daysFromSaturday = (today.weekday + 1) % 7;
-      final currentWeekStart = today.subtract(
-        Duration(days: daysFromSaturday),
-      );
+      final currentWeekStart = today.subtract(Duration(days: daysFromSaturday));
       start = currentWeekStart.subtract(Duration(days: offset * 7));
       end = start.add(const Duration(days: 7));
     case _ReportRange.month:
@@ -2145,7 +2191,8 @@ List<_ChartBucket> _buildChartBuckets(
       buckets = List.generate(12, (index) {
         final date = DateTime(period.start.year, period.start.month + index);
         final month = _shortMonthName(date.month);
-        final show = index == 0 || index == 11 || (index % 2 == 0 && index != 10);
+        final show =
+            index == 0 || index == 11 || (index % 2 == 0 && index != 10);
         return _ChartBucket(
           label: month,
           axisLabel: show ? month : '',
