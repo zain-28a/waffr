@@ -56,3 +56,21 @@ These checks establish lifecycle correctness and removal of avoidable work.
 They do not establish an FPS or battery improvement on a phone. Physical-device
 profiling, native notification/home-widget behavior and Android/iOS packaging
 remain separate checks. No APK build is part of this continuation.
+
+## Follow-up: pinned period selection
+
+Reports and Savings now keep their period picker in a pinned liquid-glass pill
+below the shell header. Content scrolls beneath its clipped blur, and the
+selected bubble moves in the reading direction. Navigation and period controls
+share `FloatingGlass` and `FloatingGlassHighlight` so their visual chrome stays
+consistent. Enlarged text uses horizontal scrolling with the selected period
+kept visible; changing the range does not change the vertical scroll position.
+Retained inactive tabs are excluded from accessibility to prevent duplicate
+period controls. The report chart's empty state uses its compact variant so
+it fits the minimum chart height on short screens.
+
+All 115 Flutter tests pass, including both actual pages after scrolling and
+the scaled RTL dark selector; static analysis is clean. The JavaScript web
+release build (`--no-wasm-dry-run`) succeeds. Chromium confirms both controls
+remain at the same vertical position after scrolling, stay clickable, and
+switch periods without runtime errors.
