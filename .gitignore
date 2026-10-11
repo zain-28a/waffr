@@ -56,3 +56,6 @@ cleint id google/
 client_secret*.json
 google-services.json
 GoogleService-Info.plist
+
+# Agent worktrees created by Claude Code
+.claude/worktrees/
