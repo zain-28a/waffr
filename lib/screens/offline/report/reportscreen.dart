@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/widgets/motion/active_listenable_builder.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/stores/category_store.dart';
@@ -108,8 +109,8 @@ class _ReportScreenState extends State<ReportScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return AnimatedBuilder(
-      animation: _listenables,
+    return ActiveListenableBuilder(
+      listenable: _listenables,
       builder: (context, _) {
         final expenses = _store.expenses;
         final period = _periodFor(_range, _periodOffset);
