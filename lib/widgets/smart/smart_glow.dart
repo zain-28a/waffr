@@ -197,12 +197,58 @@ class _SmartSparkState extends State<SmartSpark>
             shaderCallback: (bounds) => LinearGradient(
               colors: [colors[0], colors[2], colors[3]],
             ).createShader(bounds),
-            child: Icon(Icons.auto_awesome, size: widget.size * 0.62),
+            child: SizedBox.square(
+              dimension: widget.size * 0.7,
+              child: Stack(
+                children: [
+                  // A small rising chart line under the sparkle: analysis
+                  // of the user's money, not just "magic".
+                  const Positioned.fill(
+                    child: CustomPaint(painter: _TrendLinePainter()),
+                  ),
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Icon(
+                      Icons.auto_awesome,
+                      size: widget.size * 0.42,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+// Three-segment trend line, painted white so the ShaderMask colors it.
+class _TrendLinePainter extends CustomPainter {
+  const _TrendLinePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final path = Path()
+      ..moveTo(w * 0.06, h * 0.9)
+      ..lineTo(w * 0.32, h * 0.62)
+      ..lineTo(w * 0.5, h * 0.76)
+      ..lineTo(w * 0.8, h * 0.46);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.11
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_TrendLinePainter oldDelegate) => false;
 }
 
 class _RingPainter extends CustomPainter {
