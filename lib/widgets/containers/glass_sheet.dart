@@ -136,7 +136,7 @@ class GlassSheetBody extends StatelessWidget {
           padding: padding,
           child: AnimatedSize(
             duration: AppMotion.of(context, AppMotion.slow),
-            curve: Curves.easeOutCubic,
+            curve: AppMotion.enter,
             alignment: Alignment.topCenter,
             clipBehavior: Clip.none,
             child: Column(
@@ -1197,7 +1197,7 @@ class SheetChoiceChips extends StatelessWidget {
               children: [
                 AnimatedPositionedDirectional(
                   duration: AppMotion.of(context, AppMotion.medium),
-                  curve: Curves.easeOutCubic,
+                  curve: AppMotion.enter,
                   start: selectedIndex * itemWidth,
                   width: itemWidth,
                   top: 0,
@@ -1224,7 +1224,7 @@ class SheetChoiceChips extends StatelessWidget {
                             ),
                             child: AnimatedDefaultTextStyle(
                               duration: AppMotion.of(context, AppMotion.fast),
-                              curve: Curves.easeOut,
+                              curve: AppMotion.soft,
                               style: TextStyle(
                                 fontFamily: 'Outfit', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 13,
@@ -1264,13 +1264,13 @@ class SheetExpand extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedSize(
       duration: AppMotion.of(context, AppMotion.slow),
-      curve: Curves.easeOutCubic,
+      curve: AppMotion.enter,
       alignment: Alignment.topCenter,
       clipBehavior: Clip.hardEdge,
       child: AnimatedSwitcher(
         duration: AppMotion.of(context, AppMotion.medium),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
+        switchInCurve: AppMotion.enter,
+        switchOutCurve: AppMotion.exit,
         transitionBuilder: (child, animation) {
           return FadeTransition(
             opacity: animation,
@@ -1303,8 +1303,8 @@ class SheetSwap extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
       duration: AppMotion.of(context, AppMotion.medium),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
+      switchInCurve: AppMotion.enter,
+      switchOutCurve: AppMotion.exit,
       transitionBuilder: (child, animation) {
         return FadeTransition(
           opacity: animation,

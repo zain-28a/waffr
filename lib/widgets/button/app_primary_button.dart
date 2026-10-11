@@ -86,7 +86,7 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
               ? const Duration(milliseconds: 90)
               : const Duration(milliseconds: 320),
         ),
-        curve: _pressed ? Curves.easeOut : Curves.easeOutBack,
+        curve: _pressed ? AppMotion.soft : AppMotion.overshoot,
         child: CustomPaint(
           foregroundPainter: enabled || busy
               ? LiquidGlassPainter(radius: radius, isDark: isDark, strong: true)
