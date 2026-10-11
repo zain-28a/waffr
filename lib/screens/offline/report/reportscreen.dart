@@ -56,15 +56,38 @@ class _ReportScreenState extends State<ReportScreen>
   @override
   bool get wantKeepAlive => true;
 
+  // Reports per (range, page offset), so swiping between periods and
+  // rebuilding for a page change does not rescan the ledger. Cleared when
+  // the ledger or categories change.
+  final Map<(_ReportRange, int), _ReportData> _reports = {};
+  List<WaffrTransaction>? _expensesCache;
+
+  List<WaffrTransaction> get _expenses => _expensesCache ??= _store.expenses;
+
+  _ReportData _reportFor(_ReportRange range, int offset) {
+    if (_reports.length > 48) _reports.clear();
+    return _reports.putIfAbsent(
+      (range, offset),
+      () => _ReportData.from(_expenses, _periodFor(range, offset)),
+    );
+  }
+
+  void _invalidate() {
+    _reports.clear();
+    _expensesCache = null;
+  }
+
   @override
   void initState() {
     super.initState();
+    _listenables.addListener(_invalidate);
     _store.ensureLoaded();
     CategoryStore.instance.ensureLoaded();
   }
 
   @override
   void dispose() {
+    _listenables.removeListener(_invalidate);
     _periodController.dispose();
     super.dispose();
   }
@@ -111,14 +134,14 @@ class _ReportScreenState extends State<ReportScreen>
     return AnimatedBuilder(
       animation: _listenables,
       builder: (context, _) {
-        final expenses = _store.expenses;
-        final period = _periodFor(_range, _periodOffset);
+        final expenses = _expenses;
+        final report = _reportFor(_range, _periodOffset);
+        final period = report.period;
         final previousPeriod = _comparablePeriod(
           _periodFor(_range, _periodOffset + 1),
           current: period,
           now: DateTime.now(),
         );
-        final report = _ReportData.from(expenses, period);
         final previousTotal = _sumExpenses(
           _expensesInPeriod(expenses, previousPeriod),
         );
@@ -153,10 +176,7 @@ class _ReportScreenState extends State<ReportScreen>
                   },
                   allowImplicitScrolling: false,
                   itemBuilder: (context, offset) {
-                    final pageReport = _ReportData.from(
-                      expenses,
-                      _periodFor(_range, offset),
-                    );
+                    final pageReport = _reportFor(_range, offset);
                     return RepaintBoundary(
                       child: _SpendingChartCard(
                       report: pageReport,
@@ -324,6 +344,9 @@ class _SpendingChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
+    final chart = RepaintBoundary(
+      child: _SpendingLineChart(buckets: report.chartBuckets),
+    );
     return GlassContainer(
       colorType: GlassColorType.surface,
       borderRadius: 28,
@@ -356,7 +379,7 @@ class _SpendingChartCard extends StatelessWidget {
                       duration: AppMotion.of(context, AppMotion.fast),
                       child: Text(
                         report.period.label,
-                        key: ValueKey(report.period.start),
+                        key: ValueKey((report.period.range, report.period.start)),
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -389,16 +412,14 @@ class _SpendingChartCard extends StatelessWidget {
                 : Directionality(
                     textDirection: TextDirection.ltr,
                     // Each period's line draws itself in from the left.
+                    // The chart is built once and only the clip moves, so
+                    // the chart is not rebuilt (and re-tweened) every frame.
                     child: AnimatedRatio(
-                      key: ValueKey(report.period.start),
+                      key: ValueKey((report.period.range, report.period.start)),
                       value: 1,
                       duration: const Duration(milliseconds: 900),
-                      builder: (context, shown) => RevealClip(
-                        fraction: shown,
-                        child: _SpendingLineChart(
-                          buckets: report.chartBuckets,
-                        ),
-                      ),
+                      builder: (context, shown) =>
+                          RevealClip(fraction: shown, child: chart),
                     ),
                   ),
           ),
@@ -817,15 +838,16 @@ class _DistributionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Grows from the start edge when the card first appears.
+    // Grows from the start edge when the card first appears. The bar is laid
+    // out at full width and only uncovered, so its segments never squeeze
+    // (which used to overflow the row while the width animated from 0).
+    final bar = _bar(context);
+    final rtl = Directionality.of(context) == TextDirection.rtl;
     return AnimatedRatio(
       value: 1,
-      builder: (context, shown) => Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: FractionallySizedBox(
-          widthFactor: math.max(shown, 0.001),
-          child: _bar(context),
-        ),
+      builder: (context, shown) => ClipRect(
+        clipper: _StartEdgeClipper(shown, rtl: rtl),
+        child: bar,
       ),
     );
   }
@@ -853,6 +875,27 @@ class _DistributionBar extends StatelessWidget {
       ),
     );
   }
+}
+
+// Keeps the part of the bar from the start edge up to [fraction] of its
+// width (the right side in RTL).
+class _StartEdgeClipper extends CustomClipper<Rect> {
+  final double fraction;
+  final bool rtl;
+
+  const _StartEdgeClipper(this.fraction, {required this.rtl});
+
+  @override
+  Rect getClip(Size size) {
+    final width = size.width * fraction.clamp(0.0, 1.0);
+    return rtl
+        ? Rect.fromLTWH(size.width - width, 0, width, size.height)
+        : Rect.fromLTWH(0, 0, width, size.height);
+  }
+
+  @override
+  bool shouldReclip(_StartEdgeClipper old) =>
+      old.fraction != fraction || old.rtl != rtl;
 }
 
 // Icon, name, percentage, and amount for one category in the distribution list.
@@ -1034,6 +1077,11 @@ class TransactionHistoryScreen extends StatefulWidget {
 
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     with SingleTickerProviderStateMixin {
+  // Rows animate in only while the screen first opens; rows that scroll
+  // back into view later appear at rest instead of replaying the entrance.
+  final Stopwatch _sinceOpened = Stopwatch()..start();
+  bool get _playEntrance => _sinceOpened.elapsedMilliseconds < 700;
+
   final TransactionStore _store = TransactionStore.instance;
   late final Listenable _listenables = Listenable.merge([
     _store,
@@ -1355,7 +1403,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                           );
                           // Only the first screenful animates in.
                           return index < 6
-                              ? Reveal(index: index, child: row)
+                              ? Reveal(index: index, play: _playEntrance, child: row)
                               : row;
                         },
                       ),

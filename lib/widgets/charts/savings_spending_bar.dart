@@ -1,5 +1,7 @@
 // Proportional savings/spending split. Left is savings, right is spending.
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/theme/app_motion.dart';
@@ -110,9 +112,10 @@ class _SplitFill extends StatelessWidget {
   Widget build(BuildContext context) {
     final shape = BorderRadius.circular(radius);
 
+    // Measured inside the 1px border so the fills always fit the track.
     return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
+      builder: (context, outer) {
+        final width = math.max(0.0, outer.maxWidth - 2);
         final savingsWidth =
             showSavings ? width * savingsShare.clamp(0.0, 1.0) : 0.0;
         final hasDivider = showSavings &&
