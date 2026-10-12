@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 // Scrollable info sections about financial privacy and stored profile fields.
 class PrivacyInfoScreen extends StatelessWidget {
@@ -10,21 +11,17 @@ class PrivacyInfoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final bg = palette.background;
 
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final surface = palette.surface;
 
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final textPrimary = palette.textPrimary;
 
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final textSecondary = palette.textSecondary;
 
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final accent = palette.accent;
 
     return Scaffold(
       backgroundColor: bg,

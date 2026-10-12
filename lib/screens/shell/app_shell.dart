@@ -37,6 +37,7 @@ import 'package:waffr/data/services/smart_settings.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
 import 'package:waffr/core/insights/smart/reminder_digest.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 // Bottom navigation shell. Five tabs: home, report, savings, online, profile.
 // The tab bar floats over the pages; each tab keeps kFloatingNavClearance
@@ -391,9 +392,9 @@ class _AppShellState extends State<AppShell>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final bg = palette.background;
 
     final increase = _streakIncrease;
 
@@ -559,11 +560,9 @@ class _BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final palette = AppPalette.of(context);
+    final textPrimary = palette.textPrimary;
+    final accent = palette.accent;
     final rtl = Directionality.of(context) == TextDirection.rtl;
 
     return FloatingGlass(

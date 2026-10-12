@@ -13,6 +13,7 @@ import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 Future<void> showManageGoalsSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -55,14 +56,10 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
 
     return GlassContainer(
       colorType: GlassColorType.surface,

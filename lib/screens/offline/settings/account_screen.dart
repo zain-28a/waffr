@@ -11,6 +11,7 @@ import 'package:waffr/widgets/brand/profile_avatar.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/screens/offline/settings/change_password_screen.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 // Edit display name, or sign out of the synced account.
 class AccountScreen extends StatefulWidget {
@@ -114,16 +115,12 @@ class _AccountScreenState extends State<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final palette = AppPalette.of(context);
+    final bg = palette.background;
+    final surface = palette.surface;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
+    final accent = palette.accent;
 
     return Scaffold(
       backgroundColor: bg,

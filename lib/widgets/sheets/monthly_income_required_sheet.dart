@@ -3,16 +3,15 @@
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 /// Explains that monthly income must be set in settings, then dismisses.
 Future<void> showMonthlyIncomeRequiredSheet(BuildContext context) {
   return showGlassSheet<void>(
     context: context,
     builder: (context) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      final textSecondary = isDark
-          ? AppColors.darkTextSecondary
-          : AppColors.lightTextSecondary;
+      final palette = AppPalette.of(context);
+      final textSecondary = palette.textSecondary;
 
       return GlassSheetBody(
         children: [

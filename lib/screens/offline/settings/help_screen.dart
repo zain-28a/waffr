@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 // Expandable help sections with Arabic Q&A copy.
 class HelpScreen extends StatelessWidget {
@@ -171,16 +172,12 @@ class HelpScreen extends StatelessWidget {
           ),
         ];
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final palette = AppPalette.of(context);
+    final bg = palette.background;
+    final surface = palette.surface;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
+    final accent = palette.accent;
 
     return Scaffold(
       backgroundColor: bg,

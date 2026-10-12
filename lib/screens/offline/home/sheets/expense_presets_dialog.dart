@@ -10,6 +10,7 @@ import 'package:waffr/data/models/expense_categories.dart';
 import 'package:waffr/data/models/expense_preset.dart';
 import 'package:waffr/data/stores/expense_preset_store.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 /// What the user chose in the box.
 sealed class ExpensePresetChoice {
@@ -77,9 +78,9 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
+    final surface = palette.surface;
     final size = MediaQuery.sizeOf(context);
 
     return Material(
@@ -236,14 +237,10 @@ class _PresetTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
     final category = categoryFor(preset.category);
     final note = preset.note?.trim() ?? '';
 

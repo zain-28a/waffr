@@ -21,6 +21,7 @@ import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/insights/smart/category_suggester.dart';
 import 'package:waffr/data/services/smart_settings.dart';
 import 'package:waffr/widgets/smart/smart_glow.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 // Glass bottom sheet for one-off or recurring expenses, plus category picks.
 
@@ -450,11 +451,9 @@ class _PresetStarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
+    final textSecondary = palette.textSecondary;
 
     return Semantics(
       button: true,
@@ -716,12 +715,10 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
+    final surface = palette.surface;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.72;
     final width = MediaQuery.sizeOf(context).width;
 
@@ -906,12 +903,10 @@ class _CategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
 
     final onAccent = AppColors.onAccentOf(context);
     final foreground = isSelected ? onAccent : textPrimary;
@@ -975,10 +970,8 @@ class _SmartCategoryHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final palette = AppPalette.of(context);
+    final textSecondary = palette.textSecondary;
     final colors = smartGlowColors(context);
     final label = suggestion;
 

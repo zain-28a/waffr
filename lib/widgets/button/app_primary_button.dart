@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 class AppPrimaryButton extends StatefulWidget {
   final String label;
@@ -52,7 +53,8 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
     // Disabled fills are grey, so their label switches to a grey that
     // stays readable in both themes.
     final onAccent = enabled || busy
@@ -60,9 +62,7 @@ class _AppPrimaryButtonState extends State<AppPrimaryButton> {
         : (isDark
               ? AppColors.darkTextPrimary.withValues(alpha: 0.6)
               : AppColors.lightOnAccent);
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final textSecondary = palette.textSecondary;
 
     final VoidCallback? action = busy
         ? null

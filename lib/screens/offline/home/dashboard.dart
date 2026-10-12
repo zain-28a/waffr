@@ -24,6 +24,7 @@ import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 // Offline home tab: balance, add actions, spending distribution, recent
 // expenses / obligations, and active savings goals. Each card opens the
@@ -177,12 +178,10 @@ class _BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final accent = palette.accent;
+    final textSecondary = palette.textSecondary;
 
     final codes = CurrencyStore.instance.enabledCodes;
     final activeIndex = codes.indexOf(CurrencyStore.instance.activeCode);
@@ -462,12 +461,10 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
 
     return GlassButton(
       onTap: onTap,
@@ -556,11 +553,9 @@ class _DistributionChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final textPrimary = palette.textPrimary;
 
     final topShare = (totals.first.amount / totalExpense * 100).round();
 
@@ -588,9 +583,7 @@ class _DistributionChart extends StatelessWidget {
                     startDegreeOffset: -90,
                     sectionsSpace: sweep < 1 ? 0 : 2,
                     centerSpaceRadius: 34,
-                    centerSpaceColor: isDark
-                        ? AppColors.darkSurface
-                        : AppColors.lightSurface,
+                    centerSpaceColor: palette.surface,
                     sections: [
                       for (var i = 0; i < totals.length; i++)
                         PieChartSectionData(
@@ -658,14 +651,10 @@ class _DistributionLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -808,15 +797,11 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
 
     final compact = widget.compact;
     final goals = widget.goals;
@@ -1135,11 +1120,9 @@ class _ExpensesAndObligationsCardState
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
     final compact = widget.compact;
 
     List<Widget> pages() => [
@@ -1209,11 +1192,9 @@ class _RecentExpensesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final textPrimary = palette.textPrimary;
 
     final latest = expenses.take(3).toList();
 
@@ -1262,11 +1243,9 @@ class _ObligationsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final textPrimary = palette.textPrimary;
 
     final now = deviceNow();
     final active = obligations.where((item) => item.enabled).toList()
@@ -1342,15 +1321,11 @@ class _ExpenseRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
 
     final category = categoryFor(expense.category);
     final note = expense.note;
@@ -1462,15 +1437,11 @@ class _ObligationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
     final warning = AppColors.warningOf(context);
 
     final category = categoryFor(item.category);
@@ -1620,14 +1591,10 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
 
     final titleText = Text(
       title,

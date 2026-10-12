@@ -7,6 +7,7 @@ import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 Future<void> showCurrenciesSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -50,14 +51,10 @@ class _CurrenciesSheetState extends State<_CurrenciesSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
 
     return AnimatedBuilder(
       animation: _store,
@@ -113,11 +110,9 @@ class _AddCurrencySheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = CurrencyStore.instance;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
 
     return AnimatedBuilder(
       animation: store,

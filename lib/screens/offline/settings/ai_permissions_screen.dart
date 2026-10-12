@@ -9,6 +9,7 @@ import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/smart/smart_glow.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 class AIPermissionsScreen extends StatefulWidget {
   const AIPermissionsScreen({super.key});
@@ -28,14 +29,10 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final background = isDark
-        ? AppColors.darkBackground
-        : AppColors.lightBackground;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final palette = AppPalette.of(context);
+    final background = palette.background;
+    final accent = palette.accent;
+    final textSecondary = palette.textSecondary;
 
     return Scaffold(
       backgroundColor: background,
