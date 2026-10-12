@@ -5,7 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-enum EditDeleteAction { edit, delete }
+/// What the user picked in the long-press menu.
+enum EditDeleteAction {
+  /// Edit the item.
+  edit,
+
+  /// Delete the item.
+  delete,
+}
 
 /// Opens the menu over the widget at [anchorContext]. [allowEdit] hides the
 /// edit row when only removal makes sense.

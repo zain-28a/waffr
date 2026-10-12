@@ -7,15 +7,28 @@ import 'package:waffr/core/theme/app_palette.dart';
 
 /// Fixed-height page header with optional scroll-elevation shadow.
 class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
+  /// Header height without the status bar.
   static const double height = 68;
 
+  /// Title widget (usually text or the logo).
   final Widget title;
+
+  /// Optional widget at the start (back arrow).
   final Widget? leading;
+
+  /// Space kept for [leading].
   final double leadingWidth;
+
+  /// Center the title instead of starting it after [leading].
   final bool centerTitle;
+
+  /// When true the header casts its scroll shadow.
   final ValueListenable<bool>? elevated;
+
+  /// Pad for the status bar.
   final bool applySafeArea;
 
+  /// Creates a [WaffrPageHeader].
   const WaffrPageHeader({
     super.key,
     required this.title,
@@ -61,6 +74,7 @@ class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
 /// Header of every pushed screen: back arrow and centered title. Use this
 /// instead of building a [WaffrPageHeader] by hand so all screens match.
 class WaffrBackHeader extends StatelessWidget implements PreferredSizeWidget {
+  /// Centered title text.
   final String title;
 
   /// Defaults to popping the current route.
@@ -71,9 +85,14 @@ class WaffrBackHeader extends StatelessWidget implements PreferredSizeWidget {
 
   /// False hides the back arrow on the first screen of a flow.
   final bool showBack;
+
+  /// When true the header casts its scroll shadow.
   final ValueListenable<bool>? elevated;
+
+  /// Pad for the status bar.
   final bool applySafeArea;
 
+  /// Creates a [WaffrBackHeader].
   const WaffrBackHeader({
     super.key,
     required this.title,
