@@ -54,19 +54,7 @@ class BackupService {
   /// يمسح البيانات المحلية القابلة للمزامنة قبل حساب آخر.
   /// يبقى اختيار المظهر الأول حتى لا تُعاد شاشة المظهر بعد اكتمال الإعداد.
   Future<void> replaceLocalDataForAccountSwitch() async {
-    final prefs = await AppPrefs.instance;
-    final firstLaunch = prefs.getBool('first_launch');
-    final hasDarkMode = prefs.containsKey('dark_mode');
-    final darkMode = prefs.getBool('dark_mode');
-
-    await _clearUserData();
-
-    if (firstLaunch != null) {
-      await prefs.setBool('first_launch', firstLaunch);
-    }
-    if (hasDarkMode && darkMode != null) {
-      await prefs.setBool('dark_mode', darkMode);
-    }
+    await _clearUserDataKeepingTheme();
   }
 
   /// متابعة بدون حساب. كل شيء يبقى محلياً ولا يُزامَن.
@@ -84,7 +72,9 @@ class BackupService {
 
     await AuthSession.instance.clearSession();
     await AuthSession.instance.clearDataOwner();
-    await _clearUserData();
+    // Keep the light/dark choice: the app is still open in that theme, and
+    // wiping it would flip to the system theme and reopen the theme picker.
+    await _clearUserDataKeepingTheme();
     _notifyReset();
   }
 
@@ -127,6 +117,23 @@ class BackupService {
     ]);
 
     await RecurringExpenseStore.instance.processDue();
+  }
+
+  /// Clears user data but restores the first-launch flag and the light/dark
+  /// choice, which describe this device rather than the account.
+  Future<void> _clearUserDataKeepingTheme() async {
+    final prefs = await AppPrefs.instance;
+    final firstLaunch = prefs.getBool('first_launch');
+    final darkMode = prefs.getBool('dark_mode');
+
+    await _clearUserData();
+
+    if (firstLaunch != null) {
+      await prefs.setBool('first_launch', firstLaunch);
+    }
+    if (darkMode != null) {
+      await prefs.setBool('dark_mode', darkMode);
+    }
   }
 
   Future<void> _clearUserData() async {
