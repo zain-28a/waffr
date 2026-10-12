@@ -12,8 +12,9 @@ import 'package:waffr/screens/offline/user_info/country_picker_sheet.dart';
 import 'package:waffr/widgets/dialogs/waffr_date_picker.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 
-// Collects name, birth date, optional gender, country with an optional phone
-// number, and one optional address line for RegistrationProfile.
+// Collects name, birth date, optional gender, country, an optional phone
+// number (its calling code picked separately), and one optional address
+// line for RegistrationProfile.
 
 enum Gender { male, female }
 
@@ -39,6 +40,9 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   Gender? _selectedGender;
   DateTime? _birthDate;
   CountryInfo? _country;
+  // Calling code for the phone number; picked on its own, independent of
+  // the country of residence.
+  CountryInfo? _phoneCountry;
 
   @override
   void dispose() {
@@ -98,6 +102,15 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     }
   }
 
+  Future<void> _pickPhoneCountry() async {
+    FocusScope.of(context).unfocus();
+    final picked =
+        await showCountryPickerSheet(context, selected: _phoneCountry);
+    if (picked != null && mounted) {
+      setState(() => _phoneCountry = picked);
+    }
+  }
+
   void _continue() {
     final error = _formError;
     if (error != null) {
@@ -108,6 +121,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     final birthDate = _birthDate;
     final country = _country;
     if (birthDate == null || country == null) return;
+    final phoneCountry = _phoneCountry;
 
     final digits = normalizePhoneNumber(_phoneController.text) ?? '';
     final address = splitAddress(_addressController.text);
@@ -120,7 +134,9 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         country: country.arabicName,
         city: address.city,
         street: address.street,
-        phone: digits.isEmpty ? '' : '${country.dialLabel} $digits',
+        phone: digits.isEmpty || phoneCountry == null
+            ? ''
+            : '${phoneCountry.dialLabel} $digits',
       ),
     );
   }
@@ -259,18 +275,6 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                           ),
                         ),
                       ),
-                      if (_country != null) ...[
-                        Text(
-                          _country!.dialLabel,
-                          textDirection: TextDirection.ltr,
-                          style: TextStyle(
-                            color: textSecondary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
                       Icon(Icons.keyboard_arrow_down_rounded, color: accent),
                     ],
                   ),
@@ -300,12 +304,12 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
               const SizedBox(height: 8),
               _PhoneField(
                 controller: _phoneController,
-                country: _country,
+                country: _phoneCountry,
                 surface: surface,
                 accent: accent,
                 textPrimary: textPrimary,
                 textSecondary: textSecondary,
-                onPickCountry: _pickCountry,
+                onPickCountry: _pickPhoneCountry,
                 onChanged: (_) => setState(() {}),
               ),
 
@@ -491,7 +495,7 @@ class _PhoneField extends StatelessWidget {
                   letterSpacing: 0.4,
                 ),
                 decoration: InputDecoration(
-                  hintText: hasCountry ? '9XX XXX XXX' : 'اختر الدولة أولاً',
+                  hintText: hasCountry ? '9XX XXX XXX' : 'اختر رمز الدولة أولاً',
                   hintTextDirection:
                       hasCountry ? TextDirection.ltr : TextDirection.rtl,
                   hintStyle: TextStyle(
