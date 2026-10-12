@@ -54,7 +54,6 @@ SmartFacts _facts({
     incomes: const [],
     savingsTransfers: transfers,
     balance: balance,
-    maxBalance: 1000,
     monthlyIncome: income,
     incomeFrequency: recurringIncome
         ? RecurringFrequency.monthly

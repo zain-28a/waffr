@@ -4,12 +4,14 @@
 
 import 'package:waffr/data/models/transaction.dart';
 
+/// Suggests a category for an expense note from history and a dictionary.
 class CategorySuggester {
   // Normalized full note -> category -> count.
   final Map<String, Map<String, int>> _notes = {};
   // Normalized word -> category -> count.
   final Map<String, Map<String, int>> _words = {};
 
+  /// Learns from the notes and categories of the expenses in [history].
   CategorySuggester(Iterable<WaffrTransaction> history) {
     for (final item in history) {
       final category = item.category;
@@ -24,6 +26,7 @@ class CategorySuggester {
     }
   }
 
+  // Adds one sighting of [category] under [key].
   static void _bump(
     Map<String, Map<String, int>> map,
     String key,
@@ -43,6 +46,7 @@ class CategorySuggester {
     final exact = _best(_notes[normalized], options);
     if (exact != null) return exact;
 
+    // Words the user filed before count double per time they were seen.
     final scores = <String, double>{};
     final words = _tokens(normalized);
     for (final word in words) {
@@ -52,6 +56,8 @@ class CategorySuggester {
         }
       });
     }
+    // Then the dictionary: short keywords must match a whole word, longer
+    // ones may start a word or appear inside the note.
     for (final entry in _dictionary.entries) {
       if (!options.contains(entry.key)) continue;
       for (final keyword in entry.value) {
@@ -62,11 +68,13 @@ class CategorySuggester {
         if (hit) scores[entry.key] = (scores[entry.key] ?? 0) + 1.5;
       }
     }
+    // One dictionary hit is enough; less than that is not a suggestion.
     if (scores.isEmpty) return null;
     final best = scores.entries.reduce((a, b) => a.value >= b.value ? a : b);
     return best.value >= 1.5 ? best.key : null;
   }
 
+  // The category in [options] seen most often in [counts].
   static String? _best(Map<String, int>? counts, Set<String> options) {
     if (counts == null) return null;
     String? best;
@@ -83,7 +91,7 @@ class CategorySuggester {
   static final RegExp _diacritics = RegExp('[ً-ٰٟـ]');
   static final RegExp _separators = RegExp(r'[^\p{L}\p{N}]+', unicode: true);
 
-  // Lower case, no tashkeel or tatweel, one form for alef/ya/ta marbuta.
+  /// Lower case, no tashkeel or tatweel, one form for alef/ya/ta marbuta.
   static String normalize(String text) {
     return text
         .toLowerCase()
@@ -115,6 +123,7 @@ class CategorySuggester {
     return words;
   }
 
+  // Keywords per built-in category, normalized once.
   static final Map<String, List<String>> _dictionary = {
     for (final entry in _rawDictionary.entries)
       entry.key: [for (final word in entry.value) normalize(word)],

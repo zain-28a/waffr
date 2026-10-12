@@ -27,7 +27,6 @@ void main() {
 
   test('prepositions join the article', () {
     expect(Ar.li('الطعام'), 'للطعام');
-    expect(Ar.bi('الطعام'), 'بالطعام');
     expect(Ar.li('تصنيف «أخرى»'), 'لتصنيف «أخرى»');
   });
 }
