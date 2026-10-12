@@ -17,12 +17,14 @@ import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 
+/// Writes the figures the home screen widgets show and asks them to redraw.
 class HomeWidgetSync {
   HomeWidgetSync._();
 
+  /// The app-wide service.
   static final HomeWidgetSync instance = HomeWidgetSync._();
 
-  // Shared with the iOS widget extension (App Groups capability).
+  /// Shared with the iOS widget extension (App Groups capability).
   static const String appGroupId = 'group.com.waffr.app';
 
   static const List<({String android, String ios})> _widgets = [
@@ -51,6 +53,7 @@ class HomeWidgetSync {
   bool _started = false;
   Timer? _debounce;
 
+  /// True on Android and iOS, the platforms with widgets.
   static bool get supported =>
       !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
@@ -85,6 +88,7 @@ class HomeWidgetSync {
     _debounce = Timer(const Duration(milliseconds: 800), refresh);
   }
 
+  /// Saves fresh widget data and redraws every widget; errors are ignored.
   Future<void> refresh() async {
     if (!supported) return;
     try {

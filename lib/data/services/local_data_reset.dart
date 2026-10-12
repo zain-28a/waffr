@@ -1,3 +1,6 @@
+// Wipes every piece of Waffr data on this device: prefs, the session,
+// and each store's memory.
+
 import 'package:waffr/data/stores/expense_preset_store.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/services/notification_service.dart';
