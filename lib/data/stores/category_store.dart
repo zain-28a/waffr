@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffr/data/models/custom_category_entry.dart';
 import 'package:waffr/data/models/expense_categories.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
 import 'package:waffr/core/sync/sync_dirty.dart';
@@ -11,114 +12,7 @@ import 'package:waffr/core/sync/sync_merge.dart';
 import 'package:waffr/core/sync/sync_tombstones.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
 
-// One user-defined category with a chosen icon index.
-class CustomCategoryEntry {
-  final String id;
-  final String label;
-  final int iconIndex;
-  final int? colorIndex;
-  final DateTime? updatedAt;
-
-  const CustomCategoryEntry({
-    required this.id,
-    required this.label,
-    required this.iconIndex,
-    this.colorIndex,
-    this.updatedAt,
-  });
-
-  DateTime get syncUpdatedAt =>
-      (updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0)).toUtc();
-
-  ExpenseCategory toCategory() =>
-      customCategoryNamed(label, iconIndex: iconIndex, colorIndex: colorIndex);
-
-  CustomCategoryEntry copyWith({
-    String? label,
-    int? iconIndex,
-    int? colorIndex,
-    DateTime? updatedAt,
-  }) {
-    return CustomCategoryEntry(
-      id: id,
-      label: label ?? this.label,
-      iconIndex: iconIndex ?? this.iconIndex,
-      colorIndex: colorIndex ?? this.colorIndex,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'label': label,
-    'icon': iconIndex,
-    if (colorIndex != null) 'color': colorIndex,
-    'updatedAt': toSyncIso(syncUpdatedAt),
-  };
-
-  Map<String, dynamic> toSyncJson() => {
-    'client_id': id,
-    'label': label,
-    'icon_index': iconIndex,
-    'updated_at': toSyncIso(syncUpdatedAt),
-  };
-
-  factory CustomCategoryEntry.fromJson(Map<String, dynamic> json) {
-    final label = (json['label'] as String? ?? '').trim();
-    final icon = json['icon'] ?? json['icon_index'] ?? json['iconIndex'];
-    final iconIndex = icon is int
-        ? icon
-        : int.tryParse(icon?.toString() ?? '') ?? 0;
-    final rawId = (json['id'] ?? json['client_id'])?.toString().trim() ?? '';
-    return CustomCategoryEntry(
-      id: rawId.isEmpty ? _legacyCategoryId(label) : rawId,
-      label: label,
-      iconIndex: clampCustomIconIndex(iconIndex),
-      colorIndex: _readColorIndex(json['color'] ?? json['color_index']),
-      updatedAt:
-          parseSyncDate(json['updatedAt'] ?? json['updated_at']) ?? syncNow(),
-    );
-  }
-
-  // Server payload → entry; null when label or client id is missing.
-  static CustomCategoryEntry? fromSync(Map<String, dynamic> raw) {
-    final label = raw['label']?.toString().trim() ?? '';
-    final id = (raw['client_id'] ?? raw['id'])?.toString().trim() ?? '';
-    if (label.isEmpty || id.isEmpty) return null;
-    final icon = raw['icon_index'] ?? raw['iconIndex'] ?? raw['icon'];
-    final iconIndex = icon is int
-        ? icon
-        : int.tryParse(icon?.toString() ?? '') ?? 0;
-    return CustomCategoryEntry(
-      id: id,
-      label: label,
-      iconIndex: clampCustomIconIndex(iconIndex),
-      colorIndex: _readColorIndex(raw['color'] ?? raw['color_index']),
-      updatedAt: parseSyncDate(raw['updated_at'] ?? raw['updatedAt']),
-    );
-  }
-}
-
-int? _readColorIndex(Object? raw) {
-  if (raw == null) return null;
-  final index = raw is int ? raw : int.tryParse(raw.toString());
-  if (index == null || customCategoryColors.isEmpty) return null;
-  return clampCustomColorIndex(index);
-}
-
-// Stable id for pre-v2 categories that only stored a label string.
-String _legacyCategoryId(String label) {
-  var hash = 0;
-  for (final unit in label.codeUnits) {
-    hash = (hash * 31 + unit) & 0x7fffffff;
-  }
-  return 'cat_$hash';
-}
-
-int _categorySeq = 0;
-
-String _newCategoryId() =>
-    'cat_${DateTime.now().microsecondsSinceEpoch}_${_categorySeq++}';
+export 'package:waffr/data/models/custom_category_entry.dart';
 
 // Owns custom categories in prefs and registers them with customCategoryLookup.
 //
@@ -231,7 +125,7 @@ class CategoryStore extends ChangeNotifier {
 
     _entries.add(
       CustomCategoryEntry(
-        id: _newCategoryId(),
+        id: CustomCategoryEntry.newId(),
         label: name,
         iconIndex: clampCustomIconIndex(iconIndex),
         colorIndex: nextCustomColorIndex(
@@ -434,7 +328,7 @@ class CategoryStore extends ChangeNotifier {
       for (final raw in legacy)
         if (raw.trim().isNotEmpty)
           CustomCategoryEntry(
-            id: _legacyCategoryId(raw.trim()),
+            id: CustomCategoryEntry.legacyId(raw.trim()),
             label: raw.trim(),
             iconIndex: raw.hashCode.abs() % customCategoryIconChoices.length,
             updatedAt: syncNow(),

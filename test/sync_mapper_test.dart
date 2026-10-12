@@ -152,7 +152,7 @@ void main() {
     final payload = categoryToSync(entry);
     expect(payload['client_id'], 'cat_1');
     expect(payload['icon_index'], 2);
-    final restored = categoryFromSync(payload);
+    final restored = CustomCategoryEntry.fromSync(payload);
     expect(restored?.id, 'cat_1');
     expect(restored?.label, 'قهوة');
     expect(restored?.iconIndex, 2);

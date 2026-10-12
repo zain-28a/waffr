@@ -136,7 +136,6 @@ SmartFacts _randomFacts(math.Random r, DateTime now) {
     ],
     savingsTransfers: transfers,
     balance: r.nextDouble() < 0.1 ? 0 : 1000.0 + r.nextInt(2000000),
-    maxBalance: 2000000,
     monthlyIncome: income,
     incomeFrequency: r.nextBool()
         ? RecurringFrequency.monthly

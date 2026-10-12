@@ -30,7 +30,6 @@ SmartFacts _facts({
   incomes: const [],
   savingsTransfers: const [],
   balance: balance,
-  maxBalance: 1000,
   monthlyIncome: 1000,
   incomeFrequency: RecurringFrequency.monthly,
   hasRecurringIncome: true,

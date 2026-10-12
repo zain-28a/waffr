@@ -359,7 +359,6 @@ class NotificationService extends ChangeNotifier {
       incomes: store.incomes,
       savingsTransfers: const [],
       balance: store.balance,
-      maxBalance: store.maxBalance,
       monthlyIncome: store.configuredMonthlyIncome,
       incomeFrequency: store.preferredIncomeFrequency,
       hasRecurringIncome: store.hasRecurringIncome,
