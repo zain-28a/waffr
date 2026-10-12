@@ -22,6 +22,7 @@ class WalletBackdrop extends StatefulWidget {
   /// False while another tab is showing, so the idle motion stops.
   final bool active;
 
+  /// Creates a [WalletBackdrop].
   const WalletBackdrop({
     super.key,
     required this.page,
@@ -58,6 +59,7 @@ class WalletBackdrop extends StatefulWidget {
   State<WalletBackdrop> createState() => _WalletBackdropState();
 }
 
+/// State of [WalletBackdrop].
 class _WalletBackdropState extends State<WalletBackdrop>
     with TickerProviderStateMixin {
   // The logo's own green. Dark pages use the dark accent instead.

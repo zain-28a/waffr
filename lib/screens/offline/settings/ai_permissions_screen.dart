@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/data/services/smart_settings.dart';
 import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
@@ -12,12 +11,14 @@ import 'package:waffr/widgets/smart/smart_glow.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
 class AIPermissionsScreen extends StatefulWidget {
+  /// Creates a [AIPermissionsScreen].
   const AIPermissionsScreen({super.key});
 
   @override
   State<AIPermissionsScreen> createState() => _AIPermissionsScreenState();
 }
 
+/// State of [AIPermissionsScreen].
 class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
   final SmartSettings _settings = SmartSettings.instance;
 

@@ -9,6 +9,7 @@ class AccountCreationFlow extends StatefulWidget {
   final Future<void> Function() onCompleted;
   final bool popOnSuccess;
 
+  /// Creates a [AccountCreationFlow].
   const AccountCreationFlow({
     super.key,
     required this.onCompleted,
@@ -19,6 +20,7 @@ class AccountCreationFlow extends StatefulWidget {
   State<AccountCreationFlow> createState() => _AccountCreationFlowState();
 }
 
+/// State of [AccountCreationFlow].
 class _AccountCreationFlowState extends State<AccountCreationFlow> {
   RegistrationProfile? _profile;
   int _step = 0;

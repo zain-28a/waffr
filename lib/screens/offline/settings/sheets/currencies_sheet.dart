@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/stores/currency_store.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/core/theme/app_palette.dart';
@@ -24,6 +23,7 @@ class _CurrenciesSheet extends StatefulWidget {
   State<_CurrenciesSheet> createState() => _CurrenciesSheetState();
 }
 
+/// State of [_CurrenciesSheet].
 class _CurrenciesSheetState extends State<_CurrenciesSheet> {
   final CurrencyStore _store = CurrencyStore.instance;
 

@@ -5,7 +5,6 @@ import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/data/services/backup_service.dart';
 import 'package:waffr/core/sync/auth_session.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/widgets/brand/profile_avatar.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
@@ -13,16 +12,18 @@ import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/screens/offline/settings/change_password_screen.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-// Edit display name, or sign out of the synced account.
+/// Edit display name, or sign out of the synced account.
 class AccountScreen extends StatefulWidget {
   final Future<void> Function()? onSignedOut;
 
+  /// Creates a [AccountScreen].
   const AccountScreen({super.key, this.onSignedOut});
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
 }
 
+/// State of [AccountScreen].
 class _AccountScreenState extends State<AccountScreen> {
   final TextEditingController _nameController = TextEditingController();
 

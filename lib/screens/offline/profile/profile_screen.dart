@@ -27,12 +27,14 @@ import 'package:waffr/widgets/smart/smart_analysis_button.dart';
 class ProfileScreen extends StatefulWidget {
   final ValueNotifier<int> tabIndex;
 
+  /// Creates a [ProfileScreen].
   const ProfileScreen({super.key, required this.tabIndex});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
+/// State of [ProfileScreen].
 class _ProfileScreenState extends State<ProfileScreen>
     with AutomaticKeepAliveClientMixin {
   static const int _tab = 4;

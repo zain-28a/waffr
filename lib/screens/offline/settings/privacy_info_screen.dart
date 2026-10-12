@@ -1,12 +1,12 @@
 // Privacy policy style copy: what stays on-device vs what account fields are kept.
 
 import 'package:flutter/material.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-// Scrollable info sections about financial privacy and stored profile fields.
+/// Scrollable info sections about financial privacy and stored profile fields.
 class PrivacyInfoScreen extends StatelessWidget {
+  /// Creates a [PrivacyInfoScreen].
   const PrivacyInfoScreen({super.key});
 
   @override

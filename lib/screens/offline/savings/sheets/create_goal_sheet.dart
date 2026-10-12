@@ -6,7 +6,6 @@ import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/models/savings_goal.dart';
 import 'package:waffr/data/models/transaction.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/sheets/monthly_income_required_sheet.dart';
@@ -31,6 +30,7 @@ class _CreateGoalSheet extends StatefulWidget {
 // How each income period contributes toward the goal target.
 enum _ContributionType { percent, fixed, custom }
 
+/// State of [_CreateGoalSheet].
 class _CreateGoalSheetState extends State<_CreateGoalSheet> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _targetController = TextEditingController();

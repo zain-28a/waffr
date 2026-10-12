@@ -22,6 +22,7 @@ class _WithdrawSavingsSheet extends StatefulWidget {
   State<_WithdrawSavingsSheet> createState() => _WithdrawSavingsSheetState();
 }
 
+/// State of [_WithdrawSavingsSheet].
 class _WithdrawSavingsSheetState extends State<_WithdrawSavingsSheet> {
   final TextEditingController _amountController = TextEditingController();
   final TransactionStore _store = TransactionStore.instance;

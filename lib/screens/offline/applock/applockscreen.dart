@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
 // Blocks the app until device auth (biometrics or PIN) succeeds.
@@ -9,12 +8,14 @@ import 'package:waffr/core/theme/app_palette.dart';
 class LockScreen extends StatefulWidget {
   final VoidCallback onAuthenticated;
 
+  /// Creates a [LockScreen].
   const LockScreen({super.key, required this.onAuthenticated});
 
   @override
   State<LockScreen> createState() => _LockScreenState();
 }
 
+/// State of [LockScreen].
 class _LockScreenState extends State<LockScreen> {
   final LocalAuthentication _auth = LocalAuthentication();
 

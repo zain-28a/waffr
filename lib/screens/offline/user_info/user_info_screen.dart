@@ -5,7 +5,6 @@ import 'package:waffr/screens/offline/login/auth_fields.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/data/models/country.dart';
 import 'package:waffr/data/models/registration_profile.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/user_info/country_picker_sheet.dart';
@@ -22,12 +21,14 @@ class UserInfoScreen extends StatefulWidget {
   final ValueChanged<RegistrationProfile> onContinue;
   final VoidCallback? onBack;
 
+  /// Creates a [UserInfoScreen].
   const UserInfoScreen({super.key, required this.onContinue, this.onBack});
 
   @override
   State<UserInfoScreen> createState() => _UserInfoScreenState();
 }
 
+/// State of [UserInfoScreen].
 class _UserInfoScreenState extends State<UserInfoScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();

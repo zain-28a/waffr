@@ -24,8 +24,9 @@ Future<void> showShoppingListSheet(BuildContext context) {
   );
 }
 
-// Compact teaser on the savings screen; opens the full shopping list sheet.
+/// Compact teaser on the savings screen; opens the full shopping list sheet.
 class ShoppingListPreviewCard extends StatefulWidget {
+  /// Creates a [ShoppingListPreviewCard].
   const ShoppingListPreviewCard({super.key});
 
   @override
@@ -33,6 +34,7 @@ class ShoppingListPreviewCard extends StatefulWidget {
       _ShoppingListPreviewCardState();
 }
 
+/// State of [ShoppingListPreviewCard].
 class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
   final ShoppingListStore _store = ShoppingListStore.instance;
 
@@ -188,6 +190,7 @@ class _ShoppingListSheet extends StatefulWidget {
   State<_ShoppingListSheet> createState() => _ShoppingListSheetState();
 }
 
+/// State of [_ShoppingListSheet].
 class _ShoppingListSheetState extends State<_ShoppingListSheet> {
   final ShoppingListStore _store = ShoppingListStore.instance;
   final TextEditingController _itemController = TextEditingController();
@@ -491,6 +494,7 @@ class _RenameShoppingItemDialog extends StatefulWidget {
       _RenameShoppingItemDialogState();
 }
 
+/// State of [_RenameShoppingItemDialog].
 class _RenameShoppingItemDialogState extends State<_RenameShoppingItemDialog> {
   late final TextEditingController _controller = TextEditingController(
     text: widget.initialName,
@@ -535,7 +539,7 @@ class _RenameShoppingItemDialogState extends State<_RenameShoppingItemDialog> {
   }
 }
 
-// Records an expense for a shopping item and marks it purchased.
+/// Records an expense for a shopping item and marks it purchased.
 Future<void> showPurchaseShoppingItemSheet(
   BuildContext context,
   ShoppingItem item,
@@ -685,7 +689,7 @@ class _ShoppingColors {
   }
 }
 
-// "عنصر واحد محفوظ", "عنصران محفوظان", "3 عناصر محفوظة", "11 عنصراً محفوظاً".
+/// "عنصر واحد محفوظ", "عنصران محفوظان", "3 عناصر محفوظة", "11 عنصراً محفوظاً".
 String itemsCountLabel(int count, {bool other = false}) {
   if (count == 1) return other ? 'عنصر آخر' : 'عنصر واحد محفوظ';
   if (count == 2) return other ? 'عنصران آخران' : 'عنصران محفوظان';

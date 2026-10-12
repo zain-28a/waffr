@@ -13,7 +13,6 @@ import 'package:waffr/data/services/system_notifications.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/screens/offline/home/dashboard.dart';
@@ -39,15 +38,16 @@ import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
 import 'package:waffr/core/insights/smart/reminder_digest.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-// Bottom navigation shell. Five tabs: home, report, savings, online, profile.
-// The tab bar floats over the pages; each tab keeps kFloatingNavClearance
-// free at the bottom of its scroll content.
-// Settings and notifications are pushed from the header, not tabs.
+/// Bottom navigation shell. Five tabs: home, report, savings, online, profile.
+/// The tab bar floats over the pages; each tab keeps kFloatingNavClearance
+/// free at the bottom of its scroll content.
+/// Settings and notifications are pushed from the header, not tabs.
 class AppShell extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeNotifier;
   final VoidCallback onThemeChanged;
   final dynamic appFlowController;
 
+  /// Creates a [AppShell].
   const AppShell({
     super.key,
     required this.themeNotifier,
@@ -59,6 +59,7 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
+/// State of [AppShell].
 class _AppShellState extends State<AppShell>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   final ValueNotifier<int> _tabIndex = ValueNotifier<int>(0);

@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 class PlaceholderScreen extends StatefulWidget {
   final String label;
 
+  /// Creates a [PlaceholderScreen].
   const PlaceholderScreen({super.key, required this.label});
 
   @override
   State<PlaceholderScreen> createState() => _PlaceholderScreenState();
 }
 
+/// State of [PlaceholderScreen].
 class _PlaceholderScreenState extends State<PlaceholderScreen>
     with AutomaticKeepAliveClientMixin {
   @override

@@ -22,6 +22,7 @@ class _ManualSaveSheet extends StatefulWidget {
   State<_ManualSaveSheet> createState() => _ManualSaveSheetState();
 }
 
+/// State of [_ManualSaveSheet].
 class _ManualSaveSheetState extends State<_ManualSaveSheet> {
   final TextEditingController _amountController = TextEditingController();
   final TransactionStore _store = TransactionStore.instance;

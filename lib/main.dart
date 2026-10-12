@@ -60,6 +60,7 @@ void _registerFontLicenses() {
 
 /// Root widget. Holds the light/dark choice and waits until it is known.
 class WafarApp extends StatefulWidget {
+  /// Creates a [WafarApp].
   const WafarApp({super.key});
 
   @override
@@ -186,6 +187,7 @@ class AppFlowController extends StatefulWidget {
   final VoidCallback onToggleTheme;
   final ValueNotifier<ThemeMode> themeNotifier;
 
+  /// Creates a [AppFlowController].
   const AppFlowController({
     super.key,
     required this.themeMode,

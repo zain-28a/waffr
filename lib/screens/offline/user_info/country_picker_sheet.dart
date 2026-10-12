@@ -27,6 +27,7 @@ class _CountryPickerSheet extends StatefulWidget {
   State<_CountryPickerSheet> createState() => _CountryPickerSheetState();
 }
 
+/// State of [_CountryPickerSheet].
 class _CountryPickerSheetState extends State<_CountryPickerSheet> {
   final TextEditingController _search = TextEditingController();
 
