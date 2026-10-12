@@ -130,11 +130,14 @@ class _LockScreenState extends State<LockScreen> {
 
             const SizedBox(height: 30),
 
-            AppPrimaryButton(
-              label: 'فتح القفل',
-              icon: Icons.fingerprint,
-              busy: _loading,
-              onTap: _authenticate,
+            SizedBox(
+              width: 200,
+              child: AppPrimaryButton(
+                label: 'فتح القفل',
+                icon: Icons.fingerprint,
+                busy: _loading,
+                onTap: _authenticate,
+              ),
             ),
           ],
         ),
