@@ -3,7 +3,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/data/models/expense_categories.dart';
@@ -19,11 +18,13 @@ sealed class ExpensePresetChoice {
 
 /// "إضافة": save the expense being entered as a preset when it is saved.
 class ExpensePresetMark extends ExpensePresetChoice {
+  /// Creates a [ExpensePresetMark].
   const ExpensePresetMark();
 }
 
 /// The star was already filled and the user no longer wants to save it.
 class ExpensePresetUnmark extends ExpensePresetChoice {
+  /// Creates a [ExpensePresetUnmark].
   const ExpensePresetUnmark();
 }
 
@@ -31,6 +32,7 @@ class ExpensePresetUnmark extends ExpensePresetChoice {
 class ExpensePresetSelected extends ExpensePresetChoice {
   final ExpensePreset preset;
 
+  /// Creates a [ExpensePresetSelected].
   const ExpensePresetSelected(this.preset);
 }
 
@@ -53,6 +55,7 @@ class _ExpensePresetsDialog extends StatefulWidget {
   State<_ExpensePresetsDialog> createState() => _ExpensePresetsDialogState();
 }
 
+/// State of [_ExpensePresetsDialog].
 class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
   final ExpensePresetStore _store = ExpensePresetStore.instance;
 

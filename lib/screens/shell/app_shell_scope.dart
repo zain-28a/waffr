@@ -19,13 +19,14 @@ class AppShellTabs {
 class AppShellScope extends InheritedWidget {
   final ValueChanged<int> selectTab;
 
+  /// Creates a [AppShellScope].
   const AppShellScope({
     super.key,
     required this.selectTab,
     required super.child,
   });
 
-  // No-op outside the shell (e.g. widget tests that pump a page alone).
+  /// No-op outside the shell (e.g. widget tests that pump a page alone).
   static void selectTabOf(BuildContext context, int index) {
     context.getInheritedWidgetOfExactType<AppShellScope>()?.selectTab(index);
   }

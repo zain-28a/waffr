@@ -3,7 +3,6 @@ import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/data/services/backup_service.dart';
 import 'package:waffr/core/sync/auth_session.dart';
 import 'package:waffr/core/sync/sync_service.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/screens/offline/login/account_creation_flow.dart';
 import 'package:waffr/screens/offline/login/auth_fields.dart';
@@ -20,6 +19,7 @@ class LoginScreen extends StatefulWidget {
   final bool allowGuest;
   final bool popOnSuccess;
 
+  /// Creates a [LoginScreen].
   const LoginScreen({
     super.key,
     required this.onCompleted,
@@ -31,6 +31,7 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+/// State of [LoginScreen].
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();

@@ -19,6 +19,7 @@ class StreakCard extends StatefulWidget {
   /// A new value replays the animation.
   final int replayToken;
 
+  /// Creates a [StreakCard].
   const StreakCard({
     super.key,
     required this.count,
@@ -30,6 +31,7 @@ class StreakCard extends StatefulWidget {
   State<StreakCard> createState() => _StreakCardState();
 }
 
+/// State of [StreakCard].
 class _StreakCardState extends State<StreakCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(

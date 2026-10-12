@@ -25,6 +25,7 @@ class _AddIncomeSheet extends StatefulWidget {
   State<_AddIncomeSheet> createState() => _AddIncomeSheetState();
 }
 
+/// State of [_AddIncomeSheet].
 class _AddIncomeSheetState extends State<_AddIncomeSheet> {
   static const String _freqNone = 'مرة واحدة';
   static const String _freqWeekly = 'أسبوعي';

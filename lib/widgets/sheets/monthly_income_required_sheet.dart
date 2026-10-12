@@ -1,7 +1,6 @@
 // Bottom sheet shown when the user tries to create a periodic savings plan
 // without a monthly income set.
 import 'package:flutter/material.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 

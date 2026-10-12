@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:waffr/data/models/savings_goal.dart';
 import 'package:waffr/data/models/transaction.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/containers/glass.dart';
@@ -13,7 +12,7 @@ import 'package:waffr/widgets/sheets/monthly_income_required_sheet.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-// Requires monthly income; opens create UI or details for the active plan.
+/// Requires monthly income; opens create UI or details for the active plan.
 Future<void> showPeriodicGoalsSheet(BuildContext context) async {
   await TransactionStore.instance.ensureLoaded();
   if (!context.mounted) return;
@@ -40,6 +39,7 @@ class _PeriodicGoalsSheet extends StatefulWidget {
   State<_PeriodicGoalsSheet> createState() => _PeriodicGoalsSheetState();
 }
 
+/// State of [_PeriodicGoalsSheet].
 class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
   static const List<int> _percents = [5, 10, 15, 20];
   static const List<GoalDurationPreset> _durations = [
@@ -308,6 +308,7 @@ class _PeriodicPlanDetailsSheet extends StatefulWidget {
       _PeriodicPlanDetailsSheetState();
 }
 
+/// State of [_PeriodicPlanDetailsSheet].
 class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
   final TransactionStore _store = TransactionStore.instance;
   bool _deleting = false;

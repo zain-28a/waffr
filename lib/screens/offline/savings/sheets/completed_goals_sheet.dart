@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/savings_goal.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
@@ -25,6 +24,7 @@ class _CompletedGoalsSheet extends StatefulWidget {
   State<_CompletedGoalsSheet> createState() => _CompletedGoalsSheetState();
 }
 
+/// State of [_CompletedGoalsSheet].
 class _CompletedGoalsSheetState extends State<_CompletedGoalsSheet> {
   final TransactionStore _store = TransactionStore.instance;
 

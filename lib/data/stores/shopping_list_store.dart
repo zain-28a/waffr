@@ -6,7 +6,6 @@ import 'package:waffr/data/models/shopping_item.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
 import 'package:waffr/core/sync/sync_dirty.dart';
-import 'package:waffr/core/sync/sync_mapper.dart';
 import 'package:waffr/core/sync/sync_merge.dart';
 import 'package:waffr/core/sync/sync_tombstones.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';

@@ -38,6 +38,7 @@ class _MonthlyIncomeSheet extends StatefulWidget {
   State<_MonthlyIncomeSheet> createState() => _MonthlyIncomeSheetState();
 }
 
+/// State of [_MonthlyIncomeSheet].
 class _MonthlyIncomeSheetState extends State<_MonthlyIncomeSheet> {
   static const double _maxAmount = 999999999;
 

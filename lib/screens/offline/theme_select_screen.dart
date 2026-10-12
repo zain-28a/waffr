@@ -12,6 +12,7 @@ class ThemeSelectScreen extends StatefulWidget {
   final void Function(ThemeMode mode) onThemeChanged;
   final VoidCallback onContinue;
 
+  /// Creates a [ThemeSelectScreen].
   const ThemeSelectScreen({
     super.key,
     required this.onThemeChanged,
@@ -22,6 +23,7 @@ class ThemeSelectScreen extends StatefulWidget {
   State<ThemeSelectScreen> createState() => _ThemeSelectScreenState();
 }
 
+/// State of [ThemeSelectScreen].
 class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
   late bool _isDark;
 

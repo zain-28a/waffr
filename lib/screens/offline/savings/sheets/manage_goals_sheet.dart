@@ -6,7 +6,6 @@ import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/savings_goal.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
@@ -30,6 +29,7 @@ class _ManageGoalsSheet extends StatefulWidget {
   State<_ManageGoalsSheet> createState() => _ManageGoalsSheetState();
 }
 
+/// State of [_ManageGoalsSheet].
 class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
   final TransactionStore _store = TransactionStore.instance;
 

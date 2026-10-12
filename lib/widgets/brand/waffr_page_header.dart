@@ -1,7 +1,6 @@
 // Shared top app bar for the shell and settings-style screens.
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 

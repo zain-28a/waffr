@@ -17,12 +17,14 @@ import 'package:waffr/core/theme/app_palette.dart';
 // Notifications page: mute toggle, mark-all-read, clear history, grouped list.
 
 class NotificationsScreen extends StatefulWidget {
+  /// Creates a [NotificationsScreen].
   const NotificationsScreen({super.key});
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
+/// State of [NotificationsScreen].
 class _NotificationsScreenState extends State<NotificationsScreen>
     with WidgetsBindingObserver {
   // Rows animate in only while the screen first opens; rows that scroll

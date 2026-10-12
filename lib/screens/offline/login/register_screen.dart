@@ -3,7 +3,6 @@ import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/data/models/registration_profile.dart';
 import 'package:waffr/core/sync/auth_session.dart';
 import 'package:waffr/core/sync/sync_service.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/screens/offline/login/auth_fields.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
@@ -18,6 +17,7 @@ class RegisterScreen extends StatefulWidget {
   final VoidCallback? onBack;
   final bool popOnSuccess;
 
+  /// Creates a [RegisterScreen].
   const RegisterScreen({
     super.key,
     required this.profile,
@@ -30,6 +30,7 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
+/// State of [RegisterScreen].
 class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();

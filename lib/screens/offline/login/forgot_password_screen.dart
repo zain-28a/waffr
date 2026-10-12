@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/core/sync/auth_session.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/screens/offline/login/auth_fields.dart';
 import 'package:waffr/widgets/containers/glass.dart';
@@ -14,12 +13,14 @@ import 'package:waffr/core/theme/app_palette.dart';
 class ForgotPasswordScreen extends StatefulWidget {
   final String initialEmail;
 
+  /// Creates a [ForgotPasswordScreen].
   const ForgotPasswordScreen({super.key, this.initialEmail = ''});
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
+/// State of [ForgotPasswordScreen].
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   late final TextEditingController _emailController = TextEditingController(
     text: widget.initialEmail,
