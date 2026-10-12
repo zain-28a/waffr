@@ -1,5 +1,5 @@
 // Streak card on the profile tab: the day count, a ring that fills toward the
-// next milestone with the Waffr mark inside, and the last seven days lighting
+// next milestone with the Waffr mark inside, and this week's days lighting
 // up one after another. Plays when the tab opens.
 
 import 'dart:math' as math;
@@ -317,8 +317,8 @@ class _RingPainter extends CustomPainter {
   }
 }
 
-// The last seven days, oldest on the right. Days inside the streak light up
-// in order.
+// The current week, Saturday to Friday, starting on the right. Days inside
+// the streak light up in order; days still ahead stay faded.
 class _WeekStrip extends StatelessWidget {
   final DateTime today;
   final DateTime start;
@@ -346,8 +346,11 @@ class _WeekStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Days since Saturday (DateTime.weekday: Monday = 1 ... Sunday = 7).
+    final sinceSaturday = (today.weekday + 1) % 7;
     final days = [
-      for (var i = 6; i >= 0; i--) today.subtract(Duration(days: i)),
+      for (var i = 0; i < 7; i++)
+        DateTime(today.year, today.month, today.day - sinceSaturday + i),
     ];
 
     return Row(
@@ -358,6 +361,7 @@ class _WeekStrip extends StatelessWidget {
               label: _initials[days[i].weekday] ?? '',
               active: !days[i].isBefore(start) && !days[i].isAfter(last),
               isToday: days[i] == today,
+              isFuture: days[i].isAfter(today),
               reveal: AppMotion.overshoot.transform(
                 ((animation.value - 0.30 - i * 0.07) / 0.28).clamp(0.0, 1.0),
               ),
@@ -373,6 +377,7 @@ class _DayMark extends StatelessWidget {
   final String label;
   final bool active;
   final bool isToday;
+  final bool isFuture;
   final double reveal;
   final AppPalette palette;
 
@@ -380,6 +385,7 @@ class _DayMark extends StatelessWidget {
     required this.label,
     required this.active,
     required this.isToday,
+    required this.isFuture,
     required this.reveal,
     required this.palette,
   });
@@ -393,7 +399,7 @@ class _DayMark extends StatelessWidget {
       lit.clamp(0.0, 1.0),
     )!;
 
-    return Column(
+    final mark = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
@@ -431,5 +437,6 @@ class _DayMark extends StatelessWidget {
         ),
       ],
     );
+    return isFuture ? Opacity(opacity: 0.45, child: mark) : mark;
   }
 }
