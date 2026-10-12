@@ -650,7 +650,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           Center(
             child: Text(
-              'waffr 2.13.4',
+              'waffr 2.13.5',
 
               style: TextStyle(
                 color: textSecondary.withValues(alpha: 0.6),
