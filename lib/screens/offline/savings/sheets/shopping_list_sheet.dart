@@ -15,6 +15,7 @@ import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/dialogs/edit_delete_menu.dart';
 import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 Future<void> showShoppingListSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -673,17 +674,13 @@ class _ShoppingColors {
   });
 
   factory _ShoppingColors.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
     return _ShoppingColors(
-      accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-      surface: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-      textPrimary: isDark
-          ? AppColors.darkTextPrimary
-          : AppColors.lightTextPrimary,
-      textSecondary: isDark
-          ? AppColors.darkTextSecondary
-          : AppColors.lightTextSecondary,
+      accent: palette.accent,
+      surface: palette.surface,
+      textPrimary: palette.textPrimary,
+      textSecondary: palette.textSecondary,
     );
   }
 }

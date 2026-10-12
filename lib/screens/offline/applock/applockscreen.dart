@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 // Blocks the app until device auth (biometrics or PIN) succeeds.
 
@@ -73,15 +74,13 @@ class _LockScreenState extends State<LockScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final bg = palette.background;
 
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final textPrimary = palette.textPrimary;
 
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final accent = palette.accent;
 
     return Scaffold(
       backgroundColor: bg,

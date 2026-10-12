@@ -8,6 +8,7 @@ import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 Future<void> showCompletedGoalsSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -37,14 +38,10 @@ class _CompletedGoalsSheetState extends State<_CompletedGoalsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final palette = AppPalette.of(context);
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
+    final accent = palette.accent;
     final goals = _store.completedGoals;
 
     return GlassSheetBody(

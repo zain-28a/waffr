@@ -11,6 +11,7 @@ import 'package:waffr/core/sync/auth_session.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 // Entry list that opens deeper privacy/security detail pages.
 class PrivacySecurityScreen extends StatefulWidget {
@@ -562,17 +563,13 @@ class _PrivacyColors {
   });
 
   factory _PrivacyColors.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
     return _PrivacyColors(
-      background: isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      surface: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-      textPrimary: isDark
-          ? AppColors.darkTextPrimary
-          : AppColors.lightTextPrimary,
-      textSecondary: isDark
-          ? AppColors.darkTextSecondary
-          : AppColors.lightTextSecondary,
-      accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
+      background: palette.background,
+      surface: palette.surface,
+      textPrimary: palette.textPrimary,
+      textSecondary: palette.textSecondary,
+      accent: palette.accent,
     );
   }
 }

@@ -14,6 +14,7 @@ import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 /// Modal barrier tint. Dims the page behind the sheet without blurring it.
 const Color kSheetBarrierColor = Color.fromARGB(114, 0, 0, 0);
@@ -168,12 +169,10 @@ class GlassSheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final accent = palette.accent;
+    final textSecondary = palette.textSecondary;
 
     return Column(
       children: [
@@ -254,11 +253,9 @@ class SheetCircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final textPrimary = palette.textPrimary;
 
     return Material(
       color: sheetFieldColor(context),
@@ -295,11 +292,9 @@ class SheetFieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final textSecondary = palette.textSecondary;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -351,8 +346,8 @@ class SheetInfoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
 
     return Semantics(
       button: true,
@@ -390,14 +385,10 @@ class SheetOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
     final destructiveColor = AppColors.destructiveOf(context);
     final tint = destructive ? destructiveColor : accent;
 
@@ -571,15 +562,11 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
     final top = origin.dy + anchorSize.height + 6;
     final maxHeight = (screen.height - top - 16).clamp(120.0, 220.0);
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final palette = AppPalette.of(context);
+    final surface = palette.surface;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
+    final accent = palette.accent;
 
     final tiles = menu == _AmountMenu.currency
         ? [
@@ -655,14 +642,10 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
 
     return ListenableBuilder(
       listenable: CurrencyStore.instance,
@@ -1036,14 +1019,10 @@ class _SheetCurrencySelectorState extends State<SheetCurrencySelector> {
     return ListenableBuilder(
       listenable: CurrencyStore.instance,
       builder: (context, _) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final textPrimary = isDark
-            ? AppColors.darkTextPrimary
-            : AppColors.lightTextPrimary;
-        final textSecondary = isDark
-            ? AppColors.darkTextSecondary
-            : AppColors.lightTextSecondary;
-        final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+        final palette = AppPalette.of(context);
+        final textPrimary = palette.textPrimary;
+        final textSecondary = palette.textSecondary;
+        final accent = palette.accent;
         final options = CurrencyStore.instance.enabledCurrencies;
         final selectable = widget.onChanged != null && options.length > 1;
         final symbol = Currencies.symbolOf(_code);
@@ -1126,14 +1105,10 @@ class SheetTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
 
     return TextField(
       controller: controller,
@@ -1197,12 +1172,10 @@ class SheetChoiceChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final accent = palette.accent;
+    final textPrimary = palette.textPrimary;
 
     if (options.isEmpty) return const SizedBox.shrink();
 
@@ -1427,9 +1400,10 @@ class SheetDestructiveButton extends StatelessWidget {
 /// Shared fill for sheet inputs: app background blended with a touch of accent.
 Color sheetFieldColor(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
+  final palette = AppPalette.of(context);
 
-  final base = isDark ? AppColors.darkBackground : AppColors.lightBackground;
-  final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+  final base = palette.background;
+  final accent = palette.accent;
 
   return Color.alphaBlend(accent.withValues(alpha: isDark ? 0.10 : 0.07), base);
 }

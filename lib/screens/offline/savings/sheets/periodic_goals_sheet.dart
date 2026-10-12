@@ -11,6 +11,7 @@ import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/sheets/monthly_income_required_sheet.dart';
 import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 // Requires monthly income; opens create UI or details for the active plan.
 Future<void> showPeriodicGoalsSheet(BuildContext context) async {
@@ -126,10 +127,8 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
   }
 
   List<Widget> _buildPicker(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final palette = AppPalette.of(context);
+    final textSecondary = palette.textSecondary;
 
     if (_income <= 0) {
       return [
@@ -163,7 +162,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
           fontFamilyFallback: ['Tajawal'],
           fontSize: 22,
           fontWeight: FontWeight.bold,
-          color: isDark ? AppColors.darkAccent : AppColors.lightAccent,
+          color: palette.accent,
         ),
       ),
       const SizedBox(height: 18),
@@ -192,13 +191,9 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
   }
 
   List<Widget> _buildPreview(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final palette = AppPalette.of(context);
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
     final periodWord = _frequency == RecurringFrequency.weekly
         ? 'أسبوعياً'
         : 'شهرياً';
@@ -342,13 +337,9 @@ class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final palette = AppPalette.of(context);
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
     final periodWord = switch (widget.goal.deductFrequency) {
       RecurringFrequency.weekly => 'أسبوعياً',
       RecurringFrequency.monthly => 'شهرياً',

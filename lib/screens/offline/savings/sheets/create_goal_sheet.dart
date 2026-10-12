@@ -11,6 +11,7 @@ import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/sheets/monthly_income_required_sheet.dart';
 import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 Future<void> showCreateGoalSheet(BuildContext context) {
   return showGlassSheet<void>(
@@ -249,16 +250,12 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
     final colors = _GoalColors(
-      textPrimary: isDark
-          ? AppColors.darkTextPrimary
-          : AppColors.lightTextPrimary,
-      textSecondary: isDark
-          ? AppColors.darkTextSecondary
-          : AppColors.lightTextSecondary,
-      accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
+      textPrimary: palette.textPrimary,
+      textSecondary: palette.textSecondary,
+      accent: palette.accent,
     );
 
     return GlassSheetBody(

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 /// Fixed-height page header with optional scroll-elevation shadow.
 class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
@@ -88,10 +89,8 @@ class WaffrBackHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final palette = AppPalette.of(context);
+    final textPrimary = palette.textPrimary;
 
     return WaffrPageHeader(
       centerTitle: true,
@@ -137,8 +136,9 @@ class _HeaderChrome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
+    final surface = palette.surface;
 
     return AnimatedContainer(
       duration: AppMotion.of(context, AppMotion.fast),

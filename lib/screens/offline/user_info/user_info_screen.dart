@@ -11,6 +11,7 @@ import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/user_info/country_picker_sheet.dart';
 import 'package:waffr/widgets/dialogs/waffr_date_picker.dart';
 import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 // Collects name, birth date, optional gender, country with an optional phone
 // number, and one optional address line for RegistrationProfile.
@@ -123,16 +124,12 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final palette = AppPalette.of(context);
+    final bg = palette.background;
+    final surface = palette.surface;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
+    final accent = palette.accent;
 
     return Scaffold(
       backgroundColor: bg,

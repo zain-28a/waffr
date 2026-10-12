@@ -14,6 +14,7 @@ import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/dialogs/edit_amount_dialog.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 const String kDeductAutomaticLabel = 'تلقائي';
 const String kDeductConfirmLabel = 'بعد تأكيدي';
@@ -124,15 +125,11 @@ class _ObligationColors {
   });
 
   factory _ObligationColors.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
     return _ObligationColors(
-      accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-      textPrimary: isDark
-          ? AppColors.darkTextPrimary
-          : AppColors.lightTextPrimary,
-      textSecondary: isDark
-          ? AppColors.darkTextSecondary
-          : AppColors.lightTextSecondary,
+      accent: palette.accent,
+      textPrimary: palette.textPrimary,
+      textSecondary: palette.textSecondary,
       warning: AppColors.warningOf(context),
     );
   }

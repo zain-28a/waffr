@@ -3,6 +3,7 @@
 // and a chevron. Section titles above groups of rows use AppSectionTitle.
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 TextStyle _tileText(Color color, double size, FontWeight weight) => TextStyle(
   fontFamily: 'Outfit',
@@ -48,15 +49,11 @@ class AppListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final palette = AppPalette.of(context);
+    final accent = palette.accent;
+    final surface = palette.surface;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
     final danger = AppColors.destructiveOf(context);
     final tint = destructive ? danger : accent;
 
@@ -174,10 +171,8 @@ class AppSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
+    final palette = AppPalette.of(context);
+    final textSecondary = palette.textSecondary;
 
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: 5, bottom: 10),

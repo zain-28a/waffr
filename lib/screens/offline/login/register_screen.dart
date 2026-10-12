@@ -8,6 +8,7 @@ import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/screens/offline/login/auth_fields.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 // Credential step of signup: email, password, confirm — uses [profile] from user info.
 
@@ -131,17 +132,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
 
-    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
-    final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-    final accent = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final bg = palette.background;
+    final surface = palette.surface;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
+    final accent = palette.accent;
 
     return Scaffold(
       backgroundColor: bg,

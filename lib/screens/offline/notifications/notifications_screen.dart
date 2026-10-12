@@ -12,6 +12,7 @@ import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/core/theme/app_palette.dart';
 
 // Notifications page: mute toggle, mark-all-read, clear history, grouped list.
 
@@ -591,16 +592,12 @@ class _NotificationColors {
   });
 
   factory _NotificationColors.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = AppPalette.of(context);
     return _NotificationColors(
-      surface: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-      accent: isDark ? AppColors.darkAccent : AppColors.lightAccent,
-      textPrimary: isDark
-          ? AppColors.darkTextPrimary
-          : AppColors.lightTextPrimary,
-      textSecondary: isDark
-          ? AppColors.darkTextSecondary
-          : AppColors.lightTextSecondary,
+      surface: palette.surface,
+      accent: palette.accent,
+      textPrimary: palette.textPrimary,
+      textSecondary: palette.textSecondary,
     );
   }
 }
