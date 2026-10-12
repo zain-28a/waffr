@@ -14,22 +14,30 @@ import 'package:waffr/core/prefs/app_prefs.dart';
 
 export 'package:waffr/data/models/custom_category_entry.dart';
 
-// Owns custom categories in prefs and registers them with customCategoryLookup.
-//
-// Built-in categories can be removed too. They are only hidden from the
-// pickers (the label list travels with settings sync), so old expenses keep
-// their label, icon and color. Removed custom categories are kept in a local
-// archive for the same reason.
+/// Owns custom categories in prefs and registers them with customCategoryLookup.
+///
+/// Built-in categories can be removed too. They are only hidden from the
+/// pickers (the label list travels with settings sync), so old expenses keep
+/// their label, icon and color. Removed custom categories are kept in a local
+/// archive for the same reason.
 class CategoryStore extends ChangeNotifier {
   CategoryStore._() {
     customCategoryLookup = findCustom;
   }
 
+  /// The app-wide category store.
   static final CategoryStore instance = CategoryStore._();
 
+  /// Prefs key of the oldest format: a list of labels.
   static const String itemsKey = 'custom_expense_categories';
+
+  /// Prefs key of the current format: JSON entries.
   static const String itemsJsonKey = 'custom_expense_categories_v2';
+
+  /// Prefs key of the removed built-in labels.
   static const String hiddenBuiltInsKey = 'hidden_builtin_categories';
+
+  /// Prefs key of removed custom categories, kept for old expenses.
   static const String archivedKey = 'archived_expense_categories';
 
   final List<CustomCategoryEntry> _entries = [];
@@ -38,12 +46,15 @@ class CategoryStore extends ChangeNotifier {
   Future<void>? _loader;
   bool _loaded = false;
 
+  /// True once loaded from prefs.
   bool get isLoaded => _loaded;
 
+  /// The user's categories as drawable categories.
   List<ExpenseCategory> get customCategories => [
     for (final entry in _entries) entry.toCategory(),
   ];
 
+  /// The user's categories as stored (for sync).
   List<CustomCategoryEntry> get entries => List.unmodifiable(_entries);
 
   /// Built-in labels the user removed, in catalog order (for settings sync).
@@ -52,7 +63,7 @@ class CategoryStore extends ChangeNotifier {
       if (_hiddenBuiltIns.contains(item.label)) item.label,
   ];
 
-  // Visible built-ins plus customs for pickers; excludes the "custom" tile.
+  /// Visible built-ins plus customs for pickers; excludes the "custom" tile.
   List<ExpenseCategory> get selectableCategories => [
     for (final item in expenseCategories)
       if (!_hiddenBuiltIns.contains(item.label)) item,
@@ -65,9 +76,10 @@ class CategoryStore extends ChangeNotifier {
     return options.isEmpty ? fallbackCategory.label : options.first.label;
   }
 
+  /// Loads from prefs once; later calls return the same future.
   Future<void> ensureLoaded() => _loader ??= _load();
 
-  // Live custom categories first, then removed ones so history keeps its icon.
+  /// Live custom categories first, then removed ones so history keeps its icon.
   ExpenseCategory? findCustom(String label) {
     for (final entry in _entries) {
       if (entry.label == label) return entry.toCategory();
@@ -75,14 +87,18 @@ class CategoryStore extends ChangeNotifier {
     return _archived[label]?.toCategory();
   }
 
+  /// True for a live user-defined category.
   bool isCustom(String label) => _entries.any((entry) => entry.label == label);
 
+  /// True for one of the built-in categories.
   bool isBuiltIn(String label) =>
       expenseCategories.any((item) => item.label == label);
 
+  /// True when [label] shows in the pickers.
   bool isSelectable(String label) =>
       selectableCategories.any((item) => item.label == label);
 
+  /// The saved icon slot of a custom category, else 0.
   int iconIndexOf(String label) {
     for (final entry in _entries) {
       if (entry.label == label) return entry.iconIndex;
@@ -90,7 +106,7 @@ class CategoryStore extends ChangeNotifier {
     return 0;
   }
 
-  // Arabic validation error, or null if the name can be used.
+  /// Arabic validation error, or null if the name can be used.
   String? validateName(String rawName, {String? ignoring}) {
     final name = rawName.trim();
     if (name.isEmpty) return 'أدخل اسماً للتصنيف';
@@ -109,6 +125,8 @@ class CategoryStore extends ChangeNotifier {
     return null;
   }
 
+  /// Adds a category (or brings back a removed built-in of that name).
+  /// Returns the saved label, or null when the name is not valid.
   Future<String?> addCustom(String rawName, {int iconIndex = 0}) async {
     await ensureLoaded();
 
@@ -139,6 +157,8 @@ class CategoryStore extends ChangeNotifier {
     return name;
   }
 
+  /// Renames a custom category and may change its icon; the old name is
+  /// archived so earlier expenses keep their look. Null when not valid.
   Future<String?> renameCustom(
     String oldLabel,
     String rawName, {
@@ -164,7 +184,7 @@ class CategoryStore extends ChangeNotifier {
     return name;
   }
 
-  // Removes the category and records a sync tombstone.
+  /// Removes the category and records a sync tombstone.
   Future<bool> removeCustom(String label) async {
     await ensureLoaded();
 
@@ -221,6 +241,8 @@ class CategoryStore extends ChangeNotifier {
     _archived[entry.label] = entry;
   }
 
+  /// Merges the server's categories, keeping locally assigned colors and
+  /// archiving categories the merge removed.
   Future<void> applyRemoteSync({
     required List<Map<String, dynamic>> upserts,
     required List<SyncTombstone> deletes,
@@ -265,6 +287,7 @@ class CategoryStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Drops memory so the next [ensureLoaded] re-reads prefs (tests, wipes).
   void resetCache() {
     _entries.clear();
     _hiddenBuiltIns.clear();

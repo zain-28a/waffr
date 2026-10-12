@@ -10,11 +10,14 @@ import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:waffr/core/insights/smart/reminder_digest.dart';
 
+/// Shows and schedules device (OS) notifications.
 class SystemNotifications {
   SystemNotifications._();
 
+  /// The app-wide service.
   static final SystemNotifications instance = SystemNotifications._();
 
+  /// Android channel of every Waffr notification.
   static const String channelId = 'waffr_alerts';
   static const int _streakId = 41021;
   static const int _comebackSoonId = 41022;
@@ -36,10 +39,12 @@ class SystemNotifications {
   bool _ready = false;
   bool _timeZoneReady = false;
 
+  /// Sets up the plugin once; safe to call repeatedly.
   Future<void> initialize() {
     return _starting ??= _start();
   }
 
+  /// Shows an alert now; [eventKey] gives it a stable id.
   Future<void> present({
     required String eventKey,
     required String title,
@@ -116,10 +121,12 @@ class SystemNotifications {
     } catch (_) {}
   }
 
-  /// When the comeback reminders fire, for writing their text ahead.
+  /// When the first comeback reminder fires (two days later, 20:30), for
+  /// writing its text ahead.
   static DateTime soonAt(DateTime now) =>
       DateTime(now.year, now.month, now.day + 2, 20, 30);
 
+  /// When the second comeback reminder fires (five days later, 20:30).
   static DateTime laterAt(DateTime now) =>
       DateTime(now.year, now.month, now.day + 5, 20, 30);
 
@@ -153,6 +160,7 @@ class SystemNotifications {
     }
   }
 
+  /// Removes every shown and scheduled notification.
   Future<void> cancelAll() async {
     await initialize();
     if (!_ready) return;
