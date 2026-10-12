@@ -13,25 +13,42 @@ TextStyle _tileText(Color color, double size, FontWeight weight) => TextStyle(
   color: color,
 );
 
+/// One settings-style row in its own card.
 class AppListTile extends StatelessWidget {
+  /// Icon in the leading box.
   final IconData icon;
 
   /// Drawn in the icon box instead of [icon] (e.g. the smart sparkle).
   final Widget? leading;
+
+  /// Row title.
   final String title;
+
+  /// Optional second line.
   final String? subtitle;
 
   /// Short state shown as a chip (e.g. «مفعّل»); [statusOn] tints it.
   final String? status;
+
+  /// Tints the [status] chip as "on".
   final bool statusOn;
 
   /// Replaces the chevron (e.g. a switch).
   final Widget? trailing;
+
+  /// Shows the chevron when there is no [trailing].
   final bool showChevron;
+
+  /// Shows a spinner instead of the chevron.
   final bool busy;
+
+  /// Paints the row in the destructive red.
   final bool destructive;
+
+  /// Called on tap; null makes the row static.
   final VoidCallback? onTap;
 
+  /// Creates a [AppListTile].
   const AppListTile({
     super.key,
     required this.icon,
@@ -136,6 +153,7 @@ class AppListTile extends StatelessWidget {
   }
 }
 
+/// The small status chip at the end of a row.
 class _StatusChip extends StatelessWidget {
   final String label;
   final bool on;
@@ -165,8 +183,10 @@ class _StatusChip extends StatelessWidget {
 
 /// Small grey heading above a group of [AppListTile]s.
 class AppSectionTitle extends StatelessWidget {
+  /// Heading text.
   final String title;
 
+  /// Creates a [AppSectionTitle].
   const AppSectionTitle({super.key, required this.title});
 
   @override
