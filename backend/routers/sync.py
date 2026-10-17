@@ -8,10 +8,9 @@ and the newer ``updated_at`` wins. See backend/README.md for the rules.
 
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -100,13 +99,22 @@ def _apply_delete(row, deleted_at: datetime | None) -> None:
     scrub_private_text(row)
 
 
+# A row written by a sync that started before another device's pull but
+# committed after it carries a stamp just under that pull's server_time; the
+# overlap sends such rows again on the next pull instead of losing them.
+# Re-sent rows merge as no-ops (last write wins on updated_at).
+PULL_OVERLAP = timedelta(minutes=2)
+
+
 def _changed_since(query, model, last_sync: datetime | None):
+    """Rows the server changed after last_sync, by its own clock.
+
+    Filtering on the app-sent updated_at / deleted_at would miss an old
+    offline edit pushed after the other device's last sync.
+    """
     if last_sync is None:
         return query
-    filters = [model.updated_at > last_sync]
-    if hasattr(model, "deleted_at"):
-        filters.append(model.deleted_at > last_sync)
-    return query.filter(or_(*filters))
+    return query.filter(model.changed_at > last_sync - PULL_OVERLAP)
 
 
 def _settings_row(db: Session, user: User) -> tuple[UserSettings, bool]:

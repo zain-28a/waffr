@@ -240,3 +240,25 @@ def system_execute(sql: str, **params) -> None:
         session.commit()
     finally:
         session.close()
+
+
+def backdate_changes(minutes: float) -> None:
+    """Move every synced row's server change stamp [minutes] into the past.
+
+    Pulls filter on changed_at (server clock) with a short overlap, so a
+    test that needs rows to look older than a cursor ages them here.
+    """
+    from database import Base
+
+    for table in Base.metadata.tables.values():
+        if "changed_at" in table.c:
+            system_execute(
+                f"UPDATE {table.name} "
+                "SET changed_at = changed_at - make_interval(secs => :secs)",
+                secs=minutes * 60,
+            )
+
+
+def server_now() -> datetime:
+    """The current UTC time, as a pull cursor."""
+    return datetime.now(timezone.utc)

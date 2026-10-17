@@ -160,9 +160,12 @@ client's `updated_at`, tombstones, the streak merge) are in
 [routers/README.md](routers/README.md) and pinned down by
 `tests/test_sync_push_pull.py` and `tests/test_sync_settings.py`.
 
-Known limitation: the pull compares the server-issued `last_sync_at` with the
-stamps the devices wrote, so a row edited offline before another device's
-last sync, but pushed after it, never reaches that device (see
-`test_a_late_push_of_an_old_edit_reaches_a_device_that_synced_in_between`,
-marked as an expected failure). Fixing it needs a server-side change stamp
-column.
+Pulls filter on `changed_at`, a column the server stamps with its own clock
+on every insert or update of a synced row (`SoftDeleteMixin`), never on the
+`updated_at` / `deleted_at` the devices send. So an edit made offline long
+ago still reaches a device that synced before it was pushed. The filter
+keeps a two-minute overlap (`PULL_OVERLAP` in `routers/sync.py`) so a push
+that committed just after another device's cursor is sent again rather than
+lost; the app ignores such echoes because their stamps are equal. The
+migration adds `changed_at` with the migration time, so every device pulls
+all rows once after the upgrade.

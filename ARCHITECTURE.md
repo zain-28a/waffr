@@ -148,7 +148,8 @@ silently skip rows. Fingerprints only depend on the row content.
 Tombstones in `lib/core/sync/sync_tombstones.dart` stop a deleted row from
 coming back. The server side (`backend/routers/sync.py`) merges per row by
 `updated_at` and merges settings field by field; streak history is merged
-by day. See [backend/README.md](backend/README.md).
+by day. Pulls filter on the server's own `changed_at` stamp (with a short
+overlap), so a late push of an old offline edit still reaches every device. See [backend/README.md](backend/README.md).
 
 ## Tests
 

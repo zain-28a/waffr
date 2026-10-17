@@ -16,11 +16,14 @@ script (backend/_test_sync.py, now removed) is folded in here or in
 test_sync_settings.py and marked "From the live script".
 """
 
+from datetime import timedelta
+
 import pytest
 
 from conftest import (
     SYNC_COLLECTIONS,
     at,
+    backdate_changes,
     bearer,
     deleted_ids,
     ids,
@@ -28,8 +31,11 @@ from conftest import (
     register,
     sync,
     sync_payload,
+    server_now,
     system_scalar,
 )
+
+PULL_OVERLAP_MINUTES = 2  # routers/sync.py PULL_OVERLAP
 
 # One valid row per collection, stamped at T0 unless overridden.
 
@@ -353,15 +359,21 @@ def test_pull_returns_only_rows_changed_after_last_sync(client, alice, collectio
     rows = [build(client_id="old", stamp=0), build(client_id="new", stamp=60)]
     if collection == "notifications":
         rows[1]["event_key"] = "other-event"
-    sync(client, alice, **{collection: rows})
+    # "old" reached the server an hour ago, "new" just now; the cursor sits
+    # in between. Only the server's change stamp matters, not the row stamps.
+    sync(client, alice, **{collection: rows[:1]})
+    backdate_changes(60)
+    sync(client, alice, **{collection: rows[1:]})
 
-    body = sync(client, alice, last_sync_at=at(30))
+    body = sync(client, alice, last_sync_at=(server_now() - timedelta(minutes=30)).isoformat())
     assert ids(body[collection]) == ["new"]
 
 
 def test_pull_with_no_changes_is_empty(client, alice):
     # From the live script: an incremental sync after the last one.
     first = sync(client, alice, **one_of_each())
+    # Past the re-send overlap, nothing is left to pull.
+    backdate_changes(PULL_OVERLAP_MINUTES + 1)
     again = sync(client, alice, last_sync_at=first["server_time"])
     for name in SYNC_COLLECTIONS:
         assert again[name] == {"upserts": [], "deletes": []}, name
@@ -369,8 +381,28 @@ def test_pull_with_no_changes_is_empty(client, alice):
 
 def test_last_sync_is_exclusive(client, alice):
     sync(client, alice, transactions=[transaction(stamp=10)])
-    assert ids(sync(client, alice, last_sync_at=at(10))["transactions"]) == []
-    assert ids(sync(client, alice, last_sync_at=at(9))["transactions"]) == ["tx-1"]
+    changed = system_scalar("SELECT changed_at FROM transactions WHERE client_id = 'tx-1'")
+    overlap = timedelta(minutes=PULL_OVERLAP_MINUTES)
+    # A row changed exactly at cursor - overlap is not sent; a moment later is.
+    exact = (changed + overlap).isoformat()
+    later = (changed + overlap - timedelta(seconds=1)).isoformat()
+    assert ids(sync(client, alice, last_sync_at=exact)["transactions"]) == []
+    assert ids(sync(client, alice, last_sync_at=later)["transactions"]) == ["tx-1"]
+
+
+def test_the_overlap_used_here_matches_the_router():
+    from routers.sync import PULL_OVERLAP
+
+    assert PULL_OVERLAP == timedelta(minutes=PULL_OVERLAP_MINUTES)
+
+
+def test_a_pull_resends_rows_inside_the_overlap(client, alice):
+    # A push that committed just after another device's cursor was taken is
+    # not lost: rows changed within the overlap are sent again, and the app
+    # ignores an echo with an equal stamp.
+    first = sync(client, alice, transactions=[transaction()])
+    again = sync(client, alice, last_sync_at=first["server_time"])
+    assert ids(again["transactions"]) == ["tx-1"]
 
 
 def test_a_second_device_pulls_what_the_first_pushed(client, alice):
@@ -436,22 +468,26 @@ def test_deletes_reach_other_devices(client, alice, collection):
     build = BUILDERS[collection]
     client_id = build()["client_id"]
     sync(client, alice, **one_of_each(stamp=0))
+    backdate_changes(60)
+    before = (server_now() - timedelta(minutes=30)).isoformat()
 
     pushed = sync(
         client,
         alice,
-        last_sync_at=at(5),
+        last_sync_at=before,
         deletes={collection: [{"client_id": client_id, "deleted_at": at(10)}]},
     )
     assert deleted_ids(pushed[collection]) == [client_id]
 
     # Another device that last synced before the delete hears of it...
-    pulled = sync(client, alice, last_sync_at=at(5))
+    pulled = sync(client, alice, last_sync_at=before)
     assert deleted_ids(pulled[collection]) == [client_id]
     assert ids(pulled[collection]) == []
     assert parse_time(pulled[collection]["deletes"][0]["deleted_at"]) == parse_time(at(10))
     # ...and one that synced after it does not hear it again.
-    assert sync(client, alice, last_sync_at=at(10))[collection]["deletes"] == []
+    backdate_changes(60)
+    after = (server_now() - timedelta(minutes=30)).isoformat()
+    assert sync(client, alice, last_sync_at=after)[collection]["deletes"] == []
     # A full pull still lists it as deleted, not live.
     full = sync(client, alice)
     assert client_id in deleted_ids(full[collection])
@@ -624,17 +660,9 @@ def test_a_signed_out_token_cannot_sync(client):
     assert client.post("/sync", json=sync_payload(), headers=bearer(token)).status_code == 401
 
 
-# Known gap: the pull cursor compares the server's clock with client stamps.
+# The pull cursor and the change stamps both use the server's clock.
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Known gap: pull filters on the client's updated_at, so a row edited "
-        "offline before another device's last sync, but pushed after it, is "
-        "never pulled by that device. Needs a server-side change stamp."
-    ),
-)
 def test_a_late_push_of_an_old_edit_reaches_a_device_that_synced_in_between(client, alice):
     device_b = client.post(
         "/auth/login", json={"email": "alice@example.com", "password": "correct horse 1"}
