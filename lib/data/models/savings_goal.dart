@@ -245,8 +245,12 @@ class SavingsGoal {
     }
   }
 
-  /// A fresh local id.
-  static String newId() => 'g${DateTime.now().microsecondsSinceEpoch}';
+  static int _seq = 0;
+
+  /// A fresh local id; the counter keeps two ids made in the same
+  /// microsecond apart.
+  static String newId() =>
+      'g${DateTime.now().microsecondsSinceEpoch}_${_seq++}';
 
   /// A stored duration name; a month when unknown.
   static GoalDurationPreset _parseDuration(String? raw) {

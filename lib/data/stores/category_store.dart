@@ -306,9 +306,12 @@ class CategoryStore extends ChangeNotifier {
     for (final entry in _parseJson(prefs.getString(archivedKey) ?? '')) {
       _archived[entry.label] = entry;
     }
+    // Read first: the migration paths of _readEntries fill _entries
+    // themselves, so clearing before the await would keep both copies.
+    final loaded = await _readEntries(prefs);
     _entries
       ..clear()
-      ..addAll(await _readEntries(prefs));
+      ..addAll(loaded);
     if (_assignMissingColors()) {
       await _persist();
     }
