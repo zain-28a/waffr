@@ -18,6 +18,7 @@ import 'package:waffr/core/sync/api_config.dart';
 import 'package:waffr/core/sync/auth_session.dart';
 import 'package:waffr/core/sync/sync_dirty.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/core/sync/sync_tombstones.dart';
 
 /// Local account data on this device: the guest choice, the display name,
 /// and wiping data when the account is deleted or switched. Cloud copies go
@@ -121,6 +122,7 @@ class BackupService {
     RecurringExpenseStore.instance.resetCache();
     CategoryStore.instance.resetCache();
     ExpensePresetStore.instance.resetCache();
+    SyncTombstones.instance.resetCache();
 
     await Future.wait<void>(<Future<void>>[
       CurrencyStore.instance.ensureLoaded(),
