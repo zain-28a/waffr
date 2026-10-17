@@ -12,7 +12,7 @@ network, and it is gated on sign-in.
 | --- | --- |
 | `online_screen.dart` | `OnlineScreen` (library root): loads news, lays out the three cards, and covers them for guests. |
 | `online_cards.dart` | `_SignInGate` (guest cover with a sign-in button) and `_NearbyPlacesCard` (category grid). |
-| `online_exchange_rates.dart` | `_ExchangeRateCard`, its overlay currency menu, and the buy/sell figures. |
+| `online_exchange_rates.dart` | `_ExchangeRateCard`, its overlay currency menu, and the buy/sell figures. While `_exchangeRatesReady` is false the card shows "قريباً... / Soon..." instead. |
 | `online_news.dart` | `_NewsPreviewCard`: vertical headline pager, page dots, loading/empty/error copy. |
 | `sheets/` | `showNewsSheet`, the full news list. |
 

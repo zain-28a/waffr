@@ -12,7 +12,7 @@ layout overflow. Sheets and dialogs are opened through their public
 
 | File | Covers |
 | --- | --- |
-| `online_screen_test.dart` | Smoke tests for the online tab and the news sheet. Network calls fail fast in tests, so the tab shows its offline / sign-in states. |
+| `online_screen_test.dart` | Smoke tests for the online tab and the news sheet. Network calls fail fast in tests, so the tab shows its offline / sign-in states. Also checks the exchange rate card shows "coming soon" instead of rates. |
 
 Run them with:
 
