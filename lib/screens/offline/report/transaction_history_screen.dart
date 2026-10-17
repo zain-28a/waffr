@@ -47,9 +47,21 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   late final AnimationController _selectionAnim;
   late final CurvedAnimation _selectionReveal;
 
+  /// The listed rows grouped by day, kept until a store changes, so a
+  /// selection tap does not refilter and regroup the whole ledger.
+  _HistoryRows? _rowsCache;
+
+  _HistoryRows get _rows => _rowsCache ??= _HistoryRows(
+    widget.isIncome ? _store.incomes : _store.expenses,
+  );
+
+  /// Drops [_rowsCache] after a store change.
+  void _invalidateRows() => _rowsCache = null;
+
   @override
   void initState() {
     super.initState();
+    _listenables.addListener(_invalidateRows);
     RecurringExpenseStore.instance.ensureLoaded();
     _selectionAnim = AnimationController(
       vsync: this,
@@ -65,7 +77,14 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   }
 
   @override
+  void didUpdateWidget(covariant TransactionHistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isIncome != widget.isIncome) _invalidateRows();
+  }
+
+  @override
   void dispose() {
+    _listenables.removeListener(_invalidateRows);
     _selectionAnim.removeStatusListener(_onSelectionStatus);
     _selectionReveal.dispose();
     _selectionAnim.dispose();
@@ -223,12 +242,12 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
           : AnimatedBuilder(
               animation: _listenables,
               builder: (context, _) {
-                final liveIds = _store.expenses.map((item) => item.id).toSet();
-                final selectedCount = _selected.where(liveIds.contains).length;
+                final rows = _rows;
+                final selectedCount = _selected.where(rows.ids.contains).length;
                 final canShare = _selecting && selectedCount > 0 && !_sharing;
                 return FloatingActionButton(
                   onPressed: _selecting
-                      ? (canShare ? () => _confirmShare(_store.expenses) : null)
+                      ? (canShare ? () => _confirmShare(rows.items) : null)
                       : () => _enterSelection(),
                   backgroundColor: canShare || !_selecting
                       ? colors.accent
@@ -242,13 +261,14 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       body: AnimatedBuilder(
         animation: _listenables,
         builder: (context, _) {
-          final items = isIncome ? _store.incomes : _store.expenses;
-          final groups = _groupExpensesByDay(items);
-          final liveIds = items.map((item) => item.id).toSet();
-          final selectedCount = _selected.where(liveIds.contains).length;
+          final rows = _rows;
+          final items = rows.items;
+          final groups = rows.groups;
+          final selectedCount = _selected.where(rows.ids.contains).length;
+          // Every listed id is selected exactly when the selected live ids
+          // are as many as the listed ids.
           final allSelected =
-              items.isNotEmpty &&
-              items.every((item) => _selected.contains(item.id));
+              items.isNotEmpty && selectedCount == rows.ids.length;
           return Column(
             children: [
               // Selection bar slides in above the list while selecting.
@@ -297,7 +317,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                               ),
                             ),
                             Text(
-                              '${formatMoney(_sumExpenses(items))} '
+                              '${formatMoney(rows.total)} '
                               '$currencyLabel',
                               style: TextStyle(
                                 fontFamily: 'Outfit',
@@ -394,6 +414,26 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
 DateTime _dayOf(DateTime value) {
   final local = value.toLocal();
   return DateTime(local.year, local.month, local.day);
+}
+
+/// What the history list shows, derived once per store change.
+class _HistoryRows {
+  /// Newest first.
+  final List<WaffrTransaction> items;
+
+  /// [items] by calendar day, newest day first.
+  final List<_ExpenseDayGroup> groups;
+
+  /// Ids of [items].
+  final Set<String> ids;
+
+  /// Sum of [items].
+  final double total;
+
+  _HistoryRows(this.items)
+    : groups = _groupExpensesByDay(items),
+      ids = {for (final item in items) item.id},
+      total = _sumExpenses(items);
 }
 
 /// Transactions that share the same calendar day for the history list.

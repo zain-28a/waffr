@@ -13,7 +13,7 @@ serves memory and notifies listeners on every change.
 | `transaction_store_entries.dart` | `LedgerEntries`: `addExpense`, `undoExpense`, `undoIncome`, `saveManually`, `withdrawFromSavings`. |
 | `transaction_store_goals.dart` | `GoalPlans`: `goalProgress`, `createGoal`, `applyPeriodicPlan`, `deleteGoal`, `reorderActiveGoals`, completion. |
 | `transaction_store_periods.dart` | `DuePeriods`: `processDuePeriods()` (periodic goal deductions, leftover to savings, each once by token). |
-| `transaction_store_persistence.dart` | `_LedgerPersistence`: load, migrate legacy formats, save. |
+| `transaction_store_persistence.dart` | `_LedgerPersistence`: load, migrate legacy formats, save. A save re-encodes only rows added since the last one (encoded text is kept per row); a ledger of `backgroundDecodeRows` rows or more is decoded off the UI isolate at load. |
 | `transaction_store_sync.dart` | `LedgerSync`: `applyRemoteSync(...)`, merging the server copy. |
 | `currency_store.dart` | `CurrencyStore`: enabled currencies and the active one (`activeCode`, `setActive`). Re-exports `models/currency.dart`. |
 | `category_store.dart` | `CategoryStore`: custom categories, hidden built-ins (synced in settings), local archive of removed ones; sets `customCategoryLookup`. |

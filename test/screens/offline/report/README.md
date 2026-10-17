@@ -14,6 +14,7 @@ layout overflow. Sheets and dialogs are opened through their public
 | --- | --- |
 | `expense_history_pdf_test.dart` | Expense history PDF: the background-built document has day tables and totals. |
 | `reportscreen_test.dart` | Smoke tests for the report tab and the transaction history screens. |
+| `transaction_history_test.dart` | Expense history: selection counts and the total follow selection taps and ledger changes made while the screen is open. |
 
 Run them with:
 
