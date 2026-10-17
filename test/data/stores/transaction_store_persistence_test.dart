@@ -212,4 +212,51 @@ void main() {
     await reload();
     expect(store.expenses.single.dateTime, DateTime(2024, 2, 2));
   });
+
+  test('a save re-encodes only the rows added since the last one', () async {
+    await store.addIncome(amount: 1000);
+    await store.addExpense(
+      amount: 10,
+      category: 'طعام',
+      paymentMethod: 'نقداً',
+    );
+    await store.addExpense(amount: 20, category: 'نقل', paymentMethod: 'نقداً');
+    final before = prefs.getStringList(TransactionStore.transactionsKey)!;
+
+    await store.addExpense(amount: 30, category: 'صحة', paymentMethod: 'نقداً');
+
+    final after = prefs.getStringList(TransactionStore.transactionsKey)!;
+    expect(after, hasLength(4));
+    // Unchanged rows are written with the very same text objects, so they
+    // were not encoded again.
+    for (final text in before) {
+      expect(after.where((row) => identical(row, text)), hasLength(1));
+    }
+  });
+
+  test('a large ledger loads in the background, in order', () async {
+    final count = TransactionStore.backgroundDecodeRows + 50;
+    final rows = [
+      for (var i = 0; i < count; i++)
+        expenseAt(i + 1.0, DateTime(2025, 1, 1).add(Duration(hours: i))),
+    ];
+    await prefs.setStringList(TransactionStore.transactionsKey, [
+      for (final row in rows.reversed) row.encode(),
+      'not json',
+    ]);
+
+    await reload();
+
+    expect(
+      store.transactions.map((row) => row.toJson()),
+      rows.reversed.map((row) => row.toJson()),
+    );
+    expect(store.totalExpense, count * (count + 1) / 2);
+
+    // The first save writes the same rows back, plus the new one.
+    await store.addIncome(amount: 10);
+    final stored = prefs.getStringList(TransactionStore.transactionsKey)!;
+    expect(stored, hasLength(count + 1));
+    expect(stored.toSet(), containsAll([for (final row in rows) row.encode()]));
+  });
 }

@@ -18,6 +18,7 @@ extension _LedgerPersistence on TransactionStore {
     // Rows: the JSON list, or the pre-JSON expense list migrated once.
     // Rows saved before currencies existed are stamped SYP and re-saved.
     final stored = prefs.getStringList(TransactionStore.transactionsKey);
+    final decoded = stored == null ? null : await _decodeRows(stored);
 
     _transactions.clear();
     _touch();
@@ -26,10 +27,8 @@ extension _LedgerPersistence on TransactionStore {
 
     var stampCurrency = false;
 
-    if (stored != null) {
-      _transactions.addAll(
-        stored.map(WaffrTransaction.decode).whereType<WaffrTransaction>(),
-      );
+    if (stored != null && decoded != null) {
+      _transactions.addAll(decoded);
 
       _sort();
       stampCurrency = stored.any((raw) => !raw.contains('currencyCode'));
@@ -112,6 +111,27 @@ extension _LedgerPersistence on TransactionStore {
     notifyListeners();
   }
 
+  /// Stored rows in order, without unreadable ones. A large ledger is
+  /// decoded in a background isolate, which also encodes each row back so
+  /// the first save after launch does not re-encode the whole ledger.
+  Future<List<WaffrTransaction>> _decodeRows(List<String> stored) async {
+    if (stored.length < TransactionStore.backgroundDecodeRows) {
+      return stored
+          .map(WaffrTransaction.decode)
+          .whereType<WaffrTransaction>()
+          .toList();
+    }
+    final rows = await compute(
+      _decodeLedgerRows,
+      stored,
+      debugLabel: 'decode ledger',
+    );
+    for (final (row, text) in rows) {
+      _rowText[row] = text;
+    }
+    return [for (final (row, _) in rows) row];
+  }
+
   bool _encodedHasPriority(String raw) {
     try {
       final decoded = jsonDecode(raw);
@@ -142,7 +162,7 @@ extension _LedgerPersistence on TransactionStore {
   Future<void> _persist(SharedPreferences prefs) async {
     await prefs.setStringList(
       TransactionStore.transactionsKey,
-      _transactions.map((item) => item.encode()).toList(),
+      _transactions.map(_encodeRow).toList(),
     );
 
     await prefs.setDouble(TransactionStore.balanceKey, balance);
@@ -154,6 +174,9 @@ extension _LedgerPersistence on TransactionStore {
     await _persistIncomeOverrides(prefs);
     await SyncDirty.mark();
   }
+
+  /// [WaffrTransaction.encode], once per row.
+  String _encodeRow(WaffrTransaction row) => _rowText[row] ??= row.encode();
 
   Future<void> _persistIncomeOverrides(SharedPreferences prefs) async {
     final sypMonthly = _monthlyIncomeByCurrency[defaultCurrencyCode];
@@ -235,4 +258,13 @@ extension _LedgerPersistence on TransactionStore {
 
     return migrated;
   }
+}
+
+/// Background half of [_LedgerPersistence._decodeRows]: each readable row
+/// with its encoded text, in stored order.
+List<(WaffrTransaction, String)> _decodeLedgerRows(List<String> stored) {
+  return [
+    for (final raw in stored)
+      if (WaffrTransaction.decode(raw) case final row?) (row, row.encode()),
+  ];
 }

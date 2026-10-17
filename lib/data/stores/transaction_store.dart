@@ -96,6 +96,14 @@ class TransactionStore extends ChangeNotifier {
 
   final Map<String, Future<WaffrTransaction?>> _pendingExpenseSources = {};
 
+  /// Stored JSON text per row. Rows never change after they are built, so a
+  /// save re-encodes only the rows added since the last one.
+  final Expando<String> _rowText = Expando<String>('ledger row text');
+
+  /// From this many stored rows up, the ledger is decoded off the UI isolate
+  /// at load. Smaller ledgers decode faster than an isolate starts.
+  static const int backgroundDecodeRows = 400;
+
   Future<void>? _loader;
 
   bool _loaded = false;
