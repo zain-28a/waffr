@@ -42,9 +42,9 @@ whole push):
    recurring expenses, notifications, categories, presets.
 2. Tombstones, children first: items, transfers, ... goals, lists.
 3. Settings.
-4. The reply: per collection, rows whose `updated_at` or `deleted_at` is
-   after `last_sync_at` (every row when it is null), split into live upserts
-   and tombstones; the full settings; `server_time`.
+4. The reply: per collection, rows whose server stamp `changed_at` is
+   after `last_sync_at` minus a two-minute overlap (every row when it is
+   null), split into live upserts and tombstones; the full settings; `server_time`.
 
 Rows:
 
