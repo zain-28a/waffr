@@ -171,8 +171,18 @@ void main() {
     });
 
     test('transactionFromSync validates and fills defaults', () {
-      expect(transactionFromSync({'client_id': 'a', 'amount': '0', 'occurred_at': '2026-01-01'}), isNull);
-      expect(transactionFromSync({'amount': '5', 'occurred_at': '2026-01-01'}), isNull);
+      expect(
+        transactionFromSync({
+          'client_id': 'a',
+          'amount': '0',
+          'occurred_at': '2026-01-01',
+        }),
+        isNull,
+      );
+      expect(
+        transactionFromSync({'amount': '5', 'occurred_at': '2026-01-01'}),
+        isNull,
+      );
       expect(transactionFromSync({'client_id': 'a', 'amount': '5'}), isNull);
 
       final row = transactionFromSync({
@@ -226,7 +236,10 @@ void main() {
         ...extra,
       };
       expect(transferFromSync(raw({}))!.type, TransactionType.savingsIn);
-      expect(transferFromSync(raw({}))!.transferKind, SavingsTransferKind.manual);
+      expect(
+        transferFromSync(raw({}))!.transferKind,
+        SavingsTransferKind.manual,
+      );
       final out = transferFromSync(raw({'direction': 'to_balance'}))!;
       expect(out.type, TransactionType.savingsOut);
       expect(out.transferKind, SavingsTransferKind.withdraw);
@@ -331,10 +344,17 @@ void main() {
     expect(list['name'], defaultShoppingListName);
 
     expect(asMapList('x'), isEmpty);
-    expect(asMapList([{'a': 1}, 'junk', <Object, Object>{'b': 2}]), [
-      {'a': 1},
-      {'b': 2},
-    ]);
+    expect(
+      asMapList([
+        {'a': 1},
+        'junk',
+        <Object, Object>{'b': 2},
+      ]),
+      [
+        {'a': 1},
+        {'b': 2},
+      ],
+    );
     expect(tombstonesFromSync('x'), isEmpty);
     expect(
       tombstonesFromSync([

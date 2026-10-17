@@ -12,14 +12,17 @@ void main() {
   group('DataCipher', () {
     final cipher = DataCipher(List<int>.generate(32, (i) => 255 - i));
 
-    test('seal then open gives the text back, with a fresh nonce each time', () async {
-      final a = await cipher.seal('مرحبا 123');
-      final b = await cipher.seal('مرحبا 123');
-      expect(DataCipher.isSealed(a), isTrue);
-      expect(a, isNot(b));
-      expect(await cipher.open(a), 'مرحبا 123');
-      expect(await cipher.open(b), 'مرحبا 123');
-    });
+    test(
+      'seal then open gives the text back, with a fresh nonce each time',
+      () async {
+        final a = await cipher.seal('مرحبا 123');
+        final b = await cipher.seal('مرحبا 123');
+        expect(DataCipher.isSealed(a), isTrue);
+        expect(a, isNot(b));
+        expect(await cipher.open(a), 'مرحبا 123');
+        expect(await cipher.open(b), 'مرحبا 123');
+      },
+    );
 
     test('isSealed checks the prefix', () {
       expect(DataCipher.isSealed(null), isFalse);
@@ -46,13 +49,35 @@ void main() {
   group('WrappedDataKey', () {
     test('JSON round trip and incomplete input', () {
       const wrapped = WrappedDataKey(salt: 's', iterations: 5, wrappedKey: 'w');
-      expect(wrapped.toJson(), {'salt': 's', 'iterations': 5, 'wrapped_key': 'w'});
-      final back = WrappedDataKey.fromJson({'salt': 's', 'iterations': '5', 'wrapped_key': 'w'})!;
+      expect(wrapped.toJson(), {
+        'salt': 's',
+        'iterations': 5,
+        'wrapped_key': 'w',
+      });
+      final back = WrappedDataKey.fromJson({
+        'salt': 's',
+        'iterations': '5',
+        'wrapped_key': 'w',
+      })!;
       expect(back.iterations, 5);
 
       expect(WrappedDataKey.fromJson(null), isNull);
-      expect(WrappedDataKey.fromJson({'salt': '', 'iterations': 1, 'wrapped_key': 'w'}), isNull);
-      expect(WrappedDataKey.fromJson({'salt': 's', 'iterations': 'x', 'wrapped_key': 'w'}), isNull);
+      expect(
+        WrappedDataKey.fromJson({
+          'salt': '',
+          'iterations': 1,
+          'wrapped_key': 'w',
+        }),
+        isNull,
+      );
+      expect(
+        WrappedDataKey.fromJson({
+          'salt': 's',
+          'iterations': 'x',
+          'wrapped_key': 'w',
+        }),
+        isNull,
+      );
       expect(WrappedDataKey.fromJson({'salt': 's', 'iterations': 1}), isNull);
     });
   });
@@ -77,10 +102,17 @@ void main() {
       expect(a.wrapped.salt, isNot(b.wrapped.salt));
     });
 
-    test('malformed wrapped data unwraps to null instead of throwing', () async {
-      const bad = WrappedDataKey(salt: '!!', iterations: 10, wrappedKey: '??');
-      expect(await DataKeyStore.unwrap('p', bad), isNull);
-    });
+    test(
+      'malformed wrapped data unwraps to null instead of throwing',
+      () async {
+        const bad = WrappedDataKey(
+          salt: '!!',
+          iterations: 10,
+          wrappedKey: '??',
+        );
+        expect(await DataKeyStore.unwrap('p', bad), isNull);
+      },
+    );
 
     test('save, read back from storage and clear', () async {
       final store = DataKeyStore.instance;
@@ -98,7 +130,9 @@ void main() {
 
     test('a corrupt stored key reads as no key', () async {
       await DataKeyStore.instance.clear();
-      FlutterSecureStorage.setMockInitialValues({'waffer_data_key': 'not base64!'});
+      FlutterSecureStorage.setMockInitialValues({
+        'waffer_data_key': 'not base64!',
+      });
       expect(await DataKeyStore.instance.cipher(), isNull);
     });
   });

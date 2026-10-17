@@ -135,16 +135,19 @@ void main() {
   });
 
   test('every private collection is listed with its fields', () {
-    expect(privateSyncFields.keys, containsAll([
-      'transactions',
-      'savings_transfers',
-      'savings_goals',
-      'shopping_items',
-      'recurring_expenses',
-      'notifications',
-      'expense_categories',
-      'expense_presets',
-    ]));
+    expect(
+      privateSyncFields.keys,
+      containsAll([
+        'transactions',
+        'savings_transfers',
+        'savings_goals',
+        'shopping_items',
+        'recurring_expenses',
+        'notifications',
+        'expense_categories',
+        'expense_presets',
+      ]),
+    );
     expect(privateSyncFields['transactions'], isNot(contains('amount')));
   });
 }

@@ -49,51 +49,57 @@ void main() {
       expect(service.notifications, isEmpty);
     });
 
-    test('balance and spending alerts fire once when a level is crossed', () async {
-      await store.addIncome(amount: 1000);
-      await service.evaluate();
+    test(
+      'balance and spending alerts fire once when a level is crossed',
+      () async {
+        await store.addIncome(amount: 1000);
+        await service.evaluate();
 
-      await spend(800);
-      await service.evaluate();
-      expect(
-        types(),
-        unorderedEquals([
-          NotificationType.balanceWarning,
-          NotificationType.highSpending,
-        ]),
-      );
-      final warning = service.notifications.firstWhere(
-        (n) => n.type == NotificationType.balanceWarning,
-      );
-      expect(warning.title, 'بقي ربع رصيدك');
-      expect(warning.message, contains('200 ل.س'));
-      expect(warning.message, contains('1,000 ل.س'));
-      expect(warning.metadata['percent'], '25');
+        await spend(800);
+        await service.evaluate();
+        expect(
+          types(),
+          unorderedEquals([
+            NotificationType.balanceWarning,
+            NotificationType.highSpending,
+          ]),
+        );
+        final warning = service.notifications.firstWhere(
+          (n) => n.type == NotificationType.balanceWarning,
+        );
+        expect(warning.title, 'بقي ربع رصيدك');
+        expect(warning.message, contains('200 ل.س'));
+        expect(warning.message, contains('1,000 ل.س'));
+        expect(warning.metadata['percent'], '25');
 
-      final spending = service.notifications.firstWhere(
-        (n) => n.type == NotificationType.highSpending,
-      );
-      expect(spending.title, contains('50%'));
+        final spending = service.notifications.firstWhere(
+          (n) => n.type == NotificationType.highSpending,
+        );
+        expect(spending.title, contains('50%'));
 
-      await service.evaluate();
-      expect(service.notifications, hasLength(2), reason: 'no repeats');
+        await service.evaluate();
+        expect(service.notifications, hasLength(2), reason: 'no repeats');
 
-      await spend(150);
-      await service.evaluate();
-      expect(service.notifications, hasLength(3));
-      expect(service.notifications.first.title, 'رصيدك على وشك النفاد');
-    });
+        await spend(150);
+        await service.evaluate();
+        expect(service.notifications, hasLength(3));
+        expect(service.notifications.first.title, 'رصيدك على وشك النفاد');
+      },
+    );
 
-    test('dropping through two levels at once sends only the lower one', () async {
-      await store.addIncome(amount: 1000);
-      await service.evaluate();
-      await spend(950);
-      await service.evaluate();
-      final warnings = service.notifications
-          .where((n) => n.type == NotificationType.balanceWarning)
-          .toList();
-      expect(warnings.single.metadata['percent'], '10');
-    });
+    test(
+      'dropping through two levels at once sends only the lower one',
+      () async {
+        await store.addIncome(amount: 1000);
+        await service.evaluate();
+        await spend(950);
+        await service.evaluate();
+        final warnings = service.notifications
+            .where((n) => n.type == NotificationType.balanceWarning)
+            .toList();
+        expect(warnings.single.metadata['percent'], '10');
+      },
+    );
 
     test('goal progress and completion are announced', () async {
       await store.addIncome(amount: 5000);

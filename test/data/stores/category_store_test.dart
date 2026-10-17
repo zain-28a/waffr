@@ -87,19 +87,22 @@ void main() {
       expect(categoryFor('قهوة').icon, oldIcon, reason: 'archived');
     });
 
-    test('remove logs a tombstone and keeps history looking the same', () async {
-      await store.addCustom('قهوة', iconIndex: 3);
-      final id = store.entries.single.id;
+    test(
+      'remove logs a tombstone and keeps history looking the same',
+      () async {
+        await store.addCustom('قهوة', iconIndex: 3);
+        final id = store.entries.single.id;
 
-      expect(await store.removeCustom('missing'), isFalse);
-      expect(await store.removeCustom('قهوة'), isTrue);
-      expect(store.entries, isEmpty);
-      expect(
-        SyncTombstones.instance.find(SyncCollection.expenseCategories, id),
-        isNotNull,
-      );
-      expect(store.findCustom('قهوة')?.icon, customCategoryIconChoices[3]);
-    });
+        expect(await store.removeCustom('missing'), isFalse);
+        expect(await store.removeCustom('قهوة'), isTrue);
+        expect(store.entries, isEmpty);
+        expect(
+          SyncTombstones.instance.find(SyncCollection.expenseCategories, id),
+          isNotNull,
+        );
+        expect(store.findCustom('قهوة')?.icon, customCategoryIconChoices[3]);
+      },
+    );
   });
 
   group('built-ins', () {
@@ -157,13 +160,10 @@ void main() {
       await store.ensureLoaded();
 
       expect(store.entries.map((e) => e.label), ['قهوة', 'نادي']);
-      expect(
-        store.entries.first.id,
-        CustomCategoryEntry.legacyId('قهوة'),
-      );
+      expect(store.entries.first.id, CustomCategoryEntry.legacyId('قهوة'));
       expect(store.entries.map((e) => e.colorIndex), [0, 1]);
       expect(prefs.getString(CategoryStore.itemsJsonKey), contains('قهوة'));
-    }, skip: _migrationBug);
+    });
 
     test('v2 JSON without ids gets legacy ids written back', () async {
       await prefs.setString(
@@ -177,7 +177,7 @@ void main() {
       await store.ensureLoaded();
       expect(store.entries.single.label, 'قهوة');
       expect(prefs.getString(CategoryStore.itemsJsonKey), contains('"id"'));
-    }, skip: _migrationBug);
+    });
 
     test('corrupt JSON loads as empty', () async {
       await prefs.setString(CategoryStore.itemsJsonKey, '{oops');
@@ -204,20 +204,29 @@ void main() {
       expect(store.entries.map((e) => e.colorIndex), [0, 1]);
     });
 
-    test('a newer rename keeps the local color and archives the old name', () async {
-      await store.applyRemoteSync(upserts: [row('c1', 'قهوة')], deletes: const []);
-      final color = store.entries.single.colorIndex;
-      await store.applyRemoteSync(
-        upserts: [row('c1', 'مقهى', updated: '2026-02-01T00:00:00Z')],
-        deletes: const [],
-      );
-      expect(store.entries.single.label, 'مقهى');
-      expect(store.entries.single.colorIndex, color);
-      expect(store.findCustom('قهوة'), isNotNull);
-    });
+    test(
+      'a newer rename keeps the local color and archives the old name',
+      () async {
+        await store.applyRemoteSync(
+          upserts: [row('c1', 'قهوة')],
+          deletes: const [],
+        );
+        final color = store.entries.single.colorIndex;
+        await store.applyRemoteSync(
+          upserts: [row('c1', 'مقهى', updated: '2026-02-01T00:00:00Z')],
+          deletes: const [],
+        );
+        expect(store.entries.single.label, 'مقهى');
+        expect(store.entries.single.colorIndex, color);
+        expect(store.findCustom('قهوة'), isNotNull);
+      },
+    );
 
     test('server deletes remove categories', () async {
-      await store.applyRemoteSync(upserts: [row('c1', 'قهوة')], deletes: const []);
+      await store.applyRemoteSync(
+        upserts: [row('c1', 'قهوة')],
+        deletes: const [],
+      );
       await store.applyRemoteSync(
         upserts: const [],
         deletes: [SyncTombstone(clientId: 'c1', deletedAt: DateTime.utc(2027))],
@@ -238,9 +247,3 @@ void main() {
     });
   });
 }
-
-// Shown as the skip reason of the migration tests until the bug is fixed.
-const String _migrationBug =
-    'Known bug: CategoryStore._load cascades addAll(await _readEntries()), '
-    'and _readEntries also fills _entries while migrating, so migrated '
-    'categories are loaded and saved twice (category_store.dart:311).';

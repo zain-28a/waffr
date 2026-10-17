@@ -139,7 +139,10 @@ void main() {
           priority: id == 'old' ? 0 : 1,
         );
 
-    Future<void> seed(List<WaffrTransaction> rows, List<SavingsGoal> goals) async {
+    Future<void> seed(
+      List<WaffrTransaction> rows,
+      List<SavingsGoal> goals,
+    ) async {
       await prefs.setStringList(
         TransactionStore.transactionsKey,
         rows.map((r) => r.encode()).toList(),
@@ -152,40 +155,55 @@ void main() {
       await store.ensureLoaded();
     }
 
-    test('tagged transfers after creation count, withdrawals subtract', () async {
-      await seed(
-        [
-          incomeAt(5000, DateTime(2026, 1, 1)),
-          transferAt(100, DateTime(2026, 1, 5), goalId: 'new'),
-          transferAt(200, DateTime(2026, 2, 5), goalId: 'new'),
-          transferAt(50, DateTime(2026, 2, 6), goalId: 'new', out: true),
-          transferAt(80, DateTime(2026, 2, 7), goalId: 'other'),
-          transferAt(60, DateTime(2026, 2, 8), goalId: 'new', currencyCode: 'USD'),
-        ],
-        [goal('new', DateTime(2026, 2, 1))],
-      );
-      final saved = store.goals.single;
-      expect(store.goalProgress(saved), 150, reason: 'Jan 5 predates the goal');
-      expect(store.currentSaved(saved), 150);
-      expect(store.goalRatio(saved), closeTo(0.15, 1e-9));
-    });
+    test(
+      'tagged transfers after creation count, withdrawals subtract',
+      () async {
+        await seed(
+          [
+            incomeAt(5000, DateTime(2026, 1, 1)),
+            transferAt(100, DateTime(2026, 1, 5), goalId: 'new'),
+            transferAt(200, DateTime(2026, 2, 5), goalId: 'new'),
+            transferAt(50, DateTime(2026, 2, 6), goalId: 'new', out: true),
+            transferAt(80, DateTime(2026, 2, 7), goalId: 'other'),
+            transferAt(
+              60,
+              DateTime(2026, 2, 8),
+              goalId: 'new',
+              currencyCode: 'USD',
+            ),
+          ],
+          [goal('new', DateTime(2026, 2, 1))],
+        );
+        final saved = store.goals.single;
+        expect(
+          store.goalProgress(saved),
+          150,
+          reason: 'Jan 5 predates the goal',
+        );
+        expect(store.currentSaved(saved), 150);
+        expect(store.goalRatio(saved), closeTo(0.15, 1e-9));
+      },
+    );
 
-    test('untagged transfers go to the oldest goal open at that time', () async {
-      await seed(
-        [
-          incomeAt(5000, DateTime(2026, 1, 1)),
-          transferAt(100, DateTime(2026, 3, 1)),
-        ],
-        [
-          goal('old', DateTime(2026, 1, 1)),
-          goal('young', DateTime(2026, 2, 1)),
-        ],
-      );
-      final old = store.goals.firstWhere((g) => g.id == 'old');
-      final young = store.goals.firstWhere((g) => g.id == 'young');
-      expect(store.goalProgress(old), 100);
-      expect(store.goalProgress(young), 0);
-    });
+    test(
+      'untagged transfers go to the oldest goal open at that time',
+      () async {
+        await seed(
+          [
+            incomeAt(5000, DateTime(2026, 1, 1)),
+            transferAt(100, DateTime(2026, 3, 1)),
+          ],
+          [
+            goal('old', DateTime(2026, 1, 1)),
+            goal('young', DateTime(2026, 2, 1)),
+          ],
+        );
+        final old = store.goals.firstWhere((g) => g.id == 'old');
+        final young = store.goals.firstWhere((g) => g.id == 'young');
+        expect(store.goalProgress(old), 100);
+        expect(store.goalProgress(young), 0);
+      },
+    );
 
     test('progress never goes below zero', () async {
       await seed(
@@ -256,21 +274,24 @@ void main() {
       expect(plan.isPeriodic, isTrue);
     });
 
-    test('caps the percent at 100 and converts the top goal into the plan', () async {
-      await create('سيارة', target: 99999);
-      await store.applyPeriodicPlan(
-        percent: 150,
-        duration: GoalDurationPreset.month,
-        frequency: RecurringFrequency.weekly,
-        income: 400,
-      );
-      final goal = store.activeGoals.single;
-      expect(goal.name, 'سيارة');
-      expect(goal.allocatePercent, 100);
-      expect(goal.allocateAmount, 400);
-      expect(goal.deductFrequency, RecurringFrequency.weekly);
-      expect(goal.durationCount, 4);
-      expect(goal.targetAmount, 99999, reason: 'the target is kept');
-    });
+    test(
+      'caps the percent at 100 and converts the top goal into the plan',
+      () async {
+        await create('سيارة', target: 99999);
+        await store.applyPeriodicPlan(
+          percent: 150,
+          duration: GoalDurationPreset.month,
+          frequency: RecurringFrequency.weekly,
+          income: 400,
+        );
+        final goal = store.activeGoals.single;
+        expect(goal.name, 'سيارة');
+        expect(goal.allocatePercent, 100);
+        expect(goal.allocateAmount, 400);
+        expect(goal.deductFrequency, RecurringFrequency.weekly);
+        expect(goal.durationCount, 4);
+        expect(goal.targetAmount, 99999, reason: 'the target is kept');
+      },
+    );
   });
 }

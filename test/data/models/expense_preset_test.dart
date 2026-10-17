@@ -43,10 +43,7 @@ void main() {
 
   test('readers reject missing id, category or positive amount', () {
     expect(ExpensePreset.fromSync({'client_id': 'x', 'amount': '5'}), isNull);
-    expect(
-      ExpensePreset.fromSync({'category': 'طعام', 'amount': '5'}),
-      isNull,
-    );
+    expect(ExpensePreset.fromSync({'category': 'طعام', 'amount': '5'}), isNull);
     expect(
       ExpensePreset.fromSync({
         'client_id': 'x',
@@ -96,27 +93,32 @@ void main() {
     expect(preset.unit, RecurringUnit.day);
   });
 
-  test('sameDetailsAs ignores ids and only compares the schedule when recurring', () {
-    expect(_preset().sameDetailsAs(_preset(id: 'other')), isTrue);
-    expect(_preset().sameDetailsAs(_preset(amount: 101)), isFalse);
-    expect(_preset().sameDetailsAs(_preset(multiplier: 2)), isFalse);
-    expect(
-      _preset(note: '').sameDetailsAs(_preset()),
-      isTrue,
-      reason: 'empty and missing notes are the same',
-    );
-    expect(
-      _preset(unit: RecurringUnit.day).sameDetailsAs(_preset()),
-      isTrue,
-      reason: 'the unit does not matter for a one-off preset',
-    );
-    expect(
-      _preset(recurring: true, unit: RecurringUnit.day)
-          .sameDetailsAs(_preset(recurring: true)),
-      isFalse,
-    );
-    expect(_preset(recurring: true).sameDetailsAs(_preset()), isFalse);
-  });
+  test(
+    'sameDetailsAs ignores ids and only compares the schedule when recurring',
+    () {
+      expect(_preset().sameDetailsAs(_preset(id: 'other')), isTrue);
+      expect(_preset().sameDetailsAs(_preset(amount: 101)), isFalse);
+      expect(_preset().sameDetailsAs(_preset(multiplier: 2)), isFalse);
+      expect(
+        _preset(note: '').sameDetailsAs(_preset()),
+        isTrue,
+        reason: 'empty and missing notes are the same',
+      );
+      expect(
+        _preset(unit: RecurringUnit.day).sameDetailsAs(_preset()),
+        isTrue,
+        reason: 'the unit does not matter for a one-off preset',
+      );
+      expect(
+        _preset(
+          recurring: true,
+          unit: RecurringUnit.day,
+        ).sameDetailsAs(_preset(recurring: true)),
+        isFalse,
+      );
+      expect(_preset(recurring: true).sameDetailsAs(_preset()), isFalse);
+    },
+  );
 
   test('syncUpdatedAt falls back to creation time', () {
     expect(_preset().syncUpdatedAt, DateTime(2026, 1, 1).toUtc());

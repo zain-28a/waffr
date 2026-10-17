@@ -74,7 +74,10 @@ void main() {
         RecurringExpense.decode(jsonEncode({...base(), 'intervalCount': 0})),
         isNull,
       );
-      expect(RecurringExpense.decode(jsonEncode({...base(), 'id': ' '})), isNull);
+      expect(
+        RecurringExpense.decode(jsonEncode({...base(), 'id': ' '})),
+        isNull,
+      );
       expect(
         RecurringExpense.decode(jsonEncode({...base(), 'category': ''})),
         isNull,
@@ -83,25 +86,28 @@ void main() {
       expect(RecurringExpense.decode('{'), isNull);
     });
 
-    test('defaults: day unit, enabled, next due = created, legacy currency', () {
-      final decoded = RecurringExpense.decode(
-        jsonEncode({
-          'id': 'r',
-          'amount': 10,
-          'intervalCount': 2,
-          'category': 'x',
-          'createdAt': '2026-03-01T10:00:00.000',
-          'currency_code': 'eur',
-          'enabled': null,
-        }),
-      )!;
-      expect(decoded.unit, RecurringUnit.day);
-      expect(decoded.enabled, isTrue, reason: 'only false disables');
-      expect(decoded.nextDueAt, DateTime(2026, 3, 1, 10));
-      expect(decoded.currencyCode, 'EUR');
-      expect(decoded.paymentMethod, '');
-      expect(decoded.note, isNull);
-    });
+    test(
+      'defaults: day unit, enabled, next due = created, legacy currency',
+      () {
+        final decoded = RecurringExpense.decode(
+          jsonEncode({
+            'id': 'r',
+            'amount': 10,
+            'intervalCount': 2,
+            'category': 'x',
+            'createdAt': '2026-03-01T10:00:00.000',
+            'currency_code': 'eur',
+            'enabled': null,
+          }),
+        )!;
+        expect(decoded.unit, RecurringUnit.day);
+        expect(decoded.enabled, isTrue, reason: 'only false disables');
+        expect(decoded.nextDueAt, DateTime(2026, 3, 1, 10));
+        expect(decoded.currencyCode, 'EUR');
+        expect(decoded.paymentMethod, '');
+        expect(decoded.note, isNull);
+      },
+    );
   });
 
   group('nextDueFrom', () {
@@ -124,7 +130,11 @@ void main() {
         DateTime(2026, 2, 28, 9, 15),
       );
       expect(
-        RecurringExpense.nextDueFrom(DateTime(2028, 1, 31), RecurringUnit.month, 1),
+        RecurringExpense.nextDueFrom(
+          DateTime(2028, 1, 31),
+          RecurringUnit.month,
+          1,
+        ),
         DateTime(2028, 2, 29),
       );
       expect(
@@ -132,14 +142,22 @@ void main() {
         DateTime(2026, 4, 30, 9, 15),
       );
       expect(
-        RecurringExpense.nextDueFrom(DateTime(2026, 11, 15), RecurringUnit.month, 14),
+        RecurringExpense.nextDueFrom(
+          DateTime(2026, 11, 15),
+          RecurringUnit.month,
+          14,
+        ),
         DateTime(2028, 1, 15),
       );
     });
 
     test('a count below one is treated as one', () {
       expect(
-        RecurringExpense.nextDueFrom(DateTime(2026, 1, 1), RecurringUnit.day, 0),
+        RecurringExpense.nextDueFrom(
+          DateTime(2026, 1, 1),
+          RecurringUnit.day,
+          0,
+        ),
         DateTime(2026, 1, 2),
       );
     });
@@ -224,7 +242,10 @@ void main() {
       expect(RecurringExpense.isRecurringSource('recurring:a:1'), isTrue);
       expect(RecurringExpense.isRecurringSource('shopping:a'), isFalse);
       expect(RecurringExpense.isRecurringSource(null), isFalse);
-      expect(RecurringExpense.idFromSource('recurring:r_1:202601010900'), 'r_1');
+      expect(
+        RecurringExpense.idFromSource('recurring:r_1:202601010900'),
+        'r_1',
+      );
       expect(RecurringExpense.idFromSource('recurring:onlyid'), 'onlyid');
       expect(RecurringExpense.idFromSource('recurring:'), isNull);
       expect(RecurringExpense.idFromSource('recurring::123'), ':123');

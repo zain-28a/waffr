@@ -70,18 +70,21 @@ void main() {
       expect(store.savingsTransfers, hasLength(1), reason: 'never twice');
     });
 
-    test('the leftover is capped by the balance and skipped when spent', () async {
-      await load([
-        monthlyIncome(1000),
-        expenseAt(1000, lastMonth.add(const Duration(days: 1))),
-      ]);
-      expect(store.savingsTransfers, isEmpty);
-      expect(
-        store.processedPeriodTokens,
-        contains('leftover:$lastMonthKey'),
-        reason: 'the period is still marked done',
-      );
-    });
+    test(
+      'the leftover is capped by the balance and skipped when spent',
+      () async {
+        await load([
+          monthlyIncome(1000),
+          expenseAt(1000, lastMonth.add(const Duration(days: 1))),
+        ]);
+        expect(store.savingsTransfers, isEmpty);
+        expect(
+          store.processedPeriodTokens,
+          contains('leftover:$lastMonthKey'),
+          reason: 'the period is still marked done',
+        );
+      },
+    );
 
     test('other currencies get their own token', () async {
       await load([monthlyIncome(50, currency: 'USD')]);
@@ -141,29 +144,32 @@ void main() {
       durationCount: count,
     );
 
-    test('deducts one amount per finished month, up to the planned count', () async {
-      await load([incomeAt(1000, DateTime(now.year - 1))], goals: [plan()]);
+    test(
+      'deducts one amount per finished month, up to the planned count',
+      () async {
+        await load([incomeAt(1000, DateTime(now.year - 1))], goals: [plan()]);
 
-      final deductions = store.savingsTransfers;
-      expect(deductions, hasLength(2));
-      expect(
-        deductions.every(
-          (t) =>
-              t.transferKind == SavingsTransferKind.goalPeriodic &&
-              t.goalId == 'plan' &&
-              t.amount == 100,
-        ),
-        isTrue,
-      );
-      expect(
-        store.processedPeriodTokens.where((t) => t.startsWith('goal:plan:')),
-        hasLength(2),
-      );
-      expect(store.goalProgress(store.goals.single), 200);
+        final deductions = store.savingsTransfers;
+        expect(deductions, hasLength(2));
+        expect(
+          deductions.every(
+            (t) =>
+                t.transferKind == SavingsTransferKind.goalPeriodic &&
+                t.goalId == 'plan' &&
+                t.amount == 100,
+          ),
+          isTrue,
+        );
+        expect(
+          store.processedPeriodTokens.where((t) => t.startsWith('goal:plan:')),
+          hasLength(2),
+        );
+        expect(store.goalProgress(store.goals.single), 200);
 
-      await store.processDuePeriods();
-      expect(store.savingsTransfers, hasLength(2));
-    });
+        await store.processDuePeriods();
+        expect(store.savingsTransfers, hasLength(2));
+      },
+    );
 
     test('stops at the first month the balance cannot cover', () async {
       await load(

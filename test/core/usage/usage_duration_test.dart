@@ -6,8 +6,10 @@ import 'package:waffr/core/usage/usage_duration.dart';
 
 void main() {
   final start = DateTime(2025, 1, 1, 22);
-  String after(int days) =>
-      usageDurationText(start, DateTime(2025, 1, 1).add(Duration(days: days, hours: 3)));
+  String after(int days) => usageDurationText(
+    start,
+    DateTime(2025, 1, 1).add(Duration(days: days, hours: 3)),
+  );
 
   test('days', () {
     expect(after(0), 'اليوم');

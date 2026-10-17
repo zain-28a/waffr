@@ -1,3 +1,5 @@
+// shouldSkipCleanPull: when a non-forced sync may skip the round trip.
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/core/sync/sync_pull_policy.dart';
 
@@ -76,6 +78,20 @@ void main() {
         dirty: false,
         tombstoneCount: 0,
         lastAttemptAt: now,
+        now: now,
+        minInterval: interval,
+      ),
+      isFalse,
+    );
+  });
+
+  test('a pull exactly at the interval is not skipped', () {
+    expect(
+      shouldSkipCleanPull(
+        force: false,
+        dirty: false,
+        tombstoneCount: 0,
+        lastAttemptAt: now.subtract(interval),
         now: now,
         minInterval: interval,
       ),

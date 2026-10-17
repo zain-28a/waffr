@@ -57,7 +57,12 @@ void main() {
         },
       ]),
       'expense_categories': _section([
-        {'client_id': 'c1', 'label': 'قهوة', 'icon_index': 1, 'updated_at': _stamp},
+        {
+          'client_id': 'c1',
+          'label': 'قهوة',
+          'icon_index': 1,
+          'updated_at': _stamp,
+        },
       ]),
       'expense_presets': _section([
         {
@@ -69,7 +74,12 @@ void main() {
         },
       ]),
       'shopping_items': _section([
-        {'client_id': 'i1', 'name': 'خبز', 'created_at': _stamp, 'updated_at': _stamp},
+        {
+          'client_id': 'i1',
+          'name': 'خبز',
+          'created_at': _stamp,
+          'updated_at': _stamp,
+        },
       ]),
       'recurring_expenses': _section([
         {
@@ -94,12 +104,18 @@ void main() {
           'updated_at': _stamp,
         },
       ]),
-      'settings': {'notifications_muted': true, 'updated_at': '2000-01-01T00:00:00Z'},
+      'settings': {
+        'notifications_muted': true,
+        'updated_at': '2000-01-01T00:00:00Z',
+      },
     });
 
     expect(ok, isTrue);
     expect(TransactionStore.instance.incomes.single.id, 't1');
-    expect(TransactionStore.instance.savingsTransfers.single.isSavingsOut, isTrue);
+    expect(
+      TransactionStore.instance.savingsTransfers.single.isSavingsOut,
+      isTrue,
+    );
     expect(TransactionStore.instance.goals.single.id, 'g1');
     expect(CategoryStore.instance.entries.single.label, 'قهوة');
     expect(ExpensePresetStore.instance.items.single.id, 'p1');
@@ -132,7 +148,9 @@ void main() {
     );
 
     expect(ok, isTrue);
-    expect(log.of(SyncCollection.transactions).map((t) => t.clientId), ['later']);
+    expect(log.of(SyncCollection.transactions).map((t) => t.clientId), [
+      'later',
+    ]);
     expect(log.of(SyncCollection.shoppingItems), isEmpty);
   });
 

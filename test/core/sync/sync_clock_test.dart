@@ -11,7 +11,10 @@ void main() {
   });
 
   test('parseSyncDate reads ISO text as UTC', () {
-    expect(parseSyncDate('2026-01-02T03:04:05Z'), DateTime.utc(2026, 1, 2, 3, 4, 5));
+    expect(
+      parseSyncDate('2026-01-02T03:04:05Z'),
+      DateTime.utc(2026, 1, 2, 3, 4, 5),
+    );
     expect(parseSyncDate('2026-01-02T03:04:05Z')!.isUtc, isTrue);
     expect(parseSyncDate(null), isNull);
     expect(parseSyncDate('soon'), isNull);

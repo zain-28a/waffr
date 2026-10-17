@@ -56,9 +56,9 @@ void main() {
     expect(log.find(SyncCollection.transactions, 'g1'), isNull);
     expect(log.of(SyncCollection.notifications), isEmpty);
     expect(
-      () => log.of(SyncCollection.transactions).add(
-        SyncTombstone(clientId: 'x', deletedAt: DateTime.utc(2026)),
-      ),
+      () => log
+          .of(SyncCollection.transactions)
+          .add(SyncTombstone(clientId: 'x', deletedAt: DateTime.utc(2026))),
       throwsUnsupportedError,
     );
   });

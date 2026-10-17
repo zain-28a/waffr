@@ -158,10 +158,7 @@ void main() {
     ]);
     await reload();
     expect(store.processedPeriodTokens, {'leftover:m:2020-01'});
-    expect(
-      () => (store.processedPeriodTokens as Set<String>).add('x'),
-      throwsUnsupportedError,
-    );
+    expect(() => store.processedPeriodTokens.add('x'), throwsUnsupportedError);
   });
 
   test('configured incomes are read from prefs, ignoring bad values', () async {

@@ -1,3 +1,6 @@
+// Arabic grammar helpers: counted nouns that agree with the number,
+// category names with the article, joined prepositions and quotes.
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/core/insights/smart/arabic_text.dart';
 
@@ -28,5 +31,29 @@ void main() {
   test('prepositions join the article', () {
     expect(Ar.li('الطعام'), 'للطعام');
     expect(Ar.li('تصنيف «أخرى»'), 'لتصنيف «أخرى»');
+  });
+
+  test('hundreds and their remainders', () {
+    expect(Ar.days.of(0), '0 يوماً');
+    expect(Ar.days.of(101), '101 يوم');
+    expect(Ar.days.of(102), '102 يوم');
+    expect(Ar.days.of(110), '110 أيام');
+    expect(Ar.days.of(200), '200 يوم');
+    expect(Ar.payments.of(2), 'دفعتان');
+    expect(Ar.activeGoals.of(2), 'هدفان نشطان');
+    expect(Ar.consecutiveDays.of(12), '12 يوماً متتالياً');
+    expect(Ar.months.of(1), 'شهر واحد');
+    expect(Ar.items.of(3), '3 عناصر');
+    expect(Ar.times.of(11), '11 مرة');
+    expect(Ar.goals.of(2), 'هدفين');
+    expect(Ar.expenses.of(1), 'مصروف واحد');
+  });
+
+  test('quotes trim and weekday names cover the week', () {
+    expect(Ar.quote('  سفر '), '«سفر»');
+    expect(Ar.weekdays, hasLength(7));
+    expect(Ar.weekdays[DateTime.friday], 'الجمعة');
+    expect(Ar.category(' صحة '), 'الصحة');
+    expect(Ar.li('صحة'), 'لصحة');
   });
 }

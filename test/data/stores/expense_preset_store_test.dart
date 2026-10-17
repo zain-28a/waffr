@@ -1,3 +1,7 @@
+// ExpensePresetStore (dedupe, delete with tombstone, reload, remote merge)
+// plus CategoryStore hide/restore and recurring source-id helpers that the
+// expense sheet relies on.
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
@@ -123,5 +127,41 @@ void main() {
     );
     expect(RecurringExpense.idFromSource('shopping:item'), isNull);
     expect(RecurringExpense.isRecurringSource(null), isFalse);
+  });
+
+  test('applyRemoteSync adds newer presets and applies deletes', () async {
+    final store = ExpensePresetStore.instance;
+    await store.applyRemoteSync(
+      upserts: [
+        _preset(id: 'r1').toSyncJson(),
+        {'client_id': 'bad'},
+      ],
+      deletes: const [],
+    );
+    expect(store.items.single.id, 'r1');
+
+    await store.applyRemoteSync(
+      upserts: const [],
+      deletes: [SyncTombstone(clientId: 'r1', deletedAt: DateTime.utc(2030))],
+    );
+    expect(store.items, isEmpty);
+    expect(await store.remove('r1'), isFalse);
+  });
+
+  test('presets are listed newest first', () async {
+    final store = ExpensePresetStore.instance;
+    await store.add(
+      ExpensePreset(
+        id: 'old',
+        amount: 1,
+        category: 'طعام',
+        paymentMethod: 'نقداً',
+        createdAt: DateTime(2020),
+      ),
+    );
+    await store.add(_preset());
+    store.resetCache();
+    await store.ensureLoaded();
+    expect(store.items.map((p) => p.id), ['p1', 'old']);
   });
 }

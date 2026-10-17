@@ -111,7 +111,10 @@ void main() {
     expect(store.expenses, isEmpty);
     expect(store.canDeduct(30, currencyCode: 'USD'), isTrue);
     expect(store.canDeduct(31, currencyCode: 'USD'), isFalse);
-    expect(store.expensesByCategory(currencyCode: 'USD').single.category, 'تسوق');
+    expect(
+      store.expensesByCategory(currencyCode: 'USD').single.category,
+      'تسوق',
+    );
     expect(store.balanceFor('EUR'), 0);
   });
 

@@ -29,8 +29,14 @@ void main() {
   });
 
   test('400 details: duplicate, email problems, others passed through', () {
-    expect(describeAuthError(400, {'detail': 'invalid email'}), 'أدخل بريداً إلكترونياً صالحاً');
-    expect(describeAuthError(400, {'detail': 'Weak password'}), 'Weak password');
+    expect(
+      describeAuthError(400, {'detail': 'invalid email'}),
+      'أدخل بريداً إلكترونياً صالحاً',
+    );
+    expect(
+      describeAuthError(400, {'detail': 'Weak password'}),
+      'Weak password',
+    );
     expect(describeAuthError(400, null), 'تعذّر إنشاء الحساب');
     expect(
       describeAuthError(400, {
@@ -56,8 +62,14 @@ void main() {
   });
 
   test('anything else is a connection message', () {
-    expect(describeAuthError(500, {'detail': 'boom'}), 'تعذّر الاتصال بالحساب. حاول مرة أخرى');
+    expect(
+      describeAuthError(500, {'detail': 'boom'}),
+      'تعذّر الاتصال بالحساب. حاول مرة أخرى',
+    );
     expect(describeAuthError(0, null), 'تعذّر الاتصال بالحساب. حاول مرة أخرى');
-    expect(describeAuthError(400, {'detail': <Object>[]}), 'تعذّر إنشاء الحساب');
+    expect(
+      describeAuthError(400, {'detail': <Object>[]}),
+      'تعذّر إنشاء الحساب',
+    );
   });
 }

@@ -132,9 +132,8 @@ void main() {
   });
 
   test('new ids are unique', () {
-    expect(
-      {for (var i = 0; i < 10; i++) CustomCategoryEntry.newId()},
-      hasLength(10),
-    );
+    expect({
+      for (var i = 0; i < 10; i++) CustomCategoryEntry.newId(),
+    }, hasLength(10));
   });
 }

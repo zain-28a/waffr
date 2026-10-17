@@ -61,22 +61,18 @@ void main() {
     expect(SmartSettings.instance.alerts, isTrue);
   });
 
-  test(
-    'pending sync deletes do not outlive the wipe',
-    () async {
-      await ShoppingListStore.instance.addItem('خبز');
-      await ShoppingListStore.instance.removeItem(
-        ShoppingListStore.instance.items.single.id,
-      );
-      expect(SyncTombstones.instance.of(SyncCollection.shoppingItems), hasLength(1));
+  test('pending sync deletes do not outlive the wipe', () async {
+    await ShoppingListStore.instance.addItem('خبز');
+    await ShoppingListStore.instance.removeItem(
+      ShoppingListStore.instance.items.single.id,
+    );
+    expect(
+      SyncTombstones.instance.of(SyncCollection.shoppingItems),
+      hasLength(1),
+    );
 
-      await LocalDataReset.resetCurrentDevice();
+    await LocalDataReset.resetCurrentDevice();
 
-      expect(SyncTombstones.instance.of(SyncCollection.shoppingItems), isEmpty);
-    },
-    skip:
-        'Known bug: resetCurrentDevice (and BackupService._reloadStores) never '
-        'reset SyncTombstones, so the old tombstones stay in memory and are '
-        'written back and pushed on the next delete.',
-  );
+    expect(SyncTombstones.instance.of(SyncCollection.shoppingItems), isEmpty);
+  });
 }

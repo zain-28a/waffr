@@ -22,20 +22,26 @@ void main() {
   });
 
   group('addIncome', () {
-    test('a one-off income has no period and sets no configured amount', () async {
-      await store.addIncome(amount: 250, source: 'هدية');
-      final income = store.incomes.single;
-      expect(income.amount, 250);
-      expect(income.note, 'هدية');
-      expect(income.frequency, RecurringFrequency.none);
-      expect(income.periodKey, isNull);
-      expect(store.hasMonthlyIncome, isFalse);
-      expect(store.hasRecurringIncome, isFalse);
-      expect(store.configuredMonthlyIncome, isNull);
-    });
+    test(
+      'a one-off income has no period and sets no configured amount',
+      () async {
+        await store.addIncome(amount: 250, source: 'هدية');
+        final income = store.incomes.single;
+        expect(income.amount, 250);
+        expect(income.note, 'هدية');
+        expect(income.frequency, RecurringFrequency.none);
+        expect(income.periodKey, isNull);
+        expect(store.hasMonthlyIncome, isFalse);
+        expect(store.hasRecurringIncome, isFalse);
+        expect(store.configuredMonthlyIncome, isNull);
+      },
+    );
 
     test('a monthly income is stamped with its month and configured', () async {
-      await store.addIncome(amount: 1500, frequency: RecurringFrequency.monthly);
+      await store.addIncome(
+        amount: 1500,
+        frequency: RecurringFrequency.monthly,
+      );
       final income = store.incomes.single;
       expect(income.periodKey, CalendarPeriod.monthlyKey(DateTime.now()));
       expect(store.monthlyIncomeOverrideFor('SYP'), 1500);
@@ -58,23 +64,26 @@ void main() {
       expect(store.preferredIncomeFrequency, RecurringFrequency.weekly);
     });
 
-    test('moving the balance to savings first writes a carry-over transfer', () async {
-      await store.addIncome(amount: 400);
-      await store.createGoal(
-        name: 'هدف',
-        targetAmount: 10000,
-        duration: GoalDurationPreset.year,
-      );
-      await store.addIncome(amount: 600, moveBalanceToSavings: true);
+    test(
+      'moving the balance to savings first writes a carry-over transfer',
+      () async {
+        await store.addIncome(amount: 400);
+        await store.createGoal(
+          name: 'هدف',
+          targetAmount: 10000,
+          duration: GoalDurationPreset.year,
+        );
+        await store.addIncome(amount: 600, moveBalanceToSavings: true);
 
-      final carry = store.savingsTransfers.single;
-      expect(carry.amount, 400);
-      expect(carry.processedPeriodKey, TransactionStore.carryOverKey);
-      expect(carry.transferKind, SavingsTransferKind.manual);
-      expect(carry.goalId, store.activeGoals.single.id);
-      expect(store.balance, 600);
-      expect(store.savingsBalance, 400);
-    });
+        final carry = store.savingsTransfers.single;
+        expect(carry.amount, 400);
+        expect(carry.processedPeriodKey, TransactionStore.carryOverKey);
+        expect(carry.transferKind, SavingsTransferKind.manual);
+        expect(carry.goalId, store.activeGoals.single.id);
+        expect(store.balance, 600);
+        expect(store.savingsBalance, 400);
+      },
+    );
 
     test('no carry-over when the balance is empty', () async {
       await store.addIncome(amount: 300, moveBalanceToSavings: true);
@@ -95,20 +104,23 @@ void main() {
       expect(store.configuredMonthlyIncome, isNull);
     });
 
-    test('setting an amount posts no row and stamps the settings time', () async {
-      expect(await SyncDirty.settingsUpdatedAt(), isNull);
-      expect(
-        await store.setPreferredIncomeAmount(
-          frequency: RecurringFrequency.monthly,
-          amount: 2000,
-        ),
-        isTrue,
-      );
-      expect(store.transactions, isEmpty);
-      expect(store.configuredMonthlyIncome, 2000);
-      expect(await SyncDirty.settingsUpdatedAt(), isNotNull);
-      expect(await SyncDirty.isDirty(), isTrue);
-    });
+    test(
+      'setting an amount posts no row and stamps the settings time',
+      () async {
+        expect(await SyncDirty.settingsUpdatedAt(), isNull);
+        expect(
+          await store.setPreferredIncomeAmount(
+            frequency: RecurringFrequency.monthly,
+            amount: 2000,
+          ),
+          isTrue,
+        );
+        expect(store.transactions, isEmpty);
+        expect(store.configuredMonthlyIncome, 2000);
+        expect(await SyncDirty.settingsUpdatedAt(), isNotNull);
+        expect(await SyncDirty.isDirty(), isTrue);
+      },
+    );
 
     test('other currencies are stored in the JSON overrides', () async {
       await store.setPreferredIncomeAmount(
@@ -244,22 +256,28 @@ void main() {
   });
 
   group('preferredIncomeFrequency', () {
-    test('defaults to monthly and follows the latest recurring income', () async {
-      await store.ensureLoaded();
-      expect(store.preferredIncomeFrequency, RecurringFrequency.monthly);
+    test(
+      'defaults to monthly and follows the latest recurring income',
+      () async {
+        await store.ensureLoaded();
+        expect(store.preferredIncomeFrequency, RecurringFrequency.monthly);
 
-      await store.addIncome(amount: 10, frequency: RecurringFrequency.weekly);
-      expect(store.preferredIncomeFrequency, RecurringFrequency.weekly);
+        await store.addIncome(amount: 10, frequency: RecurringFrequency.weekly);
+        expect(store.preferredIncomeFrequency, RecurringFrequency.weekly);
 
-      await store.addIncome(amount: 10);
-      expect(
-        store.preferredIncomeFrequency,
-        RecurringFrequency.weekly,
-        reason: 'one-off incomes do not change the cadence',
-      );
+        await store.addIncome(amount: 10);
+        expect(
+          store.preferredIncomeFrequency,
+          RecurringFrequency.weekly,
+          reason: 'one-off incomes do not change the cadence',
+        );
 
-      await store.addIncome(amount: 10, frequency: RecurringFrequency.monthly);
-      expect(store.preferredIncomeFrequency, RecurringFrequency.monthly);
-    });
+        await store.addIncome(
+          amount: 10,
+          frequency: RecurringFrequency.monthly,
+        );
+        expect(store.preferredIncomeFrequency, RecurringFrequency.monthly);
+      },
+    );
   });
 }

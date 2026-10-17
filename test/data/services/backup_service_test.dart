@@ -41,20 +41,23 @@ void main() {
     expect(prefs.getBool(BackupService.authChoiceKey), isTrue);
   });
 
-  test('continuing as a guest drops the session and records the choice', () async {
-    final prefs = await setUpStores();
-    await const FlutterSecureStorage().write(
-      key: AuthSession.tokenKey,
-      value: 'jwt',
-    );
-    await prefs.setString(AuthSession.accountEmailKey, 'a@b.co');
+  test(
+    'continuing as a guest drops the session and records the choice',
+    () async {
+      final prefs = await setUpStores();
+      await const FlutterSecureStorage().write(
+        key: AuthSession.tokenKey,
+        value: 'jwt',
+      );
+      await prefs.setString(AuthSession.accountEmailKey, 'a@b.co');
 
-    await backup.continueAsGuest();
+      await backup.continueAsGuest();
 
-    expect(await AuthSession.instance.isLoggedIn(), isFalse);
-    expect(prefs.getString(AuthSession.accountEmailKey), isNull);
-    expect(prefs.getBool(BackupService.authChoiceKey), isTrue);
-  });
+      expect(await AuthSession.instance.isLoggedIn(), isFalse);
+      expect(prefs.getString(AuthSession.accountEmailKey), isNull);
+      expect(prefs.getBool(BackupService.authChoiceKey), isTrue);
+    },
+  );
 
   test('deleting the account wipes data and tells the listeners', () async {
     final prefs = await setUpStores();

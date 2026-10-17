@@ -83,21 +83,24 @@ void main() {
   });
 
   group('undo', () {
-    test('undoing an expense restores the balance and logs a tombstone', () async {
-      await store.addIncome(amount: 300);
-      final expense = (await spend(100))!;
+    test(
+      'undoing an expense restores the balance and logs a tombstone',
+      () async {
+        await store.addIncome(amount: 300);
+        final expense = (await spend(100))!;
 
-      expect(await store.undoExpense(expense.id), isTrue);
-      expect(store.expenses, isEmpty);
-      expect(store.balance, 300);
-      expect(
-        SyncTombstones.instance
-            .of(SyncCollection.transactions)
-            .map((t) => t.clientId),
-        [expense.id],
-      );
-      expect(await store.undoExpense(expense.id), isFalse);
-    });
+        expect(await store.undoExpense(expense.id), isTrue);
+        expect(store.expenses, isEmpty);
+        expect(store.balance, 300);
+        expect(
+          SyncTombstones.instance
+              .of(SyncCollection.transactions)
+              .map((t) => t.clientId),
+          [expense.id],
+        );
+        expect(await store.undoExpense(expense.id), isFalse);
+      },
+    );
 
     test('undo only matches the right row type', () async {
       await store.addIncome(amount: 300);
@@ -115,28 +118,31 @@ void main() {
   });
 
   group('savings moves', () {
-    test('manual saving moves balance into savings and tags the top goal', () async {
-      await store.addIncome(amount: 1000);
-      await store.createGoal(
-        name: 'سفر',
-        targetAmount: 5000,
-        duration: GoalDurationPreset.year,
-      );
-      final goalId = store.activeGoals.single.id;
+    test(
+      'manual saving moves balance into savings and tags the top goal',
+      () async {
+        await store.addIncome(amount: 1000);
+        await store.createGoal(
+          name: 'سفر',
+          targetAmount: 5000,
+          duration: GoalDurationPreset.year,
+        );
+        final goalId = store.activeGoals.single.id;
 
-      expect(await store.saveManually(0), isFalse);
-      expect(await store.saveManually(1000.01), isFalse);
-      expect(await store.saveManually(400), isTrue);
+        expect(await store.saveManually(0), isFalse);
+        expect(await store.saveManually(1000.01), isFalse);
+        expect(await store.saveManually(400), isTrue);
 
-      final transfer = store.savingsTransfers.single;
-      expect(transfer.isSavingsIn, isTrue);
-      expect(transfer.transferKind, SavingsTransferKind.manual);
-      expect(transfer.goalId, goalId);
-      expect(transfer.note, 'توفير يدوي');
-      expect(store.balance, 600);
-      expect(store.savingsBalance, 400);
-      expect(store.goalProgress(store.activeGoals.single), 400);
-    });
+        final transfer = store.savingsTransfers.single;
+        expect(transfer.isSavingsIn, isTrue);
+        expect(transfer.transferKind, SavingsTransferKind.manual);
+        expect(transfer.goalId, goalId);
+        expect(transfer.note, 'توفير يدوي');
+        expect(store.balance, 600);
+        expect(store.savingsBalance, 400);
+        expect(store.goalProgress(store.activeGoals.single), 400);
+      },
+    );
 
     test('withdrawing is limited to the savings balance', () async {
       await store.addIncome(amount: 1000);

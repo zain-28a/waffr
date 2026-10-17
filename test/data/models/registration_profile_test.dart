@@ -1,3 +1,6 @@
+// Sign-up profile: age, validation messages, phone normalization, address
+// splitting, the auth body, and the country search used by the form.
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/data/models/country.dart';
 import 'package:waffr/data/models/registration_profile.dart';
@@ -133,5 +136,61 @@ void main() {
     expect(Countries.search('الاردن').map((item) => item.iso), contains('JO'));
     expect(Countries.search('+963').map((item) => item.iso), contains('SY'));
     expect(Countries.search('سوريا').first.dialLabel, '+963');
+  });
+
+  test('length limits and an invalid gender', () {
+    String? error({
+      String name = 'أحمد',
+      String? gender,
+      String country = 'سوريا',
+      String address = 'حمص',
+    }) => registrationProfileError(
+      name: name,
+      birthDate: DateTime(2000, 1, 1),
+      gender: gender,
+      country: country,
+      address: address,
+      today: today,
+    );
+
+    expect(error(name: 'ا' * 101), 'الاسم طويل جداً');
+    expect(error(gender: 'other'), 'اختر الجنس');
+    expect(error(country: 'ب' * 81), 'اسم الدولة طويل جداً');
+    expect(error(address: 'م' * (maxCityLength + 1)), 'اسم المدينة طويل جداً');
+    expect(
+      error(address: 'حمص، ${'ش' * (maxStreetLength + 1)}'),
+      'اسم الشارع طويل جداً',
+    );
+    expect(error(address: 'حمص, شارع'), isNull, reason: 'Latin comma too');
+  });
+
+  test('birth dates: today is valid, ages never go negative', () {
+    expect(isValidBirthDate(DateTime(2026, 9, 21, 23), today), isTrue);
+    expect(isValidBirthDate(DateTime(2026, 9, 22), today), isFalse);
+    expect(ageInYears(DateTime(2030), today), 0);
+  });
+
+  test('phone numbers: separators are dropped and the length is checked', () {
+    expect(normalizePhoneNumber('(09) 12-345-678'), '912345678');
+    expect(normalizePhoneNumber('+963912345678'), isNull);
+    expect(normalizePhoneNumber('1' * 15), isNull);
+    expect(normalizePhoneNumber('123456'), '123456');
+  });
+
+  test('the auth body trims every field', () {
+    final body = RegistrationProfile(
+      name: ' أحمد ',
+      birthDate: DateTime.utc(1998, 5, 12),
+      country: ' سوريا ',
+      city: ' حمص ',
+      street: ' الحمراء ',
+    ).toAuthBody();
+    expect(body, {
+      'name': 'أحمد',
+      'birthdate': '1998-05-12T00:00:00.000Z',
+      'country': 'سوريا',
+      'city': 'حمص',
+      'street': 'الحمراء',
+    });
   });
 }
