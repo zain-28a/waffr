@@ -6,6 +6,7 @@ import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/data/models/calendar_period.dart';
 import 'package:waffr/data/models/expense_categories.dart';
 import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/core/utils/calendar_days.dart';
 
 /// One calendar day of the export and its expenses, newest first.
 class ExpenseShareDay {
@@ -43,7 +44,7 @@ List<ExpenseShareDay> groupExpensesForShare(List<WaffrTransaction> expenses) {
 String expenseShareDayLabel(DateTime date) {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
-  final difference = today.difference(date).inDays;
+  final difference = calendarDaysBetween(date, today);
   if (difference == 0) return 'اليوم';
   if (difference == 1) return 'أمس';
   if (date.year == today.year) {
@@ -56,6 +57,7 @@ String expenseShareDayLabel(DateTime date) {
 String buildExpenseHistoryText(List<WaffrTransaction> expenses) {
   final days = groupExpensesForShare(expenses);
   final buffer = StringBuffer('سجل المصروفات\n');
+  // One block per day: label, expense lines (with notes), day total.
   for (final day in days) {
     buffer.writeln();
     buffer.writeln(expenseShareDayLabel(day.date));
@@ -95,6 +97,7 @@ String expenseTotalsText(List<WaffrTransaction> expenses) {
       .join('  •  ');
 }
 
+/// One expense as "category  •  time  •  amount currency".
 String _expenseLine(WaffrTransaction expense) {
   final category = categoryFor(expense.category).label;
   final amount = formatMoney(expense.amount);
@@ -103,6 +106,7 @@ String _expenseLine(WaffrTransaction expense) {
   return '$category  •  $time  •  $amount $currency';
 }
 
+/// "[label]: " followed by the per-currency totals of [expenses].
 String _totalsLine(String label, List<WaffrTransaction> expenses) {
   return '$label: ${expenseTotalsText(expenses)}';
 }

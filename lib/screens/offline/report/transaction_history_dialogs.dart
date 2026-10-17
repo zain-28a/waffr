@@ -1,10 +1,13 @@
-// Transaction history chrome: the share-format dialog and the
-// multi-select bar and marks.
+// Transaction history chrome (part of reportscreen.dart): the share-format
+// dialog and the multi-select bar and marks.
 
 part of 'reportscreen.dart';
 
+/// Export format picked in [_ShareFormatDialog].
 enum _ExpenseShareFormat { pdf, text }
 
+/// Asks whether to share the selected expenses as PDF or plain text; pops
+/// the chosen [_ExpenseShareFormat], or null when dismissed.
 class _ShareFormatDialog extends StatelessWidget {
   const _ShareFormatDialog();
 
@@ -37,6 +40,7 @@ class _ShareFormatDialog extends StatelessWidget {
   }
 }
 
+/// One tappable format option (icon + label) in the share dialog.
 class _FormatChoice extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -76,11 +80,15 @@ class _FormatChoice extends StatelessWidget {
   }
 }
 
+/// Top bar shown while selecting expenses: cancel, select-all mark, count,
+/// and a date-range picker. Laid out LTR so the controls keep their order.
 class _SelectionBar extends StatelessWidget {
+  // Number of selected expenses.
   final int count;
   final bool allSelected;
   final VoidCallback onClose;
   final VoidCallback onToggleAll;
+  // Opens the date-range picker to select every expense in a range.
   final VoidCallback onPickRange;
 
   const _SelectionBar({
@@ -136,8 +144,10 @@ class _SelectionBar extends StatelessWidget {
   }
 }
 
+/// Selection mark state: none, some (for a day group), or all selected.
 enum _SelectState { empty, partial, checked }
 
+/// Round check mark used for rows, day groups and the select-all control.
 class _SelectMark extends StatelessWidget {
   final _SelectState state;
   final VoidCallback onTap;

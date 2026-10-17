@@ -1,4 +1,5 @@
-// Signed-in profile: name and sign-out.
+// Signed-in account page: display name, email, change password, sign out,
+// and account deletion.
 
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
@@ -12,8 +13,11 @@ import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/screens/offline/settings/change_password_screen.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-/// Edit display name, or sign out of the synced account.
+/// Edit display name, change the password, sign out, or delete the synced
+/// account. Opened from settings for signed-in users only.
 class AccountScreen extends StatefulWidget {
+  /// Runs the app-level sign-out (back to login). When null, the screen only
+  /// clears the session.
   final Future<void> Function()? onSignedOut;
 
   /// Creates a [AccountScreen].
@@ -23,12 +27,16 @@ class AccountScreen extends StatefulWidget {
   State<AccountScreen> createState() => _AccountScreenState();
 }
 
-/// State of [AccountScreen].
+/// State of [AccountScreen]. Owns the display-name controller.
 class _AccountScreenState extends State<AccountScreen> {
   final TextEditingController _nameController = TextEditingController();
 
   String _email = '';
+
+  /// True while signing out or deleting; disables the action tiles.
   bool _busy = false;
+
+  /// True while the display name is being written.
   bool _savingName = false;
 
   @override
@@ -43,6 +51,7 @@ class _AccountScreenState extends State<AccountScreen> {
     super.dispose();
   }
 
+  /// Fills the name field from prefs and reads the account email.
   Future<void> _load() async {
     final prefs = await AppPrefs.instance;
     final email = await AuthSession.instance.email() ?? '';
@@ -55,7 +64,8 @@ class _AccountScreenState extends State<AccountScreen> {
     });
   }
 
-  // Writes the display name through BackupService and shows a snackbar.
+  /// Writes the display name through BackupService (prefs plus a sync mark)
+  /// and shows a snackbar.
   Future<void> _saveName() async {
     final name = _nameController.text.trim();
     if (name.isEmpty || _savingName) return;
@@ -67,7 +77,8 @@ class _AccountScreenState extends State<AccountScreen> {
     showAppSnackBar(context, 'تم حفظ الاسم', success: true);
   }
 
-  // Confirms, clears the session, then runs the host's onSignedOut callback.
+  /// Confirms, signs out (via the host's onSignedOut callback, or by clearing
+  /// the session), then pops back to the first route.
   Future<void> _signOut() async {
     final confirm = await showAppConfirmDialog(
       context,
@@ -89,6 +100,8 @@ class _AccountScreenState extends State<AccountScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  /// Confirms, deletes the account on the server, then wipes local data and
+  /// backups and closes this page.
   Future<void> _deleteAccount() async {
     final confirm = await showAppConfirmDialog(
       context,
@@ -129,6 +142,7 @@ class _AccountScreenState extends State<AccountScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: staggered([
+          // Avatar, name field and save button.
           Center(
             child: ProfileAvatar(accent: accent, radius: 42, signedIn: true),
           ),
@@ -177,6 +191,7 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
           const SizedBox(height: 8),
+          // Read-only email.
           Text(
             'البريد الإلكتروني',
             style: TextStyle(
@@ -200,81 +215,34 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
           const SizedBox(height: 25),
-          _ActionTile(
+          // Account actions.
+          AppListTile(
             icon: Icons.lock_reset_rounded,
             title: 'تغيير كلمة المرور',
             subtitle: 'يسجّل الخروج من أجهزتك الأخرى',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
             busy: _busy,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
             ),
           ),
           const SizedBox(height: 12),
-          _ActionTile(
+          AppListTile(
             icon: Icons.logout_rounded,
             title: 'تسجيل الخروج',
             subtitle: 'العودة إلى شاشة الدخول، والبيانات تبقى على الجهاز',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
             busy: _busy,
             onTap: _signOut,
           ),
           const SizedBox(height: 12),
-          _ActionTile(
+          AppListTile(
             icon: Icons.delete_forever_outlined,
             title: 'حذف الحساب',
             subtitle: 'حذف الحساب وبياناته من الخادم والجهاز',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
             busy: _busy,
             onTap: _deleteAccount,
           ),
         ]),
       ),
-    );
-  }
-}
-
-// Icon + label row used for account actions.
-class _ActionTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color accent;
-  final Color surface;
-  final Color textPrimary;
-  final Color textSecondary;
-  final bool busy;
-  final VoidCallback onTap;
-
-  const _ActionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.accent,
-    required this.surface,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.busy,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppListTile(
-      icon: icon,
-      title: title,
-      subtitle: subtitle,
-      busy: busy,
-      onTap: onTap,
     );
   }
 }

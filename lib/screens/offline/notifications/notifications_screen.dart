@@ -1,3 +1,6 @@
+// Notifications page: mute toggle, mark-all-read, clear history, a device
+// permission banner, and the alert history grouped by time.
+
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
@@ -14,8 +17,9 @@ import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-// Notifications page: mute toggle, mark-all-read, clear history, grouped list.
-
+/// Notification history page, pushed from the app shell's bell. Reads and
+/// updates [NotificationService]; obligation alerts open the obligations
+/// sheets.
 class NotificationsScreen extends StatefulWidget {
   /// Creates a [NotificationsScreen].
   const NotificationsScreen({super.key});
@@ -24,17 +28,20 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-/// State of [NotificationsScreen].
+/// State of [NotificationsScreen]. Observes the app lifecycle to re-check
+/// the phone's notification permission on resume.
 class _NotificationsScreenState extends State<NotificationsScreen>
     with WidgetsBindingObserver {
-  // Rows animate in only while the screen first opens; rows that scroll
-  // back into view later appear at rest instead of replaying the entrance.
+  /// Rows animate in only while the screen first opens; rows that scroll
+  /// back into view later appear at rest instead of replaying the entrance.
   final Stopwatch _sinceOpened = Stopwatch()..start();
+
+  /// True during the first 700 ms after opening.
   bool get _playEntrance => _sinceOpened.elapsedMilliseconds < 700;
 
   final NotificationService _service = NotificationService.instance;
 
-  // False when the phone blocks Waffr's notifications; null when unknown.
+  /// False when the phone blocks Waffr's notifications; null when unknown.
   bool? _deviceAllowed;
 
   @override
@@ -57,12 +64,15 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     if (state == AppLifecycleState.resumed) _refreshDevicePermission();
   }
 
+  /// Reads whether the phone allows Waffr's notifications.
   Future<void> _refreshDevicePermission() async {
     final allowed = await SystemNotifications.instance
         .deviceNotificationsEnabled();
     if (mounted) setState(() => _deviceAllowed = allowed);
   }
 
+  /// Asks the phone for notification permission; if refused, explains how to
+  /// enable it from the phone settings.
   Future<void> _allowDeviceNotifications() async {
     final granted = await SystemNotifications.instance.requestPermission();
     await _refreshDevicePermission();
@@ -75,8 +85,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  // Clears history only — balance, savings, goals, and mute stay intact.
-  // Marks the alert read; obligation alerts also open where they can be acted on.
+  /// Marks the alert read; obligation alerts also open where they can be acted on.
   void _open(AppNotification notification) {
     _service.markRead(notification.id);
     switch (notification.type) {
@@ -91,11 +100,13 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }
   }
 
+  /// Removes one alert after a swipe.
   void _dismiss(AppNotification notification) {
     AppHaptics.warning();
     _service.remove(notification.id);
   }
 
+  /// Clears history only; balance, savings, goals, and mute stay intact.
   Future<void> _confirmClear() async {
     final confirmed = await showAppConfirmDialog(
       context,
@@ -133,6 +144,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                         padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
                         child: Column(
                           children: [
+                            // Header actions: mark all read, clear history.
                             Row(
                               children: [
                                 const Spacer(),
@@ -160,7 +172,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                             // The permission banner comes and goes as the phone
                             // setting changes; grow and shrink instead of jumping.
                             AnimatedSize(
-                              duration: AppMotion.of(context, AppMotion.medium),
+                              duration: AppMotion.sizeOf(
+                                context,
+                                AppMotion.medium,
+                              ),
                               curve: AppMotion.enter,
                               alignment: Alignment.topCenter,
                               child: _deviceAllowed == false
@@ -181,6 +196,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                         ),
                       ),
                       const SizedBox(height: 8),
+                      // Grouped history, or the empty state.
                       Expanded(
                         child: items.isEmpty
                             ? const _EmptyNotifications()
@@ -221,7 +237,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 }
 
-// Toggle for whether new alerts are written to the history.
+/// Toggle for whether new alerts are written to the history.
 class _MuteControl extends StatelessWidget {
   final bool muted;
   final VoidCallback onTap;
@@ -306,6 +322,7 @@ class _MuteControl extends StatelessWidget {
   }
 }
 
+/// Round icon button with a tooltip, used for the header actions.
 class _HeaderAction extends StatelessWidget {
   final IconData icon;
   final String tooltip;
@@ -344,6 +361,7 @@ class _HeaderAction extends StatelessWidget {
   }
 }
 
+/// Empty state shown when there are no alerts.
 class _EmptyNotifications extends StatelessWidget {
   const _EmptyNotifications();
 
@@ -360,7 +378,7 @@ class _EmptyNotifications extends StatelessWidget {
   }
 }
 
-// One time bucket (e.g. Today) and its tiles.
+/// One time bucket (e.g. Today) and its swipe-to-delete tiles.
 class _NotificationGroupView extends StatelessWidget {
   final NotificationTimeGroup group;
   final ValueChanged<AppNotification> onOpen;
@@ -418,7 +436,7 @@ class _NotificationGroupView extends StatelessWidget {
   }
 }
 
-// Red delete strip revealed behind a tile while it is swiped.
+/// Red delete strip revealed behind a tile while it is swiped.
 class _DismissBackground extends StatelessWidget {
   final AlignmentDirectional alignment;
 
@@ -440,6 +458,7 @@ class _DismissBackground extends StatelessWidget {
   }
 }
 
+/// One alert: type icon, unread dot, title, time, message and date.
 class _NotificationTile extends StatelessWidget {
   final AppNotification notification;
   final VoidCallback onTap;
@@ -561,6 +580,7 @@ class _NotificationTile extends StatelessWidget {
     );
   }
 
+  /// Icon for each notification type.
   IconData _iconFor(NotificationType type) {
     return switch (type) {
       NotificationType.balanceWarning => Icons.account_balance_wallet_outlined,
@@ -579,7 +599,7 @@ class _NotificationTile extends StatelessWidget {
   }
 }
 
-// Theme colors for this screen so tiles stay consistent.
+/// Theme colors for this screen so tiles stay consistent.
 class _NotificationColors {
   final Color surface;
   final Color accent;
@@ -593,6 +613,7 @@ class _NotificationColors {
     required this.textSecondary,
   });
 
+  /// Reads the colors from the current [AppPalette].
   factory _NotificationColors.of(BuildContext context) {
     final palette = AppPalette.of(context);
     return _NotificationColors(

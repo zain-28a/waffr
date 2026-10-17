@@ -3,7 +3,8 @@
 
 part of 'online_screen.dart';
 
-// Frosted cover over the online cards for guests, with a sign-in action.
+/// Translucent cover over the blurred online cards for guests, with a
+/// sign-in action.
 class _SignInGate extends StatelessWidget {
   final VoidCallback onLogin;
 
@@ -28,6 +29,7 @@ class _SignInGate extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
+                  // Globe badge, message, then the sign-in button.
                   children: [
                     Center(
                       child: Container(
@@ -87,7 +89,7 @@ class _SignInGate extends StatelessWidget {
   }
 }
 
-// Grid of nearby-place categories that launch Google Maps searches.
+/// Grid of nearby-place categories that launch Google Maps searches.
 class _NearbyPlacesCard extends StatelessWidget {
   final ValueChanged<NearbyPlaceCategory> onOpen;
 
@@ -115,6 +117,7 @@ class _NearbyPlacesCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+          // Two-column grid; each tile reports its category to [onOpen].
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),

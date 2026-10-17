@@ -9,6 +9,7 @@ import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
+/// Opens the sheet listing goals that have already been completed.
 Future<void> showCompletedGoalsSheet(BuildContext context) {
   return showGlassSheet<void>(
     context: context,
@@ -16,7 +17,8 @@ Future<void> showCompletedGoalsSheet(BuildContext context) {
   );
 }
 
-// Sheet body listing goals that have already hit their target.
+/// Sheet body listing goals that have already hit their target, or an
+/// empty state when there are none.
 class _CompletedGoalsSheet extends StatefulWidget {
   const _CompletedGoalsSheet();
 
@@ -24,7 +26,7 @@ class _CompletedGoalsSheet extends StatefulWidget {
   State<_CompletedGoalsSheet> createState() => _CompletedGoalsSheetState();
 }
 
-/// State of [_CompletedGoalsSheet].
+/// State of [_CompletedGoalsSheet]. Rebuilds once the ledger has loaded.
 class _CompletedGoalsSheetState extends State<_CompletedGoalsSheet> {
   final TransactionStore _store = TransactionStore.instance;
 
@@ -72,7 +74,8 @@ class _CompletedGoalsSheetState extends State<_CompletedGoalsSheet> {
   }
 }
 
-// One finished goal: name, amount reached, and completion date.
+/// One finished goal: name, target, amount reached, duration, and
+/// completion date.
 class _CompletedGoalCard extends StatelessWidget {
   final SavingsGoal goal;
   final Color accent;

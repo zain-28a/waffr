@@ -1,17 +1,20 @@
-// In-app FAQ grouped by topic (balance, expenses, savings, sync, etc.).
+// In-app FAQ grouped by topic (balance, expenses, reports, savings, shopping,
+// notifications, account, security). Opened from settings.
 
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-/// Expandable help sections with Arabic Q&A copy.
+/// Expandable help sections with Arabic Q&A copy. The copy is a const list
+/// of records inside [build]; edit it there.
 class HelpScreen extends StatelessWidget {
   /// Creates a [HelpScreen].
   const HelpScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // FAQ content: one record per topic, each with its question/answer pairs.
     const sections =
         <({String title, List<({String question, String answer})> items})>[
           (
@@ -172,6 +175,7 @@ class HelpScreen extends StatelessWidget {
           ),
         ];
 
+    // Page: title, then each section heading followed by its questions.
     final palette = AppPalette.of(context);
     final bg = palette.background;
     final surface = palette.surface;
@@ -229,7 +233,7 @@ class HelpScreen extends StatelessWidget {
   }
 }
 
-// One expandable FAQ question/answer pair.
+/// One expandable FAQ question/answer pair.
 class _FAQItem extends StatefulWidget {
   final String question;
   final String answer;
@@ -251,8 +255,7 @@ class _FAQItem extends StatefulWidget {
   State<_FAQItem> createState() => _FAQItemState();
 }
 
-// Holds expanded/collapsed state for one FAQ tile.
-/// State of [_FAQItem].
+/// State of [_FAQItem]. Tracks whether it is open, for the arrow icon.
 class _FAQItemState extends State<_FAQItem> {
   bool _isExpanded = false;
 

@@ -1,3 +1,5 @@
+// Second signup step: email and password for a new account.
+
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/data/models/registration_profile.dart';
@@ -9,12 +11,19 @@ import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-// Credential step of signup: email, password, confirm — uses [profile] from user info.
-
+/// Credential step of signup: email, password, confirm. Registers with the
+/// [profile] collected on the user-info step.
 class RegisterScreen extends StatefulWidget {
+  /// Profile from the user-info step, sent with the registration.
   final RegistrationProfile profile;
+
+  /// Runs after the account is created and synced.
   final Future<void> Function() onCompleted;
+
+  /// Back action from the header; when null the route is popped.
   final VoidCallback? onBack;
+
+  /// Also pop the login route after success.
   final bool popOnSuccess;
 
   /// Creates a [RegisterScreen].
@@ -30,16 +39,21 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-/// State of [RegisterScreen].
+/// State of [RegisterScreen]. Owns the email, password and confirm
+/// controllers.
 class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
 
+  /// A request is running; fields and buttons are disabled.
   bool _busy = false;
-  // Shown above the main button; cleared as soon as a field changes.
+
+  /// Shown above the main button; cleared as soon as a field changes.
   String? _message;
   AppFeedbackKind _messageKind = AppFeedbackKind.error;
+
+  /// Hides both password fields.
   bool _obscure = true;
 
   @override
@@ -50,6 +64,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  /// Email looks valid, password has 8+ characters and matches the
+  /// confirmation, and nothing is running.
   bool get _canSubmit {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -60,6 +76,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         !_busy;
   }
 
+  /// Registers, syncs, runs the completion, then pops the signup route (and
+  /// the login route too when [RegisterScreen.popOnSuccess]).
   Future<void> _register() async {
     if (!_canSubmit) return;
 
@@ -95,7 +113,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // Prefer the flow's onBack (step 0) over popping the whole route.
+  /// Prefer the flow's onBack (step 0) over popping the whole route.
   void _leaveCredentials() {
     if (_busy) return;
     final back = widget.onBack;
@@ -106,6 +124,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     Navigator.of(context).pop();
   }
 
+  /// Shows [message] in the inline message slot.
   void _show(String? message, {bool success = false}) {
     setState(() {
       _message = message;
@@ -118,7 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return email.contains('@') && email.contains('.');
   }
 
-  // Why the main button is disabled, in plain words.
+  /// Why the main button is disabled, in plain words.
   String? get _missingReason {
     final password = _passwordController.text;
     if (!_emailValid) return 'أدخل بريداً إلكترونياً صالحاً';
@@ -159,6 +178,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               style: TextStyle(color: textSecondary, fontSize: 15),
             ),
             const SizedBox(height: 28),
+            // Email, password and confirmation card.
             GlassContainer(
               colorType: GlassColorType.surface,
               borderRadius: 28,
@@ -225,6 +245,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
             const SizedBox(height: 28),
+            // Message, create button, and the back-to-login link.
             AppInlineMessage(message: _message, kind: _messageKind),
             AppPrimaryButton(
               label: 'إنشاء الحساب',

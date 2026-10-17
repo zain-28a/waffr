@@ -8,6 +8,8 @@ import 'package:waffr/screens/offline/login/auth_fields.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
+/// Form for changing the account password (current, new, confirm). Opened
+/// from the account page; calls `AuthSession.changePassword`.
 class ChangePasswordScreen extends StatefulWidget {
   /// Creates a [ChangePasswordScreen].
   const ChangePasswordScreen({super.key});
@@ -16,16 +18,21 @@ class ChangePasswordScreen extends StatefulWidget {
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
 
-/// State of [ChangePasswordScreen].
+/// State of [ChangePasswordScreen]. Owns the three password controllers
+/// and the inline message shown above the save button.
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TextEditingController _currentController = TextEditingController();
   final TextEditingController _newController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
 
+  /// True while the request is in flight; locks the fields and back button.
   bool _busy = false;
-  // Shown above the main button; cleared as soon as a field changes.
+
+  /// Shown above the main button; cleared as soon as a field changes.
   String? _message;
   AppFeedbackKind _messageKind = AppFeedbackKind.error;
+
+  /// Hides all three fields; toggled by the eye icon on the first one.
   bool _obscure = true;
 
   @override
@@ -36,6 +43,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     super.dispose();
   }
 
+  /// Current filled, new at least 8 chars, matching, and different.
   bool get _canSave {
     final next = _newController.text;
     return _currentController.text.isNotEmpty &&
@@ -45,6 +53,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         !_busy;
   }
 
+  /// Sends the change; on success pops with a snackbar, otherwise shows the
+  /// server message inline.
   Future<void> _save() async {
     if (!_canSave) return;
     setState(() => _busy = true);
@@ -62,6 +72,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     Navigator.of(context).pop();
   }
 
+  /// Sets the inline message and its kind.
   void _show(String? message, {bool success = false}) {
     setState(() {
       _message = message;
@@ -69,7 +80,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     });
   }
 
-  // Why the main button is disabled, in plain words.
+  /// Why the main button is disabled, in plain words.
   String? get _missingReason {
     final next = _newController.text;
     if (_currentController.text.isEmpty) return 'أدخل كلمة المرور الحالية';
@@ -91,6 +102,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final textPrimary = palette.textPrimary;
     final textSecondary = palette.textSecondary;
 
+    // Labeled password field shared by the three inputs.
     Widget field(
       String label,
       TextEditingController controller,
@@ -126,6 +138,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          // Current, new and confirm fields; the eye toggle sits on the first.
           field(
             'كلمة المرور الحالية',
             _currentController,
@@ -146,6 +159,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             _confirmController,
             'أعد كتابة كلمة المرور',
           ),
+          // Sign-out note, inline message and save.
           Text(
             'سيتم تسجيل الخروج من أجهزتك الأخرى. بياناتك تبقى كما هي.',
             style: TextStyle(color: textSecondary, fontSize: 13, height: 1.5),

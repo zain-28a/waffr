@@ -1,10 +1,12 @@
-// Transaction history: every income and expense grouped by day, with
-// multi-select, undoable deletes and expense-history sharing.
+// Transaction history (part of reportscreen.dart): the expense or income
+// ledger grouped by day, with per-row undo and, for expenses, multi-select
+// sharing as PDF or text.
 
 part of 'reportscreen.dart';
 
 /// Full expense or income ledger grouped by day, with undo actions per row.
 class TransactionHistoryScreen extends StatefulWidget {
+  /// True for the income ledger; false for expenses.
   final bool isIncome;
 
   /// A [TransactionHistoryScreen] (expenses).
@@ -18,24 +20,30 @@ class TransactionHistoryScreen extends StatefulWidget {
       _TransactionHistoryScreenState();
 }
 
-/// State of [TransactionHistoryScreen].
+/// State of [TransactionHistoryScreen]. Owns the selection-mode animation
+/// controller and the set of selected transaction ids.
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     with SingleTickerProviderStateMixin {
-  // Rows animate in only while the screen first opens; rows that scroll
-  // back into view later appear at rest instead of replaying the entrance.
+  /// Rows animate in only while the screen first opens; rows that scroll
+  /// back into view later appear at rest instead of replaying the entrance.
   final Stopwatch _sinceOpened = Stopwatch()..start();
   bool get _playEntrance => _sinceOpened.elapsedMilliseconds < 700;
 
   final TransactionStore _store = TransactionStore.instance;
+  // Stores whose changes rebuild the list.
   late final Listenable _listenables = Listenable.merge([
     _store,
     CategoryStore.instance,
     RecurringExpenseStore.instance,
   ]);
 
+  // Selection mode flag; cleared only once the exit animation finishes.
   bool _selecting = false;
+  // Ids of the selected transactions.
   final Set<String> _selected = <String>{};
+  // True while a share is being built, to block a second tap.
   bool _sharing = false;
+  // Drives the selection bar and row marks in and out.
   late final AnimationController _selectionAnim;
   late final CurvedAnimation _selectionReveal;
 
@@ -64,6 +72,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     super.dispose();
   }
 
+  /// Leaves selection mode once the exit animation has fully run.
   void _onSelectionStatus(AnimationStatus status) {
     if (status != AnimationStatus.dismissed || !_selecting) return;
     setState(() {
@@ -72,6 +81,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     });
   }
 
+  /// Starts selection mode, optionally with [selected] already chosen.
   void _enterSelection({Set<String> selected = const <String>{}}) {
     setState(() {
       _selecting = true;
@@ -82,6 +92,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     _selectionAnim.forward();
   }
 
+  /// Animates out of selection mode; the status listener then clears it.
   void _exitSelection() {
     if (_selectionAnim.status == AnimationStatus.reverse ||
         _selectionAnim.status == AnimationStatus.dismissed) {
@@ -90,6 +101,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     _selectionAnim.reverse();
   }
 
+  /// Toggles one transaction in the selection.
   void _toggleExpense(String id) {
     setState(() {
       if (!_selected.add(id)) {
@@ -98,6 +110,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     });
   }
 
+  /// Selects a whole day, or clears it when every row is already selected.
   void _toggleDay(List<WaffrTransaction> expenses) {
     final ids = expenses.map((item) => item.id);
     final allSelected = ids.every(_selected.contains);
@@ -110,6 +123,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     });
   }
 
+  /// Selects every transaction, or clears them all when all are selected.
   void _toggleAll(List<WaffrTransaction> expenses) {
     final ids = expenses.map((item) => item.id).toSet();
     final allSelected = ids.isNotEmpty && ids.every(_selected.contains);
@@ -122,6 +136,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     });
   }
 
+  /// Lets the user pick a date range and selects every transaction inside it.
   Future<void> _pickRange(List<WaffrTransaction> expenses) async {
     if (expenses.isEmpty) return;
     var oldest = expenses.first.dateTime.toLocal();
@@ -159,6 +174,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     });
   }
 
+  /// Asks for a format, then shares the selected expenses as PDF or text.
   Future<void> _confirmShare(List<WaffrTransaction> expenses) async {
     final chosen = expenses
         .where((item) => _selected.contains(item.id))
@@ -201,6 +217,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: WaffrBackHeader(title: title),
+      // Share button (expenses only): enters selection, then shares it.
       floatingActionButton: isIncome
           ? null
           : AnimatedBuilder(
@@ -234,6 +251,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
               items.every((item) => _selected.contains(item.id));
           return Column(
             children: [
+              // Selection bar slides in above the list while selecting.
               if (!isIncome)
                 ClipRect(
                   child: SizeTransition(
@@ -251,6 +269,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                     ),
                   ),
                 ),
+              // Ledger total card.
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
                 child: GlassContainer(
@@ -296,6 +315,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                   ),
                 ),
               ),
+              // Day groups, or the empty state.
               Expanded(
                 child: items.isEmpty
                     ? Center(
@@ -370,12 +390,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   }
 }
 
+/// Local calendar day of [value].
 DateTime _dayOf(DateTime value) {
   final local = value.toLocal();
   return DateTime(local.year, local.month, local.day);
 }
 
-// Transactions that share the same calendar day for the history list.
+/// Transactions that share the same calendar day for the history list.
 class _ExpenseDayGroup {
   final DateTime date;
   final List<WaffrTransaction> expenses;
@@ -383,7 +404,8 @@ class _ExpenseDayGroup {
   const _ExpenseDayGroup(this.date, this.expenses);
 }
 
-// Confirms, deletes the expense, refunds balance, and undoes linked shopping purchases.
+/// Confirms, deletes the expense, refunds balance, and undoes linked
+/// shopping purchases.
 Future<void> _undoExpense(
   BuildContext context,
   WaffrTransaction expense,
@@ -412,7 +434,8 @@ Future<void> _undoExpense(
   showAppSnackBar(context, 'تم التراجع عن المصروف', success: true);
 }
 
-// Confirms, deletes the income entry, and subtracts it from the running balance.
+/// Confirms, deletes the income entry, and subtracts it from the running
+/// balance.
 Future<void> _undoIncome(BuildContext context, WaffrTransaction income) async {
   final confirmed = await showAppConfirmDialog(
     context,
@@ -436,6 +459,7 @@ Future<void> _undoIncome(BuildContext context, WaffrTransaction income) async {
   showAppSnackBar(context, 'تم التراجع عن الدخل', success: true);
 }
 
+/// [expenses] grouped by local day, newest day first.
 List<_ExpenseDayGroup> _groupExpensesByDay(List<WaffrTransaction> expenses) {
   final grouped = <DateTime, List<WaffrTransaction>>{};
   for (final expense in expenses) {
@@ -449,10 +473,12 @@ List<_ExpenseDayGroup> _groupExpensesByDay(List<WaffrTransaction> expenses) {
     ..sort((a, b) => b.date.compareTo(a.date));
 }
 
+/// Day header label: today, yesterday, or day and month (plus year when not
+/// the current one).
 String _historyDateLabel(DateTime date) {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
-  final difference = today.difference(date).inDays;
+  final difference = calendarDaysBetween(date, today);
   if (difference == 0) return 'اليوم';
   if (difference == 1) return 'أمس';
   if (date.year == today.year) {

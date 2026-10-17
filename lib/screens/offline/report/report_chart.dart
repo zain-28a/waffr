@@ -1,10 +1,13 @@
-// Report chart: the swipeable period card and its fl_chart line chart.
+// Report chart (part of reportscreen.dart): the swipeable period card and
+// its fl_chart line chart.
 
 part of 'reportscreen.dart';
 
-// One PageView page: period label, older/newer arrows, and the line chart (or empty state).
+/// One PageView page: period label, older/newer arrows, and the line chart
+/// (or empty state).
 class _SpendingChartCard extends StatelessWidget {
   final _ReportData report;
+  // Whether a newer period exists (false on the current period).
   final bool canShowNewer;
   final VoidCallback onOlder;
   final VoidCallback onNewer;
@@ -19,6 +22,7 @@ class _SpendingChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
+    // Built once so the reveal animation below only moves the clip.
     final chart = RepaintBoundary(
       child: _SpendingLineChart(buckets: report.chartBuckets),
     );
@@ -30,6 +34,7 @@ class _SpendingChartCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Header: newer arrow, title and period label, older arrow.
           Row(
             children: [
               _PeriodArrow(
@@ -83,6 +88,7 @@ class _SpendingChartCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          // Chart body, or an empty state for a period with no expenses.
           Expanded(
             child: report.expenses.isEmpty
                 ? const Center(
@@ -112,7 +118,7 @@ class _SpendingChartCard extends StatelessWidget {
   }
 }
 
-// Chevrons that step the period PageView older or newer.
+/// Chevrons that step the period PageView older or newer.
 class _PeriodArrow extends StatelessWidget {
   final IconData icon;
   final String tooltip;
@@ -143,9 +149,10 @@ class _PeriodArrow extends StatelessWidget {
   }
 }
 
-// Maps chart buckets to FlSpot values. Y axis uses a "nice" interval so labels
-// stay round. Touch shows a tooltip with the bucket label and amount. The area
-// under the line is a light accent fill. Dots shrink when there are many buckets.
+/// Maps chart buckets to FlSpot values. Y axis uses a "nice" interval so
+/// labels stay round. Touch shows a tooltip with the bucket label and amount.
+/// The area under the line is a light accent fill. Dots shrink when there are
+/// many buckets.
 class _SpendingLineChart extends StatelessWidget {
   final List<_ChartBucket> buckets;
 
@@ -154,6 +161,7 @@ class _SpendingLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
+    // Scale: y rounded up to a whole number of nice intervals.
     final spots = [
       for (var index = 0; index < buckets.length; index++)
         FlSpot(index.toDouble(), buckets[index].amount),
@@ -185,6 +193,7 @@ class _SpendingLineChart extends StatelessWidget {
             strokeWidth: 1,
           ),
         ),
+        // Axis labels: money on the left, bucket labels along the bottom.
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
@@ -201,6 +210,7 @@ class _SpendingLineChart extends StatelessWidget {
                 if (value < 0 || value > maxY) {
                   return const SizedBox.shrink();
                 }
+                // Skip a label that would crowd the top one.
                 if (value != 0 && (value - maxY).abs() < yInterval / 3) {
                   return const SizedBox.shrink();
                 }
@@ -255,6 +265,7 @@ class _SpendingLineChart extends StatelessWidget {
             ),
           ),
         ),
+        // Touch: vertical guide, enlarged dot, and a label + amount tooltip.
         lineTouchData: LineTouchData(
           enabled: true,
           handleBuiltInTouches: true,
@@ -307,6 +318,7 @@ class _SpendingLineChart extends StatelessWidget {
             },
           ),
         ),
+        // The spending line with dots and a light fill under it.
         lineBarsData: [
           LineChartBarData(
             spots: spots,
@@ -337,7 +349,7 @@ class _SpendingLineChart extends StatelessWidget {
   }
 }
 
-// Centered icon + message used when a chart or list has nothing to show.
+/// Centered icon + message used when a chart or list has nothing to show.
 class _EmptyState extends StatelessWidget {
   final IconData icon;
   final String message;

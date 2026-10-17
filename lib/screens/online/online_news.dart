@@ -3,8 +3,9 @@
 
 part of 'online_screen.dart';
 
-// Headline teaser. Swipe up or down on the headline to move between articles
-// without leaving the tab; tap opens the full news sheet (or retries on error).
+/// Headline teaser. Swipe up or down on the headline to move between articles
+/// without leaving the tab; tap opens the full news sheet (or retries on
+/// error).
 class _NewsPreviewCard extends StatefulWidget {
   final List<NewsArticle> articles;
   final _NewsLoadState state;
@@ -20,12 +21,15 @@ class _NewsPreviewCard extends StatefulWidget {
   State<_NewsPreviewCard> createState() => _NewsPreviewCardState();
 }
 
-/// State of [_NewsPreviewCard].
+/// State of [_NewsPreviewCard]. Owns the vertical headline pager and keeps
+/// the current index inside the article list when the list shrinks.
 class _NewsPreviewCardState extends State<_NewsPreviewCard> {
-  // Title (3 lines) plus the source row.
+  /// Title (3 lines) plus the source row.
   static const double _pageHeight = 108;
 
   final PageController _pages = PageController();
+
+  /// Current headline, shown as "n / count" in the header row.
   int _index = 0;
 
   @override
@@ -46,7 +50,7 @@ class _NewsPreviewCardState extends State<_NewsPreviewCard> {
     super.dispose();
   }
 
-  // At the first or last article, the drag keeps scrolling the tab instead.
+  /// At the first or last article, the drag keeps scrolling the tab instead.
   bool _forwardOverscroll(OverscrollNotification notification) {
     if (notification.dragDetails == null) return false;
     final outer = Scrollable.maybeOf(context)?.position;
@@ -78,6 +82,7 @@ class _NewsPreviewCardState extends State<_NewsPreviewCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Header row: title, page counter, and the sheet chevron.
               Row(
                 children: [
                   Expanded(
@@ -119,7 +124,7 @@ class _NewsPreviewCardState extends State<_NewsPreviewCard> {
               // Loading, the headline pager and the empty/error copy have
               // different heights; grow and shrink between them smoothly.
               AnimatedSize(
-                duration: AppMotion.of(context, AppMotion.medium),
+                duration: AppMotion.sizeOf(context, AppMotion.medium),
                 curve: AppMotion.enter,
                 alignment: Alignment.topCenter,
                 child: ready
@@ -173,7 +178,7 @@ class _NewsPreviewCardState extends State<_NewsPreviewCard> {
   }
 }
 
-// One article in the swipeable preview: title, source and time.
+/// One article in the swipeable preview: title, source and time.
 class _NewsHeadline extends StatelessWidget {
   final NewsArticle article;
   final AppPalette colors;
@@ -234,9 +239,10 @@ class _NewsHeadline extends StatelessWidget {
   }
 }
 
-// Vertical page marks beside the headline, like the balance-card currency
-// dots. Long feeds show a window of marks around the current article.
+/// Vertical page marks beside the headline, like the balance-card currency
+/// dots. Long feeds show a window of marks around the current article.
 class _NewsPageDots extends StatelessWidget {
+  /// Most marks shown at once; longer feeds slide the window.
   static const int _maxDots = 7;
 
   final PageController controller;
@@ -289,7 +295,7 @@ class _NewsPageDots extends StatelessWidget {
   }
 }
 
-// Loading spinner or empty/error copy inside the news preview card.
+/// Loading spinner or empty/error copy inside the news preview card.
 class _NewsStatus extends StatelessWidget {
   final _NewsLoadState state;
   final AppPalette colors;

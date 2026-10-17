@@ -1,13 +1,18 @@
-// Due obligations sheet: confirm, postpone or skip each obligation that
-// is waiting for the user.
+// Due obligations sheet (part of obligations_sheet.dart): deduct or postpone
+// each obligation that is waiting for the user's confirmation.
 
 part of 'obligations_sheet.dart';
 
+/// What to do with one waiting obligation: deduct one payment, deduct every
+/// missed payment, or postpone.
 enum _DueAction { deductOne, deductAll, postpone }
 
+/// How long to postpone a waiting obligation.
 enum _PostponeOption { day, threeDays, week, nextIncome }
 
+/// Chip labels for [_PostponeOption].
 extension on _PostponeOption {
+  /// Chip label in the "remind me after" row.
   String get label => switch (this) {
     _PostponeOption.day => 'يوم',
     _PostponeOption.threeDays => '3 أيام',
@@ -16,6 +21,8 @@ extension on _PostponeOption {
   };
 }
 
+/// Lists every obligation (all currencies) waiting for confirmation, with a
+/// deduct / postpone choice per item, and applies all choices on confirm.
 class DueObligationsSheet extends StatefulWidget {
   /// Creates a [DueObligationsSheet].
   const DueObligationsSheet({super.key});
@@ -28,11 +35,14 @@ class DueObligationsSheet extends StatefulWidget {
 class _DueObligationsSheetState extends State<DueObligationsSheet> {
   final RecurringExpenseStore _store = RecurringExpenseStore.instance;
 
+  // Chosen action and postpone option per obligation id (defaults apply when
+  // missing: deduct one, postpone one day).
   final Map<String, _DueAction> _actions = {};
   final Map<String, _PostponeOption> _postpone = {};
+  // True while choices are being applied, to block a second tap.
   bool _saving = false;
 
-  // Snapshot so items do not vanish while the user is choosing.
+  /// Snapshot so items do not vanish while the user is choosing.
   List<RecurringExpense>? _items;
 
   @override
@@ -41,6 +51,7 @@ class _DueObligationsSheetState extends State<DueObligationsSheet> {
     _load();
   }
 
+  /// Collects waiting obligations across all currencies, soonest first.
   Future<void> _load() async {
     await _store.ensureLoaded();
     if (!mounted) return;
@@ -53,6 +64,7 @@ class _DueObligationsSheetState extends State<DueObligationsSheet> {
     setState(() => _items = items);
   }
 
+  /// Applies each choice in turn, closes the sheet, and reports the outcome.
   Future<void> _confirm() async {
     final items = _items ?? const [];
     if (_saving || items.isEmpty) return;
@@ -91,6 +103,7 @@ class _DueObligationsSheetState extends State<DueObligationsSheet> {
     if (!mounted) return;
     Navigator.of(context).maybePop();
 
+    // One snack bar summarising the outcome.
     if (shortOfBalance) {
       showAppSnackBar(
         context,
@@ -122,6 +135,7 @@ class _DueObligationsSheetState extends State<DueObligationsSheet> {
           subtitle: 'اختر لكل التزام: خصم المبلغ الآن أو تأجيله إلى وقت لاحق.',
         ),
         const SizedBox(height: 16),
+        // Loading, empty, or one card per waiting obligation plus confirm.
         if (items == null)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
@@ -152,6 +166,8 @@ class _DueObligationsSheetState extends State<DueObligationsSheet> {
   }
 }
 
+/// One waiting obligation: title, amount, how much is due, the action
+/// chips, and the postpone options when postponing.
 class _DueItemCard extends StatelessWidget {
   final RecurringExpense item;
   final _ObligationColors colors;
@@ -160,6 +176,7 @@ class _DueItemCard extends StatelessWidget {
   final ValueChanged<_DueAction> onAction;
   final ValueChanged<_PostponeOption> onPostpone;
 
+  // Action chip labels; one-payment items get a plain "deduct".
   static const String _deductLabel = 'خصم';
   static const String _deductOneLabel = 'خصم دفعة';
   static const String _deductAllLabel = 'خصم الكل';
@@ -180,6 +197,7 @@ class _DueItemCard extends StatelessWidget {
     final symbol = currencyLabelFor(item.currencyCode);
     final several = count > 1;
 
+    // Several missed payments offer deduct-one vs deduct-all.
     final options = several
         ? const [_deductOneLabel, _deductAllLabel, _postponeLabel]
         : const [_deductLabel, _postponeLabel];
@@ -198,6 +216,7 @@ class _DueItemCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Title and amount, then what is due.
           Row(
             children: [
               Expanded(
@@ -226,6 +245,7 @@ class _DueItemCard extends StatelessWidget {
             style: _text(colors.textSecondary, size: 12),
           ),
           const SizedBox(height: 10),
+          // Action chips, then the postpone options when postponing.
           SheetChoiceChips(
             options: options,
             selected: selected,

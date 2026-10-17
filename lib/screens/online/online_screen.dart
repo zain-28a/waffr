@@ -1,4 +1,6 @@
 // Online tab: exchange rates, nearby place shortcuts, and a news preview.
+// The cards live in the part files online_cards.dart,
+// online_exchange_rates.dart and online_news.dart.
 
 import 'dart:ui' show ImageFilter;
 
@@ -36,20 +38,26 @@ class OnlineScreen extends StatefulWidget {
   State<OnlineScreen> createState() => _OnlineScreenState();
 }
 
-// loading / ready / empty / error for the news preview card.
+/// loading / ready / empty / error for the news preview card.
 enum _NewsLoadState { loading, ready, empty, error }
 
-/// State of [OnlineScreen].
+/// State of [OnlineScreen]. Listens to [ProfileIdentity] (to lift the guest
+/// overlay and start the feed on sign-in) and to app resume (to refresh news).
 class _OnlineScreenState extends State<OnlineScreen>
     with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
-  // The swipe preview shows only the newest few; the sheet lists the rest.
+  /// The swipe preview shows only the newest few; the sheet lists the rest.
   static const int _newsPreviewLimit = 10;
 
+  /// Currency or metal code shown in the exchange-rate card.
   String _selectedAsset = 'USD';
   List<NewsArticle> _articles = const [];
   _NewsLoadState _newsState = _NewsLoadState.loading;
+
+  /// Drops overlapping [_loadNews] calls.
   bool _newsRequestInFlight = false;
   final ProfileIdentity _identity = ProfileIdentity.instance;
+
+  /// Sign-in state seen last time, to detect the guest-to-signed-in edge.
   bool _wasSignedIn = false;
 
   @override
@@ -81,7 +89,7 @@ class _OnlineScreenState extends State<OnlineScreen>
     }
   }
 
-  // Loads the feed the moment the user is known to be signed in.
+  /// Loads the feed the moment the user is known to be signed in.
   void _onIdentityChanged() {
     final signedIn = _signedIn;
     if (signedIn && !_wasSignedIn) _loadNews();
@@ -89,7 +97,7 @@ class _OnlineScreenState extends State<OnlineScreen>
     if (mounted) setState(() {});
   }
 
-  // Same login route as Settings; the overlay lifts once sign-in succeeds.
+  /// Same login route as Settings; the overlay lifts once sign-in succeeds.
   Future<void> _openLogin() async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -105,7 +113,8 @@ class _OnlineScreenState extends State<OnlineScreen>
     await _identity.reload();
   }
 
-  // Fetches headlines; keeps prior articles on failure if we already had some.
+  /// Fetches headlines; keeps prior articles on failure if we already had
+  /// some.
   Future<void> _loadNews() async {
     if (!_signedIn) return;
     if (_newsRequestInFlight) return;
@@ -136,7 +145,7 @@ class _OnlineScreenState extends State<OnlineScreen>
     }
   }
 
-  // Retry on error; otherwise open the full news sheet.
+  /// Retry on error; otherwise open the full news sheet.
   void _onNewsTap() {
     if (_newsState == _NewsLoadState.error) {
       _loadNews();
@@ -145,7 +154,7 @@ class _OnlineScreenState extends State<OnlineScreen>
     showNewsSheet(context, articles: _articles);
   }
 
-  // Opens Google Maps for the category; snacks if the URL launch fails.
+  /// Opens Google Maps for the category; snacks if the URL launch fails.
   Future<void> _openPlace(NearbyPlaceCategory category) async {
     final opened = await openNearbyPlaceSearch(category);
     if (opened || !mounted) return;
@@ -159,6 +168,7 @@ class _OnlineScreenState extends State<OnlineScreen>
 
     final locked = _identity.isLoaded && !_identity.isLoggedIn;
 
+    // The three cards, staggered in on first build.
     final content = SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
       child: Column(
@@ -201,6 +211,7 @@ class _OnlineScreenState extends State<OnlineScreen>
             ),
           ),
         ),
+        // Sign-in prompt, faded in over the blurred cards for guests.
         IgnorePointer(
           ignoring: !locked,
           child: AnimatedOpacity(

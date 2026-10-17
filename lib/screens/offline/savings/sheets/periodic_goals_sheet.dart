@@ -1,4 +1,5 @@
-// Create or inspect an automatic % of-income savings plan over a fixed duration.
+// Create or inspect the automatic percent-of-income savings plan: a picker
+// with a confirm preview, or the details of the plan already running.
 
 import 'package:flutter/material.dart';
 import 'package:waffr/data/models/savings_goal.dart';
@@ -12,7 +13,9 @@ import 'package:waffr/widgets/sheets/monthly_income_required_sheet.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-/// Requires monthly income; opens create UI or details for the active plan.
+/// Opens the periodic plan sheet. Without a configured monthly income it
+/// shows the income-required sheet instead; with an active plan it shows
+/// that plan's details rather than the picker.
 Future<void> showPeriodicGoalsSheet(BuildContext context) async {
   await TransactionStore.instance.ensureLoaded();
   if (!context.mounted) return;
@@ -31,7 +34,7 @@ Future<void> showPeriodicGoalsSheet(BuildContext context) async {
   );
 }
 
-// Percent + duration picker, then a confirm preview before applying the plan.
+/// Percent + duration picker, then a confirm preview before applying the plan.
 class _PeriodicGoalsSheet extends StatefulWidget {
   const _PeriodicGoalsSheet();
 
@@ -39,9 +42,13 @@ class _PeriodicGoalsSheet extends StatefulWidget {
   State<_PeriodicGoalsSheet> createState() => _PeriodicGoalsSheetState();
 }
 
-/// State of [_PeriodicGoalsSheet].
+/// State of [_PeriodicGoalsSheet]. Tracks the chosen percent and duration
+/// and whether the preview step is showing.
 class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
+  /// Percent choices offered as chips.
   static const List<int> _percents = [5, 10, 15, 20];
+
+  /// Duration choices offered as chips.
   static const List<GoalDurationPreset> _durations = [
     GoalDurationPreset.threeMonths,
     GoalDurationPreset.sixMonths,
@@ -52,19 +59,28 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
 
   int _percent = 10;
   GoalDurationPreset _duration = GoalDurationPreset.sixMonths;
+
+  /// True on the confirm step.
   bool _preview = false;
+
+  /// True while the plan is being written.
   bool _saving = false;
 
+  /// Plans always deduct monthly.
   RecurringFrequency get _frequency => RecurringFrequency.monthly;
 
   double get _income => _store.configuredMonthlyIncome ?? 0;
 
+  /// Deduction per period at the chosen percent.
   double get _perPeriod => _income * _percent / 100;
 
+  /// Number of deductions over the chosen duration.
   int get _cycles => _duration.cycleCount(_frequency);
 
+  /// Total the plan will collect; becomes the goal target.
   double get _expected => _perPeriod * _cycles;
 
+  /// Whether the plan would collect anything.
   bool get _isMeaningful => _income > 0 && _perPeriod > 0 && _expected > 0;
 
   @override
@@ -75,7 +91,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
     });
   }
 
-  // Writes the periodic plan into the store and closes on success.
+  /// Writes the periodic plan into the store and closes on success.
   Future<void> _confirm() async {
     if (!_isMeaningful || _saving) return;
     setState(() => _saving = true);
@@ -126,6 +142,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
     );
   }
 
+  /// Picker step: reference income, percent chips and duration chips.
   List<Widget> _buildPicker(BuildContext context) {
     final palette = AppPalette.of(context);
     final textSecondary = palette.textSecondary;
@@ -190,6 +207,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
     ];
   }
 
+  /// Preview step: income, percent, per-period deduction, duration and total.
   List<Widget> _buildPreview(BuildContext context) {
     final palette = AppPalette.of(context);
     final textPrimary = palette.textPrimary;
@@ -245,7 +263,7 @@ class _PeriodicGoalsSheetState extends State<_PeriodicGoalsSheet> {
   }
 }
 
-// Label/value row used in the plan preview.
+/// Label/value row used in the plan preview and the plan details.
 class _PreviewRow extends StatelessWidget {
   final String label;
   final String value;
@@ -297,7 +315,7 @@ class _PreviewRow extends StatelessWidget {
   }
 }
 
-// Read-only view of the active periodic plan with an option to cancel it.
+/// Read-only view of the active periodic plan with an option to delete it.
 class _PeriodicPlanDetailsSheet extends StatefulWidget {
   final SavingsGoal goal;
 
@@ -311,8 +329,11 @@ class _PeriodicPlanDetailsSheet extends StatefulWidget {
 /// State of [_PeriodicPlanDetailsSheet].
 class _PeriodicPlanDetailsSheetState extends State<_PeriodicPlanDetailsSheet> {
   final TransactionStore _store = TransactionStore.instance;
+
+  /// True while the delete is in flight; disables the button.
   bool _deleting = false;
 
+  /// Asks for confirmation, deletes the plan's goal, and closes on success.
   Future<void> _confirmDelete() async {
     if (_deleting) return;
 

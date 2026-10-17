@@ -1,3 +1,6 @@
+// Login screen: email/password sign-in, links to registration and password
+// reset, and the guest option.
+
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/data/services/backup_service.dart';
@@ -12,11 +15,17 @@ import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-// Sign-in with email/password, register, or continue as a local guest.
-
+/// Sign-in with email/password, register, or continue as a local guest.
+/// Used as the first gate in `main.dart` and pushed again from Settings and
+/// the online tab.
 class LoginScreen extends StatefulWidget {
+  /// Runs after sign-in, registration, or choosing guest mode.
   final Future<void> Function() onCompleted;
+
+  /// Shows the "continue as guest" action.
   final bool allowGuest;
+
+  /// Pops this route after success (when it was pushed, not the gate).
   final bool popOnSuccess;
 
   /// Creates a [LoginScreen].
@@ -31,15 +40,19 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-/// State of [LoginScreen].
+/// State of [LoginScreen]. Owns the email and password controllers.
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  /// A request is running; fields and buttons are disabled.
   bool _busy = false;
-  // Shown above the main button; cleared as soon as a field changes.
+
+  /// Shown above the main button; cleared as soon as a field changes.
   String? _message;
   AppFeedbackKind _messageKind = AppFeedbackKind.error;
+
+  /// Hides the password text.
   bool _obscure = true;
 
   @override
@@ -49,6 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  /// Email looks valid, password is non-empty, and nothing is running.
   bool get _canSubmit {
     final email = _emailController.text.trim();
     return email.contains('@') &&
@@ -57,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
         !_busy;
   }
 
-  // Auth, sync, then clear first-launch so theme select is not shown again.
+  /// Auth, sync, then clear first-launch so theme select is not shown again.
   Future<void> _login() async {
     if (!_canSubmit) return;
 
@@ -86,6 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
     await _finish();
   }
 
+  /// Records the guest choice via [BackupService], then finishes.
   Future<void> _continueAsGuest() async {
     if (_busy) return;
 
@@ -95,6 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
     await _finish();
   }
 
+  /// Pushes the two-step [AccountCreationFlow].
   Future<void> _openRegister() async {
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -106,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // After a reset, sign in with the new password straight away.
+  /// After a reset, sign in with the new password straight away.
   Future<void> _openForgotPassword() async {
     final result = await Navigator.of(context)
         .push<({String email, String password})>(
@@ -123,6 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
     await _login();
   }
 
+  /// Runs the caller's completion, then pops when [LoginScreen.popOnSuccess].
   Future<void> _finish() async {
     await widget.onCompleted();
     if (widget.popOnSuccess && mounted && Navigator.of(context).canPop()) {
@@ -130,6 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /// Shows [message] in the inline message slot.
   void _show(String? message, {bool success = false}) {
     setState(() {
       _message = message;
@@ -142,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return email.contains('@') && email.contains('.');
   }
 
-  // Why the main button is disabled, in plain words.
+  /// Why the main button is disabled, in plain words.
   String? get _missingReason {
     if (!_emailValid) return 'أدخل بريداً إلكترونياً صالحاً';
     if (_passwordController.text.isEmpty) return 'أدخل كلمة المرور';
@@ -167,6 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Logo, welcome title and subtitle.
               const SizedBox(height: 20),
               const Center(child: WaffrLogo(size: 72)),
               const SizedBox(height: 16),
@@ -196,6 +215,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(color: textSecondary, fontSize: 16),
               ),
               const SizedBox(height: 32),
+              // Email and password card.
               GlassContainer(
                 colorType: GlassColorType.surface,
                 borderRadius: 28,
@@ -249,6 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
+              // Forgot-password link, message, then the main action.
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: TextButton(
@@ -275,6 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 onTap: _login,
               ),
               const SizedBox(height: 8),
+              // Secondary actions: register and (on the gate) guest mode.
               TextButton(
                 onPressed: _busy ? null : _openRegister,
                 child: Text(

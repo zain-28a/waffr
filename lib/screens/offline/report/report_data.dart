@@ -1,12 +1,14 @@
-// Report data: ranges, periods, chart buckets and the pure helpers that
-// build them from expenses.
+// Report data (part of reportscreen.dart): ranges, periods, chart buckets
+// and the pure helpers that build them from expenses.
 
 part of 'reportscreen.dart';
 
-// Bucket width for the chart and summary (day through year).
+/// Bucket width for the chart and summary (day through year).
 enum _ReportRange { day, week, month, threeMonths, sixMonths, year }
 
+/// Labels and calendar mapping for [_ReportRange].
 extension on _ReportRange {
+  /// Chip label in the range selector.
   String get label => switch (this) {
     _ReportRange.day => 'اليوم',
     _ReportRange.week => 'أسبوع',
@@ -15,7 +17,8 @@ extension on _ReportRange {
     _ReportRange.sixMonths => '6 أشهر',
     _ReportRange.year => 'سنة',
   };
-  // The matching calendar window; null for a single day.
+
+  /// The matching calendar window; null for a single day.
   SavingsRange? get calendarRange => switch (this) {
     _ReportRange.day => null,
     _ReportRange.week => SavingsRange.week,
@@ -26,7 +29,7 @@ extension on _ReportRange {
   };
 }
 
-// Half-open [start, end) window for one page of the period PageView.
+/// Half-open [start, end) window for one page of the period PageView.
 class _ReportPeriod {
   final DateTime start;
   final DateTime end;
@@ -38,7 +41,7 @@ class _ReportPeriod {
     required this.range,
   });
 
-  // Human-readable caption shown above the chart for this window.
+  /// Human-readable caption shown above the chart for this window.
   String get label {
     final calendarRange = range.calendarRange;
     if (calendarRange == null) {
@@ -51,7 +54,7 @@ class _ReportPeriod {
   }
 }
 
-// One category's share of spending in the selected period.
+/// One category's share of spending in the selected period.
 class _CategoryTotal {
   final String category;
   final double amount;
@@ -59,9 +62,12 @@ class _CategoryTotal {
   const _CategoryTotal(this.category, this.amount);
 }
 
-// One X-axis slot on the line chart (hour, day, week, or month depending on range).
+/// One X-axis slot on the line chart (hour, day, week, or month depending on
+/// range).
 class _ChartBucket {
+  // Full label for the tooltip.
   final String label;
+  // Short axis label; empty to leave that tick unlabelled.
   final String axisLabel;
   final double amount;
 
@@ -72,11 +78,13 @@ class _ChartBucket {
   });
 }
 
-// Filters expenses for a period, sums by category, and buckets them into chart points.
+/// Filters expenses for a period, sums by category, and buckets them into
+/// chart points.
 class _ReportData {
   final _ReportPeriod period;
   final List<WaffrTransaction> expenses;
   final double total;
+  // Category totals, largest first.
   final List<_CategoryTotal> categoryTotals;
   final List<_ChartBucket> chartBuckets;
 
@@ -88,6 +96,7 @@ class _ReportData {
     required this.chartBuckets,
   });
 
+  /// Builds the report for [period] from the full expense list.
   factory _ReportData.from(
     List<WaffrTransaction> allExpenses,
     _ReportPeriod period,
@@ -115,16 +124,17 @@ class _ReportData {
   }
 }
 
-// Builds the [start, end) window for a range at the given PageView offset (0 = current).
+/// Builds the [start, end) window for a range at the given PageView offset
+/// (0 = current).
 _ReportPeriod _periodFor(_ReportRange range, int offset) {
   final calendarRange = range.calendarRange;
   if (calendarRange == null) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final start = today.subtract(Duration(days: offset));
+    final start = addCalendarDays(today, -offset);
     return _ReportPeriod(
       start: start,
-      end: start.add(const Duration(days: 1)),
+      end: addCalendarDays(start, 1),
       range: range,
     );
   }
@@ -132,9 +142,9 @@ _ReportPeriod _periodFor(_ReportRange range, int offset) {
   return _ReportPeriod(start: period.start, end: period.end, range: range);
 }
 
-// While [current] is still running, only the same elapsed span of
-// [previous] is fair to compare: ten days into this month against the first
-// ten days of last month, not against all of it.
+/// While [current] is still running, only the same elapsed span of
+/// [previous] is fair to compare: ten days into this month against the first
+/// ten days of last month, not against all of it.
 _ReportPeriod _comparablePeriod(
   _ReportPeriod previous, {
   required _ReportPeriod current,
@@ -152,6 +162,7 @@ _ReportPeriod _comparablePeriod(
   );
 }
 
+/// Expenses whose time falls inside [period].
 List<WaffrTransaction> _expensesInPeriod(
   List<WaffrTransaction> expenses,
   _ReportPeriod period,
@@ -165,17 +176,20 @@ List<WaffrTransaction> _expensesInPeriod(
       .toList(growable: false);
 }
 
+/// Sum of the expense amounts.
 double _sumExpenses(List<WaffrTransaction> expenses) {
   return expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
 }
 
-// Creates empty buckets for the range grain, then fills amounts from expenses.
+/// Creates empty buckets for the range grain, then fills amounts from
+/// expenses.
 List<_ChartBucket> _buildChartBuckets(
   List<WaffrTransaction> expenses,
   _ReportPeriod period,
 ) {
   late final List<_ChartBucket> buckets;
 
+  // Empty buckets with labels for each range grain.
   switch (period.range) {
     case _ReportRange.day:
       buckets = List.generate(24, (hour) {
@@ -205,11 +219,11 @@ List<_ChartBucket> _buildChartBuckets(
         ),
       );
     case _ReportRange.month:
-      final days = period.end.difference(period.start).inDays;
+      final days = calendarDaysBetween(period.start, period.end);
       final axisDays = {1, 8, 15, 22, days};
       buckets = List.generate(days, (index) {
         final day = index + 1;
-        final date = period.start.add(Duration(days: index));
+        final date = addCalendarDays(period.start, index);
         return _ChartBucket(
           label: '$day ${_shortMonthName(date.month)}',
           axisLabel: axisDays.contains(day) ? '$day' : '',
@@ -217,14 +231,14 @@ List<_ChartBucket> _buildChartBuckets(
         );
       });
     case _ReportRange.threeMonths:
-      final days = period.end.difference(period.start).inDays;
+      final days = calendarDaysBetween(period.start, period.end);
       final count = (days / 7).ceil();
       buckets = List.generate(count, (index) {
-        final date = period.start.add(Duration(days: index * 7));
+        final date = addCalendarDays(period.start, index * 7);
         final month = _shortMonthName(date.month);
         final previous = index == 0
             ? null
-            : period.start.add(Duration(days: (index - 1) * 7));
+            : addCalendarDays(period.start, (index - 1) * 7);
         final isNewMonth = previous == null || previous.month != date.month;
         return _ChartBucket(
           label: '${date.day} $month',
@@ -252,6 +266,7 @@ List<_ChartBucket> _buildChartBuckets(
       });
   }
 
+  // Drop each expense into its bucket by hour, day, week or month offset.
   final amounts = List<double>.filled(buckets.length, 0);
   for (final expense in expenses) {
     final local = expense.dateTime.toLocal();
@@ -261,19 +276,9 @@ List<_ChartBucket> _buildChartBuckets(
         index = local.hour;
       case _ReportRange.week:
       case _ReportRange.month:
-        index = DateTime(
-          local.year,
-          local.month,
-          local.day,
-        ).difference(period.start).inDays;
+        index = calendarDaysBetween(period.start, local);
       case _ReportRange.threeMonths:
-        index =
-            DateTime(
-              local.year,
-              local.month,
-              local.day,
-            ).difference(period.start).inDays ~/
-            7;
+        index = calendarDaysBetween(period.start, local) ~/ 7;
       case _ReportRange.sixMonths:
       case _ReportRange.year:
         index =
@@ -296,7 +301,7 @@ List<_ChartBucket> _buildChartBuckets(
   );
 }
 
-// Round Y-axis step (1/2/5×10^n) so grid labels stay readable.
+/// Round Y-axis step (1/2/5 x 10^n) so grid labels stay readable.
 double _niceInterval(double maxValue) {
   if (maxValue <= 3) return 1;
   final rough = maxValue / 3;
@@ -312,6 +317,7 @@ double _niceInterval(double maxValue) {
   return (nice * magnitude).toDouble();
 }
 
+/// Short Y-axis money label, using thousand / million words for big values.
 String _axisMoney(double value) {
   if (value <= 0) return '0';
   if (value >= 1000000) {
@@ -331,6 +337,7 @@ String _axisMoney(double value) {
   return formatMoney(value);
 }
 
+/// Short Levantine month name used on chart axes (1 = January).
 String _shortMonthName(int month) => const [
   'كانون 2',
   'شباط',

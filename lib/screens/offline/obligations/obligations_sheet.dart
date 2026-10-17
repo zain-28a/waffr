@@ -1,5 +1,6 @@
-// Obligations: the list of recurring expenses, the details of one, and the
-// sheet where charges waiting for approval are deducted or postponed.
+// Obligations (library root): the list of recurring expenses, the details
+// of one, and the sheet where charges waiting for approval are deducted or
+// postponed. Details, due charges and shared labels are part files.
 
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
@@ -15,11 +16,13 @@ import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/dialogs/edit_amount_dialog.dart';
 import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/utils/calendar_days.dart';
 
 part 'due_obligations_sheet.dart';
 part 'obligation_details_sheet.dart';
 part 'obligation_labels.dart';
 
+/// Opens the obligations list for the active currency.
 Future<void> showObligationsSheet(BuildContext context) {
   return showGlassSheet<void>(
     context: context,
@@ -27,6 +30,7 @@ Future<void> showObligationsSheet(BuildContext context) {
   );
 }
 
+/// Opens the sheet of charges waiting for the user's confirmation.
 Future<void> showDueObligationsSheet(BuildContext context) {
   return showGlassSheet<void>(
     context: context,
@@ -34,6 +38,9 @@ Future<void> showDueObligationsSheet(BuildContext context) {
   );
 }
 
+/// List of the active currency's obligations with a monthly total, the next
+/// charge, and a banner for charges awaiting confirmation. Tapping one opens
+/// its details sheet.
 class ObligationsSheet extends StatefulWidget {
   /// Creates a [ObligationsSheet].
   const ObligationsSheet({super.key});
@@ -42,7 +49,8 @@ class ObligationsSheet extends StatefulWidget {
   State<ObligationsSheet> createState() => _ObligationsSheetState();
 }
 
-/// State of [ObligationsSheet].
+/// State of [ObligationsSheet]. Rebuilds from [RecurringExpenseStore] and
+/// [CurrencyStore].
 class _ObligationsSheetState extends State<ObligationsSheet> {
   final RecurringExpenseStore _store = RecurringExpenseStore.instance;
 
@@ -66,6 +74,7 @@ class _ObligationsSheetState extends State<ObligationsSheet> {
         final next = _store.nextUpcoming(code, now: now);
         final symbol = currencyLabelFor(code);
 
+        // Header, then summary, awaiting banner and one tile per obligation.
         return GlassSheetBody(
           children: [
             const GlassSheetHeader(
@@ -111,7 +120,7 @@ class _ObligationsSheetState extends State<ObligationsSheet> {
     );
   }
 
-  // Waiting charges first, then by next charge date; stopped ones last.
+  /// Waiting charges first, then by next charge date; stopped ones last.
   List<RecurringExpense> _sorted(List<RecurringExpense> items, DateTime now) {
     int rank(RecurringExpense item) {
       if (!item.enabled) return 2;
@@ -127,6 +136,7 @@ class _ObligationsSheetState extends State<ObligationsSheet> {
     return list;
   }
 
+  /// Opens the details sheet for [item] on top of this one.
   void _openDetails(RecurringExpense item) {
     showGlassSheet<void>(
       context: context,
@@ -135,6 +145,7 @@ class _ObligationsSheetState extends State<ObligationsSheet> {
   }
 }
 
+/// Approximate monthly total and the next upcoming charge.
 class _SummaryBox extends StatelessWidget {
   final _ObligationColors colors;
   final String monthlyTotal;
@@ -185,6 +196,7 @@ class _SummaryBox extends StatelessWidget {
   }
 }
 
+/// Warning-tinted banner that opens the due-obligations sheet.
 class _AwaitingBanner extends StatelessWidget {
   final _ObligationColors colors;
   final int count;
@@ -239,6 +251,7 @@ class _AwaitingBanner extends StatelessWidget {
   }
 }
 
+/// Empty state explaining how to add an obligation.
 class _EmptyObligations extends StatelessWidget {
   const _EmptyObligations();
 
@@ -252,6 +265,8 @@ class _EmptyObligations extends StatelessWidget {
   }
 }
 
+/// One obligation row: icon, title, amount / interval / deduct mode, and
+/// status. Paused obligations are dimmed.
 class _ObligationTile extends StatelessWidget {
   final RecurringExpense item;
   final _ObligationColors colors;
@@ -338,7 +353,3 @@ class _ObligationTile extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// One obligation
-// ---------------------------------------------------------------------------

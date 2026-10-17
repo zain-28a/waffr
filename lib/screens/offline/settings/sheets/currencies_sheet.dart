@@ -1,4 +1,5 @@
-// Pick the active currency or add/hide additional currencies.
+// Currencies sheet: pick the active currency, hide extra ones, or open the
+// stacked picker that adds a new one. Backed by CurrencyStore.
 
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
@@ -8,6 +9,7 @@ import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
+/// Opens the currencies sheet (from settings).
 Future<void> showCurrenciesSheet(BuildContext context) {
   return showGlassSheet<void>(
     context: context,
@@ -15,7 +17,8 @@ Future<void> showCurrenciesSheet(BuildContext context) {
   );
 }
 
-// Currencies list UI driven by CurrencyStore.
+/// Currencies list UI driven by CurrencyStore: enabled currencies, then an
+/// add button while more are available.
 class _CurrenciesSheet extends StatefulWidget {
   const _CurrenciesSheet();
 
@@ -23,7 +26,7 @@ class _CurrenciesSheet extends StatefulWidget {
   State<_CurrenciesSheet> createState() => _CurrenciesSheetState();
 }
 
-/// State of [_CurrenciesSheet].
+/// State of [_CurrenciesSheet]. Rebuilds from [CurrencyStore] changes.
 class _CurrenciesSheetState extends State<_CurrenciesSheet> {
   final CurrencyStore _store = CurrencyStore.instance;
 
@@ -33,7 +36,7 @@ class _CurrenciesSheetState extends State<_CurrenciesSheet> {
     _store.ensureLoaded();
   }
 
-  // Hides a non-default currency from the picker; its ledger stays intact.
+  /// Hides a non-default currency from the picker; its ledger stays intact.
   Future<void> _remove(CurrencyInfo item) async {
     if (item.code == defaultCurrencyCode) return;
 
@@ -104,6 +107,7 @@ Future<void> showAddCurrencySheet(BuildContext context) {
   );
 }
 
+/// Lists the currencies not yet enabled; tapping one adds it and closes.
 class _AddCurrencySheet extends StatelessWidget {
   const _AddCurrencySheet();
 
@@ -190,7 +194,7 @@ class _AddCurrencySheet extends StatelessWidget {
   }
 }
 
-// One enabled currency with active highlight and optional hide action.
+/// One enabled currency with active highlight and optional hide action.
 class _CurrencyTile extends StatelessWidget {
   final CurrencyInfo item;
   final bool active;

@@ -1,9 +1,10 @@
-// Savings total card: everything saved so far with the save / withdraw
-// actions.
+// Savings total card: everything saved so far, plus the compact action
+// button used by the save / withdraw and plan shortcuts.
 
 part of 'savings_screen.dart';
 
-// Lifetime savings balance shown beside the action buttons.
+/// Lifetime savings balance shown beside the action buttons, or a hint
+/// when nothing has been saved yet.
 class _TotalSavingsCard extends StatelessWidget {
   final double total;
 
@@ -91,7 +92,8 @@ class _TotalSavingsCard extends StatelessWidget {
   }
 }
 
-// Compact glass button used for save/withdraw and plan shortcuts.
+/// Compact glass button used for save/withdraw and plan shortcuts, with an
+/// optional leading widget before the label.
 class _ActionButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;

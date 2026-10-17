@@ -1,4 +1,5 @@
-// App settings: account, income, currencies, theme, app lock, privacy, help, reset.
+// App settings: account, income, currencies, obligations, theme, app lock,
+// smart analysis, privacy, help, and the guest data reset.
 
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
@@ -34,9 +35,18 @@ import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/widgets/smart/smart_glow.dart';
 
 /// Hub for account, appearance, security shortcuts, and destructive data reset.
+///
+/// Pushed from the app shell. Most rows open their own screen or sheet in
+/// this folder; the screen reloads its summary when they return.
 class SettingsScreen extends StatefulWidget {
+  /// App theme mode; the screen recolors when it changes.
   final ValueNotifier<ThemeMode> themeNotifier;
+
+  /// Toggles the app theme (dark mode switch).
   final VoidCallback onThemeChanged;
+
+  /// The root app flow state (from `main.dart`), or null. Used to refresh the
+  /// app-lock state and to return to login after signing out.
   final dynamic appFlowController;
 
   /// Creates a [SettingsScreen].
@@ -51,9 +61,14 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-/// State of [SettingsScreen].
+/// State of [SettingsScreen]. Mirrors prefs, session and income into
+/// fields, listens to the theme notifier, and owns the header elevation
+/// notifier.
 class _SettingsScreenState extends State<SettingsScreen> {
+  /// Whether the app lock is on (prefs `app_lock`).
   bool _appLock = false;
+
+  /// True while the device auth prompt is up; ignores further toggles.
   bool _isAuthenticating = false;
 
   String _userName = '';
@@ -64,10 +79,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _hasWeeklyIncome = false;
   double _monthlyIncome = 0;
   double _weeklyIncome = 0;
-  // Weekly income stays in the store; the settings tile is hidden for now.
+
+  /// Weekly income stays in the store; the settings tile is hidden for now.
   static const bool _weeklyIncomeChoiceEnabled = false;
 
+  /// Device biometrics / passcode prompt.
   final LocalAuthentication _auth = LocalAuthentication();
+
+  /// True once the list has scrolled; drives the header shadow.
   final ValueNotifier<bool> _headerElevated = ValueNotifier(false);
 
   @override
@@ -87,13 +106,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  /// Rebuilds with the new theme colors.
   void _onThemeChanged() {
     if (mounted) {
       setState(() {});
     }
   }
 
-  // Pulls prefs, auth session, and configured income into state.
+  /// Pulls prefs, auth session, and configured income into state.
   Future<void> _loadSettings() async {
     final prefs = await AppPrefs.instance;
     await TransactionStore.instance.ensureLoaded();
@@ -122,7 +142,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
-  // Enables lock only after device auth succeeds; disable writes prefs immediately.
+  /// Enables lock only after device auth succeeds; disable writes prefs
+  /// immediately.
   Future<void> _toggleAppLock(bool value) async {
     if (_isAuthenticating) return;
     if (value) {
@@ -132,12 +153,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Asks for the fingerprint / device code before turning the lock on.
+  /// Asks for the fingerprint / device code before turning the lock on, then
+  /// saves the flag and tells the app flow this session is authenticated.
   Future<void> _enableAppLock() async {
     setState(() {
       _isAuthenticating = true;
     });
 
+    // Unsupported device: warn and leave the switch off.
     try {
       final supported = await _auth.isDeviceSupported();
 
@@ -157,6 +180,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       }
 
+      // Prompt; only a successful auth turns the lock on.
       final authenticated = await _auth.authenticate(
         localizedReason: 'تفعيل قفل التطبيق',
         biometricOnly: false,
@@ -193,6 +217,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Turns the lock off and tells the app flow.
   Future<void> _disableAppLock() async {
     final prefs = await AppPrefs.instance;
     await prefs.setBool('app_lock', false);
@@ -212,7 +237,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Explains that Arabic is currently the only supported language.
+  /// Explains that Arabic is currently the only supported language.
   void _showLanguageInfo() {
     showAppInfoDialog(
       context,
@@ -221,7 +246,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // Signed-in users open AccountScreen; guests go through LoginScreen first.
+  /// Signed-in users open AccountScreen; guests go through LoginScreen first
+  /// (and sync after signing in). Reloads the summary afterwards.
   Future<void> _openAccount() async {
     if (_loggedIn) {
       await Navigator.of(context).push(
@@ -254,7 +280,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _loadSettings();
   }
 
-  // Edit or clear preferred monthly/weekly income in a sheet, not a dialog.
+  /// Edit or clear preferred monthly/weekly income in a sheet, not a dialog.
   Future<void> _editIncome(RecurringFrequency frequency) async {
     final isMonthly = frequency == RecurringFrequency.monthly;
     final current = isMonthly ? _monthlyIncome : _weeklyIncome;
@@ -268,6 +294,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted || result == null) return;
 
+    // Cleared: drop the configured income for that currency.
     if (result is AmountDialogCleared) {
       final cleared = await TransactionStore.instance
           .clearPreferredIncomeAmount(
@@ -289,6 +316,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
+    // New amount: save it for the chosen currency.
     if (result is! EditAmountResult) return;
     final amount = result.amount;
 
@@ -315,10 +343,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // The About text is not written yet.
+  /// The About text is not written yet, so the tile does nothing.
   void _showAbout() {}
 
-  // Clears prefs, session, and in-memory stores, then returns to first route.
+  /// Clears prefs, session, and in-memory stores, then returns to first route.
   Future<void> _resetApp() async {
     final confirm = await showAppConfirmDialog(
       context,
@@ -330,12 +358,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (confirm != true) return;
 
+    // Wipe persisted data and the session.
     final prefs = await AppPrefs.instance;
 
     await prefs.clear();
     await AuthSession.instance.clearSession();
     await AuthSession.instance.clearDataOwner();
 
+    // Drop every singleton's in-memory copy so nothing stale survives.
     TransactionStore.instance.resetCache();
     CurrencyStore.instance.resetCache();
     NotificationService.instance.resetCache();
@@ -351,7 +381,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
-  // Elevates the header once the list scrolls away from the top.
+  /// Elevates the header once the list scrolls away from the top.
   bool _onScroll(ScrollNotification notification) {
     if (notification.depth != 0) return false;
     final next = notification.metrics.pixels > 6;
@@ -361,12 +391,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return false;
   }
 
+  /// Opens the smart analysis permissions screen.
   void _openSmartSettings() {
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const AIPermissionsScreen()));
   }
 
-  // Reloads afterwards: the privacy screen can sign out or turn the lock off.
+  /// Reloads afterwards: the privacy screen can sign out or turn the lock off.
   Future<void> _openPrivacySecurity() async {
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -377,6 +408,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _loadSettings();
   }
 
+  /// Opens the help screen.
   void _openHelp() {
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const HelpScreen()));
@@ -410,6 +442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ..._supportSection(),
                     const SizedBox(height: 25),
                     ..._dataSection(),
+                    // Version label.
                     Center(
                       child: Text(
                         'waffr 2.10.0',
@@ -430,7 +463,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // Profile card, income, currencies and obligations.
+  /// Profile card, income, currencies and obligations.
   List<Widget> _accountSection(AppPalette palette) {
     return [
       const AppSectionTitle(title: 'الحساب'),
@@ -480,7 +513,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ];
   }
 
-  // Dark mode switch and the language note.
+  /// Dark mode switch and the language note.
   List<Widget> _appearanceSection(bool isDark) {
     return [
       const AppSectionTitle(title: 'المظهر'),
@@ -506,7 +539,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ];
   }
 
-  // App lock, smart analysis permissions and the privacy screen.
+  /// App lock, smart analysis permissions and the privacy screen.
   List<Widget> _privacySection() {
     return [
       const AppSectionTitle(title: 'الحماية والخصوصية'),
@@ -535,7 +568,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ];
   }
 
-  // Help and about.
+  /// Help and about.
   List<Widget> _supportSection() {
     return [
       const AppSectionTitle(title: 'الدعم'),
@@ -555,7 +588,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ];
   }
 
-  // Guests get a full local reset; signed-in users manage data elsewhere.
+  /// Guests get a full local reset; signed-in users manage data elsewhere.
   List<Widget> _dataSection() {
     if (_loggedIn) return const [SizedBox(height: 5)];
     return [

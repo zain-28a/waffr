@@ -3,7 +3,7 @@
 
 part of 'privacy_security_screen.dart';
 
-// Shared scaffold for privacy detail pages (header + scroll body).
+/// Shared scaffold for privacy detail pages (header + scroll body).
 class _PrivacyDetailScaffold extends StatelessWidget {
   final String title;
   final _PrivacyColors colors;
@@ -28,7 +28,7 @@ class _PrivacyDetailScaffold extends StatelessWidget {
   }
 }
 
-// Light/dark color snapshot for privacy screens.
+/// Light/dark color snapshot for privacy screens.
 class _PrivacyColors {
   final Color background;
   final Color surface;
@@ -44,6 +44,7 @@ class _PrivacyColors {
     required this.accent,
   });
 
+  /// Reads the colors from the current [AppPalette].
   factory _PrivacyColors.of(BuildContext context) {
     final palette = AppPalette.of(context);
     return _PrivacyColors(
@@ -56,24 +57,12 @@ class _PrivacyColors {
   }
 }
 
-// Section heading above a settings group.
-class _SectionLabel extends StatelessWidget {
-  final String title;
-  final Color color;
-
-  const _SectionLabel({required this.title, required this.color});
-
-  @override
-  Widget build(BuildContext context) => AppSectionTitle(title: title);
-}
-
-// Card wrapping one or more privacy settings rows.
-// Rows stacked like the Settings screen: one card per row.
+/// Privacy settings rows stacked like the Settings screen: one card per row
+/// with a 12px gap.
 class _SettingsGroup extends StatelessWidget {
-  final Color surface;
   final List<Widget> children;
 
-  const _SettingsGroup({required this.surface, required this.children});
+  const _SettingsGroup({required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -88,14 +77,13 @@ class _SettingsGroup extends StatelessWidget {
   }
 }
 
-// Tappable privacy settings row with optional trailing widget.
+/// Tappable privacy settings row with an optional status badge and trailing
+/// widget; a wrapper over `AppListTile`.
 class _SettingsRow extends StatelessWidget {
   final IconData icon;
   final String title;
-  final _PrivacyColors colors;
   final String? status;
   final bool statusEmphasis;
-  final bool showDivider;
   final bool showChevron;
   final Widget? trailing;
   final VoidCallback? onTap;
@@ -103,10 +91,8 @@ class _SettingsRow extends StatelessWidget {
   const _SettingsRow({
     required this.icon,
     required this.title,
-    required this.colors,
     this.status,
     this.statusEmphasis = false,
-    this.showDivider = true,
     this.showChevron = true,
     this.trailing,
     this.onTap,
@@ -126,8 +112,8 @@ class _SettingsRow extends StatelessWidget {
   }
 }
 
-// Small pill showing on/off or similar status text.
-// Banner summarizing the current privacy/security status.
+/// Banner summarizing the current privacy/security status: a colored dot,
+/// a title and a subtitle.
 class _StatusBanner extends StatelessWidget {
   final _PrivacyColors colors;
   final bool emphasized;
@@ -194,7 +180,7 @@ class _StatusBanner extends StatelessWidget {
   }
 }
 
-// Intro icon + title block at the top of a detail page.
+/// Intro icon + text block at the top of a detail page.
 class _DetailLead extends StatelessWidget {
   final IconData icon;
   final _PrivacyColors colors;
@@ -242,7 +228,7 @@ class _DetailLead extends StatelessWidget {
   }
 }
 
-// Grouped list of informational lines.
+/// Rounded card holding a column of [_InfoLine]s.
 class _InfoGroup extends StatelessWidget {
   final _PrivacyColors colors;
   final List<Widget> children;
@@ -262,7 +248,7 @@ class _InfoGroup extends StatelessWidget {
   }
 }
 
-// Single bullet-style info line inside an _InfoGroup.
+/// Single info line inside an [_InfoGroup], with an optional divider below.
 class _InfoLine extends StatelessWidget {
   final String label;
   final bool showDivider;
@@ -307,7 +293,7 @@ class _InfoLine extends StatelessWidget {
   }
 }
 
-// Muted footnote under a detail section.
+/// Muted footnote under a detail section.
 class _NoteText extends StatelessWidget {
   final _PrivacyColors colors;
   final String text;

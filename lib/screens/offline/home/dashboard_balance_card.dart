@@ -1,22 +1,27 @@
-// Home balance card: available balance, cycle progress, currency dots
-// and the add-income / add-expense actions.
+// Home balance card (part of dashboard.dart): available balance, cycle
+// progress, currency dots, corner actions, and the add income/expense button.
 
 part of 'dashboard.dart';
 
+/// Distance from the balance card's top edge to its corner action buttons.
 const double kBalanceCardActionTop = 14;
 
+/// Distance from the balance card's end edge to its corner action buttons.
 const double kBalanceCardActionEnd = 14;
 
+/// Space between the two corner action buttons on the balance card.
 const double kBalanceCardActionGap = 8;
 
-// Current balance, remaining-ratio bar, and spend vs max. Vertical swipe
-// cycles currency when more than one is enabled. Corner actions open income
-// history and the shopping list.
+/// Current balance, remaining-ratio bar, and spend vs max. Vertical swipe
+/// cycles currency when more than one is enabled. Corner actions open income
+/// history and the shopping list.
 class _BalanceCard extends StatelessWidget {
+  // Values for the active currency, taken from TransactionStore.
   final double balance;
   final double spent;
   final double maxBalance;
   final double ratio;
+  // Corner action callbacks.
   final VoidCallback onShoppingList;
   final VoidCallback onIncomeLog;
 
@@ -40,12 +45,15 @@ class _BalanceCard extends StatelessWidget {
     final activeIndex = codes.indexOf(CurrencyStore.instance.activeCode);
     final showDots = codes.length > 1;
 
+    // Swipeable body layered under the currency dots and corner actions.
     return GlassContainer(
       colorType: GlassColorType.surface,
       borderRadius: 28,
       padding: EdgeInsets.zero,
       child: Stack(
         children: [
+          // An empty drag-update handler claims the vertical gesture so the
+          // swipe switches currency instead of scrolling the page.
           GestureDetector(
             onVerticalDragUpdate: CurrencyStore.instance.enabledCodes.length > 1
                 ? (_) {}
@@ -61,6 +69,7 @@ class _BalanceCard extends StatelessWidget {
                   }
                 : null,
             behavior: HitTestBehavior.opaque,
+            // Content slides in when the active currency changes.
             child: AnimatedSwitcher(
               duration: AppMotion.of(context, AppMotion.medium),
               switchInCurve: AppMotion.enter,
@@ -88,6 +97,7 @@ class _BalanceCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Title, then the rolling balance with its currency label.
                     Row(
                       children: [
                         Text(
@@ -135,6 +145,7 @@ class _BalanceCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 0),
+                    // Remaining-ratio percentage and bar, animated together.
                     AnimatedRatio(
                       value: ratio,
                       builder: (context, shown) => Column(
@@ -163,6 +174,7 @@ class _BalanceCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
+                    // Spent so far vs the cycle's max balance.
                     Text(
                       'مصروف ${formatMoney(spent)} $currencyLabel '
                       'من ${formatMoney(maxBalance)} $currencyLabel',
@@ -178,6 +190,7 @@ class _BalanceCard extends StatelessWidget {
               ),
             ),
           ),
+          // Currency page dots on the start edge.
           if (showDots)
             PositionedDirectional(
               start: 12,
@@ -192,6 +205,7 @@ class _BalanceCard extends StatelessWidget {
                 ),
               ),
             ),
+          // Corner actions: income log and shopping list.
           PositionedDirectional(
             top: kBalanceCardActionTop,
             end: kBalanceCardActionEnd,
@@ -218,9 +232,9 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
-// Vertical page dots for the balance-card currency swipe. The active
-// mark grows and takes the accent color; PositionedDirectional places
-// the column on the start edge in both LTR and RTL.
+/// Vertical page dots for the balance-card currency swipe. The active
+/// mark grows and takes the accent color; PositionedDirectional places
+/// the column on the start edge in both LTR and RTL.
 class _CurrencyDots extends StatelessWidget {
   final int count;
   final int activeIndex;
@@ -258,6 +272,7 @@ class _CurrencyDots extends StatelessWidget {
   }
 }
 
+/// Rounded progress bar that fills from the start edge by [ratio] (0-1).
 class _HorizontalProgress extends StatelessWidget {
   final double ratio;
   final Color trackColor;
@@ -301,6 +316,8 @@ class _HorizontalProgress extends StatelessWidget {
   }
 }
 
+/// Large glass button with an icon and label; used for the home quick-add
+/// income and expense actions.
 class _ActionButton extends StatelessWidget {
   final String label;
   final IconData icon;

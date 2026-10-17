@@ -1,16 +1,20 @@
-// Transaction history rows: day groups, expense / income rows and the
-// recurring badge.
+// Transaction history rows (part of reportscreen.dart): day groups,
+// expense / income rows and the recurring badge.
 
 part of 'reportscreen.dart';
 
-// Date header plus a glass card listing that day's transactions.
+/// Date header plus a glass card listing that day's transactions.
 class _HistoryDayGroup extends StatelessWidget {
   final DateTime date;
   final List<WaffrTransaction> expenses;
+  // Income history: income titles and undo-income instead of undo-expense.
   final bool isIncome;
+  // Multi-select mode; shows the select marks.
   final bool selecting;
+  // 0-1 progress of the select marks fading in; taps wait until it is done.
   final double reveal;
   final Set<String> selectedIds;
+  // Selection callbacks for the day header and for single rows.
   final VoidCallback? onToggleDay;
   final VoidCallback? onLongPressDay;
   final ValueChanged<String>? onToggleExpense;
@@ -32,6 +36,7 @@ class _HistoryDayGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
+    // Day mark: empty, partial or checked from the selected rows.
     final selectedCount = expenses
         .where((item) => selectedIds.contains(item.id))
         .length;
@@ -43,6 +48,7 @@ class _HistoryDayGroup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Day header (long-press starts selecting the whole day).
         GestureDetector(
           onLongPress: onLongPressDay,
           behavior: HitTestBehavior.opaque,
@@ -76,6 +82,7 @@ class _HistoryDayGroup extends StatelessWidget {
             ),
           ),
         ),
+        // Card with one row per transaction; undo is hidden while selecting.
         GlassContainer(
           colorType: GlassColorType.surface,
           borderRadius: 25,
@@ -111,13 +118,14 @@ class _HistoryDayGroup extends StatelessWidget {
   }
 }
 
-// Single history row: category/note, timestamp, amount, optional undo.
+/// Single history row: category/note, timestamp, amount, optional undo.
 class _HistoryExpenseRow extends StatelessWidget {
   final WaffrTransaction expense;
   final bool isIncome;
   final bool selecting;
   final double reveal;
   final bool selected;
+  // Undo for this transaction; null hides the button.
   final VoidCallback? onUndo;
   final VoidCallback? onToggle;
   final VoidCallback? onLongPress;
@@ -138,6 +146,7 @@ class _HistoryExpenseRow extends StatelessWidget {
     final colors = AppPalette.of(context);
     final category = categoryFor(expense.category);
     final note = expense.note?.trim();
+    // Title / subtitle rules differ for income and for recurring expenses.
     final recurring =
         !isIncome && RecurringExpense.isRecurringSource(expense.sourceId);
     final schedule = recurring ? _recurringSchedule(expense) : null;
@@ -163,6 +172,7 @@ class _HistoryExpenseRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Select mark, category icon, text column, then amount and undo.
           if (selecting) ...[
             Padding(
               padding: const EdgeInsets.only(top: 10),
@@ -279,9 +289,10 @@ class _HistoryExpenseRow extends StatelessWidget {
   }
 }
 
-// "Recurring" pill on history rows posted by a schedule, with the schedule
-// ("كل شهر") next to it when it is still known.
+/// "Recurring" pill on history rows posted by a schedule, with the schedule
+/// ("كل شهر") next to it when it is still known.
 class _RecurringBadge extends StatelessWidget {
+  // Schedule description ("every N units"); null hides it.
   final String? schedule;
 
   const _RecurringBadge({required this.schedule});
@@ -336,25 +347,29 @@ class _RecurringBadge extends StatelessWidget {
   }
 }
 
-// "كل شهر" for the schedule that posted [expense], if it still exists.
+/// "كل شهر" for the schedule that posted [expense], if it still exists.
 String? _recurringSchedule(WaffrTransaction expense) {
   final id = RecurringExpense.idFromSource(expense.sourceId);
   if (id == null) return null;
   return RecurringExpenseStore.instance.byId(id)?.intervalDescription;
 }
 
+/// Matches the Arabic "every N day/week/month" text a schedule stores as the
+/// note.
 final RegExp _schedulePattern = RegExp(
   r'^كل (\d+ )?(يوم|أسبوع|شهر|أيام|أسابيع|أشهر)$',
 );
 
+/// Whether [text] is a stored schedule description.
 bool _looksLikeSchedule(String text) => _schedulePattern.hasMatch(text);
 
-// Deleted schedules: the note may still hold the "every N" text.
+/// Deleted schedules: the note may still hold the "every N" text.
 String? _scheduleFromNote(String? note) {
   if (note == null || !_looksLikeSchedule(note)) return null;
   return note;
 }
 
+/// Row label for an income's frequency.
 String _incomeFrequencyLabel(RecurringFrequency frequency) {
   return switch (frequency) {
     RecurringFrequency.weekly => 'دخل أسبوعي',

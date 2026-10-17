@@ -1,9 +1,9 @@
-// Report summary: total spent, category distribution and the comparison
-// with the previous period.
+// Report summary (part of reportscreen.dart): total spent, category
+// distribution and the comparison with the previous period.
 
 part of 'reportscreen.dart';
 
-// Total spent for the selected period, plus a shortcut into expense history.
+/// Total spent for the selected period, plus a shortcut into expense history.
 class _SpendingSummary extends StatelessWidget {
   final double total;
   final VoidCallback onHistory;
@@ -16,6 +16,7 @@ class _SpendingSummary extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        // Label and rolling total with the currency.
         Expanded(
           child: Padding(
             padding: const EdgeInsetsDirectional.only(start: 8),
@@ -69,6 +70,7 @@ class _SpendingSummary extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
+        // Shortcut button into the expense history screen.
         Flexible(
           child: GlassButton(
             onTap: onHistory,
@@ -106,7 +108,7 @@ class _SpendingSummary extends StatelessWidget {
   }
 }
 
-// Category share of spending: stacked color bar plus a ranked list with %.
+/// Category share of spending: stacked color bar plus a ranked list with %.
 class _ExpenseDistribution extends StatelessWidget {
   final _ReportData report;
 
@@ -122,6 +124,7 @@ class _ExpenseDistribution extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Title with caption.
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
@@ -160,6 +163,7 @@ class _ExpenseDistribution extends StatelessWidget {
               message: 'ستظهر تفاصيل التصنيفات بعد تسجيل مصروف',
             )
           else ...[
+            // Stacked bar, then one row per category.
             _DistributionBar(
               totals: report.categoryTotals,
               total: report.total,
@@ -187,7 +191,7 @@ class _ExpenseDistribution extends StatelessWidget {
   }
 }
 
-// Single horizontal bar whose segments are proportional to category totals.
+/// Single horizontal bar whose segments are proportional to category totals.
 class _DistributionBar extends StatelessWidget {
   final List<_CategoryTotal> totals;
   final double total;
@@ -210,6 +214,7 @@ class _DistributionBar extends StatelessWidget {
     );
   }
 
+  /// The full-width segmented bar, before clipping.
   Widget _bar(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
@@ -238,8 +243,8 @@ class _DistributionBar extends StatelessWidget {
   }
 }
 
-// Keeps the part of the bar from the start edge up to [fraction] of its
-// width (the right side in RTL).
+/// Keeps the part of the bar from the start edge up to [fraction] of its
+/// width (the right side in RTL).
 class _StartEdgeClipper extends CustomClipper<Rect> {
   final double fraction;
   final bool rtl;
@@ -259,7 +264,8 @@ class _StartEdgeClipper extends CustomClipper<Rect> {
       old.fraction != fraction || old.rtl != rtl;
 }
 
-// Icon, name, percentage, and amount for one category in the distribution list.
+/// Icon, name, percentage, and amount for one category in the distribution
+/// list.
 class _CategoryRow extends StatelessWidget {
   final _CategoryTotal item;
   final double total;
@@ -330,7 +336,8 @@ class _CategoryRow extends StatelessWidget {
   }
 }
 
-// How this period's spending compares to the previous window of the same range.
+/// How this period's spending compares to the previous window of the same
+/// range, with the smart analysis button for reports beside it.
 class _ImprovementCard extends StatelessWidget {
   final double currentTotal;
   final double previousTotal;
@@ -343,6 +350,7 @@ class _ImprovementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
+    // Colour and trend icon follow the change direction.
     final comparison = SpendingImprovement.calculate(
       currentTotal: currentTotal,
       previousTotal: previousTotal,

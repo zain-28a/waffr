@@ -7,6 +7,7 @@ import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
+/// Opens the full news list for [articles] in a tall glass sheet.
 Future<void> showNewsSheet(
   BuildContext context, {
   required List<NewsArticle> articles,
@@ -18,7 +19,8 @@ Future<void> showNewsSheet(
   );
 }
 
-// Scrollable list of headlines with source and timestamp.
+/// Scrollable list of headlines with source and timestamp, or an empty
+/// state when there are no articles.
 class _NewsSheet extends StatelessWidget {
   final List<NewsArticle> articles;
 
@@ -63,7 +65,8 @@ class _NewsSheet extends StatelessWidget {
   }
 }
 
-// Title, source, and published time for one article in the sheet.
+/// Title, optional body, then source and published time for one article in
+/// the sheet.
 class _NewsArticleBlock extends StatelessWidget {
   final NewsArticle article;
   final Color textPrimary;

@@ -29,7 +29,11 @@ part 'savings_goals_panel.dart';
 part 'savings_period_card.dart';
 part 'savings_total_card.dart';
 
-/// Range chips + swipeable period card, total savings, goal progress, and sheet launches.
+/// Savings tab: range chips over a swipeable net-saved period card, plan
+/// shortcuts, active goals, total savings with save / withdraw actions, and
+/// the shopping list preview.
+///
+/// Reads [TransactionStore] and opens the sheets in `sheets/`.
 class SavingsScreen extends StatefulWidget {
   /// Creates a [SavingsScreen].
   const SavingsScreen({super.key});
@@ -38,15 +42,21 @@ class SavingsScreen extends StatefulWidget {
   State<SavingsScreen> createState() => _SavingsScreenState();
 }
 
-/// State of [SavingsScreen].
+/// State of [SavingsScreen]. Owns the period pager controller and is kept
+/// alive across tab switches.
 class _SavingsScreenState extends State<SavingsScreen>
     with AutomaticKeepAliveClientMixin {
+  /// How many periods back the pager reaches (page 0 is the current one).
   static const int _maxPeriodOffset = 240;
 
   final TransactionStore _store = TransactionStore.instance;
+
+  /// Pages through periods; page index = how many periods back.
   final PageController _periodController = PageController();
 
   SavingsRange _range = SavingsRange.month;
+
+  /// Page currently shown; read by the arrow handlers only.
   int _periodOffset = 0;
 
   @override
@@ -55,6 +65,7 @@ class _SavingsScreenState extends State<SavingsScreen>
   @override
   void initState() {
     super.initState();
+    // Load the ledger, then apply any end-of-period deductions that fell due.
     _store.ensureLoaded().then((_) => _store.processDuePeriods());
   }
 
@@ -64,7 +75,7 @@ class _SavingsScreenState extends State<SavingsScreen>
     super.dispose();
   }
 
-  // New range jumps the period pager back to the current window.
+  /// Switches the range and jumps the period pager back to the current window.
   void _selectRange(SavingsRange range) {
     if (_range == range) return;
 
@@ -78,12 +89,14 @@ class _SavingsScreenState extends State<SavingsScreen>
     }
   }
 
+  /// Steps the pager one period back, stopping at the oldest page.
   void _showOlderPeriod() {
     if (_periodOffset >= _maxPeriodOffset - 1) return;
 
     _periodController.nextPageFor(context);
   }
 
+  /// Steps the pager one period forward, stopping at the current one.
   void _showNewerPeriod() {
     if (_periodOffset == 0) return;
 
@@ -109,6 +122,7 @@ class _SavingsScreenState extends State<SavingsScreen>
           },
           child: Column(
             children: staggered([
+              // Swipeable net-saved card, one page per period.
               SizedBox(
                 height: 108,
                 child: PageView.builder(
@@ -147,6 +161,7 @@ class _SavingsScreenState extends State<SavingsScreen>
 
               const SizedBox(height: kCardGap),
 
+              // Periodic plans and completed goals shortcuts.
               _PlanButtonsRow(
                 periodicLabel: _store.hasActivePeriodicPlan
                     ? 'خطة جارية'
@@ -158,6 +173,7 @@ class _SavingsScreenState extends State<SavingsScreen>
 
               const SizedBox(height: kCardGap),
 
+              // Active goals with manage / create entry points.
               _ActiveGoalsPanel(
                 goals: goals,
                 store: _store,
@@ -167,6 +183,7 @@ class _SavingsScreenState extends State<SavingsScreen>
 
               const SizedBox(height: kCardGap),
 
+              // Total savings, smart analysis tile, save and withdraw buttons.
               _SplitActionRow(
                 leading: _TotalSavingsCard(total: _store.savingsBalance),
                 first: _ActionButton(
@@ -181,6 +198,7 @@ class _SavingsScreenState extends State<SavingsScreen>
 
               const SizedBox(height: kCardGap),
 
+              // Shopping list preview; opens the full list sheet.
               const ShoppingListPreviewCard(),
 
               const SizedBox(height: 12),

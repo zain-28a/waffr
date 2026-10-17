@@ -3,7 +3,7 @@
 
 part of 'privacy_security_screen.dart';
 
-// Explains what account fields are stored and how financial data stays private.
+/// Explains what account fields are stored and how financial data stays private.
 class _AccountDataDetailPage extends StatelessWidget {
   const _AccountDataDetailPage();
 
@@ -44,7 +44,8 @@ class _AccountDataDetailPage extends StatelessWidget {
   }
 }
 
-// Cloud sync status and how backups relate to a signed-in account.
+/// Cloud sync status and how backups relate to a signed-in account; the copy
+/// differs for guests.
 class _CloudSyncDetailPage extends StatelessWidget {
   final bool loggedIn;
 
@@ -98,10 +99,12 @@ class _CloudSyncDetailPage extends StatelessWidget {
   }
 }
 
-// Lists which local datasets participate in sync.
+/// Lists which local datasets participate in sync and which stay on the
+/// device.
 class _SyncedDataDetailPage extends StatelessWidget {
   const _SyncedDataDetailPage();
 
+  /// Data that syncs with the account.
   static const _synced = <String>[
     'المعاملات المالية',
     'أهداف التوفير والتحويلات',
@@ -113,6 +116,7 @@ class _SyncedDataDetailPage extends StatelessWidget {
     'معلومات الملف الشخصي ذات الصلة',
   ];
 
+  /// Data that never leaves the device.
   static const _localOnly = <String>[
     'إعدادات قفل التطبيق',
     'بيانات تسجيل الدخول',
@@ -133,7 +137,7 @@ class _SyncedDataDetailPage extends StatelessWidget {
           text: 'تُزامَن البيانات التالية مع الحساب عند تسجيل الدخول وتوفر الاتصال.',
         ),
         const SizedBox(height: 16),
-        _SectionLabel(title: 'تُزامَن مع الحساب', color: colors.textSecondary),
+        AppSectionTitle(title: 'تُزامَن مع الحساب'),
         _InfoGroup(
           colors: colors,
           children: [
@@ -145,7 +149,7 @@ class _SyncedDataDetailPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 22),
-        _SectionLabel(title: 'تبقى على الجهاز', color: colors.textSecondary),
+        AppSectionTitle(title: 'تبقى على الجهاز'),
         _InfoGroup(
           colors: colors,
           children: [
@@ -161,7 +165,7 @@ class _SyncedDataDetailPage extends StatelessWidget {
   }
 }
 
-// Toggle device app lock with biometric/passcode confirmation.
+/// Toggle device app lock with biometric/passcode confirmation.
 class _AppLockDetailPage extends StatefulWidget {
   final dynamic appFlowController;
   final LocalAuthentication auth;
@@ -177,9 +181,12 @@ class _AppLockDetailPage extends StatefulWidget {
   State<_AppLockDetailPage> createState() => _AppLockDetailPageState();
 }
 
-/// State of [_AppLockDetailPage].
+/// State of [_AppLockDetailPage]. Mirrors the lock flag locally so the
+/// switch updates without a reload.
 class _AppLockDetailPageState extends State<_AppLockDetailPage> {
   late bool _enabled;
+
+  /// True while the auth prompt / prefs write is running.
   bool _busy = false;
 
   @override
@@ -188,7 +195,8 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
     _enabled = widget.initiallyEnabled;
   }
 
-  // Enables after device auth; disables by clearing AppLock prefs.
+  /// Enables after device auth; disables by clearing AppLock prefs. Tells the
+  /// app flow either way and shows the outcome in a snackbar.
   Future<void> _toggle(bool value) async {
     if (_busy) return;
 
@@ -266,13 +274,10 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
         ),
         const SizedBox(height: 16),
         _SettingsGroup(
-          surface: colors.surface,
           children: [
             _SettingsRow(
               icon: Icons.lock_outline_rounded,
               title: 'قفل التطبيق',
-              colors: colors,
-              showDivider: false,
               showChevron: false,
               trailing: Switch(
                 value: _enabled,
@@ -287,10 +292,13 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
   }
 }
 
-// Wipe local app data while keeping the user on a clean slate.
+/// Wipe local app data on this device (the server account is untouched),
+/// then return to the first route.
 class _LocalResetDetailPage extends StatelessWidget {
   const _LocalResetDetailPage();
 
+  /// Confirms, runs `LocalDataReset.resetCurrentDevice`, then pops to the
+  /// first route.
   Future<void> _confirmReset(BuildContext context) async {
     final confirm = await showAppConfirmDialog(
       context,

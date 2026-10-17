@@ -1,11 +1,11 @@
-// Savings goals panel: the expandable list of active goals, its header
-// and the plan buttons.
+// Savings goals panel: the expandable list of active goals, its header,
+// the plan buttons, and the per-goal progress row.
 
 part of 'savings_screen.dart';
 
-// Active goals (or empty create CTA). Collapsed it shows the first goal; a
-// tap opens the rest in place, about two and a half goals tall with the
-// remainder scrolling. The arrow under the list folds it back.
+/// Active goals (or empty create CTA). Collapsed it shows the first goal; a
+/// tap opens the rest in place, about two and a half goals tall with the
+/// remainder scrolling. The arrow under the list folds it back.
 class _ActiveGoalsPanel extends StatefulWidget {
   final List<SavingsGoal> goals;
   final TransactionStore store;
@@ -23,14 +23,17 @@ class _ActiveGoalsPanel extends StatefulWidget {
   State<_ActiveGoalsPanel> createState() => _ActiveGoalsPanelState();
 }
 
-/// State of [_ActiveGoalsPanel].
+/// State of [_ActiveGoalsPanel]. Holds whether the list is expanded.
 class _ActiveGoalsPanelState extends State<_ActiveGoalsPanel> {
-  // Height of one goal row plus the gap after it, before text scaling.
+  /// Height of one goal row, before text scaling; sizes the expanded viewport.
   static const double _goalExtent = 78;
+
+  /// Gap between goal rows.
   static const double _goalGap = 14;
 
   bool _expanded = false;
 
+  /// Opens or folds the list with a selection haptic.
   void _setExpanded(bool value) {
     if (_expanded == value) return;
     AppHaptics.selection();
@@ -44,6 +47,7 @@ class _ActiveGoalsPanelState extends State<_ActiveGoalsPanel> {
     final ordered = List<SavingsGoal>.from(widget.goals)
       ..sort((a, b) => a.priority.compareTo(b.priority));
 
+    // No goals: header, empty state and a create button.
     if (ordered.isEmpty) {
       return GlassContainer(
         colorType: GlassColorType.surface,
@@ -107,6 +111,7 @@ class _ActiveGoalsPanelState extends State<_ActiveGoalsPanel> {
       ),
     );
 
+    // Tapping the collapsed card expands it (or opens manage for a single goal).
     return GestureDetector(
       onTap: canExpand
           ? (expanded ? null : () => _setExpanded(true))
@@ -127,7 +132,7 @@ class _ActiveGoalsPanelState extends State<_ActiveGoalsPanel> {
             ),
             const SizedBox(height: 14),
             AnimatedSize(
-              duration: AppMotion.of(context, AppMotion.medium),
+              duration: AppMotion.sizeOf(context, AppMotion.medium),
               curve: AppMotion.standard,
               alignment: Alignment.topCenter,
               child: goalsBody,
@@ -145,7 +150,8 @@ class _ActiveGoalsPanelState extends State<_ActiveGoalsPanel> {
   }
 }
 
-// Arrow under the goals list: opens the rest, or folds them back.
+/// Arrow under the goals list: opens the rest, or folds them back. Shows
+/// the goal count while collapsed.
 class _ExpandToggle extends StatelessWidget {
   final bool expanded;
   final int totalCount;
@@ -206,7 +212,7 @@ class _ExpandToggle extends StatelessWidget {
   }
 }
 
-// Title row for the goals panel.
+/// Title row for the goals panel, with a manage button once goals exist.
 class _SavingsGoalsHeader extends StatelessWidget {
   final AppPalette colors;
   final int count;
@@ -272,7 +278,8 @@ class _SavingsGoalsHeader extends StatelessWidget {
   }
 }
 
-// Opens the periodic plan sheet and the completed-goals sheet.
+/// Opens the periodic plan sheet and the completed-goals sheet. The periodic
+/// button shows a check while a plan is running.
 class _PlanButtonsRow extends StatelessWidget {
   final String periodicLabel;
   final bool periodicActive;
@@ -315,7 +322,7 @@ class _PlanButtonsRow extends StatelessWidget {
   }
 }
 
-// Empty-state CTA that opens the create-goal sheet.
+/// Empty-state CTA that opens the create-goal sheet.
 class _CreateGoalCard extends StatelessWidget {
   final VoidCallback onCreate;
 
@@ -347,7 +354,7 @@ class _CreateGoalCard extends StatelessWidget {
   }
 }
 
-// Name, progress bar, and saved/target amounts for one active goal.
+/// Name, progress bar, and saved/target amounts for one active goal.
 class _GoalProgressCard extends StatelessWidget {
   final SavingsGoal goal;
   final double saved;
@@ -365,6 +372,7 @@ class _GoalProgressCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Goal name.
         Text(
           goal.name,
           maxLines: 1,
@@ -380,6 +388,7 @@ class _GoalProgressCard extends StatelessWidget {
 
         const SizedBox(height: 10),
 
+        // Progress bar and percent.
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -409,6 +418,7 @@ class _GoalProgressCard extends StatelessWidget {
 
         const SizedBox(height: 10),
 
+        // Saved / target amounts.
         FittedBox(
           fit: BoxFit.scaleDown,
           child: Text.rich(
@@ -442,7 +452,8 @@ class _GoalProgressCard extends StatelessWidget {
   }
 }
 
-// Rounded track with a fractionally filled accent bar.
+/// Rounded track with a fractionally filled accent bar that animates to
+/// [ratio].
 class _HorizontalProgress extends StatelessWidget {
   final double ratio;
   final double height;

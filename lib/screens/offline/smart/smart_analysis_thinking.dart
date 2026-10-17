@@ -1,8 +1,10 @@
-// Smart analysis "thinking" animation: shimmer lines, typed text and the
-// blinking caret shown while insights are generated.
+// Smart analysis "thinking" pieces (part of smart_analysis_screen.dart):
+// shimmer placeholders, typed text and the glowing caret at its end.
 
 part of 'smart_analysis_screen.dart';
 
+/// Placeholder layout shown while the analysis is thinking: a shimmer
+/// headline block and three shimmer cards.
 class _ThinkingView extends StatelessWidget {
   const _ThinkingView({super.key});
 
@@ -27,8 +29,9 @@ class _ThinkingView extends StatelessWidget {
   }
 }
 
-// Placeholder lines with a moving highlight, in the glow colors.
+/// Placeholder lines with a moving highlight, in the glow colors.
 class _Shimmer extends StatefulWidget {
+  // Width of each line as a fraction of the available width.
   final List<double> widths;
 
   const _Shimmer({required this.widths});
@@ -37,7 +40,8 @@ class _Shimmer extends StatefulWidget {
   State<_Shimmer> createState() => _ShimmerState();
 }
 
-/// State of [_Shimmer].
+/// State of [_Shimmer]. Owns the repeating sweep controller, stopped when
+/// motion is turned off.
 class _ShimmerState extends State<_Shimmer>
     with SingleTickerProviderStateMixin {
   late final AnimationController _sweep = AnimationController(
@@ -105,7 +109,7 @@ class _ShimmerState extends State<_Shimmer>
   }
 }
 
-// Text that is still being written, with a glowing caret at its end.
+/// Text that is still being written, with a glowing caret at its end.
 class _TypedText extends StatelessWidget {
   final String text;
   final bool typing;
@@ -136,6 +140,7 @@ class _TypedText extends StatelessWidget {
   }
 }
 
+/// Small glowing gradient dot that marks the typing position.
 class _Caret extends StatelessWidget {
   const _Caret();
 

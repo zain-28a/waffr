@@ -1,4 +1,5 @@
-// Privacy policy style copy: what stays on-device vs what account fields are kept.
+// Privacy policy style copy: what stays on-device vs what account fields are
+// kept. Not linked from any screen at the moment (only the smoke test uses it).
 
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
@@ -32,6 +33,7 @@ class PrivacyInfoScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
 
         children: [
+          // One card per privacy topic.
           _InfoSection(
             icon: Icons.visibility_off_outlined,
             title: 'خصوصيتك المالية',
@@ -115,6 +117,7 @@ class PrivacyInfoScreen extends StatelessWidget {
           ),
           const SizedBox(height: 30),
 
+          // Closing callout: data control and smart-feature consent.
           Container(
             padding: const EdgeInsets.all(18),
 
@@ -188,7 +191,7 @@ class PrivacyInfoScreen extends StatelessWidget {
   }
 }
 
-// Icon + title + body paragraph for one privacy info block.
+/// Icon + title + body paragraph for one privacy info block.
 class _InfoSection extends StatelessWidget {
   final IconData icon;
   final String title;
