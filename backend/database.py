@@ -1,3 +1,10 @@
+"""Database engine, session factory, shared column mixins and startup migrations.
+
+``create_tables`` creates missing tables, then ``_ensure_schema_updates``
+adds columns and indexes that older databases lack, and finally installs
+the row security policies (row_security.py).
+"""
+
 import os
 import uuid
 from datetime import datetime, timezone
@@ -36,14 +43,18 @@ row_security.attach(SessionLocal)
 
 
 class Base(DeclarativeBase):
+    """Declarative base of every model."""
+
     pass
 
 
 def utc_now() -> datetime:
+    """The current time in UTC."""
     return datetime.now(timezone.utc)
 
 
 def new_client_id() -> str:
+    """A fresh UUID string for rows created without a client id."""
     return str(uuid.uuid4())
 
 
@@ -72,6 +83,8 @@ def scrub_private_text(row) -> None:
 
 
 class TimestampMixin:
+    """created_at and updated_at, both set by the server when not given."""
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,
@@ -86,6 +99,8 @@ class TimestampMixin:
 
 
 class CreatedAtMixin:
+    """created_at only."""
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,
@@ -94,6 +109,8 @@ class CreatedAtMixin:
 
 
 class ClientIdMixin:
+    """The id the app gave the row; unique per user."""
+
     client_id: Mapped[str] = mapped_column(
         String(64),
         default=new_client_id,
@@ -102,14 +119,30 @@ class ClientIdMixin:
 
 
 class SoftDeleteMixin:
+    """deleted_at: set instead of deleting, so other devices hear of it.
+
+    changed_at is the server's own clock at the last insert or update of the
+    row. /sync pulls filter on it, never on the app-sent updated_at or
+    deleted_at, so a late push of an old offline edit still reaches devices
+    that synced in between.
+    """
+
     deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
         index=True,
     )
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
+        index=True,
+    )
 
 
 def get_db():
+    """FastAPI dependency: one session per request, closed afterwards."""
     db = SessionLocal()
     try:
         yield db
@@ -118,6 +151,7 @@ def get_db():
 
 
 def create_tables() -> None:
+    """Create missing tables, run the migrations and install row security."""
     Base.metadata.create_all(bind=engine)
     _ensure_schema_updates()
 
@@ -147,7 +181,36 @@ def _ensure_schema_updates() -> None:
         _ensure_user_key_columns(connection, inspector, tables)
         _ensure_private_text_columns(connection, inspector, tables)
         _scrub_deleted_private_text(connection, tables)
+        # Last: it alters every synced table, and the inspector above runs
+        # on another connection that would wait on those locks.
+        _ensure_changed_at_columns(connection, tables)
         row_security.install(connection, Base.metadata.tables.keys())
+
+
+def _ensure_changed_at_columns(connection, tables: set[str]) -> None:
+    """Adds the server change stamp to every soft-deleted (synced) table.
+
+    Existing rows get the migration time, so each device's next pull sends
+    them once more; merges are last-write-wins, so that is harmless and it
+    heals rows an earlier pull missed.
+    """
+    for table in Base.metadata.tables.values():
+        if "changed_at" not in table.c:
+            continue
+        if table.name not in tables:
+            continue
+        connection.execute(
+            text(
+                f"ALTER TABLE {table.name} ADD COLUMN IF NOT EXISTS "
+                "changed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()"
+            )
+        )
+        connection.execute(
+            text(
+                f"CREATE INDEX IF NOT EXISTS ix_{table.name}_changed_at "
+                f"ON {table.name} (changed_at)"
+            )
+        )
 
 
 def _columns(inspector, table: str) -> set[str]:
