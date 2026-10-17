@@ -120,6 +120,11 @@ Expensive derived values (balance per currency, max balance, preferred
 income frequency, per-period savings sums) are cached in the store and
 dropped on every change. Lists are handed out as `UnmodifiableListView`.
 
+Saving the ledger writes every row, but each row's JSON text is kept with
+the row (rows are immutable), so only rows added since the last save are
+encoded. A large ledger (`TransactionStore.backgroundDecodeRows` rows or
+more) is decoded in a background isolate at load.
+
 ## Sync
 
 `SyncService` (in `lib/core/sync/`) runs one sync at a time:
