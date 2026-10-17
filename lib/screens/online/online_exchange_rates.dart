@@ -3,9 +3,11 @@
 
 part of 'online_screen.dart';
 
+/// Grouped rate figure with up to two decimals, in Western digits.
 final NumberFormat _rateFormat = NumberFormat('#,##0.##', 'en');
 
-// Buy/sell rates for the selected FX asset, with an overlay currency picker.
+/// Buy/sell rates for the selected FX asset, with an overlay currency picker.
+/// The parent owns the selection and receives picks through `onSelected`.
 class _ExchangeRateCard extends StatefulWidget {
   final ExchangeRate rate;
   final ValueChanged<String> onSelected;
@@ -16,12 +18,20 @@ class _ExchangeRateCard extends StatefulWidget {
   State<_ExchangeRateCard> createState() => _ExchangeRateCardState();
 }
 
-/// State of [_ExchangeRateCard].
+/// State of [_ExchangeRateCard]. Owns the overlay entry of the currency
+/// menu and removes it on dispose.
 class _ExchangeRateCardState extends State<_ExchangeRateCard> {
+  /// Ties the overlay menu's position to the pair label.
   final LayerLink _menuLink = LayerLink();
+
+  /// Reaches the menu's state to play its collapse animation.
   final GlobalKey<_CurrencyMenuLayerState> _menuKey = GlobalKey();
   OverlayEntry? _menuEntry;
+
+  /// Drives the chevron rotation.
   bool _menuOpen = false;
+
+  /// True while the collapse animation runs; blocks re-entry.
   bool _closingMenu = false;
 
   @override
@@ -39,7 +49,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
     }
   }
 
-  // Anchors an animated overlay menu under the pair label.
+  /// Anchors an animated overlay menu under the pair label.
   void _showMenu() {
     if (_menuOpen || _closingMenu) return;
 
@@ -68,7 +78,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
     setState(() => _menuOpen = true);
   }
 
-  // Plays the collapse animation, then removes the overlay entry.
+  /// Plays the collapse animation, then removes the overlay entry.
   Future<void> _hideMenu() async {
     if (!_menuOpen || _closingMenu) return;
     _closingMenu = true;
@@ -105,6 +115,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
             ),
           ),
           const SizedBox(height: 2),
+          // Tappable pair label (menu anchor) with a rotating chevron.
           CompositedTransformTarget(
             link: _menuLink,
             child: GestureDetector(
@@ -157,6 +168,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
             ),
           ),
           const SizedBox(height: 16),
+          // Buy and sell figures side by side.
           Row(
             children: [
               Expanded(
@@ -184,7 +196,8 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
   }
 }
 
-// Overlay dropdown listing available exchange assets.
+/// Overlay dropdown listing available exchange assets
+/// ([OnlineFeedService.rates]). Taps outside the menu call `onDismiss`.
 class _CurrencyMenuLayer extends StatefulWidget {
   final LayerLink link;
   final TextDirection direction;
@@ -207,7 +220,8 @@ class _CurrencyMenuLayer extends StatefulWidget {
   State<_CurrencyMenuLayer> createState() => _CurrencyMenuLayerState();
 }
 
-/// State of [_CurrencyMenuLayer].
+/// State of [_CurrencyMenuLayer]. Owns the open/close controller and the
+/// per-row stagger curves.
 class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
@@ -216,9 +230,9 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
   late final Animation<Offset> _slide;
   late final CurvedAnimation _curve;
 
-  // One staggered curve per row, made once and disposed with the menu.
-  // Building them in itemBuilder left a status listener on the controller
-  // for every row on every rebuild.
+  /// One staggered curve per row, made once and disposed with the menu.
+  /// Building them in itemBuilder left a status listener on the controller
+  /// for every row on every rebuild.
   late final List<CurvedAnimation> _rowCurves;
 
   @override
@@ -265,6 +279,7 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
     }
   }
 
+  /// Plays the closing animation (instant with reduced motion).
   Future<void> collapse() async {
     if (AppMotion.reduced(context)) {
       _controller.value = 0;
@@ -287,12 +302,14 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        // Full-screen catcher: a tap outside the menu closes it.
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: widget.onDismiss,
           ),
         ),
+        // The menu itself, pinned under the pair label and animated open.
         CompositedTransformFollower(
           link: widget.link,
           showWhenUnlinked: false,
@@ -364,7 +381,7 @@ class _CurrencyMenuLayerState extends State<_CurrencyMenuLayer>
   }
 }
 
-// One currency row inside the exchange-rate overlay menu.
+/// One currency row inside the exchange-rate overlay menu.
 class _CurrencyOption extends StatelessWidget {
   final ExchangeRate option;
   final bool selected;
@@ -420,7 +437,8 @@ class _CurrencyOption extends StatelessWidget {
   }
 }
 
-// Buy or sell figure with a crossfade when the selected asset changes.
+/// Buy or sell figure with a crossfade when the selected asset changes.
+/// A null value shows [ExchangeRate.unavailable].
 class _RateValue extends StatelessWidget {
   final String label;
   final double? value;

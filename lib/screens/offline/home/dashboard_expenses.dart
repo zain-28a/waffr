@@ -1,13 +1,16 @@
-// Home recent expenses and obligations: a two-page card with a row per
-// expense or upcoming obligation.
+// Home recent expenses and obligations (part of dashboard.dart): a two-page
+// card with a row per expense or upcoming obligation.
 
 part of 'dashboard.dart';
 
-// Two pages in one card: the last expenses and the obligations. Swiping
-// switches pages; a tap opens the full screen of the visible page.
+/// Two pages in one card: the last expenses and the obligations. Swiping
+/// switches pages; a tap opens the full screen of the visible page.
 class _ExpensesAndObligationsCard extends StatefulWidget {
+  // Expenses newest first, as kept by TransactionStore.
   final List<WaffrTransaction> expenses;
+  // Recurring expenses in the active currency.
   final List<RecurringExpense> obligations;
+  // Tighter spacing and smaller type for the half-width home layout.
   final bool compact;
 
   const _ExpensesAndObligationsCard({
@@ -21,14 +24,18 @@ class _ExpensesAndObligationsCard extends StatefulWidget {
       _ExpensesAndObligationsCardState();
 }
 
+/// State of [_ExpensesAndObligationsCard]. Owns the [PageController] and
+/// remembers the selected page in prefs.
 class _ExpensesAndObligationsCardState
     extends State<_ExpensesAndObligationsCard> {
-  // The page the user last swiped to stays selected, across restarts too.
+  /// The page the user last swiped to stays selected, across restarts too.
   static const String _pageKey = 'home_expenses_card_page';
 
+  // Index of the visible page: 0 = expenses, 1 = obligations.
   late int _page = (AppPrefs.cached?.getInt(_pageKey) ?? 0).clamp(0, 1);
   late final PageController _controller = PageController(initialPage: _page);
 
+  /// Records the new page and saves it for the next launch.
   void _onPageChanged(int index) {
     _page = index;
     AppPrefs.instance.then((prefs) => prefs.setInt(_pageKey, index));
@@ -40,6 +47,8 @@ class _ExpensesAndObligationsCardState
     super.dispose();
   }
 
+  /// Opens the full expense history or the obligations sheet, matching the
+  /// visible page.
   void _open() {
     if (_page == 0) {
       Navigator.of(context).push(
@@ -59,6 +68,7 @@ class _ExpensesAndObligationsCardState
     final textPrimary = palette.textPrimary;
     final compact = widget.compact;
 
+    // Built twice: once to size the card, once inside the PageView.
     List<Widget> pages() => [
       _RecentExpensesPage(expenses: widget.expenses, compact: compact),
       _ObligationsPage(obligations: widget.obligations, compact: compact),
@@ -88,6 +98,8 @@ class _ExpensesAndObligationsCardState
                 ),
               ),
               Positioned.fill(
+                // Swallows horizontal scroll notifications so the shell's tab
+                // PageView does not also react to this card's swipe.
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (notification) {
                     return notification.metrics.axis == Axis.horizontal;
@@ -117,7 +129,7 @@ class _ExpensesAndObligationsCardState
   }
 }
 
-// Last three expenses from the store.
+/// Last three expenses from the store.
 class _RecentExpensesPage extends StatelessWidget {
   final List<WaffrTransaction> expenses;
   final bool compact;
@@ -167,8 +179,8 @@ class _RecentExpensesPage extends StatelessWidget {
   }
 }
 
-// Up to three obligations: those waiting for the user first, then the
-// nearest charge dates.
+/// Up to three obligations: those waiting for the user first, then the
+/// nearest charge dates.
 class _ObligationsPage extends StatelessWidget {
   final List<RecurringExpense> obligations;
   final bool compact;
@@ -221,7 +233,7 @@ class _ObligationsPage extends StatelessWidget {
   }
 }
 
-// Title plus body, laid out like [_SectionCard] for pages inside a card.
+/// Title plus body, laid out like [_SectionCard] for pages inside a card.
 class _CardPage extends StatelessWidget {
   final String title;
   final Widget child;
@@ -247,6 +259,7 @@ class _CardPage extends StatelessWidget {
   }
 }
 
+/// One expense: category icon, label, optional note, date/time and amount.
 class _ExpenseRow extends StatelessWidget {
   final WaffrTransaction expense;
   final bool compact;
@@ -264,6 +277,7 @@ class _ExpenseRow extends StatelessWidget {
     final category = categoryFor(expense.category);
     final note = expense.note;
 
+    // Built once, then placed either scaled-to-fit (compact) or padded.
     final amount = Text(
       '${formatMoney(expense.amount)} $currencyLabel',
       maxLines: 1,
@@ -283,6 +297,7 @@ class _ExpenseRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Category icon bubble.
         Container(
           width: iconSize,
           height: iconSize,
@@ -293,6 +308,7 @@ class _ExpenseRow extends StatelessWidget {
           child: Icon(category.icon, size: compact ? 14 : 21, color: accent),
         ),
         SizedBox(width: compact ? 6 : 12),
+        // Category label, note and timestamp.
         Expanded(
           flex: compact ? 6 : 1,
           child: Column(
@@ -357,7 +373,8 @@ class _ExpenseRow extends StatelessWidget {
   }
 }
 
-// One obligation, styled like [_ExpenseRow].
+/// One obligation, styled like [_ExpenseRow]. The status line turns to the
+/// warning colour when the obligation needs the user's attention.
 class _ObligationRow extends StatelessWidget {
   final RecurringExpense item;
   final DateTime now;
@@ -385,6 +402,7 @@ class _ObligationRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Category icon bubble.
         Container(
           width: iconSize,
           height: iconSize,
@@ -395,6 +413,7 @@ class _ObligationRow extends StatelessWidget {
           child: Icon(category.icon, size: compact ? 14 : 21, color: accent),
         ),
         SizedBox(width: compact ? 6 : 12),
+        // Title and due/attention status.
         Expanded(
           flex: compact ? 6 : 1,
           child: Column(
@@ -429,6 +448,7 @@ class _ObligationRow extends StatelessWidget {
           ),
         ),
         SizedBox(width: compact ? 4 : 8),
+        // Amount in the obligation's own currency.
         Expanded(
           flex: compact ? 5 : 2,
           child: FittedBox(

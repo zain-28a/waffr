@@ -3,7 +3,8 @@
 
 part of 'savings_screen.dart';
 
-// One PageView page: net saved in that window vs the previous period.
+/// One PageView page: net saved in that window, with a percent change
+/// against the previous period and arrows to step between periods.
 class _PeriodSavingsCard extends StatelessWidget {
   final SavingsRange range;
   final CalendarPeriod period;
@@ -43,6 +44,7 @@ class _PeriodSavingsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Header: newer arrow, caption and period label, older arrow.
           Row(
             children: [
               _PeriodArrow(
@@ -96,6 +98,7 @@ class _PeriodSavingsCard extends StatelessWidget {
 
           const SizedBox(height: 2),
 
+          // Amount row, or an empty message when nothing was saved.
           if (amount <= 0)
             Text(
               'لا يوجد توفير في هذه الفترة',
@@ -161,7 +164,7 @@ class _PeriodSavingsCard extends StatelessWidget {
   }
 }
 
-// Percent delta badge when the previous period had savings to compare against.
+/// Percent delta badge when the previous period had savings to compare against.
 class _SavingsComparison {
   final IconData icon;
   final Color color;
@@ -173,6 +176,8 @@ class _SavingsComparison {
     required this.text,
   });
 
+  /// Returns the badge for [current] vs [previous], or null when there is no
+  /// previous savings or no change.
   static _SavingsComparison? calculate({
     required double current,
     required double previous,
@@ -198,7 +203,7 @@ class _SavingsComparison {
   }
 }
 
-// Chevrons that step the savings period PageView.
+/// Chevrons that step the savings period PageView; greyed out when disabled.
 class _PeriodArrow extends StatelessWidget {
   final IconData icon;
   final String tooltip;
@@ -232,8 +237,8 @@ class _PeriodArrow extends StatelessWidget {
   }
 }
 
-// Total savings card, the smart analysis tile, and the manual-save and
-// withdraw buttons in one row.
+/// Total savings card, the smart analysis tile, and the manual-save and
+/// withdraw buttons in one row.
 class _SplitActionRow extends StatelessWidget {
   final Widget leading;
   final Widget first;

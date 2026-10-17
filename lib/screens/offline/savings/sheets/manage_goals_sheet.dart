@@ -14,6 +14,7 @@ import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
+/// Opens the sheet for reordering, deleting and adding active goals.
 Future<void> showManageGoalsSheet(BuildContext context) {
   return showGlassSheet<void>(
     context: context,
@@ -21,7 +22,8 @@ Future<void> showManageGoalsSheet(BuildContext context) {
   );
 }
 
-// Sheet body with reorderable active goals and an add-goal button.
+/// Sheet body with reorderable active goals and an add-goal button.
+/// Builds its own glass shell instead of using `GlassSheetBody`.
 class _ManageGoalsSheet extends StatefulWidget {
   const _ManageGoalsSheet();
 
@@ -29,7 +31,7 @@ class _ManageGoalsSheet extends StatefulWidget {
   State<_ManageGoalsSheet> createState() => _ManageGoalsSheetState();
 }
 
-/// State of [_ManageGoalsSheet].
+/// State of [_ManageGoalsSheet]. Rebuilds from [TransactionStore] changes.
 class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
   final TransactionStore _store = TransactionStore.instance;
 
@@ -39,7 +41,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
     _store.ensureLoaded();
   }
 
-  // Asks before permanently removing a goal from the store.
+  /// Asks before permanently removing a goal from the store.
   Future<void> _confirmDelete(SavingsGoal goal) async {
     final confirmed = await showAppConfirmDialog(
       context,
@@ -61,6 +63,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
     final textPrimary = palette.textPrimary;
     final textSecondary = palette.textSecondary;
 
+    // Own sheet chrome: rounded glass top, safe-area padding.
     return GlassContainer(
       colorType: GlassColorType.surface,
       tintOpacity: 1,
@@ -79,6 +82,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Header, then the goal list capped at about half the screen height.
                   const GlassSheetHeader(
                     title: 'إدارة الأهداف',
                     subtitle: 'اسحب لتغيير الأولوية، أو أضف هدفاً جديداً.',
@@ -91,12 +95,14 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
                             icon: Icons.flag_outlined,
                             title: 'لا توجد أهداف حالياً',
                           )
+                        // Drag order is the goal priority; the store persists it.
                         : ReorderableListView.builder(
                             shrinkWrap: true,
                             primary: false,
                             buildDefaultDragHandles: false,
                             padding: EdgeInsets.zero,
                             itemCount: goals.length,
+                            // Lift the dragged row with a soft elevation.
                             proxyDecorator: (child, index, animation) {
                               return AnimatedBuilder(
                                 animation: animation,
@@ -135,6 +141,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
                           ),
                   ),
                   const SizedBox(height: 16),
+                  // Add a goal on top of this sheet.
                   AppPrimaryButton(
                     label: 'إضافة هدف',
                     icon: Icons.add_rounded,
@@ -150,7 +157,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
   }
 }
 
-// Drag handle, progress summary, and delete for one goal in the manage list.
+/// Drag handle, progress summary, and delete for one goal in the manage list.
 class _ManageGoalRow extends StatelessWidget {
   final int index;
   final SavingsGoal goal;

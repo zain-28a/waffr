@@ -1,19 +1,20 @@
-// Home card chrome shared by every dashboard section: the card frame,
-// its title row and the empty state.
+// Home card chrome shared by every dashboard section (part of
+// dashboard.dart): the card frame, its title row and the empty state.
 
 part of 'dashboard.dart';
 
-// Shared glass card shell used by the dashboard sections.
+/// Shared glass card shell used by the dashboard sections. Becomes a
+/// tappable [GlassButton] when [onTap] is set.
 class _SectionCard extends StatelessWidget {
   final String? title;
   final String? caption;
   final Widget child;
   final bool compact;
 
-  // Centers [child] in the leftover height; used in fixed-height rows.
+  /// Centers [child] in the leftover height; used in fixed-height rows.
   final bool centerChild;
 
-  // Opens the screen with the card's full details.
+  /// Opens the screen with the card's full details.
   final VoidCallback? onTap;
 
   const _SectionCard({
@@ -61,7 +62,7 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-// Card title with an optional caption beside it.
+/// Card title with an optional caption beside it.
 class _SectionTitle extends StatelessWidget {
   final String title;
   final String? caption;
@@ -120,6 +121,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+/// Dashboard empty placeholder; a thin wrapper over [AppEmptyState].
 class _EmptyState extends StatelessWidget {
   final IconData icon;
   final String message;

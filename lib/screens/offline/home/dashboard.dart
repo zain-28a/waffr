@@ -1,6 +1,6 @@
-// Offline home tab: balance, add actions, spending distribution, recent
-// expenses / obligations, and active savings goals. Each card opens the
-// screen that holds its full details.
+// Offline home tab (library root): balance, add actions, spending
+// distribution, recent expenses / obligations, and active savings goals.
+// Each card opens the screen that holds its full details.
 //
 // The cards live in dashboard_* part files of this library.
 
@@ -38,6 +38,7 @@ part 'dashboard_expenses.dart';
 part 'dashboard_savings_goals.dart';
 part 'dashboard_sections.dart';
 
+/// The home tab of the app shell: a scrollable stack of dashboard cards.
 class HomeScreen extends StatefulWidget {
   /// Creates a [HomeScreen].
   const HomeScreen({super.key});
@@ -46,11 +47,16 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-// Kept alive in the shell PageView so scroll position survives tab switches.
 /// State of [HomeScreen].
+///
+/// Kept alive in the shell PageView so scroll position survives tab
+/// switches. Rebuilds whenever the transaction, category, currency or
+/// recurring-expense store notifies.
 class _HomeScreenState extends State<HomeScreen>
     with AutomaticKeepAliveClientMixin {
   final TransactionStore _store = TransactionStore.instance;
+
+  /// All stores the dashboard reads, merged so one builder covers them.
   late final Listenable _listenables = Listenable.merge([
     _store,
     CategoryStore.instance,
@@ -81,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: staggered([
+              // Balance card: links to the shopping list and the income log.
               _BalanceCard(
                 balance: _store.balance,
                 spent: _store.cycleSpent,
@@ -96,6 +103,7 @@ class _HomeScreenState extends State<HomeScreen>
                 },
               ),
               const SizedBox(height: kCardGap),
+              // Quick add buttons for income and expense.
               Row(
                 children: [
                   Expanded(
@@ -124,6 +132,7 @@ class _HomeScreenState extends State<HomeScreen>
                     AppShellScope.selectTabOf(context, AppShellTabs.report),
               ),
               const SizedBox(height: kCardGap),
+              // Bottom row: recent expenses / obligations beside savings goals.
               IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

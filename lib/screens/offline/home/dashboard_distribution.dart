@@ -1,9 +1,11 @@
-// Home spending distribution: donut chart and its category legend.
+// Home spending distribution (part of dashboard.dart): donut chart and its
+// category legend.
 
 part of 'dashboard.dart';
 
-// Spending share by category: legend + donut.
+/// Spending share by category: legend + donut. Opens the report tab on tap.
 class _DistributionCard extends StatelessWidget {
+  // Per-category totals, largest first.
   final List<({String category, double amount})> totals;
   final double totalExpense;
   final VoidCallback onTap;
@@ -47,10 +49,10 @@ class _DistributionCard extends StatelessWidget {
   }
 }
 
-// Donut of spending shares. fl_chart paints this with its pie renderer, not
-// an app-owned CustomPainter. PieChartData uses value equality, so a parent
-// rebuild with the same slices does not mark the chart dirty. RepaintBoundary
-// keeps that layer off the rest of the dashboard.
+/// Donut of spending shares. fl_chart paints this with its pie renderer, not
+/// an app-owned CustomPainter. PieChartData uses value equality, so a parent
+/// rebuild with the same slices does not mark the chart dirty. RepaintBoundary
+/// keeps that layer off the rest of the dashboard.
 class _DistributionChart extends StatelessWidget {
   final List<({String category, double amount})> totals;
   final double totalExpense;
@@ -63,6 +65,7 @@ class _DistributionChart extends StatelessWidget {
 
     final textPrimary = palette.textPrimary;
 
+    // The centre label shows the largest category (first in the list).
     final topShare = (totals.first.amount / totalExpense * 100).round();
 
     return SizedBox(
@@ -119,6 +122,7 @@ class _DistributionChart extends StatelessWidget {
               },
             ),
           ),
+          // Centre label: top category's share and name.
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -149,6 +153,7 @@ class _DistributionChart extends StatelessWidget {
   }
 }
 
+/// Legend for the donut: up to five categories with swatch and share.
 class _DistributionLegend extends StatelessWidget {
   final List<({String category, double amount})> totals;
   final double totalExpense;

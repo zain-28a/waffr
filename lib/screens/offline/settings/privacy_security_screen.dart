@@ -1,4 +1,6 @@
-// Privacy hub: account data, cloud sync, app lock, and local reset detail pages.
+// Privacy hub: account data, cloud sync, app lock, and local reset detail
+// pages. The detail pages and shared row widgets live in the part files
+// privacy_detail_pages.dart and privacy_widgets.dart.
 
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
@@ -15,8 +17,11 @@ import 'package:waffr/core/theme/app_palette.dart';
 part 'privacy_detail_pages.dart';
 part 'privacy_widgets.dart';
 
-/// Entry list that opens deeper privacy/security detail pages.
+/// Entry list that opens deeper privacy/security detail pages. Opened from
+/// settings; reloads sign-in and app-lock status when a page returns.
 class PrivacySecurityScreen extends StatefulWidget {
+  /// The root app flow state (from `main.dart`), or null. Passed to the app
+  /// lock page so it can refresh the lock state.
   final dynamic appFlowController;
 
   /// Creates a [PrivacySecurityScreen].
@@ -26,13 +31,19 @@ class PrivacySecurityScreen extends StatefulWidget {
   State<PrivacySecurityScreen> createState() => _PrivacySecurityScreenState();
 }
 
-/// State of [PrivacySecurityScreen].
+/// State of [PrivacySecurityScreen]. Owns the shared device-auth instance
+/// and the header elevation notifier.
 class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
+  /// Device auth, handed to the app lock page.
   final LocalAuthentication _auth = LocalAuthentication();
+
+  /// True once the list has scrolled; drives the header shadow.
   final ValueNotifier<bool> _headerElevated = ValueNotifier(false);
 
   bool _loggedIn = false;
   bool _appLock = false;
+
+  /// True until the first status load finishes.
   bool _loading = true;
 
   @override
@@ -47,6 +58,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
     super.dispose();
   }
 
+  /// Reads sign-in and app-lock status for the row badges.
   Future<void> _load() async {
     final loggedIn = await AuthSession.instance.isLoggedIn();
     final appLock = await AppLock.isEnabled();
@@ -60,6 +72,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
     });
   }
 
+  /// Pushes a detail page, then reloads the status badges.
   Future<void> _openDetail(Widget page) async {
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
     await _load();
@@ -85,6 +98,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                       child: CircularProgressIndicator(color: colors.accent),
                     )
                   : NotificationListener<ScrollNotification>(
+                      // Elevate the header once the list leaves the top.
                       onNotification: (notification) {
                         if (notification.depth != 0) return false;
                         final next = notification.metrics.pixels > 6;
@@ -96,24 +110,19 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
                         children: staggered([
-                          _SectionLabel(
-                            title: 'بياناتك',
-                            color: colors.textSecondary,
-                          ),
+                          // Your data: account data, cloud sync, synced data.
+                          AppSectionTitle(title: 'بياناتك'),
                           _SettingsGroup(
-                            surface: colors.surface,
                             children: [
                               _SettingsRow(
                                 icon: Icons.badge_outlined,
                                 title: 'بيانات الحساب',
-                                colors: colors,
                                 onTap: () =>
                                     _openDetail(const _AccountDataDetailPage()),
                               ),
                               _SettingsRow(
                                 icon: Icons.cloud_sync_outlined,
                                 title: 'المزامنة السحابية',
-                                colors: colors,
                                 status: _loggedIn ? 'مفعّلة' : 'وضع الضيف',
                                 statusEmphasis: _loggedIn,
                                 onTap: () => _openDetail(
@@ -123,28 +132,21 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                               _SettingsRow(
                                 icon: Icons.sync_alt_rounded,
                                 title: 'البيانات المتزامنة',
-                                colors: colors,
-                                showDivider: false,
                                 onTap: () =>
                                     _openDetail(const _SyncedDataDetailPage()),
                               ),
                             ],
                           ),
                           const SizedBox(height: 22),
-                          _SectionLabel(
-                            title: 'حماية التطبيق',
-                            color: colors.textSecondary,
-                          ),
+                          // App protection: app lock.
+                          AppSectionTitle(title: 'حماية التطبيق'),
                           _SettingsGroup(
-                            surface: colors.surface,
                             children: [
                               _SettingsRow(
                                 icon: Icons.lock_outline_rounded,
                                 title: 'قفل التطبيق',
-                                colors: colors,
                                 status: _appLock ? 'مفعّل' : 'غير مفعّل',
                                 statusEmphasis: _appLock,
-                                showDivider: false,
                                 onTap: () => _openDetail(
                                   _AppLockDetailPage(
                                     appFlowController: widget.appFlowController,
@@ -156,18 +158,13 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                             ],
                           ),
                           const SizedBox(height: 22),
-                          _SectionLabel(
-                            title: 'البيانات والحساب',
-                            color: colors.textSecondary,
-                          ),
+                          // Data and account: local reset.
+                          AppSectionTitle(title: 'البيانات والحساب'),
                           _SettingsGroup(
-                            surface: colors.surface,
                             children: [
                               _SettingsRow(
                                 icon: Icons.delete_outline_rounded,
                                 title: 'إعادة ضبط البيانات المحلية',
-                                colors: colors,
-                                showDivider: false,
                                 onTap: () =>
                                     _openDetail(const _LocalResetDetailPage()),
                               ),

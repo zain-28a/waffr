@@ -28,9 +28,13 @@ class ExpenseHistoryPdfJob {
   /// The chosen expenses, in any order.
   final List<WaffrTransaction> expenses;
 
-  /// Tajawal Regular, Tajawal Bold and Bebas Neue (the "WAFFR" title).
+  /// Tajawal Regular, used for body text.
   final Uint8List regularFont;
+
+  /// Tajawal Bold, used for titles, amounts and totals.
   final Uint8List boldFont;
+
+  /// Bebas Neue, used for the "WAFFR" wordmark.
   final Uint8List brandFont;
 
   /// The app logo PNG.
@@ -45,6 +49,7 @@ class ExpenseHistoryPdfJob {
 Future<Uint8List> buildExpenseHistoryPdfBytes(
   List<WaffrTransaction> expenses,
 ) async {
+  // Raw bytes of a bundled asset.
   Future<Uint8List> asset(String path) async =>
       (await rootBundle.load(path)).buffer.asUint8List();
 
@@ -64,6 +69,7 @@ Future<Uint8List> buildExpenseHistoryPdfBytes(
 /// is the stored label (or "أخرى"), so the custom-category lookup that
 /// only exists on the UI isolate is not needed here.
 Future<Uint8List> renderExpenseHistoryPdf(ExpenseHistoryPdfJob job) async {
+  // Fonts and logo are decoded inside the isolate from the job's bytes.
   final fonts = _PdfFonts(
     regular: pw.Font.ttf(ByteData.sublistView(job.regularFont)),
     bold: pw.Font.ttf(ByteData.sublistView(job.boldFont)),
@@ -108,7 +114,7 @@ Future<Uint8List> renderExpenseHistoryPdf(ExpenseHistoryPdfJob job) async {
   return bytes;
 }
 
-// The three faces the document uses.
+/// The three faces the document uses.
 class _PdfFonts {
   final pw.Font regular;
   final pw.Font bold;
@@ -121,22 +127,31 @@ class _PdfFonts {
   });
 }
 
-// Brand and table colors for the PDF (Waffr light theme tokens).
+/// Brand green from the Waffr light theme; titles, totals and rules.
 final PdfColor _brandGreen = PdfColor.fromInt(0xFF254A23);
+
+/// Fill of odd (striped) table rows.
 final PdfColor _rowTint = PdfColor.fromInt(0xFFF6F8F4);
+
+/// Fill of table header rows, chips and the grand-total box.
 final PdfColor _headerTint = PdfColor.fromInt(0xFFE9EFE6);
+
+/// Table line colour.
 final PdfColor _rule = PdfColor.fromInt(0xFFDCE3D8);
+
+/// Secondary text colour.
 final PdfColor _muted = PdfColor.fromInt(0xFF6F6F6F);
 
-// Column order is left to right on paper: amount, time, category. The
-// document reads right to left, so category is the first column the eye meets.
+/// Column order is left to right on paper: amount, time, category. The
+/// document reads right to left, so category is the first column the eye
+/// meets.
 const Map<int, pw.TableColumnWidth> _columnWidths = {
   0: pw.FlexColumnWidth(3),
   1: pw.FlexColumnWidth(1.6),
   2: pw.FlexColumnWidth(5),
 };
 
-// Title, date range and count on the right; logo and wordmark on the left.
+/// Title, date range and count on the right; logo and wordmark on the left.
 pw.Widget _pdfHeader({
   required pw.ImageProvider logo,
   required _PdfFonts fonts,
@@ -151,6 +166,7 @@ pw.Widget _pdfHeader({
 
   return pw.Column(
     children: [
+      // Title block, then the logo and wordmark (kept LTR).
       pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
@@ -212,7 +228,7 @@ pw.Widget _pdfHeader({
   );
 }
 
-// When the file was made, and the page count.
+/// When the file was made, and the page count.
 pw.Widget _pdfFooter(
   pw.Context context, {
   required _PdfFonts fonts,
@@ -238,7 +254,7 @@ pw.Widget _pdfFooter(
   );
 }
 
-// "اليوم" / "أمس" / a date, with the full date beside relative labels.
+/// "اليوم" / "أمس" / a date, with the full date beside relative labels.
 pw.Widget _pdfDayCaption(ExpenseShareDay day, _PdfFonts fonts) {
   final label = expenseShareDayLabel(day.date);
   final date = formatDate(day.date);
@@ -255,6 +271,8 @@ pw.Widget _pdfDayCaption(ExpenseShareDay day, _PdfFonts fonts) {
           ),
         ),
       ),
+      // Relative labels get the full date beside them; dated labels already
+      // carry it.
       if (!label.contains('${day.date.year}') || label == date)
         pw.Text(
           date,
@@ -264,8 +282,9 @@ pw.Widget _pdfDayCaption(ExpenseShareDay day, _PdfFonts fonts) {
   );
 }
 
-// Header row (repeated on page breaks), striped expense rows, day total.
+/// Header row (repeated on page breaks), striped expense rows, day total.
 pw.Widget _pdfDayTable(ExpenseShareDay day, _PdfFonts fonts) {
+  // Padded, aligned table cell.
   pw.Widget cell(
     pw.Widget child, {
     pw.Alignment alignment = pw.Alignment.centerRight,
@@ -293,6 +312,7 @@ pw.Widget _pdfDayTable(ExpenseShareDay day, _PdfFonts fonts) {
     ),
     defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
     children: [
+      // Header row, repeated when the table breaks across pages.
       pw.TableRow(
         repeat: true,
         decoration: pw.BoxDecoration(color: _headerTint),
@@ -308,6 +328,7 @@ pw.Widget _pdfDayTable(ExpenseShareDay day, _PdfFonts fonts) {
           cell(pw.Text('التصنيف', style: headStyle)),
         ],
       ),
+      // One striped row per expense.
       for (var i = 0; i < day.expenses.length; i++)
         pw.TableRow(
           decoration: i.isOdd ? pw.BoxDecoration(color: _rowTint) : null,
@@ -327,6 +348,7 @@ pw.Widget _pdfDayTable(ExpenseShareDay day, _PdfFonts fonts) {
             cell(_pdfCategoryCell(day.expenses[i], fonts)),
           ],
         ),
+      // Day total row.
       pw.TableRow(
         children: [
           cell(
@@ -353,7 +375,7 @@ pw.Widget _pdfDayTable(ExpenseShareDay day, _PdfFonts fonts) {
   );
 }
 
-// Category name, a "متكرر" chip for scheduled charges, and the note.
+/// Category name, a "متكرر" chip for scheduled charges, and the note.
 pw.Widget _pdfCategoryCell(WaffrTransaction expense, _PdfFonts fonts) {
   final note = expense.note?.trim() ?? '';
   final recurring = RecurringExpense.isRecurringSource(expense.sourceId);
@@ -407,7 +429,7 @@ pw.Widget _pdfCategoryCell(WaffrTransaction expense, _PdfFonts fonts) {
   );
 }
 
-// The boxed total at the end of the document.
+/// The boxed total at the end of the document.
 pw.Widget _pdfGrandTotal(List<WaffrTransaction> expenses, _PdfFonts fonts) {
   return pw.Container(
     padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 12),

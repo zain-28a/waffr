@@ -1,13 +1,18 @@
-// Smart analysis results: one card per insight and the wallet health
-// gauge.
+// Smart analysis results (part of smart_analysis_screen.dart): one card per
+// insight and the wallet health gauge.
 
 part of 'smart_analysis_screen.dart';
 
+/// One insight: tone-coloured icon, title and typed body. Once writing is
+/// done, a tap expands the numbers behind it and its action button.
 class _InsightCard extends StatelessWidget {
   final SmartInsight insight;
+  // Visible (typed so far) part of the insight body.
   final String body;
+  // True while this card's body is being typed.
   final bool typing;
   final bool expanded;
+  // False while writing; taps and the expand chevron are off until done.
   final bool interactive;
   final VoidCallback onToggle;
   final ValueChanged<InsightAction> onAction;
@@ -22,6 +27,7 @@ class _InsightCard extends StatelessWidget {
     required this.onAction,
   });
 
+  /// Accent colour for the insight's tone.
   Color _toneColor(BuildContext context, AppPalette palette) =>
       switch (insight.tone) {
         InsightTone.warning => AppColors.warningOf(context),
@@ -47,13 +53,14 @@ class _InsightCard extends StatelessWidget {
         // below move in steps. It animates only for expand/collapse.
         child: AnimatedSize(
           duration: typing
-              ? Duration.zero
-              : AppMotion.of(context, AppMotion.medium),
+              ? AppMotion.instantSize
+              : AppMotion.sizeOf(context, AppMotion.medium),
           curve: AppMotion.enter,
           alignment: Alignment.topCenter,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Header: icon, title, typed body, expand chevron.
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -107,6 +114,7 @@ class _InsightCard extends StatelessWidget {
                     ),
                 ],
               ),
+              // Expanded: detail box and the action button.
               if (expanded) ...[
                 if (insight.detail != null) ...[
                   const SizedBox(height: 12),
@@ -164,8 +172,8 @@ class _InsightCard extends StatelessWidget {
   }
 }
 
-// Ring gauge for the 0-100 health score, counting up as it appears.
-// Tapping it shows how each part contributed.
+/// Ring gauge for the 0-100 health score, counting up as it appears.
+/// Tapping it shows how each part contributed.
 class _HealthGauge extends StatelessWidget {
   final int score;
   final String title;
@@ -192,12 +200,14 @@ class _HealthGauge extends StatelessWidget {
         borderRadius: 22,
         padding: const EdgeInsets.all(16),
         child: AnimatedSize(
-          duration: AppMotion.of(context, AppMotion.medium),
+          duration: AppMotion.sizeOf(context, AppMotion.medium),
           curve: AppMotion.enter,
           alignment: Alignment.topCenter,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Ring with the counting score, title and a fixed explanation
+              // line.
               Row(
                 children: [
                   SizedBox.square(
@@ -271,6 +281,7 @@ class _HealthGauge extends StatelessWidget {
                     ),
                 ],
               ),
+              // Expanded: breakdown of the score.
               if (expanded && detail != null) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -299,6 +310,7 @@ class _HealthGauge extends StatelessWidget {
   }
 }
 
+/// Paints the gauge track and a gradient arc for [value] (0-1).
 class _GaugePainter extends CustomPainter {
   final double value;
   final Color track;
@@ -331,5 +343,8 @@ class _GaugePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_GaugePainter old) => old.value != value;
+  bool shouldRepaint(_GaugePainter old) =>
+      old.value != value ||
+      old.track != track ||
+      !listEquals(old.colors, colors);
 }

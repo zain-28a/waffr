@@ -13,6 +13,7 @@ import 'package:waffr/core/theme/app_palette.dart';
 
 /// What the user chose in the box.
 sealed class ExpensePresetChoice {
+  /// Base constructor for the choice subclasses.
   const ExpensePresetChoice();
 }
 
@@ -30,12 +31,16 @@ class ExpensePresetUnmark extends ExpensePresetChoice {
 
 /// Fill the expense form from [preset].
 class ExpensePresetSelected extends ExpensePresetChoice {
+  /// The saved expense the user tapped.
   final ExpensePreset preset;
 
   /// Creates a [ExpensePresetSelected].
   const ExpensePresetSelected(this.preset);
 }
 
+/// Opens the saved-expenses dialog. [marked] is true when the star is already
+/// filled, which turns the primary action into "unmark". Returns null when
+/// the dialog is cancelled.
 Future<ExpensePresetChoice?> showExpensePresetsDialog(
   BuildContext context, {
   required bool marked,
@@ -46,7 +51,9 @@ Future<ExpensePresetChoice?> showExpensePresetsDialog(
   );
 }
 
+/// Dialog listing saved expense presets as a grid.
 class _ExpensePresetsDialog extends StatefulWidget {
+  // Whether the current expense is already marked to be saved as a preset.
   final bool marked;
 
   const _ExpensePresetsDialog({required this.marked});
@@ -55,7 +62,7 @@ class _ExpensePresetsDialog extends StatefulWidget {
   State<_ExpensePresetsDialog> createState() => _ExpensePresetsDialogState();
 }
 
-/// State of [_ExpensePresetsDialog].
+/// State of [_ExpensePresetsDialog]. Listens to [ExpensePresetStore].
 class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
   final ExpensePresetStore _store = ExpensePresetStore.instance;
 
@@ -65,6 +72,7 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
     _store.ensureLoaded();
   }
 
+  /// Confirms, then removes [preset] from the store (long-press on a tile).
   Future<void> _delete(ExpensePreset preset) async {
     final confirmed = await showAppConfirmDialog(
       context,
@@ -107,6 +115,7 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Title row with the help button.
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -128,6 +137,7 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
               ],
             ),
             const SizedBox(height: 14),
+            // Preset grid, or an empty state.
             Flexible(
               child: ListenableBuilder(
                 listenable: _store,
@@ -162,6 +172,7 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
               ),
             ),
             const SizedBox(height: 8),
+            // Cancel, and add / un-add the current expense as a preset.
             Row(
               children: [
                 Expanded(
@@ -195,8 +206,10 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
   }
 }
 
-// What the star does, in plain Arabic, opened from the (i) button.
+/// Help dialog title for the saved-expenses box (opened from the (i) button).
 const String _helpTitle = 'ما هي المصروفات المحفوظة؟';
+
+/// Help dialog body: what presets are and how to save, use and delete them.
 const String _helpMessage =
     'المصروفات المحفوظة توفّر عليك إعادة كتابة المصروفات التي تتكرر '
     'عندك، مثل الخبز أو أجرة المواصلات.\n\n'
@@ -208,11 +221,13 @@ const String _helpMessage =
     'لحذف مصروف محفوظ: اضغط على بطاقته مطولاً. حذفه لا يؤثر على '
     'المصروفات المسجّلة سابقاً.';
 
+/// Display name of a preset: its note, or the category when there is none.
 String _titleOf(ExpensePreset preset) {
   final note = preset.note?.trim();
   return note == null || note.isEmpty ? preset.category : note;
 }
 
+/// Empty state shown when no presets are saved.
 class _EmptyPresets extends StatelessWidget {
   const _EmptyPresets();
 
@@ -225,7 +240,8 @@ class _EmptyPresets extends StatelessWidget {
   }
 }
 
-// Category tile shape from the expense grid, with the item name under it.
+/// Category tile shape from the expense grid, with the item name under it.
+/// Shows the total (amount times multiplier) in the preset's currency.
 class _PresetTile extends StatelessWidget {
   final ExpensePreset preset;
   final VoidCallback onTap;

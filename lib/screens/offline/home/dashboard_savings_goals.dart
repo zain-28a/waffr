@@ -1,11 +1,14 @@
-// Home savings goals: a swipeable card with one page per active goal.
+// Home savings goals (part of dashboard.dart): a swipeable card with one
+// page per active goal.
 
 part of 'dashboard.dart';
 
-// Active goals in a PageView — one goal per page; swipe to move between them.
+/// Active goals in a PageView, one goal per page; swipe to move between them.
+/// A tap opens the savings tab.
 class _SavingGoalCard extends StatefulWidget {
   final bool compact;
   final List<SavingsGoal> goals;
+  // Read for each goal's saved amount.
   final TransactionStore store;
   final VoidCallback onTap;
 
@@ -20,9 +23,11 @@ class _SavingGoalCard extends StatefulWidget {
   State<_SavingGoalCard> createState() => _SavingGoalCardState();
 }
 
-/// State of [_SavingGoalCard].
+/// State of [_SavingGoalCard]. Owns the [PageController] and tracks the
+/// visible goal by id so list changes do not jump to another goal.
 class _SavingGoalCardState extends State<_SavingGoalCard> {
   late final PageController _controller;
+  // Id of the goal on the visible page.
   String? _goalId;
 
   @override
@@ -46,7 +51,7 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
     super.dispose();
   }
 
-  // Keeps the pager on the same goal id when the goals list changes.
+  /// Keeps the pager on the same goal id when the goals list changes.
   void _syncVisibleGoal() {
     final goals = widget.goals;
     if (goals.isEmpty) {
@@ -69,6 +74,7 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
       return;
     }
 
+    // Jump after the frame, once the PageView has the new item count.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_controller.hasClients) {
         return;
@@ -95,6 +101,7 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
     final compact = widget.compact;
     final goals = widget.goals;
 
+    // No active goal: title and a placeholder message.
     if (goals.isEmpty) {
       return _SectionCard(
         title: 'هدف التوفير',
@@ -127,6 +134,8 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
         children: [
           SizedBox(
             height: compact ? 128 : 150,
+            // Swallows horizontal scroll notifications so the shell's tab
+            // PageView does not also react to this card's swipe.
             child: NotificationListener<ScrollNotification>(
               onNotification: (notification) {
                 return notification.metrics.axis == Axis.horizontal;
@@ -176,8 +185,8 @@ class _SavingGoalCardState extends State<_SavingGoalCard> {
   }
 }
 
-// Page dots under a dashboard pager. Follows the same direction as the
-// PageView, so the highlighted dot stays aligned in RTL.
+/// Page dots under a dashboard pager. Follows the same direction as the
+/// PageView, so the highlighted dot stays aligned in RTL.
 class _PageDots extends StatelessWidget {
   final PageController controller;
   final int count;
@@ -216,6 +225,7 @@ class _PageDots extends StatelessWidget {
   }
 }
 
+/// One pager dot; [selected] (0-1) widens it and blends in the active colour.
 class _PageDot extends StatelessWidget {
   final double selected;
   final Color activeColor;
@@ -244,6 +254,7 @@ class _PageDot extends StatelessWidget {
   }
 }
 
+/// One savings goal: vertical progress bar, percentage, and saved / target.
 class _SavingGoalPage extends StatelessWidget {
   final bool compact;
   final double ratio;
@@ -316,6 +327,7 @@ class _SavingGoalPage extends StatelessWidget {
   }
 }
 
+/// Rounded bar that fills from the bottom by [ratio] (0-1), animated.
 class _VerticalProgress extends StatelessWidget {
   final double ratio;
   final double width;

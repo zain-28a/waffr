@@ -1,5 +1,6 @@
-// Offline spending report: range chips, a swipeable period chart (fl_chart),
-// total spent, category distribution, and a comparison with the previous period.
+// Offline spending report (library root): range chips, a swipeable period
+// chart (fl_chart), total spent, category distribution, and a comparison
+// with the previous period.
 //
 // The library is split into part files: report_data (pure period math),
 // report_chart, report_summary and the transaction history screen
@@ -35,6 +36,7 @@ import 'package:waffr/screens/offline/report/expense_history_share.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/widgets/smart/smart_analysis_button.dart';
+import 'package:waffr/core/utils/calendar_days.dart';
 
 part 'report_chart.dart';
 part 'report_data.dart';
@@ -58,28 +60,34 @@ class ReportScreen extends StatefulWidget {
 /// State of [ReportScreen].
 class _ReportScreenState extends State<ReportScreen>
     with AutomaticKeepAliveClientMixin {
+  // Number of pages in the period PageView (how far back the user can swipe).
   static const int _maxPeriodOffset = 240;
 
   final TransactionStore _store = TransactionStore.instance;
+  // Stores whose changes clear the report cache and rebuild the screen.
   late final Listenable _listenables = Listenable.merge([
     _store,
     CategoryStore.instance,
   ]);
   final PageController _periodController = PageController();
+  // Selected range chip.
   _ReportRange _range = _ReportRange.month;
+  // Visible page of the period PageView (0 = current period).
   int _periodOffset = 0;
 
   @override
   bool get wantKeepAlive => true;
 
-  // Reports per (range, page offset), so swiping between periods and
-  // rebuilding for a page change does not rescan the ledger. Cleared when
-  // the ledger or categories change.
+  /// Reports per (range, page offset), so swiping between periods and
+  /// rebuilding for a page change does not rescan the ledger. Cleared when
+  /// the ledger or categories change.
   final Map<(_ReportRange, int), _ReportData> _reports = {};
+  // Expense list snapshot from the store, reused until the next change.
   List<WaffrTransaction>? _expensesCache;
 
   List<WaffrTransaction> get _expenses => _expensesCache ??= _store.expenses;
 
+  /// Cached report for one range and page offset; the cache is capped.
   _ReportData _reportFor(_ReportRange range, int offset) {
     if (_reports.length > 48) _reports.clear();
     return _reports.putIfAbsent((
@@ -88,6 +96,7 @@ class _ReportScreenState extends State<ReportScreen>
     ), () => _ReportData.from(_expenses, _periodFor(range, offset)));
   }
 
+  /// Drops cached reports and the expense snapshot after a store change.
   void _invalidate() {
     _reports.clear();
     _expensesCache = null;
@@ -108,7 +117,7 @@ class _ReportScreenState extends State<ReportScreen>
     super.dispose();
   }
 
-  // Switching range resets to the current period (offset 0).
+  /// Switching range resets to the current period (offset 0).
   void _selectRange(_ReportRange range) {
     if (_range == range) return;
     setState(() {
@@ -120,16 +129,19 @@ class _ReportScreenState extends State<ReportScreen>
     }
   }
 
+  /// Older arrow: next page of the PageView.
   void _showOlderPeriod() {
     if (_periodOffset >= _maxPeriodOffset - 1) return;
     _periodController.nextPageFor(context);
   }
 
+  /// Newer arrow: previous page of the PageView.
   void _showNewerPeriod() {
     if (_periodOffset == 0) return;
     _periodController.previousPageFor(context);
   }
 
+  /// Pushes the expense history screen.
   void _openExpenseHistory() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -147,6 +159,7 @@ class _ReportScreenState extends State<ReportScreen>
         final expenses = _expenses;
         final report = _reportFor(_range, _periodOffset);
         final period = report.period;
+        // Compare against the same elapsed span of the previous period.
         final previousPeriod = _comparablePeriod(
           _periodFor(_range, _periodOffset + 1),
           current: period,
@@ -160,6 +173,7 @@ class _ReportScreenState extends State<ReportScreen>
           300.0,
         );
 
+        // Range chips pinned on top; chart pager and cards scroll below.
         return PinnedPeriodScrollView(
           key: const PageStorageKey('report-period-scroll'),
           options: [for (final range in _ReportRange.values) range.label],
@@ -196,6 +210,7 @@ class _ReportScreenState extends State<ReportScreen>
                 ),
               ),
               const SizedBox(height: kCardGap),
+              // Summary cards for the visible period.
               _SpendingSummary(
                 total: report.total,
                 onHistory: _openExpenseHistory,

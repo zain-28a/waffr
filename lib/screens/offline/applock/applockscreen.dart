@@ -1,11 +1,14 @@
+// App-lock screen: asks for device authentication before the app opens.
+
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-// Blocks the app until device auth (biometrics or PIN) succeeds.
-
+/// Blocks the app until device auth (biometrics or PIN) succeeds. Shown by
+/// `main.dart` over the hidden shell while the app lock is on.
 class LockScreen extends StatefulWidget {
+  /// Called once device auth succeeds (or the device has no auth support).
   final VoidCallback onAuthenticated;
 
   /// Creates a [LockScreen].
@@ -15,10 +18,13 @@ class LockScreen extends StatefulWidget {
   State<LockScreen> createState() => _LockScreenState();
 }
 
-/// State of [LockScreen].
+/// State of [LockScreen]. Prompts automatically after the first frame and
+/// again on each tap of the unlock button.
 class _LockScreenState extends State<LockScreen> {
   final LocalAuthentication _auth = LocalAuthentication();
 
+  /// A system prompt is open (or just closed); drops repeat taps and shows
+  /// the button's busy state.
   bool _loading = false;
 
   @override
@@ -30,7 +36,7 @@ class _LockScreenState extends State<LockScreen> {
     });
   }
 
-  // Prompts local_auth; unsupported devices skip straight through.
+  /// Prompts local_auth; unsupported devices skip straight through.
   Future<void> _authenticate() async {
     if (_loading) return;
 
@@ -88,6 +94,7 @@ class _LockScreenState extends State<LockScreen> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          // Lock icon, title, hint, then the unlock button.
           children: [
             Icon(Icons.lock_rounded, size: 70, color: accent),
 

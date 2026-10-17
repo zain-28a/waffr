@@ -1,12 +1,16 @@
-// Expense category grid: the selectable category tiles, the smart
-// category hint and the "new category" dialog.
+// Expense category grid (part of add_expense_sheet.dart): the selectable
+// category tiles, the smart category hint and the custom category dialog.
 
 part of 'add_expense_sheet.dart';
 
 /// Built-in + custom categories; long-press a tile to remove it (custom tiles
 /// can also be edited).
 class ExpenseCategoryGrid extends StatefulWidget {
+  /// Label of the currently selected category.
   final String selected;
+
+  /// Called with a category label when a tile is tapped, a custom category is
+  /// created, or the selected one is renamed or removed.
   final ValueChanged<String> onSelected;
 
   /// Creates a [ExpenseCategoryGrid].
@@ -28,6 +32,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
     CategoryStore.instance.ensureLoaded();
   }
 
+  /// Opens the dialog and selects the new custom category once it is added.
   Future<void> _createCustom() async {
     final draft = await _openCategoryDialog();
     if (draft == null || !mounted) return;
@@ -41,6 +46,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
     widget.onSelected(created);
   }
 
+  /// Name + icon dialog; prefilled when [editing] a custom category.
   Future<_CustomCategoryDraft?> _openCategoryDialog({
     ExpenseCategory? editing,
   }) {
@@ -59,8 +65,8 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
     );
   }
 
-  // Long-press menu: custom categories can be edited or removed; built-in
-  // ones can be removed.
+  /// Long-press menu: custom categories can be edited or removed; built-in
+  /// ones can be removed.
   Future<void> _showActions(
     BuildContext tileContext,
     ExpenseCategory category,
@@ -85,6 +91,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
     }
   }
 
+  /// Renames a custom category and keeps it selected if it was.
   Future<void> _editCustom(ExpenseCategory category) async {
     final store = CategoryStore.instance;
     final draft = await _openCategoryDialog(editing: category);
@@ -102,7 +109,8 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
     }
   }
 
-  // Old expenses keep the label, icon and color of a removed category.
+  /// Removes a category after confirmation. Old expenses keep the label, icon
+  /// and color of a removed category.
   Future<void> _deleteCategory(String label) async {
     final store = CategoryStore.instance;
     final confirmed = await showAppConfirmDialog(
@@ -128,13 +136,14 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
   @override
   Widget build(BuildContext context) {
     return AnimatedSize(
-      duration: AppMotion.of(context, AppMotion.medium),
+      duration: AppMotion.sizeOf(context, AppMotion.medium),
       curve: AppMotion.enter,
       alignment: Alignment.topCenter,
       child: ListenableBuilder(
         listenable: CategoryStore.instance,
         builder: (context, _) {
           final categories = CategoryStore.instance.selectableCategories;
+          // Five per row, with the "add custom" tile last.
           return GridView.count(
             crossAxisCount: 5,
             shrinkWrap: true,
@@ -144,6 +153,8 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
             childAspectRatio: 1.12,
             children: [
               for (final category in categories)
+                // Builder gives each tile its own context to anchor the
+                // long-press menu.
                 Builder(
                   builder: (tileContext) {
                     return _CategoryTile(
@@ -170,6 +181,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
   }
 }
 
+/// Name and icon chosen in [_CustomCategoryNameDialog].
 class _CustomCategoryDraft {
   final String label;
   final int iconIndex;
@@ -177,12 +189,13 @@ class _CustomCategoryDraft {
   const _CustomCategoryDraft({required this.label, required this.iconIndex});
 }
 
-// Name + icon picker used when creating or renaming a custom category.
+/// Name + icon picker used when creating or renaming a custom category.
 class _CustomCategoryNameDialog extends StatefulWidget {
   final String title;
   final String submitLabel;
   final String? initialLabel;
   final int initialIconIndex;
+  // Label to skip in the duplicate-name check (the one being renamed).
   final String? ignoring;
 
   const _CustomCategoryNameDialog({
@@ -198,7 +211,8 @@ class _CustomCategoryNameDialog extends StatefulWidget {
       _CustomCategoryNameDialogState();
 }
 
-/// State of [_CustomCategoryNameDialog].
+/// State of [_CustomCategoryNameDialog]. Owns the name controller and the
+/// validation error shown under it.
 class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
   late final TextEditingController _controller;
   String? _error;
@@ -217,6 +231,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
     super.dispose();
   }
 
+  /// Validates the name with [CategoryStore] and pops the draft when valid.
   void _submit() {
     final error = CategoryStore.instance.validateName(
       _controller.text,
@@ -265,6 +280,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
           padding: EdgeInsets.zero,
           child: Column(
             children: [
+              // Title and name field.
               Text(
                 widget.title,
                 textAlign: TextAlign.center,
@@ -299,6 +315,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
                 ),
               ),
               const SizedBox(height: 12),
+              // Icon picker grid.
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
@@ -332,6 +349,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
                 ),
               ),
               const SizedBox(height: 8),
+              // Cancel / submit buttons.
               Row(
                 children: [
                   Expanded(
@@ -362,6 +380,7 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
   }
 }
 
+/// One round icon option in the custom category icon picker.
 class _IconChoice extends StatelessWidget {
   final IconData icon;
   final bool selected;
@@ -406,6 +425,8 @@ class _IconChoice extends StatelessWidget {
   }
 }
 
+/// One category tile in [ExpenseCategoryGrid]. [isAction] styles the
+/// trailing "add custom category" tile.
 class _CategoryTile extends StatelessWidget {
   final ExpenseCategory category;
   final bool isSelected;
@@ -474,11 +495,13 @@ class _CategoryTile extends StatelessWidget {
   }
 }
 
-// Under the note: says when the category was picked from the note, or
-// offers the picked one when the user already chose another.
+/// Under the note: says when the category was picked from the note, or
+/// offers the picked one when the user already chose another.
 class _SmartCategoryHint extends StatelessWidget {
+  // Category suggested from the note, if any.
   final String? suggestion;
   final String current;
+  // True when the suggestion was applied automatically.
   final bool applied;
   final VoidCallback onApply;
 
@@ -497,6 +520,7 @@ class _SmartCategoryHint extends StatelessWidget {
     final label = suggestion;
 
     Widget? child;
+    // Applied automatically: a short confirmation line.
     if (label != null && applied) {
       child = Row(
         key: ValueKey('applied-$label'),
@@ -516,6 +540,7 @@ class _SmartCategoryHint extends StatelessWidget {
           ),
         ],
       );
+      // User picked something else: offer the suggestion as a chip.
     } else if (label != null && label != current) {
       child = Align(
         key: ValueKey('offer-$label'),
@@ -539,7 +564,7 @@ class _SmartCategoryHint extends StatelessWidget {
     }
 
     return AnimatedSize(
-      duration: AppMotion.of(context, AppMotion.medium),
+      duration: AppMotion.sizeOf(context, AppMotion.medium),
       curve: AppMotion.enter,
       alignment: Alignment.topCenter,
       child: AnimatedSwitcher(

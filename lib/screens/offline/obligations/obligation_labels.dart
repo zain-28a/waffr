@@ -1,14 +1,19 @@
-// Obligation labels: the shared Arabic captions, titles, dates, counts and
-// status lines used by every obligations view.
+// Obligation labels (part of obligations_sheet.dart): the shared Arabic
+// captions, titles, dates, counts and status lines used by every
+// obligations view, plus the sheet colour and text-style helpers.
 
 part of 'obligations_sheet.dart';
 
+/// Chip label for automatic deduction on the due date.
 const String kDeductAutomaticLabel = 'تلقائي';
 
+/// Chip label for deduction only after the user confirms.
 const String kDeductConfirmLabel = 'بعد تأكيدي';
 
+/// Title of the deduct-mode info dialog.
 const String kDeductModeInfoTitle = 'طريقة الخصم';
 
+/// Body of the deduct-mode info dialog: what each mode does and who it suits.
 const String kDeductModeInfoMessage =
     'تلقائي: يُخصم المبلغ من رصيدك في موعده دون أن نسألك. يناسب من لديه راتب ثابت.\n\n'
     'بعد تأكيدي: عند حلول الموعد يصلك تنبيه، وتختار بنفسك خصم المبلغ أو تأجيله. '
@@ -25,7 +30,7 @@ String obligationDate(DateTime date, {DateTime? now}) {
   final moment = now ?? deviceNow();
   final day = DateTime(date.year, date.month, date.day);
   final today = DateTime(moment.year, moment.month, moment.day);
-  final diff = day.difference(today).inDays;
+  final diff = calendarDaysBetween(today, day);
   if (diff == 0) return 'اليوم';
   if (diff == 1) return 'غداً';
   final month = CalendarPeriod.monthName(date.month);
@@ -34,6 +39,7 @@ String obligationDate(DateTime date, {DateTime? now}) {
       : '${date.day} $month ${date.year}';
 }
 
+/// Arabic count of payments with the right plural form.
 String paymentsLabel(int count) {
   if (count == 1) return 'دفعة واحدة';
   if (count == 2) return 'دفعتان';
@@ -41,6 +47,7 @@ String paymentsLabel(int count) {
   return '$count دفعة';
 }
 
+/// Arabic count of obligations with the right plural form.
 String obligationsCountLabel(int count) {
   if (count == 1) return 'التزام واحد';
   if (count == 2) return 'التزامان';
@@ -55,6 +62,7 @@ String obligationStatus(
   DateTime? now,
   bool short = false,
 }) {
+  // Paused, then due-but-not-deducted cases, then the next charge date.
   final moment = now ?? deviceNow();
   if (!item.enabled) return 'متوقف';
 
@@ -86,6 +94,7 @@ bool obligationNeedsAttention(RecurringExpense item, {DateTime? now}) {
   return item.enabled && item.dueDates(now ?? deviceNow(), max: 1).isNotEmpty;
 }
 
+/// Theme colours used across the obligations sheets.
 class _ObligationColors {
   final Color accent;
   final Color textPrimary;
@@ -99,6 +108,7 @@ class _ObligationColors {
     required this.warning,
   });
 
+  /// Reads the colours from the current theme.
   factory _ObligationColors.of(BuildContext context) {
     final palette = AppPalette.of(context);
     return _ObligationColors(
@@ -110,6 +120,7 @@ class _ObligationColors {
   }
 }
 
+/// Shared Outfit/Tajawal text style for the obligations sheets.
 TextStyle _text(
   Color color, {
   double size = 13,
@@ -125,7 +136,3 @@ TextStyle _text(
     color: color,
   );
 }
-
-// ---------------------------------------------------------------------------
-// Obligations list
-// ---------------------------------------------------------------------------

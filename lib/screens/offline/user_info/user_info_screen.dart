@@ -1,3 +1,5 @@
+// Profile form shown as the first signup step, before email and password.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
@@ -12,13 +14,23 @@ import 'package:waffr/widgets/dialogs/waffr_date_picker.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
-// Collects name, birth date, optional gender, country with an optional phone
-// number, and one optional address line for RegistrationProfile.
+/// Gender choice on the profile form. Optional; sent as `male` / `female`.
+enum Gender {
+  /// Male.
+  male,
 
-enum Gender { male, female }
+  /// Female.
+  female,
+}
 
+/// Collects name, birth date, optional gender, country with an optional phone
+/// number, and one address line (city, optional street) for a
+/// [RegistrationProfile]. Step 0 of the signup flow.
 class UserInfoScreen extends StatefulWidget {
+  /// Receives the validated profile when the user taps continue.
   final ValueChanged<RegistrationProfile> onContinue;
+
+  /// Header back action; the back button is hidden when null.
   final VoidCallback? onBack;
 
   /// Creates a [UserInfoScreen].
@@ -28,7 +40,8 @@ class UserInfoScreen extends StatefulWidget {
   State<UserInfoScreen> createState() => _UserInfoScreenState();
 }
 
-/// State of [UserInfoScreen].
+/// State of [UserInfoScreen]. Owns the name, phone and address controllers
+/// and the picked date, gender and country.
 class _UserInfoScreenState extends State<UserInfoScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -46,19 +59,21 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     super.dispose();
   }
 
+  /// Gender as the string stored on the profile, or null when unset.
   String? get _genderValue {
     if (_selectedGender == Gender.male) return 'male';
     if (_selectedGender == Gender.female) return 'female';
     return null;
   }
 
-  // Tapping the chosen option again clears it; gender stays optional.
+  /// Tapping the chosen option again clears it; gender stays optional.
   void _toggleGender(Gender gender) {
     setState(() {
       _selectedGender = _selectedGender == gender ? null : gender;
     });
   }
 
+  /// First validation error for the form, or null when it can be submitted.
   String? get _formError {
     return registrationProfileError(
       name: _nameController.text,
@@ -72,6 +87,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
   bool get _isFormValid => _formError == null;
 
+  /// Opens the date picker (year view first) for the birth date.
   Future<void> _pickBirthDate() async {
     FocusScope.of(context).unfocus();
     final picked = await showWaffrDatePicker(
@@ -88,6 +104,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     }
   }
 
+  /// Opens the country sheet; also reached from the phone field's code.
   Future<void> _pickCountry() async {
     FocusScope.of(context).unfocus();
     final picked = await showCountryPickerSheet(context, selected: _country);
@@ -96,6 +113,8 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     }
   }
 
+  /// Shows the first error, or builds the profile (phone prefixed with the
+  /// country's calling code) and hands it to [UserInfoScreen.onContinue].
   void _continue() {
     final error = _formError;
     if (error != null) {
@@ -146,6 +165,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Intro line.
               Text(
                 'تساعدنا هذه المعلومات على تقديم تجربة أفضل لك',
                 textAlign: TextAlign.center,
@@ -154,6 +174,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 28),
 
+              // Name.
               AuthFieldLabel(text: 'الاسم', color: textPrimary),
               const SizedBox(height: 8),
               TextField(
@@ -170,6 +191,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
+              // Birth date picker row, with the computed age below.
               AuthFieldLabel(text: 'تاريخ الميلاد', color: textPrimary),
               const SizedBox(height: 8),
               GestureDetector(
@@ -217,6 +239,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
+              // Optional gender radios.
               AuthFieldLabel(text: 'الجنس (اختياري)', color: textPrimary),
               const SizedBox(height: 4),
               Row(
@@ -243,6 +266,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 20),
 
+              // Country picker row with its calling code.
               AuthFieldLabel(text: 'الدولة', color: textPrimary),
               const SizedBox(height: 8),
               GestureDetector(
@@ -289,6 +313,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
+              // Single address line, split into city and street on submit.
               AuthFieldLabel(
                 text: 'العنوان (الشارع اختياري)',
                 color: textPrimary,
@@ -309,6 +334,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 24),
 
+              // Optional phone number behind the country's calling code.
               AuthFieldLabel(text: 'رقم الهاتف (اختياري)', color: textPrimary),
               const SizedBox(height: 8),
               _PhoneField(
@@ -324,6 +350,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
               const SizedBox(height: 48),
 
+              // Continue; a disabled tap still explains what is missing.
               AppPrimaryButton(
                 label: 'متابعة',
                 enabled: _isFormValid,
@@ -340,7 +367,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   }
 }
 
-// Round radio mark next to its label. No box around it.
+/// Round radio mark next to its label. No box around it.
 class _GenderRadio extends StatelessWidget {
   final String label;
   final bool selected;
@@ -419,8 +446,9 @@ class _GenderRadio extends StatelessWidget {
   }
 }
 
-// Calling code and number in one field. The code sits on the left (numbers
-// read left to right) and opens the country list.
+/// Calling code and number in one field. The code sits on the left (numbers
+/// read left to right) and opens the country list. The number field stays
+/// disabled until a country is picked.
 class _PhoneField extends StatelessWidget {
   final TextEditingController controller;
   final CountryInfo? country;
@@ -454,6 +482,7 @@ class _PhoneField extends StatelessWidget {
         ),
         child: Row(
           children: [
+            // Calling-code button, divider, then the number input.
             InkWell(
               onTap: onPickCountry,
               borderRadius: const BorderRadius.horizontal(
