@@ -158,6 +158,43 @@ void main() {
       expect(large.message, contains('الطعام'));
     });
 
+    test(
+      'rows that arrive together are each judged against earlier ones',
+      () async {
+        await store.addIncome(amount: 10000);
+        final start = DateTime.now().subtract(const Duration(days: 30));
+        Future<String> spendOn(int day, double amount) async {
+          final added = await store.addExpense(
+            amount: amount,
+            category: 'طعام',
+            paymentMethod: 'نقداً',
+            occurredAt: start.add(Duration(days: day)),
+          );
+          return added!.id;
+        }
+
+        for (var day = 0; day < 4; day++) {
+          await spendOn(day, 10);
+        }
+        await service.evaluate();
+
+        // Averages before each new row: 10, 10, 10, 110 / 7, 125 / 8.
+        await spendOn(4, 10);
+        await spendOn(5, 10);
+        final big = await spendOn(6, 50);
+        await spendOn(7, 15);
+        final bigger = await spendOn(8, 40);
+        await service.evaluate();
+
+        expect(
+          service.notifications
+              .where((n) => n.type == NotificationType.largeExpense)
+              .map((n) => n.relatedId),
+          unorderedEquals([big, bigger]),
+        );
+      },
+    );
+
     test('a period leftover moved to savings is announced', () async {
       await service.seedIfNeeded();
       final now = DateTime.now();

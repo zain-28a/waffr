@@ -285,17 +285,19 @@ extension _NotificationRules on NotificationService {
     final chronological = [...expenses]
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
+    // Sum of the expenses before index i, kept as the loop runs instead of
+    // re-adding them for every new row (a pulled ledger can bring thousands).
+    var priorSum = 0.0;
     for (var i = 0; i < chronological.length; i++) {
       final expense = chronological[i];
+      final sumBefore = priorSum;
+      priorSum += expense.amount;
       if (_snapshot.knownTransactionIds.contains(expense.id)) continue;
       if (i < NotificationThresholds.minExpensesForLarge) continue;
       // Scheduled bills have their own notice and are expected amounts.
       if (RecurringExpense.isRecurringSource(expense.sourceId)) continue;
 
-      final prior = chronological.sublist(0, i);
-      final average =
-          prior.fold<double>(0, (sum, item) => sum + item.amount) /
-          prior.length;
+      final average = sumBefore / i;
       if (average <= 0) continue;
       if (expense.amount <
           average * NotificationThresholds.largeExpenseMultiplier) {
