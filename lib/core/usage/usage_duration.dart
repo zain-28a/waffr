@@ -3,8 +3,10 @@
 String usageDurationText(DateTime start, DateTime now) {
   final startDay = DateTime(start.year, start.month, start.day);
   final today = DateTime(now.year, now.month, now.day);
-  var days = today.difference(startDay).inDays;
-  if (days <= 0) return 'اليوم';
+  // Counts calendar days including today, the same way the streak counts
+  // them, so a streak that never broke shows the same number of days.
+  final days = today.difference(startDay).inDays + 1;
+  if (days <= 1) return 'اليوم';
   if (days < 30) return _days(days);
 
   final months = days ~/ 30;

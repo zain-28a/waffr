@@ -151,8 +151,13 @@ void main() {
       'اليوم',
     );
     expect(
+      usageDurationText(DateTime(2026, 9, 26), DateTime(2026, 9, 27)),
+      'يومان',
+    );
+    // Same count as a streak that never broke: the 20th through the 27th.
+    expect(
       usageDurationText(DateTime(2026, 9, 20), DateTime(2026, 9, 27)),
-      '7 أيام',
+      '8 أيام',
     );
   });
 

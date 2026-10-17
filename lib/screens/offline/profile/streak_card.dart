@@ -317,8 +317,9 @@ class _RingPainter extends CustomPainter {
   }
 }
 
-// The current week, Saturday to Friday, starting on the right. Days inside
-// the streak light up in order; days still ahead stay faded.
+// The current week, Sunday to Saturday, starting on the right. The order
+// never moves: a new week begins every Sunday. Days inside the streak light
+// up in order; days still ahead stay faded.
 class _WeekStrip extends StatelessWidget {
   final DateTime today;
   final DateTime start;
@@ -335,22 +336,22 @@ class _WeekStrip extends StatelessWidget {
   });
 
   static const Map<int, String> _initials = {
-    DateTime.saturday: 'س',
     DateTime.sunday: 'ح',
     DateTime.monday: 'ن',
     DateTime.tuesday: 'ث',
     DateTime.wednesday: 'ر',
     DateTime.thursday: 'خ',
     DateTime.friday: 'ج',
+    DateTime.saturday: 'س',
   };
 
   @override
   Widget build(BuildContext context) {
-    // Days since Saturday (DateTime.weekday: Monday = 1 ... Sunday = 7).
-    final sinceSaturday = (today.weekday + 1) % 7;
+    // Days since Sunday (DateTime.weekday: Monday = 1 ... Sunday = 7).
+    final sinceSunday = today.weekday % 7;
     final days = [
       for (var i = 0; i < 7; i++)
-        DateTime(today.year, today.month, today.day - sinceSaturday + i),
+        DateTime(today.year, today.month, today.day - sinceSunday + i),
     ];
 
     return Row(

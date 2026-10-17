@@ -224,7 +224,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             const SizedBox(height: kCardGap),
             StreakCard(
               count: streak.isLoaded && streak.count > 0 ? streak.count : 1,
-              lastDay: streak.lastDay,
+              // A broken streak shows as day one today, not as its old day.
+              lastDay: streak.count > 0 ? streak.lastDay : null,
               replayToken: _streakReplay,
             ),
             const SizedBox(height: kCardGap),

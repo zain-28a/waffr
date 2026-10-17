@@ -178,4 +178,25 @@ void main() {
     expect(find.text('15'), findsOneWidget);
     expect(tester.binding.transientCallbackCount, 0);
   });
+
+  testWidgets('streak week runs Sunday to Saturday from the right', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _view(
+        const Directionality(
+          textDirection: TextDirection.rtl,
+          child: StreakCard(count: 3, lastDay: null, replayToken: 0),
+        ),
+        reduced: true,
+      ),
+    );
+    const order = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+    final right = [
+      for (final label in order) tester.getCenter(find.text(label)).dx,
+    ];
+    for (var i = 1; i < right.length; i++) {
+      expect(right[i], lessThan(right[i - 1]), reason: order[i]);
+    }
+  });
 }
