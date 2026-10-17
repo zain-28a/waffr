@@ -124,14 +124,18 @@ class AuthSession {
   }
 
   /// Return a live JWT, or null for guests / dead tokens. Never auto-registers.
+  /// Only a 401 ends the session; a timeout, 429 or server error keeps the
+  /// token so a slow or busy server does not sign the user out.
   Future<String?> ensureToken() async {
     final existing = await token();
     if (existing == null) return null;
-    final me = await _fetchMe(existing);
-    if (me == null) {
+    final reply = await _getMe(existing);
+    if (reply.status == 401) {
       await clearToken();
       return null;
     }
+    final me = reply.me;
+    if (me == null) return existing;
     final address = me['email']?.toString().trim() ?? '';
     if (address.contains('@')) {
       final prefs = await AppPrefs.instance;
@@ -521,6 +525,11 @@ class AuthSession {
 
   // Validate the token with GET /auth/me and return the profile payload.
   Future<Map<String, dynamic>?> _fetchMe(String token) async {
+    return (await _getMe(token)).me;
+  }
+
+  /// GET /auth/me. status is null when the request never got an answer.
+  Future<({int? status, Map<String, dynamic>? me})> _getMe(String token) async {
     try {
       final base = await ApiConfig.baseUrl();
       final response = await http
@@ -529,12 +538,13 @@ class AuthSession {
             headers: {'Authorization': 'Bearer $token'},
           )
           .timeout(ApiConfig.timeoutFor(base, local: _timeout));
-      if (response.statusCode != 200) return null;
+      final status = response.statusCode;
+      if (status != 200) return (status: status, me: null);
       final decoded = jsonDecode(response.body);
-      if (decoded is! Map) return null;
-      return Map<String, dynamic>.from(decoded);
+      if (decoded is! Map) return (status: status, me: null);
+      return (status: status, me: Map<String, dynamic>.from(decoded));
     } catch (_) {
-      return null;
+      return (status: null, me: null);
     }
   }
 

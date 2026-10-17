@@ -32,7 +32,7 @@ How it works:
   request through the connection pool.
 - Startup stops if a model's table has no policy, so a new table cannot ship
   without one. Add it to `OWNED_TABLES` or `PUBLIC_READ_TABLES`.
-- `waffer_admin` (from `backend/sql/admin_readonly.sql`) keeps its read-only
+- `waffr_admin` (from `backend/sql/admin_readonly.sql`) keeps its read-only
   views.
 
 In pgAdmin, connected as `waffer_user`, the tables now look empty. Run
@@ -96,7 +96,7 @@ limits still hold, so brute force stays bounded either way.
 | 17 | Lock accounts after failed logins | Done. 5 wrong passwords lock sign-in for 15 minutes. The lock is stored on the account, so a restart does not lift it. Signed-in devices keep working, and a password reset lifts it. |
 | 18 | Log security events | Done. JSON lines on the `waffr.security` logger (Render's Logs tab): sign-up, sign-in, failures, locks, rate limits, rejected tokens, reset requests and results, password changes, data key set, account deletion. Emails are logged as a keyed hash; passwords, codes and tokens never. |
 | 19 | Set secure cookie flags | No cookies. If one is added: `Secure; HttpOnly; SameSite=Strict`. |
-| 20 | Restrict database permissions | Done: forced row security on every table, and the pgAdmin login (`waffer_admin`) reads only redacted views. Startup warns if the API's role is a superuser or `BYPASSRLS`, which would skip the policies. |
+| 20 | Restrict database permissions | Done: forced row security on every table, and the pgAdmin login (`waffr_admin`) reads only redacted views. Startup warns if the API's role is a superuser or `BYPASSRLS`, which would skip the policies. |
 
 ## Other problems found and fixed
 
