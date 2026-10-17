@@ -3,7 +3,7 @@
 -- Run once in pgAdmin's Query Tool while connected as the main database user
 -- (waffer_user). Re-running it is safe; it refreshes the views.
 --
--- Afterwards, connect pgAdmin with waffer_admin instead of waffer_user.
+-- Afterwards, connect pgAdmin with waffr_admin instead of waffer_user.
 -- That login sees only the admin_view schema below: no notes, categories,
 -- payment methods, goal names, shopping lists, notifications or settings,
 -- and no password hashes.
@@ -12,7 +12,7 @@
 -- the real password.
 --
 -- Row level security: the API turns it on for every table (row_security.py)
--- and adds a read policy for waffer_admin, so these views keep working.
+-- and adds a read policy for waffr_admin, so these views keep working.
 -- Connected as waffer_user the tables look empty unless you first run
 --   SET app.system = 'on';
 -- in that Query Tool session.
@@ -77,17 +77,17 @@ WHERE deleted_at IS NULL;
 
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'waffer_admin') THEN
-        CREATE ROLE waffer_admin LOGIN PASSWORD 'CHANGE_ME';
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'waffr_admin') THEN
+        CREATE ROLE waffr_admin LOGIN PASSWORD 'CHANGE_ME';
     END IF;
 END
 $$;
 
--- The views run with the owner's rights, so waffer_admin needs no grants
+-- The views run with the owner's rights, so waffr_admin needs no grants
 -- on the real tables in public.
-REVOKE ALL ON ALL TABLES IN SCHEMA public FROM waffer_admin;
-REVOKE ALL ON SCHEMA public FROM waffer_admin;
-GRANT USAGE ON SCHEMA admin_view TO waffer_admin;
-GRANT SELECT ON ALL TABLES IN SCHEMA admin_view TO waffer_admin;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM waffr_admin;
+REVOKE ALL ON SCHEMA public FROM waffr_admin;
+GRANT USAGE ON SCHEMA admin_view TO waffr_admin;
+GRANT SELECT ON ALL TABLES IN SCHEMA admin_view TO waffr_admin;
 
 COMMIT;

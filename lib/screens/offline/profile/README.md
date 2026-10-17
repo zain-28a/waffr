@@ -3,7 +3,7 @@
 | File | Main entry point | What it is |
 | --- | --- | --- |
 | `profile_screen.dart` | `ProfileScreen` | Profile tab (shell tab 4): identity header, streak, usage duration, smart analysis button, usage counts, over the wallet backdrop. |
-| `streak_card.dart` | `StreakCard` | Day count, milestone ring with the Waffr mark, and the last seven days. |
+| `streak_card.dart` | `StreakCard` | Day count, milestone ring with the Waffr mark, and this week's days (Saturday to Friday; days still ahead stay faded). |
 | `wallet_backdrop.dart` | `WalletBackdrop` | The large faint wallet behind the cards, with a vector mouth driven by `HealthBand`. |
 
 `ProfileScreen` displays the identity (`ProfileIdentity`), usage streak

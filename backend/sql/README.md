@@ -6,7 +6,7 @@ these files; its own schema changes happen at startup in
 
 | File | Purpose |
 | --- | --- |
-| `admin_readonly.sql` | Creates the `admin_view` schema and the `waffer_admin` login for pgAdmin: account details and money figures only, no notes, names, settings or password hashes. |
+| `admin_readonly.sql` | Creates the `admin_view` schema and the `waffr_admin` login for pgAdmin: account details and money figures only, no notes, names, settings or password hashes. |
 
 ## admin_readonly.sql
 
@@ -15,7 +15,7 @@ Run it once in pgAdmin's Query Tool while connected as the main database user
 do not commit the real one. Re-running it is safe; it refreshes the views.
 
 The views run with their owner's rights, and `row_security.py` gives the
-`waffer_admin` role a read policy on every owned table, so the views work
+`waffr_admin` role a read policy on every owned table, so the views work
 with row security on. Connected as the API's own role, the tables look empty
 until you run `SET app.system = 'on';` in that session.
 
