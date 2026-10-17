@@ -1,6 +1,7 @@
 // Week/month (and savings-range) windows used for income periods and reports.
 
 import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/core/utils/calendar_days.dart';
 
 /// Window sizes of the savings period pager.
 enum SavingsRange {
@@ -54,7 +55,7 @@ class CalendarPeriod {
 
   /// Compact id: weekly `w:…`, monthly `m:…`, or start_end day stamps.
   String get key {
-    if (end.difference(start).inDays == 7) {
+    if (calendarDaysBetween(start, end) == 7) {
       return weeklyKey(start);
     }
     if (start.day == 1 && end == DateTime(start.year, start.month + 1)) {
@@ -67,7 +68,7 @@ class CalendarPeriod {
   static DateTime weekStart(DateTime date) {
     final day = DateTime(date.year, date.month, date.day);
     final daysFromSaturday = (day.weekday + 1) % 7;
-    return day.subtract(Duration(days: daysFromSaturday));
+    return addCalendarDays(day, -daysFromSaturday);
   }
 
   /// First day of [date]'s month.
@@ -100,10 +101,7 @@ class CalendarPeriod {
       final date = DateTime.tryParse(key.substring(2));
       if (date == null) return null;
       final start = weekStart(date);
-      return CalendarPeriod(
-        start: start,
-        end: start.add(const Duration(days: 7)),
-      );
+      return CalendarPeriod(start: start, end: addCalendarDays(start, 7));
     }
     if (key.startsWith('m:')) {
       final parts = key.substring(2).split('-');
@@ -128,10 +126,7 @@ class CalendarPeriod {
     switch (frequency) {
       case RecurringFrequency.weekly:
         final start = weekStart(date);
-        return CalendarPeriod(
-          start: start,
-          end: start.add(const Duration(days: 7)),
-        );
+        return CalendarPeriod(start: start, end: addCalendarDays(start, 7));
       case RecurringFrequency.monthly:
         final start = monthStart(date);
         return CalendarPeriod(
@@ -140,19 +135,16 @@ class CalendarPeriod {
         );
       case RecurringFrequency.none:
         final day = DateTime(date.year, date.month, date.day);
-        return CalendarPeriod(
-          start: day,
-          end: day.add(const Duration(days: 1)),
-        );
+        return CalendarPeriod(start: day, end: addCalendarDays(day, 1));
     }
   }
 
   /// The start of the period after the one starting at [start].
   static DateTime nextStart(RecurringFrequency frequency, DateTime start) {
     return switch (frequency) {
-      RecurringFrequency.weekly => start.add(const Duration(days: 7)),
+      RecurringFrequency.weekly => addCalendarDays(start, 7),
       RecurringFrequency.monthly => DateTime(start.year, start.month + 1),
-      RecurringFrequency.none => start.add(const Duration(days: 1)),
+      RecurringFrequency.none => addCalendarDays(start, 1),
     };
   }
 
@@ -189,8 +181,8 @@ class CalendarPeriod {
 
     switch (range) {
       case SavingsRange.week:
-        start = weekStart(today).subtract(Duration(days: offset * 7));
-        end = start.add(const Duration(days: 7));
+        start = addCalendarDays(weekStart(today), -offset * 7);
+        end = addCalendarDays(start, 7);
       case SavingsRange.month:
         start = DateTime(moment.year, moment.month - offset);
         end = DateTime(start.year, start.month + 1);
@@ -212,7 +204,7 @@ class CalendarPeriod {
 
   /// Arabic label for a chart period (day span, month name, or year).
   static String rangeLabel(SavingsRange range, CalendarPeriod period) {
-    final lastDay = period.end.subtract(const Duration(days: 1));
+    final lastDay = addCalendarDays(period.end, -1);
     switch (range) {
       case SavingsRange.week:
         if (period.start.month == lastDay.month &&

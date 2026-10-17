@@ -1,5 +1,7 @@
 // Calendar-day streak rules. A day counts once; missing a full day restarts at 1.
 
+import 'package:waffr/core/utils/calendar_days.dart';
+
 /// A streak at one moment: the run length, its last counted day, and when
 /// usage started.
 class StreakSnapshot {
@@ -125,7 +127,7 @@ class StreakMath {
     final earlier = laterIsLocal ? remote : local;
     final laterDay = StreakSnapshot.dateOnly(later.lastDay!);
     final earlierDay = StreakSnapshot.dateOnly(earlier.lastDay!);
-    final gap = laterDay.difference(earlierDay).inDays;
+    final gap = calendarDaysBetween(earlierDay, laterDay);
     var count = later.count < 1 ? 1 : later.count;
     if (gap == 1 && count <= 1 && earlier.count > 1) {
       count = earlier.count + 1;

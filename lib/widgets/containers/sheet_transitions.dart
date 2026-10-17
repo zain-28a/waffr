@@ -18,7 +18,7 @@ class SheetExpand extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSize(
-      duration: AppMotion.of(context, AppMotion.slow),
+      duration: AppMotion.sizeOf(context, AppMotion.slow),
       curve: AppMotion.enter,
       alignment: Alignment.topCenter,
       clipBehavior: Clip.hardEdge,

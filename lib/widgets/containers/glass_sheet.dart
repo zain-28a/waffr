@@ -152,7 +152,7 @@ class GlassSheetBody extends StatelessWidget {
         child: SingleChildScrollView(
           padding: padding,
           child: AnimatedSize(
-            duration: AppMotion.of(context, AppMotion.slow),
+            duration: AppMotion.sizeOf(context, AppMotion.slow),
             curve: AppMotion.enter,
             alignment: Alignment.topCenter,
             clipBehavior: Clip.none,

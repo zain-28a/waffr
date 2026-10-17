@@ -16,6 +16,7 @@ import 'package:waffr/data/services/usage_streak_service.dart';
 import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/core/utils/calendar_days.dart';
 
 /// Writes the figures the home screen widgets show and asks them to redraw.
 class HomeWidgetSync {
@@ -202,7 +203,7 @@ Map<String, Object> buildHomeWidgetData({
   } else {
     final next = upcoming.first;
     final dueDay = DateTime(next.due.year, next.due.month, next.due.day);
-    final days = dueDay.difference(today).inDays;
+    final days = calendarDaysBetween(today, dueDay);
     data['obligation_empty'] = false;
     data['obligation_name'] = next.name;
     data['obligation_amount'] = '${formatMoney(next.amount)} $symbol';
