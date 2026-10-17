@@ -1,11 +1,13 @@
 // Compact Arabic duration from the first local usage day.
 
+import 'package:waffr/core/utils/calendar_days.dart';
+
 /// How long since [start], in Arabic: "اليوم", days, months and days, or
 /// years and months (30-day months).
 String usageDurationText(DateTime start, DateTime now) {
   final startDay = DateTime(start.year, start.month, start.day);
   final today = DateTime(now.year, now.month, now.day);
-  var days = today.difference(startDay).inDays;
+  var days = calendarDaysBetween(startDay, today);
   if (days <= 0) return 'اليوم';
   if (days < 30) return _days(days);
 
