@@ -6,6 +6,10 @@ part of 'online_screen.dart';
 /// Grouped rate figure with up to two decimals, in Western digits.
 final NumberFormat _rateFormat = NumberFormat('#,##0.##', 'en');
 
+/// False while the rates are not offered yet: the card says "coming soon"
+/// instead of showing the pair menu and the buy and sell figures.
+const bool _exchangeRatesReady = false;
+
 /// Buy/sell rates for the selected FX asset, with an overlay currency picker.
 /// The parent owns the selection and receives picks through `onSelected`.
 class _ExchangeRateCard extends StatefulWidget {
@@ -98,6 +102,32 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
     final colors = AppPalette.of(context);
     final rate = widget.rate;
 
+    final title = Text(
+      'سعر الصرف',
+      style: TextStyle(
+        fontFamily: 'Outfit',
+        fontFamilyFallback: ['Tajawal'],
+        fontSize: 13,
+        color: colors.textSecondary,
+      ),
+    );
+
+    if (!_exchangeRatesReady) {
+      return GlassContainer(
+        colorType: GlassColorType.surface,
+        borderRadius: 28,
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            title,
+            const SizedBox(height: 16),
+            _ComingSoon(colors: colors),
+          ],
+        ),
+      );
+    }
+
     return GlassContainer(
       colorType: GlassColorType.surface,
       borderRadius: 28,
@@ -105,15 +135,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'سعر الصرف',
-            style: TextStyle(
-              fontFamily: 'Outfit',
-              fontFamilyFallback: ['Tajawal'],
-              fontSize: 13,
-              color: colors.textSecondary,
-            ),
-          ),
+          title,
           const SizedBox(height: 2),
           // Tappable pair label (menu anchor) with a rotating chevron.
           CompositedTransformTarget(
@@ -189,6 +211,51 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Coming soon" in Arabic and English, in a field-colored box the size of
+/// the buy and sell boxes.
+class _ComingSoon extends StatelessWidget {
+  final AppPalette colors;
+
+  const _ComingSoon({required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 18, 14, 18),
+      decoration: BoxDecoration(
+        color: sheetFieldColor(context),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'قريباً...',
+            style: TextStyle(
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: colors.accent,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Soon...',
+            textDirection: TextDirection.ltr,
+            style: TextStyle(
+              fontFamily: 'Outfit',
+              fontFamilyFallback: ['Tajawal'],
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: colors.textSecondary,
+            ),
           ),
         ],
       ),
