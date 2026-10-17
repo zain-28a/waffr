@@ -68,8 +68,7 @@ WaffrTransaction transferAt(
   dateTime: at,
   goalId: goalId,
   transferKind:
-      kind ??
-      (out ? SavingsTransferKind.withdraw : SavingsTransferKind.manual),
+      kind ?? (out ? SavingsTransferKind.withdraw : SavingsTransferKind.manual),
   processedPeriodKey: processedPeriodKey,
   currencyCode: currencyCode,
 );

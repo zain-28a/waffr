@@ -11,5 +11,4 @@ void main() {
     expect(rate.updatedAt, isNull);
     expect(ExchangeRate.unavailable, '−');
   });
-
 }

@@ -65,7 +65,10 @@ void main() {
 
   test('unsupported devices and failed prompts leave it off', () async {
     expect(
-      await AppLock.setEnabled(enabled: true, auth: _FakeAuth(supported: false)),
+      await AppLock.setEnabled(
+        enabled: true,
+        auth: _FakeAuth(supported: false),
+      ),
       AppLockToggleResult.unsupported,
     );
     expect(
@@ -76,13 +79,18 @@ void main() {
       await AppLock.setEnabled(
         enabled: true,
         auth: _FakeAuth(
-          error: const LocalAuthException(code: LocalAuthExceptionCode.userCanceled),
+          error: const LocalAuthException(
+            code: LocalAuthExceptionCode.userCanceled,
+          ),
         ),
       ),
       AppLockToggleResult.cancelled,
     );
     expect(
-      await AppLock.setEnabled(enabled: true, auth: _FakeAuth(error: StateError('x'))),
+      await AppLock.setEnabled(
+        enabled: true,
+        auth: _FakeAuth(error: StateError('x')),
+      ),
       AppLockToggleResult.cancelled,
     );
     expect(await AppLock.isEnabled(), isFalse);

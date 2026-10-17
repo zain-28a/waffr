@@ -33,8 +33,17 @@ void main() {
       expect(StreakMath.currentCount(state, DateTime(2026, 9, 10, 20)), 4);
       expect(StreakMath.currentCount(state, DateTime(2026, 9, 11, 23)), 4);
       expect(StreakMath.currentCount(state, DateTime(2026, 9, 12)), 0);
-      expect(StreakMath.currentCount(at(0, DateTime(2026, 9, 10)), DateTime(2026, 9, 10)), 0);
-      expect(StreakMath.currentCount(const StreakSnapshot(), DateTime(2026)), 0);
+      expect(
+        StreakMath.currentCount(
+          at(0, DateTime(2026, 9, 10)),
+          DateTime(2026, 9, 10),
+        ),
+        0,
+      );
+      expect(
+        StreakMath.currentCount(const StreakSnapshot(), DateTime(2026)),
+        0,
+      );
     });
   });
 
@@ -47,18 +56,27 @@ void main() {
     });
 
     test('a zero count recorded again today becomes one', () {
-      final next = StreakMath.record(at(0, DateTime(2026, 9, 2)), DateTime(2026, 9, 2));
+      final next = StreakMath.record(
+        at(0, DateTime(2026, 9, 2)),
+        DateTime(2026, 9, 2),
+      );
       expect(next.count, 1);
     });
 
     test('a last day in the future is treated as today', () {
-      final next = StreakMath.record(at(3, DateTime(2026, 9, 5)), DateTime(2026, 9, 2));
+      final next = StreakMath.record(
+        at(3, DateTime(2026, 9, 5)),
+        DateTime(2026, 9, 2),
+      );
       expect(next.count, 3);
       expect(next.lastDay, DateTime(2026, 9, 2));
     });
 
     test('crosses month ends', () {
-      final next = StreakMath.record(at(9, DateTime(2026, 2, 28)), DateTime(2026, 3, 1, 7));
+      final next = StreakMath.record(
+        at(9, DateTime(2026, 2, 28)),
+        DateTime(2026, 3, 1, 7),
+      );
       expect(next.count, 10);
     });
   });
@@ -75,22 +93,34 @@ void main() {
     });
 
     test('a local without a day adopts the remote', () {
-      final merged = StreakMath.merge(const StreakSnapshot(), at(0, DateTime(2026, 9, 3, 15)));
+      final merged = StreakMath.merge(
+        const StreakSnapshot(),
+        at(0, DateTime(2026, 9, 3, 15)),
+      );
       expect(merged.count, 1);
       expect(merged.lastDay, DateTime(2026, 9, 3));
     });
 
     test('same day keeps the larger count', () {
-      final merged = StreakMath.merge(at(2, DateTime(2026, 9, 3)), at(6, DateTime(2026, 9, 3)));
+      final merged = StreakMath.merge(
+        at(2, DateTime(2026, 9, 3)),
+        at(6, DateTime(2026, 9, 3)),
+      );
       expect(merged.count, 6);
     });
 
     test('the later day wins; a gap over one day does not extend', () {
-      final merged = StreakMath.merge(at(9, DateTime(2026, 9, 1)), at(1, DateTime(2026, 9, 5)));
+      final merged = StreakMath.merge(
+        at(9, DateTime(2026, 9, 1)),
+        at(1, DateTime(2026, 9, 5)),
+      );
       expect(merged.count, 1);
       expect(merged.lastDay, DateTime(2026, 9, 5));
 
-      final remoteAhead = StreakMath.merge(at(1, DateTime(2026, 9, 1)), at(4, DateTime(2026, 9, 2)));
+      final remoteAhead = StreakMath.merge(
+        at(1, DateTime(2026, 9, 1)),
+        at(4, DateTime(2026, 9, 2)),
+      );
       expect(remoteAhead.count, 4);
     });
   });
@@ -103,9 +133,24 @@ void main() {
       ),
       isFalse,
     );
-    expect(StreakMath.differs(at(2, DateTime(2026, 9, 1)), at(3, DateTime(2026, 9, 1))), isTrue);
-    expect(StreakMath.differs(at(2, DateTime(2026, 9, 1)), at(2, DateTime(2026, 9, 2))), isTrue);
-    expect(StreakMath.differs(at(2, null), at(2, null, started: DateTime(2026))), isTrue);
+    expect(
+      StreakMath.differs(
+        at(2, DateTime(2026, 9, 1)),
+        at(3, DateTime(2026, 9, 1)),
+      ),
+      isTrue,
+    );
+    expect(
+      StreakMath.differs(
+        at(2, DateTime(2026, 9, 1)),
+        at(2, DateTime(2026, 9, 2)),
+      ),
+      isTrue,
+    );
+    expect(
+      StreakMath.differs(at(2, null), at(2, null, started: DateTime(2026))),
+      isTrue,
+    );
   });
 
   test('milestones', () {

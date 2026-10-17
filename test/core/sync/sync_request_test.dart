@@ -47,7 +47,11 @@ void main() {
   Future<void> fillEveryStore() async {
     final ledger = TransactionStore.instance;
     await ledger.addIncome(amount: 1000, frequency: RecurringFrequency.monthly);
-    await ledger.addExpense(amount: 50, category: 'طعام', paymentMethod: 'نقداً');
+    await ledger.addExpense(
+      amount: 50,
+      category: 'طعام',
+      paymentMethod: 'نقداً',
+    );
     await ledger.createGoal(
       name: 'سفر',
       targetAmount: 5000,
@@ -80,17 +84,23 @@ void main() {
     );
   }
 
-  test('an empty first sync sends empty sections, the list and settings', () async {
-    final body = await buildSyncRequest(lastSync: null, everyRow: false);
-    expect(body['last_sync_at'], isNull);
-    for (final key in _sections) {
-      expect(body[key], isA<Map>(), reason: key);
-      expect(_deletes(body, key), isEmpty);
-    }
-    expect(_upserts(body, 'transactions'), isEmpty);
-    expect(_upserts(body, 'shopping_lists').single['client_id'], defaultShoppingListId);
-    expect(body['settings'], isA<Map>());
-  });
+  test(
+    'an empty first sync sends empty sections, the list and settings',
+    () async {
+      final body = await buildSyncRequest(lastSync: null, everyRow: false);
+      expect(body['last_sync_at'], isNull);
+      for (final key in _sections) {
+        expect(body[key], isA<Map>(), reason: key);
+        expect(_deletes(body, key), isEmpty);
+      }
+      expect(_upserts(body, 'transactions'), isEmpty);
+      expect(
+        _upserts(body, 'shopping_lists').single['client_id'],
+        defaultShoppingListId,
+      );
+      expect(body['settings'], isA<Map>());
+    },
+  );
 
   test('every store contributes its rows', () async {
     await fillEveryStore();
@@ -102,7 +112,10 @@ void main() {
       transactions.map((r) => r['type']),
       unorderedEquals(['income', 'expense', 'expense']),
     );
-    expect(_upserts(body, 'savings_transfers').single['direction'], 'to_savings');
+    expect(
+      _upserts(body, 'savings_transfers').single['direction'],
+      'to_savings',
+    );
     expect(_upserts(body, 'savings_goals').single['name'], 'سفر');
     expect(_upserts(body, 'shopping_items').single['name'], 'خبز');
     expect(_upserts(body, 'recurring_expenses').single['amount'], '10.0');

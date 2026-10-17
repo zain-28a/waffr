@@ -1,3 +1,7 @@
+// ReminderDigest: factual reminder texts (bills, balance, categories,
+// goals, savings, month total), the Friday weekly summary and the streak
+// reminder, all counted from the time they will be shown.
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/core/insights/smart/reminder_digest.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';
@@ -152,5 +156,74 @@ void main() {
 
     expect(weekly!.title, contains('100 ل.س'));
     expect(weekly.body, anyOf(contains('أكثر'), contains('بزيادة')));
+  });
+
+  test('several bills in the coming week are summed', () {
+    final texts = ReminderDigest(
+      _facts(
+        obligations: [
+          for (final day in [23, 24, 26])
+            ObligationFact(
+              name: 'فاتورة $day',
+              amount: 100,
+              monthlyEquivalent: 100,
+              nextDueAt: DateTime(2026, 10, day),
+            ),
+        ],
+      ),
+    ).candidates(fireAt);
+    final payments = texts.firstWhere((item) => item.kind == 'payments');
+    expect(payments.title, contains('3 دفعات'));
+    expect(payments.body, contains('300 ل.س'));
+  });
+
+  test('a short balance is urgent and counted from the fire date', () {
+    final digest = ReminderDigest(
+      _facts(
+        balance: 100,
+        expenses: [
+          for (var d = 7; d <= 20; d++) _expense(50, DateTime(2026, 10, d)),
+        ],
+      ),
+    );
+    final texts = digest.candidates(fireAt);
+    expect(texts.first.kind, 'short-balance');
+  });
+
+  test('savings and no-spend texts', () {
+    final texts = ReminderDigest(
+      _facts(
+        expenses: [
+          _expense(100, DateTime(2026, 10, 2)),
+          _expense(100, DateTime(2026, 10, 9)),
+        ],
+      ),
+    ).candidates(fireAt);
+    expect(texts.map((t) => t.kind), contains('no-spend'));
+    expect(texts.map((t) => t.kind), contains('month'));
+  });
+
+  test('nothing spent this week means no weekly summary', () {
+    expect(ReminderDigest(_facts()).weekly(), isNull);
+  });
+
+  test('a similar week reads as level', () {
+    final weekly = ReminderDigest(
+      _facts(
+        expenses: [
+          _expense(100, DateTime(2026, 10, 18)),
+          _expense(98, DateTime(2026, 10, 11)),
+        ],
+      ),
+    ).weekly()!;
+    expect(weekly.body, anyOf(contains('قريب من'), contains('في مستوى')));
+  });
+
+  test('the streak reminder counts the next day', () {
+    for (var seed = 0; seed < 6; seed++) {
+      final text = ReminderDigest.streakText(4, seed: seed);
+      expect(text.kind, 'streak');
+      expect('${text.title} ${text.body}', contains('5 أيام'));
+    }
   });
 }

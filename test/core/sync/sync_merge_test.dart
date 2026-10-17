@@ -83,7 +83,9 @@ void main() {
     final items = [_row('a', 1, 1)];
     _merge(
       items,
-      deletes: [SyncTombstone(clientId: 'a', deletedAt: DateTime.utc(2026, 1, 2))],
+      deletes: [
+        SyncTombstone(clientId: 'a', deletedAt: DateTime.utc(2026, 1, 2)),
+      ],
       upserts: [_row('a', 2, 3)],
     );
     expect(items.single.version, 2, reason: 'a newer row comes back');

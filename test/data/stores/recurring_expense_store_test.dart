@@ -244,32 +244,38 @@ void main() {
       expect(store.byId('missing'), isNull);
     });
 
-    test('totals, next charge and overdue counts skip paused schedules', () async {
-      await seedIncome(1000);
-      final store = RecurringExpenseStore.instance;
-      final internet = await addMonthly(60, note: 'إنترنت');
-      await store.addExpense(
-        amount: 7,
-        category: 'طعام',
-        paymentMethod: 'نقداً',
-        unit: RecurringUnit.day,
-        intervalCount: 1,
-      );
-      expect(store.monthlyTotal('SYP'), closeTo(60 + 7 * 30, 1e-9));
-      expect(store.overdueCount('SYP'), 0, reason: 'first charges posted');
+    test(
+      'totals, next charge and overdue counts skip paused schedules',
+      () async {
+        await seedIncome(1000);
+        final store = RecurringExpenseStore.instance;
+        final internet = await addMonthly(60, note: 'إنترنت');
+        await store.addExpense(
+          amount: 7,
+          category: 'طعام',
+          paymentMethod: 'نقداً',
+          unit: RecurringUnit.day,
+          intervalCount: 1,
+        );
+        expect(store.monthlyTotal('SYP'), closeTo(60 + 7 * 30, 1e-9));
+        expect(store.overdueCount('SYP'), 0, reason: 'first charges posted');
 
-      final next = store.nextUpcoming('SYP')!;
-      expect(next.unit, RecurringUnit.day);
+        final next = store.nextUpcoming('SYP')!;
+        expect(next.unit, RecurringUnit.day);
 
-      await store.setEnabled(internet, false);
-      expect(store.byId(internet)!.enabled, isFalse);
-      expect(store.monthlyTotal('SYP'), closeTo(210, 1e-9));
-      expect(
-        store.overdueCount('SYP', now: DateTime.now().add(const Duration(days: 40))),
-        24,
-        reason: 'due dates are capped at 24 per schedule',
-      );
-    });
+        await store.setEnabled(internet, false);
+        expect(store.byId(internet)!.enabled, isFalse);
+        expect(store.monthlyTotal('SYP'), closeTo(210, 1e-9));
+        expect(
+          store.overdueCount(
+            'SYP',
+            now: DateTime.now().add(const Duration(days: 40)),
+          ),
+          24,
+          reason: 'due dates are capped at 24 per schedule',
+        );
+      },
+    );
 
     test('a schedule held back by the balance is counted as overdue', () async {
       await seedIncome(10);
@@ -354,7 +360,10 @@ void main() {
         updatedAt: DateTime.utc(2026, 1, 1),
       );
       await store.applyRemoteSync(
-        upserts: [recurringToSync(remote), {'client_id': 'bad'}],
+        upserts: [
+          recurringToSync(remote),
+          {'client_id': 'bad'},
+        ],
         deletes: const [],
       );
       expect(store.items.single.id, 'srv');
@@ -362,7 +371,9 @@ void main() {
 
       await store.applyRemoteSync(
         upserts: const [],
-        deletes: [SyncTombstone(clientId: 'srv', deletedAt: DateTime.utc(2027))],
+        deletes: [
+          SyncTombstone(clientId: 'srv', deletedAt: DateTime.utc(2027)),
+        ],
       );
       expect(store.items, isEmpty);
     });

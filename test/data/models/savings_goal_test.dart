@@ -126,7 +126,10 @@ void main() {
 
   test('fromCount maps a cycle count back to the nearest preset', () {
     expect(GoalDurationPresetLabel.fromCount(1), GoalDurationPreset.month);
-    expect(GoalDurationPresetLabel.fromCount(3), GoalDurationPreset.threeMonths);
+    expect(
+      GoalDurationPresetLabel.fromCount(3),
+      GoalDurationPreset.threeMonths,
+    );
     expect(GoalDurationPresetLabel.fromCount(5), GoalDurationPreset.sixMonths);
     expect(GoalDurationPresetLabel.fromCount(7), GoalDurationPreset.year);
 
@@ -157,5 +160,10 @@ void main() {
     final touched = original.copyWith(allocateAmount: 5, touch: true);
     expect(touched.allocateAmount, 5);
     expect(touched.updatedAt!.isBefore(before), isFalse);
+  });
+
+  test('ids made back to back never collide', () {
+    final ids = {for (var i = 0; i < 1000; i++) SavingsGoal.newId()};
+    expect(ids, hasLength(1000));
   });
 }

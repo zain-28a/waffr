@@ -1,3 +1,7 @@
+// TransactionStore balance cycle: when a cycle starts (income on an empty
+// balance, carry-over, the 1st for monthly income), cycle spending, the
+// cycle's 100% and the remaining ratio.
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
@@ -77,5 +81,37 @@ void main() {
     await spend(100);
     expect(store.cycleSpent, 100);
     expect(store.maxBalance, 700);
+  });
+
+  test('an empty ledger has no 100% and a zero ratio', () async {
+    await store.ensureLoaded();
+    expect(store.maxBalance, 0);
+    expect(store.remainingRatio, 0);
+    expect(store.cycleSpent, 0);
+    final monthStart = DateTime(DateTime.now().year, DateTime.now().month);
+    expect(
+      store.cycleStartFor('SYP'),
+      monthStart,
+      reason: 'the cadence defaults to monthly',
+    );
+    expect(store.cycleKey, '${monthStart.millisecondsSinceEpoch}');
+  });
+
+  test('savings moves inside a cycle count toward its 100%', () async {
+    await store.addIncome(amount: 1000);
+    await store.saveManually(300);
+    await store.withdrawFromSavings(100);
+    expect(store.balance, 800);
+    expect(store.maxBalance, 1000);
+    expect(store.remainingRatio, closeTo(0.8, 1e-9));
+  });
+
+  test('each currency has its own cycle', () async {
+    await store.addIncome(amount: 1000);
+    await store.addIncome(amount: 40, currencyCode: 'USD');
+    await spend(500);
+    expect(store.remainingRatioFor('USD'), 1);
+    expect(store.maxBalanceFor('USD'), 40);
+    expect(store.remainingRatioFor('SYP'), closeTo(0.5, 1e-9));
   });
 }

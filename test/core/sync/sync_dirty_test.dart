@@ -25,7 +25,10 @@ void main() {
     await SyncDirty.mark(settings: true);
     final stamp = await SyncDirty.settingsUpdatedAt();
     expect(stamp!.isUtc, isTrue);
-    expect(stamp.isBefore(before.subtract(const Duration(seconds: 1))), isFalse);
+    expect(
+      stamp.isBefore(before.subtract(const Duration(seconds: 1))),
+      isFalse,
+    );
 
     await SyncDirty.setSettingsUpdatedAt(DateTime.utc(2020, 1, 2));
     expect(await SyncDirty.settingsUpdatedAt(), DateTime.utc(2020, 1, 2));

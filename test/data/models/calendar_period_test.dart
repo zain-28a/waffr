@@ -38,7 +38,10 @@ void main() {
       expect(CalendarPeriod.weeklyKey(DateTime(2026, 10, 14)), 'w:2026-10-10');
       expect(CalendarPeriod.monthlyKey(DateTime(2026, 3, 31)), 'm:2026-03');
       expect(
-        CalendarPeriod.keyFor(RecurringFrequency.weekly, DateTime(2026, 10, 14)),
+        CalendarPeriod.keyFor(
+          RecurringFrequency.weekly,
+          DateTime(2026, 10, 14),
+        ),
         'w:2026-10-10',
       );
       expect(
@@ -101,15 +104,24 @@ void main() {
 
     test('next start steps one period', () {
       expect(
-        CalendarPeriod.nextStart(RecurringFrequency.weekly, DateTime(2026, 1, 3)),
+        CalendarPeriod.nextStart(
+          RecurringFrequency.weekly,
+          DateTime(2026, 1, 3),
+        ),
         DateTime(2026, 1, 10),
       );
       expect(
-        CalendarPeriod.nextStart(RecurringFrequency.monthly, DateTime(2026, 12)),
+        CalendarPeriod.nextStart(
+          RecurringFrequency.monthly,
+          DateTime(2026, 12),
+        ),
         DateTime(2027),
       );
       expect(
-        CalendarPeriod.nextStart(RecurringFrequency.none, DateTime(2026, 1, 31)),
+        CalendarPeriod.nextStart(
+          RecurringFrequency.none,
+          DateTime(2026, 1, 31),
+        ),
         DateTime(2026, 2, 1),
       );
     });
@@ -127,7 +139,10 @@ void main() {
 
     test('isComplete compares the end with now', () {
       expect(
-        CalendarPeriod(start: DateTime(2000), end: DateTime(2000, 2)).isComplete,
+        CalendarPeriod(
+          start: DateTime(2000),
+          end: DateTime(2000, 2),
+        ).isComplete,
         isTrue,
       );
       expect(
@@ -241,14 +256,20 @@ void main() {
       expect(
         CalendarPeriod.rangeLabel(
           SavingsRange.week,
-          CalendarPeriod(start: DateTime(2026, 8, 15), end: DateTime(2026, 8, 22)),
+          CalendarPeriod(
+            start: DateTime(2026, 8, 15),
+            end: DateTime(2026, 8, 22),
+          ),
         ),
         '15 – 21 آب 2026',
       );
       expect(
         CalendarPeriod.rangeLabel(
           SavingsRange.week,
-          CalendarPeriod(start: DateTime(2026, 8, 29), end: DateTime(2026, 9, 5)),
+          CalendarPeriod(
+            start: DateTime(2026, 8, 29),
+            end: DateTime(2026, 9, 5),
+          ),
         ),
         '29 آب – 4 أيلول 2026',
       );
@@ -283,8 +304,14 @@ void main() {
     });
 
     test('captions, chip labels and month names', () {
-      expect(CalendarPeriod.currentPeriodCaption(SavingsRange.week), 'هذا الأسبوع');
-      expect(CalendarPeriod.currentPeriodCaption(SavingsRange.year), 'هذه السنة');
+      expect(
+        CalendarPeriod.currentPeriodCaption(SavingsRange.week),
+        'هذا الأسبوع',
+      );
+      expect(
+        CalendarPeriod.currentPeriodCaption(SavingsRange.year),
+        'هذه السنة',
+      );
       expect(SavingsRange.threeMonths.label, '3 أشهر');
       expect(SavingsRange.values.map((r) => r.label).toSet(), hasLength(5));
       expect(CalendarPeriod.monthNames, hasLength(12));

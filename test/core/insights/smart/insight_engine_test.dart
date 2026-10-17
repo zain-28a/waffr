@@ -1,3 +1,6 @@
+// InsightEngine end to end: findings per scope, ranking and limits, the
+// closing tip, health score and bands, and seeded wording.
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/core/insights/smart/insight_engine.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';

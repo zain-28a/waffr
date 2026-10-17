@@ -35,7 +35,11 @@ void main() {
     await prefs.setString('user_phone', '123');
     await prefs.setString('user_city', 'دمشق');
 
-    await ProfileSync.adoptAccount({'name': ' جديد ', 'phone': '', 'country': 'سوريا'});
+    await ProfileSync.adoptAccount({
+      'name': ' جديد ',
+      'phone': '',
+      'country': 'سوريا',
+    });
 
     expect(prefs.getString('user_name'), 'جديد');
     expect(prefs.getString('user_phone'), isNull);
@@ -46,7 +50,11 @@ void main() {
 
   test('fillMissing never overwrites local edits', () async {
     await prefs.setString('user_name', 'محلي');
-    await ProfileSync.fillMissing({'name': 'حساب', 'city': 'حلب', 'street': ' '});
+    await ProfileSync.fillMissing({
+      'name': 'حساب',
+      'city': 'حلب',
+      'street': ' ',
+    });
     expect(prefs.getString('user_name'), 'محلي');
     expect(prefs.getString('user_city'), 'حلب');
     expect(prefs.getString('user_street'), isNull);
