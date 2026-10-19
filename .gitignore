@@ -59,3 +59,6 @@ GoogleService-Info.plist
 
 # Agent worktrees created by Claude Code
 .claude/worktrees/
+
+# graphify knowledge graph (built locally, not committed)
+graphify-out/
