@@ -127,17 +127,17 @@ class _PdfFonts {
   });
 }
 
-/// Brand green from the Waffr light theme; titles, totals and rules.
-final PdfColor _brandGreen = PdfColor.fromInt(0xFF254A23);
+/// Brand accent from the Waffr light theme; titles, totals and rules.
+final PdfColor _brandAccent = PdfColor.fromInt(0xFF005E76);
 
 /// Fill of odd (striped) table rows.
-final PdfColor _rowTint = PdfColor.fromInt(0xFFF6F8F4);
+final PdfColor _rowTint = PdfColor.fromInt(0xFFF4F8F9);
 
 /// Fill of table header rows, chips and the grand-total box.
-final PdfColor _headerTint = PdfColor.fromInt(0xFFE9EFE6);
+final PdfColor _headerTint = PdfColor.fromInt(0xFFE5EEF1);
 
 /// Table line colour.
-final PdfColor _rule = PdfColor.fromInt(0xFFDCE3D8);
+final PdfColor _rule = PdfColor.fromInt(0xFFD6E2E6);
 
 /// Secondary text colour.
 final PdfColor _muted = PdfColor.fromInt(0xFF6F6F6F);
@@ -211,7 +211,7 @@ pw.Widget _pdfHeader({
                     style: pw.TextStyle(
                       font: fonts.brand,
                       fontSize: 30,
-                      color: _brandGreen,
+                      color: _brandAccent,
                       letterSpacing: 0.4,
                     ),
                   ),
@@ -222,7 +222,7 @@ pw.Widget _pdfHeader({
         ],
       ),
       pw.SizedBox(height: 10),
-      pw.Container(height: 1.4, color: _brandGreen),
+      pw.Container(height: 1.4, color: _brandAccent),
       pw.SizedBox(height: 14),
     ],
   );
@@ -267,7 +267,7 @@ pw.Widget _pdfDayCaption(ExpenseShareDay day, _PdfFonts fonts) {
           style: pw.TextStyle(
             font: fonts.bold,
             fontSize: 13,
-            color: _brandGreen,
+            color: _brandAccent,
           ),
         ),
       ),
@@ -357,7 +357,7 @@ pw.Widget _pdfDayTable(ExpenseShareDay day, _PdfFonts fonts) {
               style: pw.TextStyle(
                 font: fonts.bold,
                 fontSize: 11,
-                color: _brandGreen,
+                color: _brandAccent,
               ),
             ),
             alignment: pw.Alignment.centerLeft,
@@ -406,7 +406,7 @@ pw.Widget _pdfCategoryCell(WaffrTransaction expense, _PdfFonts fonts) {
                 style: pw.TextStyle(
                   font: fonts.bold,
                   fontSize: 8,
-                  color: _brandGreen,
+                  color: _brandAccent,
                 ),
               ),
             ),
@@ -436,7 +436,7 @@ pw.Widget _pdfGrandTotal(List<WaffrTransaction> expenses, _PdfFonts fonts) {
     decoration: pw.BoxDecoration(
       color: _headerTint,
       borderRadius: pw.BorderRadius.circular(10),
-      border: pw.Border.all(color: _brandGreen, width: 0.8),
+      border: pw.Border.all(color: _brandAccent, width: 0.8),
     ),
     child: pw.Row(
       children: [
@@ -451,7 +451,7 @@ pw.Widget _pdfGrandTotal(List<WaffrTransaction> expenses, _PdfFonts fonts) {
           style: pw.TextStyle(
             font: fonts.bold,
             fontSize: 13,
-            color: _brandGreen,
+            color: _brandAccent,
           ),
         ),
       ],
