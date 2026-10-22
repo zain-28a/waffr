@@ -7,44 +7,44 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  /// Light page background: soft aqua grey, so white cards lift off it
+  /// Light page background: soft grey-green, so white cards lift off it
   /// without heavy shadows.
-  static const Color lightBackground = Color(0xFFEAF1F3);
+  static const Color lightBackground = Color.fromARGB(255, 238, 241, 237);
 
   /// Light cards and sheets.
-  static const Color lightSurface = Color(0xFFFFFFFF);
+  static const Color lightSurface = Color.fromARGB(255, 255, 255, 255);
 
   /// Light main text.
-  static const Color lightTextPrimary = Color(0xFF0D1D22);
+  static const Color lightTextPrimary = Color.fromARGB(255, 17, 20, 18);
 
   /// Light captions and hints.
-  static const Color lightTextSecondary = Color(0xFF5C6E74);
+  static const Color lightTextSecondary = Color.fromARGB(255, 102, 107, 104);
 
-  /// Light brand petrol blue (Youth Guide): buttons, selection, highlights.
-  static const Color lightAccent = Color(0xFF005E76);
+  /// Light brand green: buttons, selection, highlights.
+  static const Color lightAccent = Color.fromARGB(255, 37, 74, 35);
 
   /// Text and icons on [lightAccent].
-  static const Color lightOnAccent = Color(0xFFFFFFFF);
+  static const Color lightOnAccent = Color.fromARGB(255, 255, 255, 255);
 
-  /// Dark page background: deep petrol, close to black.
-  static const Color darkBackground = Color(0xFF06171C);
+  /// Dark page background: near-neutral charcoal.
+  static const Color darkBackground = Color.fromARGB(255, 15, 16, 16);
 
   /// Dark cards and sheets, lighter than the background so they read as
   /// raised.
-  static const Color darkSurface = Color(0xFF0F262D);
+  static const Color darkSurface = Color.fromARGB(255, 28, 30, 29);
 
   /// Dark main text.
-  static const Color darkTextPrimary = Color(0xFFEEF5F6);
+  static const Color darkTextPrimary = Color.fromARGB(255, 243, 245, 244);
 
   /// Dark captions and hints.
-  static const Color darkTextSecondary = Color(0xFF9AB0B5);
+  static const Color darkTextSecondary = Color.fromARGB(255, 158, 163, 160);
 
-  /// Dark accent: the logo's teal green (Youth Guide), bright on petrol.
-  static const Color darkAccent = Color(0xFF38B8A0);
+  /// Dark accent: a calm sage, so the brand green does not take over.
+  static const Color darkAccent = Color.fromARGB(255, 140, 184, 139);
 
   /// Text and icons on [darkAccent]. The accent is bright, so it takes
-  /// deep petrol text instead of white.
-  static const Color darkOnAccent = Color(0xFF00262E);
+  /// deep green text instead of white.
+  static const Color darkOnAccent = Color.fromARGB(255, 13, 25, 14);
 
   /// Delete / remove / errors, light theme.
   static const Color lightDestructive = Color(0xFF8E3B3B);

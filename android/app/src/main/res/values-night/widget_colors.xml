@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="widget_surface">#FF12292F</color>
+    <color name="widget_surface">#FF1A201C</color>
     <color name="widget_text_primary">#FFFFFFFF</color>
-    <color name="widget_text_secondary">#FF9AB0B5</color>
-    <color name="widget_accent">#FF38B8A0</color>
-    <color name="widget_accent_light">#FF5CC5B1</color>
-    <color name="widget_accent_track">#1F38B8A0</color>
-    <color name="widget_accent_soft">#1A38B8A0</color>
+    <color name="widget_text_secondary">#FF9BA59E</color>
+    <color name="widget_accent">#FF7BC17A</color>
+    <color name="widget_accent_light">#FF93CC92</color>
+    <color name="widget_accent_track">#1F7BC17A</color>
+    <color name="widget_accent_soft">#1A7BC17A</color>
     <color name="widget_neutral_track">#14FFFFFF</color>
-    <color name="widget_on_accent">#FF00262E</color>
+    <color name="widget_on_accent">#FF0C1A0D</color>
     <color name="widget_sheen">#0BFFFFFF</color>
     <color name="widget_rim">#24FFFFFF</color>
-    <color name="widget_button_fill">#FF1C343B</color>
+    <color name="widget_button_fill">#FF262C28</color>
 </resources>

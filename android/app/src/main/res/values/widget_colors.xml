@@ -2,14 +2,14 @@
 <!-- Home screen widget colors; match AppColors in lib/core/theme/app_color.dart
      and the glass surface in lib/widgets/containers/glass.dart. -->
 <resources>
-    <color name="widget_surface">#FFF7F9FA</color>
-    <color name="widget_text_primary">#FF0D1D22</color>
-    <color name="widget_text_secondary">#FF5C6E74</color>
-    <color name="widget_accent">#FF005E76</color>
+    <color name="widget_surface">#FFF8F7F6</color>
+    <color name="widget_text_primary">#FF000000</color>
+    <color name="widget_text_secondary">#FF6F6F6F</color>
+    <color name="widget_accent">#FF254A23</color>
     <!-- Top of a progress fill: the accent 18% toward white. -->
-    <color name="widget_accent_light">#FF2E7B8F</color>
-    <color name="widget_accent_track">#1F005E76</color>
-    <color name="widget_accent_soft">#1A005E76</color>
+    <color name="widget_accent_light">#FF4C6B4B</color>
+    <color name="widget_accent_track">#1F254A23</color>
+    <color name="widget_accent_soft">#1A254A23</color>
     <color name="widget_neutral_track">#14000000</color>
     <color name="widget_on_accent">#FFFFFFFF</color>
     <!-- Liquid-glass sheen from the top corner and the edge line. -->

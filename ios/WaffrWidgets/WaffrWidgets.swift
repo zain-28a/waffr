@@ -110,17 +110,17 @@ private struct Palette {
     Color(red: r / 255, green: g / 255, blue: b / 255)
   }
 
-  var surface: Color { dark ? Self.rgb(18, 41, 47) : Self.rgb(247, 249, 250) }
-  var accent: Color { dark ? Self.rgb(56, 184, 160) : Self.rgb(0, 94, 118) }
+  var surface: Color { dark ? Self.rgb(26, 32, 28) : Self.rgb(248, 247, 246) }
+  var accent: Color { dark ? Self.rgb(123, 193, 122) : Self.rgb(37, 74, 35) }
   /// Top of a progress fill: the accent 18% toward white.
-  var accentLight: Color { dark ? Self.rgb(92, 197, 177) : Self.rgb(46, 123, 143) }
-  var primary: Color { dark ? .white : Self.rgb(13, 29, 34) }
-  var secondary: Color { dark ? Self.rgb(154, 176, 181) : Self.rgb(92, 110, 116) }
+  var accentLight: Color { dark ? Self.rgb(147, 204, 146) : Self.rgb(76, 107, 75) }
+  var primary: Color { dark ? .white : .black }
+  var secondary: Color { dark ? Self.rgb(155, 165, 158) : Self.rgb(111, 111, 111) }
   var accentTrack: Color { accent.opacity(0.12) }
   var neutralTrack: Color { primary.opacity(0.08) }
   var sheen: Color { .white.opacity(dark ? 0.045 : 0.6) }
   var rim: Color { dark ? .white.opacity(0.14) : .black.opacity(0.07) }
-  var buttonFill: Color { dark ? Self.rgb(28, 52, 59) : .white }
+  var buttonFill: Color { dark ? Self.rgb(38, 44, 40) : .white }
 }
 
 // Outfit for numbers and Tajawal for Arabic, as in the app. Font files and
