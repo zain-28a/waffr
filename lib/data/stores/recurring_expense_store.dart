@@ -16,7 +16,8 @@ import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/core/insights/smart/arabic_text.dart';
 
-/// Schedules checked on launch/resume; posts expenses when nextDueAt is past.
+/// Schedules checked on launch/resume; posts expenses once nextDueAt's day
+/// has started.
 class RecurringExpenseStore extends ChangeNotifier {
   RecurringExpenseStore._();
 
@@ -203,7 +204,9 @@ class RecurringExpenseStore extends ChangeNotifier {
     final moment = now ?? deviceNow();
     RecurringExpense? next;
     for (final item in itemsFor(currencyCode)) {
-      if (!item.enabled || !item.nextDueAt.isAfter(moment)) continue;
+      if (!item.enabled || RecurringExpense.isDue(item.nextDueAt, moment)) {
+        continue;
+      }
       if (next == null || item.nextDueAt.isBefore(next.nextDueAt)) {
         next = item;
       }
@@ -409,7 +412,7 @@ class RecurringExpenseStore extends ChangeNotifier {
     for (final item in _items) {
       if (!item.enabled) continue;
       final due = item.nextDueAt;
-      if (!due.isAfter(now) || due.isAfter(horizon)) continue;
+      if (RecurringExpense.isDue(due, now) || due.isAfter(horizon)) continue;
       if (store.canDeduct(item.amount, currencyCode: item.currencyCode)) {
         continue;
       }
@@ -492,7 +495,7 @@ class RecurringExpenseStore extends ChangeNotifier {
     );
   }
 
-  bool _isDue(DateTime due, DateTime now) => !due.toUtc().isAfter(now.toUtc());
+  bool _isDue(DateTime due, DateTime now) => RecurringExpense.isDue(due, now);
 
   // Stable for a given local minute so a reload cannot mint a second source id.
   String _sourceId(String id, DateTime due) {

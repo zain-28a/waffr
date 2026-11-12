@@ -103,11 +103,20 @@ class RecurringExpense {
   /// Last change for sync, falling back to creation time.
   DateTime get syncUpdatedAt => (updatedAt ?? createdAt).toUtc();
 
-  /// Charges of this schedule whose date has passed, oldest first (capped).
+  /// Whether a charge scheduled at [due] is owed at [now]. A charge is owed
+  /// from the start of its local calendar day, not from the time of day the
+  /// schedule was created, so a bill shown as due "today" is posted today.
+  static bool isDue(DateTime due, DateTime now) {
+    final local = due.toLocal();
+    final dayStart = DateTime(local.year, local.month, local.day);
+    return !dayStart.isAfter(now.toLocal());
+  }
+
+  /// Charges of this schedule whose day has come, oldest first (capped).
   List<DateTime> dueDates(DateTime now, {int max = 24}) {
     final dates = <DateTime>[];
     var cursor = nextDueAt;
-    while (!cursor.toUtc().isAfter(now.toUtc()) && dates.length < max) {
+    while (isDue(cursor, now) && dates.length < max) {
       dates.add(cursor);
       cursor = nextDueFrom(cursor, unit, intervalCount);
     }
