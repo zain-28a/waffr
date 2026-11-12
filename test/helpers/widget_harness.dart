@@ -66,6 +66,9 @@ void mockPlatformPlugins() {
     'plugins.flutter.io/url_launcher',
     'dev.fluttercommunity.plus/share',
     'plugins.flutter.io/path_provider',
+    'dev.fluttercommunity.plus/sensors/method',
+    'dev.fluttercommunity.plus/sensors/accelerometer',
+    'home_widget/updates',
   ]) {
     messenger.setMockMethodCallHandler(MethodChannel(name), (call) async {
       if (call.method == 'check') return 'none';
