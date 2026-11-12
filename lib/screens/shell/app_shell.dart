@@ -2,6 +2,8 @@
 // navigation bar, and the background work that runs while the app is open
 // (due periods, reminders, home-widget and notification taps).
 
+import 'package:waffr/core/theme/app_icons.dart';
+
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -454,7 +456,7 @@ class _AppShellState extends State<AppShell>
                     leading: Row(
                       children: [
                         GlassIconButton(
-                          icon: Icons.settings_rounded,
+                          icon: AppIcons.settings,
                           label: 'الإعدادات',
                           onPressed: _openSettings,
                         ),
@@ -577,11 +579,11 @@ class _BottomNavBar extends StatelessWidget {
 
   /// Tab icons, in page order.
   static const List<IconData> _icons = [
-    Icons.home_rounded,
-    Icons.bar_chart_rounded,
-    Icons.wallet_rounded,
-    Icons.public_rounded,
-    Icons.person_rounded,
+    AppIcons.home,
+    AppIcons.reports,
+    AppIcons.savings,
+    AppIcons.online,
+    AppIcons.profile,
   ];
 
   /// Screen-reader labels, in page order.
@@ -704,9 +706,7 @@ class _NotificationsButton extends StatelessWidget {
         final service = NotificationService.instance;
         final muted = service.isMuted;
         return GlassIconButton(
-          icon: muted
-              ? Icons.notifications_off_rounded
-              : Icons.notifications_rounded,
+          icon: muted ? AppIcons.bellOff : AppIcons.bell,
           label: muted
               ? 'الإشعارات مكتومة. اضغط مطولاً لتفعيلها'
               : 'الإشعارات. اضغط مطولاً للكتم',

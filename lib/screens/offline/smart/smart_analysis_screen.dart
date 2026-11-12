@@ -2,6 +2,8 @@
 // its findings out as if typing them, over a soft moving glow. Cards expand
 // to show the numbers behind each finding and offer the matching action.
 
+import 'package:waffr/core/theme/app_icons.dart';
+
 import 'dart:async';
 import 'dart:math' as math;
 

@@ -38,7 +38,7 @@ class _SpendingChartCard extends StatelessWidget {
           Row(
             children: [
               _PeriodArrow(
-                icon: Icons.chevron_right_rounded,
+                icon: AppIcons.chevronForward,
                 tooltip: 'الفترة الأحدث',
                 enabled: canShowNewer,
                 onTap: onNewer,
@@ -80,7 +80,7 @@ class _SpendingChartCard extends StatelessWidget {
                 ),
               ),
               _PeriodArrow(
-                icon: Icons.chevron_left_rounded,
+                icon: AppIcons.chevronBack,
                 tooltip: 'الفترة السابقة',
                 enabled: true,
                 onTap: onOlder,
@@ -93,7 +93,7 @@ class _SpendingChartCard extends StatelessWidget {
             child: report.expenses.isEmpty
                 ? const Center(
                     child: AppEmptyState(
-                      icon: Icons.show_chart_rounded,
+                      icon: AppIcons.chartLine,
                       title: 'لا توجد مصروفات في هذه الفترة',
                       compact: true,
                     ),

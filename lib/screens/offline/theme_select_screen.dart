@@ -1,5 +1,6 @@
 // First-launch theme picker with live light and dark home-screen previews.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/widgets/brand/waffr_logo.dart';
@@ -111,7 +112,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                       Expanded(
                         child: _ThemeOption(
                           label: 'فاتح',
-                          icon: Icons.light_mode_rounded,
+                          icon: AppIcons.sun,
                           preview: AppPalette.light,
                           selected: !_isDark,
                           onTap: () => _select(false),
@@ -121,7 +122,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                       Expanded(
                         child: _ThemeOption(
                           label: 'داكن',
-                          icon: Icons.dark_mode_rounded,
+                          icon: AppIcons.moon,
                           preview: AppPalette.dark,
                           selected: _isDark,
                           onTap: () => _select(true),
@@ -266,7 +267,7 @@ class _CheckMark extends StatelessWidget {
         ),
       ),
       child: selected
-          ? Icon(Icons.check_rounded, size: 14, color: colors.onAccent)
+          ? Icon(AppIcons.check, size: 14, color: colors.onAccent)
           : null,
     );
   }

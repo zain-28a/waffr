@@ -2,6 +2,7 @@
 // pages. The detail pages and shared row widgets live in the part files
 // privacy_detail_pages.dart and privacy_widgets.dart.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:waffr/widgets/motion/motion.dart';
@@ -115,13 +116,13 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                           _SettingsGroup(
                             children: [
                               _SettingsRow(
-                                icon: Icons.badge_outlined,
+                                icon: AppIcons.idCard,
                                 title: 'بيانات الحساب',
                                 onTap: () =>
                                     _openDetail(const _AccountDataDetailPage()),
                               ),
                               _SettingsRow(
-                                icon: Icons.cloud_sync_outlined,
+                                icon: AppIcons.cloudSync,
                                 title: 'المزامنة السحابية',
                                 status: _loggedIn ? 'مفعّلة' : 'وضع الضيف',
                                 statusEmphasis: _loggedIn,
@@ -130,7 +131,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                                 ),
                               ),
                               _SettingsRow(
-                                icon: Icons.sync_alt_rounded,
+                                icon: AppIcons.swap,
                                 title: 'البيانات المتزامنة',
                                 onTap: () =>
                                     _openDetail(const _SyncedDataDetailPage()),
@@ -143,7 +144,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                           _SettingsGroup(
                             children: [
                               _SettingsRow(
-                                icon: Icons.lock_outline_rounded,
+                                icon: AppIcons.lock,
                                 title: 'قفل التطبيق',
                                 status: _appLock ? 'مفعّل' : 'غير مفعّل',
                                 statusEmphasis: _appLock,
@@ -163,7 +164,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                           _SettingsGroup(
                             children: [
                               _SettingsRow(
-                                icon: Icons.delete_outline_rounded,
+                                icon: AppIcons.trash,
                                 title: 'إعادة ضبط البيانات المحلية',
                                 onTap: () =>
                                     _openDetail(const _LocalResetDetailPage()),

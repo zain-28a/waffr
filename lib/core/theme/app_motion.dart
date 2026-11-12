@@ -3,6 +3,7 @@
 // feel of the app is tuned in one place.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 
 /// Duration and curve tokens, plus reduced-motion helpers.
@@ -69,6 +70,55 @@ class AppMotion {
   /// Like [of] for [AnimatedSize]: [instantSize] under reduced motion.
   static Duration sizeOf(BuildContext context, Duration duration) =>
       reduced(context) ? instantSize : duration;
+}
+
+/// Spring tokens. Spatial springs move, resize and reshape things and may
+/// overshoot a little; effects springs fade and tint and never overshoot.
+/// Values follow the Material 3 Expressive spring set.
+class AppSprings {
+  AppSprings._();
+
+  /// Small things that follow a finger: presses, toggles, keys.
+  static final SpringDescription spatialFast =
+      SpringDescription.withDampingRatio(mass: 1, stiffness: 800, ratio: 0.6);
+
+  /// The default for moving surfaces: highlights, cards, sheets.
+  static final SpringDescription spatial = SpringDescription.withDampingRatio(
+    mass: 1,
+    stiffness: 380,
+    ratio: 0.8,
+  );
+
+  /// Large surfaces and full-screen moves.
+  static final SpringDescription spatialSlow =
+      SpringDescription.withDampingRatio(mass: 1, stiffness: 200, ratio: 0.8);
+
+  /// Opacity, color and light: quick and critically damped.
+  static final SpringDescription effects = SpringDescription.withDampingRatio(
+    mass: 1,
+    stiffness: 1600,
+    ratio: 1,
+  );
+}
+
+/// Drives an unbounded [AnimationController] with a spring.
+extension SpringController on AnimationController {
+  /// Springs toward [target] from the current value and velocity. With
+  /// [reduced] motion the value jumps there instead.
+  TickerFuture springTo(
+    double target, {
+    SpringDescription? spring,
+    bool reduced = false,
+  }) {
+    if (reduced) {
+      stop();
+      value = target;
+      return TickerFuture.complete();
+    }
+    return animateWith(
+      SpringSimulation(spring ?? AppSprings.spatial, value, target, velocity),
+    );
+  }
 }
 
 /// Page steps for period pagers (reports, savings) that honor reduced

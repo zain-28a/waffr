@@ -16,7 +16,7 @@ class _AccountDataDetailPage extends StatelessWidget {
       colors: colors,
       children: [
         _DetailLead(
-          icon: Icons.badge_outlined,
+          icon: AppIcons.idCard,
           colors: colors,
           text: 'يحتفظ وفّر بمعلومات أساسية لتشغيل الحساب وعرض الملف الشخصي.',
         ),
@@ -276,7 +276,7 @@ class _AppLockDetailPageState extends State<_AppLockDetailPage> {
         _SettingsGroup(
           children: [
             _SettingsRow(
-              icon: Icons.lock_outline_rounded,
+              icon: AppIcons.lock,
               title: 'قفل التطبيق',
               showChevron: false,
               trailing: Switch(
@@ -325,7 +325,7 @@ class _LocalResetDetailPage extends StatelessWidget {
       colors: colors,
       children: [
         _DetailLead(
-          icon: Icons.delete_outline_rounded,
+          icon: AppIcons.trash,
           colors: colors,
           text: 'يؤثر هذا الإجراء على البيانات المخزّنة على الجهاز الحالي فقط.',
         ),

@@ -213,13 +213,13 @@ class _BalanceCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 GlassIconButton(
-                  icon: Icons.payments_outlined,
+                  icon: AppIcons.banknote,
                   label: 'سجل الدخل',
                   onPressed: onIncomeLog,
                 ),
                 const SizedBox(width: kBalanceCardActionGap),
                 GlassIconButton(
-                  icon: Icons.format_list_bulleted_rounded,
+                  icon: AppIcons.list,
                   label: 'قائمة المشتريات',
                   onPressed: onShoppingList,
                 ),

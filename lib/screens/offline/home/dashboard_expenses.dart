@@ -149,7 +149,7 @@ class _RecentExpensesPage extends StatelessWidget {
       compact: compact,
       child: latest.isEmpty
           ? _EmptyState(
-              icon: Icons.receipt_long_outlined,
+              icon: AppIcons.receipt,
               message: 'لا يوجد مصروف مسجّل بعد',
               compact: compact,
             )
@@ -208,7 +208,7 @@ class _ObligationsPage extends StatelessWidget {
       compact: compact,
       child: shown.isEmpty
           ? _EmptyState(
-              icon: Icons.event_repeat_outlined,
+              icon: AppIcons.calendarRepeat,
               message: 'لا توجد التزامات بعد',
               compact: compact,
             )

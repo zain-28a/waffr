@@ -1,6 +1,7 @@
 // Signed-in account page: display name, email, change password, sign out,
 // and account deletion.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
@@ -217,7 +218,7 @@ class _AccountScreenState extends State<AccountScreen> {
           const SizedBox(height: 25),
           // Account actions.
           AppListTile(
-            icon: Icons.lock_reset_rounded,
+            icon: AppIcons.key,
             title: 'تغيير كلمة المرور',
             subtitle: 'يسجّل الخروج من أجهزتك الأخرى',
             busy: _busy,
@@ -227,7 +228,7 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           const SizedBox(height: 12),
           AppListTile(
-            icon: Icons.logout_rounded,
+            icon: AppIcons.logOut,
             title: 'تسجيل الخروج',
             subtitle: 'العودة إلى شاشة الدخول، والبيانات تبقى على الجهاز',
             busy: _busy,
@@ -235,7 +236,7 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           const SizedBox(height: 12),
           AppListTile(
-            icon: Icons.delete_forever_outlined,
+            icon: AppIcons.trashForever,
             title: 'حذف الحساب',
             subtitle: 'حذف الحساب وبياناته من الخادم والجهاز',
             busy: _busy,

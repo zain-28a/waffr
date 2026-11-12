@@ -164,7 +164,7 @@ class _HistoryExpenseRow extends StatelessWidget {
     final subtitle = isIncome && note != null && note.isNotEmpty
         ? _incomeFrequencyLabel(expense.frequency)
         : (!isIncome && !noteIsSchedule ? note : null);
-    final icon = isIncome ? Icons.payments_outlined : category.icon;
+    final icon = isIncome ? AppIcons.banknote : category.icon;
     return GestureDetector(
       onLongPress: onLongPress,
       onTap: selecting ? onToggle : null,
@@ -276,7 +276,7 @@ class _HistoryExpenseRow extends StatelessWidget {
                   ),
                   onPressed: onUndo,
                   icon: Icon(
-                    Icons.undo_rounded,
+                    AppIcons.undo,
                     size: 18,
                     color: colors.textSecondary,
                   ),
@@ -322,7 +322,7 @@ class _RecurringBadge extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.autorenew_rounded, size: 12, color: colors.accent),
+              Icon(AppIcons.refresh, size: 12, color: colors.accent),
               const SizedBox(width: 4),
               Text('مصروف متكرر', style: text),
             ],

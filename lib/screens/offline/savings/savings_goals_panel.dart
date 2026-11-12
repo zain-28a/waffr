@@ -64,7 +64,7 @@ class _ActiveGoalsPanelState extends State<_ActiveGoalsPanel> {
             ),
             const SizedBox(height: 14),
             const AppEmptyState(
-              icon: Icons.flag_outlined,
+              icon: AppIcons.flag,
               title: 'لا توجد أهداف حالياً',
               compact: true,
             ),
@@ -199,7 +199,7 @@ class _ExpandToggle extends StatelessWidget {
                 duration: AppMotion.of(context, AppMotion.medium),
                 curve: AppMotion.standard,
                 child: Icon(
-                  Icons.keyboard_arrow_down_rounded,
+                  AppIcons.chevronDown,
                   size: 24,
                   color: colors.accent,
                 ),
@@ -235,7 +235,7 @@ class _SavingsGoalsHeader extends StatelessWidget {
             color: colors.accent.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(Icons.wallet_rounded, size: 19, color: colors.accent),
+          child: Icon(AppIcons.savings, size: 19, color: colors.accent),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -266,11 +266,7 @@ class _SavingsGoalsHeader extends StatelessWidget {
             visualDensity: VisualDensity.compact,
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             padding: EdgeInsets.zero,
-            icon: Icon(
-              Icons.tune_rounded,
-              size: 20,
-              color: colors.textSecondary,
-            ),
+            icon: Icon(AppIcons.tune, size: 20, color: colors.textSecondary),
           ),
         ],
       ],
@@ -305,7 +301,7 @@ class _PlanButtonsRow extends StatelessWidget {
               onTap: onPeriodic,
               leading: periodicActive
                   ? Icon(
-                      Icons.check_circle_rounded,
+                      AppIcons.checkCircle,
                       size: 16,
                       color: AppPalette.of(context).accent,
                     )

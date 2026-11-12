@@ -2,6 +2,7 @@
 // of one, and the sheet where charges waiting for approval are deducted or
 // postponed. Details, due charges and shared labels are part files.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
@@ -220,11 +221,7 @@ class _AwaitingBanner extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
           child: Row(
             children: [
-              Icon(
-                Icons.pending_actions_rounded,
-                size: 22,
-                color: colors.warning,
-              ),
+              Icon(AppIcons.pending, size: 22, color: colors.warning),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -242,7 +239,7 @@ class _AwaitingBanner extends StatelessWidget {
                 'مراجعة',
                 style: _text(colors.warning, size: 13, weight: FontWeight.w700),
               ),
-              Icon(Icons.chevron_left_rounded, color: colors.warning),
+              Icon(AppIcons.chevronBack, color: colors.warning),
             ],
           ),
         ),
@@ -258,7 +255,7 @@ class _EmptyObligations extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const AppEmptyState(
-      icon: Icons.event_repeat_outlined,
+      icon: AppIcons.calendarRepeat,
       title: 'لا توجد التزامات بعد',
       message: 'لإضافة التزام، اختر «إضافة مصروف» ثم «مصروف متكرر».',
     );
@@ -344,7 +341,7 @@ class _ObligationTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_left_rounded, color: colors.textSecondary),
+                Icon(AppIcons.chevronBack, color: colors.textSecondary),
               ],
             ),
           ),

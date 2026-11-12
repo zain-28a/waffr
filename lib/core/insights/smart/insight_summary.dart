@@ -1,7 +1,7 @@
 // The parts of a report around the cards: the closing tip, the headline
 // and the short summary.
 
-import 'package:flutter/material.dart';
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:waffr/core/insights/smart/arabic_text.dart';
 import 'package:waffr/core/insights/smart/insight_phrasing.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';
@@ -54,7 +54,7 @@ class InsightSummary {
     return SmartInsight(
       id: 'tip',
       tone: InsightTone.tip,
-      icon: Icons.tips_and_updates_outlined,
+      icon: AppIcons.tips,
       title: _p.pick([
         'نصيحة سريعة',
         'فكرة لك',

@@ -108,7 +108,7 @@ class _InsightCard extends StatelessWidget {
                       turns: expanded ? 0.5 : 0,
                       duration: AppMotion.of(context, AppMotion.medium),
                       child: Icon(
-                        Icons.expand_more_rounded,
+                        AppIcons.chevronDown,
                         color: palette.textSecondary,
                       ),
                     ),
@@ -151,7 +151,7 @@ class _InsightCard extends StatelessWidget {
                           vertical: 8,
                         ),
                       ),
-                      icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                      icon: const Icon(AppIcons.back, size: 18),
                       label: Text(
                         insight.action!.label,
                         style: const TextStyle(
@@ -275,7 +275,7 @@ class _HealthGauge extends StatelessWidget {
                       turns: expanded ? 0.5 : 0,
                       duration: AppMotion.of(context, AppMotion.medium),
                       child: Icon(
-                        Icons.expand_more_rounded,
+                        AppIcons.chevronDown,
                         color: palette.textSecondary,
                       ),
                     ),

@@ -1,6 +1,7 @@
 // App settings: account, income, currencies, obligations, theme, app lock,
 // smart analysis, privacy, help, and the guest data reset.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:waffr/widgets/motion/motion.dart';
@@ -480,7 +481,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       const SizedBox(height: 12),
       AppListTile(
-        icon: Icons.payments_outlined,
+        icon: AppIcons.banknote,
         title: 'الدخل الشهري',
         subtitle: _hasMonthlyIncome
             ? '${formatMoney(_monthlyIncome)} $currencyLabel'
@@ -490,7 +491,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (_weeklyIncomeChoiceEnabled && _hasWeeklyIncome) ...[
         const SizedBox(height: 12),
         AppListTile(
-          icon: Icons.date_range_outlined,
+          icon: AppIcons.calendarRange,
           title: 'الدخل الأسبوعي',
           subtitle: '${formatMoney(_weeklyIncome)} $currencyLabel',
           onTap: () => _editIncome(RecurringFrequency.weekly),
@@ -498,14 +499,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ],
       const SizedBox(height: 12),
       AppListTile(
-        icon: Icons.currency_exchange_rounded,
+        icon: AppIcons.exchange,
         title: 'العملات',
         subtitle: 'إضافة عملة أو اختيار العملة النشطة',
         onTap: () => showCurrenciesSheet(context),
       ),
       const SizedBox(height: 12),
       AppListTile(
-        icon: Icons.event_repeat_rounded,
+        icon: AppIcons.calendarRepeat,
         title: 'الالتزامات',
         subtitle: 'المصروفات المتكررة وطريقة خصمها',
         onTap: () => showObligationsSheet(context),
@@ -518,7 +519,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return [
       const AppSectionTitle(title: 'المظهر'),
       AppListTile(
-        icon: Icons.dark_mode_outlined,
+        icon: AppIcons.moon,
         title: 'الوضع الداكن',
         subtitle: isDark ? 'مفعّل' : 'غير مفعّل',
         trailing: Switch(
@@ -531,7 +532,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       const SizedBox(height: 12),
       AppListTile(
-        icon: Icons.language_rounded,
+        icon: AppIcons.language,
         title: 'اللغة',
         subtitle: 'العربية (اللغة الوحيدة المتاحة)',
         onTap: _showLanguageInfo,
@@ -544,7 +545,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return [
       const AppSectionTitle(title: 'الحماية والخصوصية'),
       AppListTile(
-        icon: Icons.lock_outline_rounded,
+        icon: AppIcons.lock,
         title: 'قفل التطبيق',
         subtitle: 'طلب البصمة أو رمز الجهاز عند فتح وفّر',
         trailing: Switch(value: _appLock, onChanged: _toggleAppLock),
@@ -552,7 +553,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       const SizedBox(height: 12),
       AppListTile(
-        icon: Icons.auto_graph_rounded,
+        icon: AppIcons.chartCombined,
         leading: const SmartSpark(size: 32),
         title: 'التحليل الذكي',
         subtitle: 'ملاحظات واقتراحات وتنبيهات ذكية',
@@ -560,7 +561,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       const SizedBox(height: 12),
       AppListTile(
-        icon: Icons.privacy_tip_outlined,
+        icon: AppIcons.shieldAlert,
         title: 'الخصوصية والأمان',
         subtitle: 'البيانات والمزامنة وحماية الجهاز',
         onTap: _openPrivacySecurity,
@@ -573,14 +574,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return [
       const AppSectionTitle(title: 'الدعم'),
       AppListTile(
-        icon: Icons.help_outline_rounded,
+        icon: AppIcons.help,
         title: 'المساعدة',
         subtitle: 'الأسئلة الشائعة والدعم',
         onTap: _openHelp,
       ),
       const SizedBox(height: 12),
       AppListTile(
-        icon: Icons.info_outline_rounded,
+        icon: AppIcons.info,
         title: 'عن وفّر',
         subtitle: 'معلومات عن التطبيق',
         onTap: _showAbout,
@@ -594,7 +595,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return [
       const AppSectionTitle(title: 'البيانات'),
       AppListTile(
-        icon: Icons.delete_outline_rounded,
+        icon: AppIcons.trash,
         title: 'إعادة ضبط التطبيق',
         subtitle: 'حذف جميع البيانات والبدء من جديد',
         onTap: _resetApp,

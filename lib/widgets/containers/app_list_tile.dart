@@ -1,6 +1,7 @@
 // Settings-style rows shared by Settings, Account and Privacy screens:
 // one card per row with an icon box, title, optional subtitle or status,
 // and a chevron. Section titles above groups of rows use AppSectionTitle.
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_palette.dart';
@@ -85,7 +86,7 @@ class AppListTile extends StatelessWidget {
       end = trailing;
     } else if (showChevron) {
       end = Icon(
-        Icons.arrow_back_ios_new_rounded,
+        AppIcons.chevronBack,
         color: textSecondary.withValues(alpha: 0.5),
         size: 16,
       );

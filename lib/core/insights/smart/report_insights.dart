@@ -1,7 +1,7 @@
 // Report-scope insight rules: where the money goes. Each rule checks one
 // pattern in the numbers and, when it applies, writes one insight card.
 
-import 'package:flutter/material.dart';
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:waffr/core/insights/smart/arabic_text.dart';
 import 'package:waffr/core/insights/smart/insight_phrasing.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';
@@ -51,7 +51,7 @@ class ReportInsights {
   SmartInsight _noExpensesYet() => SmartInsight(
     id: 'no-expenses',
     tone: InsightTone.tip,
-    icon: Icons.edit_note_rounded,
+    icon: AppIcons.editNote,
     title: _p.pick([
       'ابدأ بأول مصروف',
       'التحليل بانتظار بياناتك',
@@ -79,7 +79,7 @@ class ReportInsights {
       return SmartInsight(
         id: 'month-trend',
         tone: InsightTone.warning,
-        icon: Icons.trending_up_rounded,
+        icon: AppIcons.trendingUp,
         title: _p.pick([
           'صرفك أعلى من الشهر الماضي',
           'الصرف في ارتفاع',
@@ -100,7 +100,7 @@ class ReportInsights {
       return SmartInsight(
         id: 'month-trend',
         tone: InsightTone.positive,
-        icon: Icons.trending_down_rounded,
+        icon: AppIcons.trendingDown,
         title: _p.pick([
           'أحسنت! صرفك أقل',
           'انخفاض بنسبة ${_p.percent(change)} في الصرف',
@@ -120,7 +120,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'month-trend',
       tone: InsightTone.info,
-      icon: Icons.drag_handle_rounded,
+      icon: AppIcons.dragHandle,
       title: _p.pick([
         'صرف مستقر',
         'الوتيرة نفسها كالشهر الماضي',
@@ -148,7 +148,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'week-trend',
       tone: tone,
-      icon: up ? Icons.north_east_rounded : Icons.south_east_rounded,
+      icon: up ? AppIcons.arrowUpRight : AppIcons.arrowDownRight,
       title: up
           ? _p.pick([
               'أسبوع أغلى من سابقه',
@@ -182,7 +182,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'top-category',
       tone: tone,
-      icon: Icons.pie_chart_outline_rounded,
+      icon: AppIcons.chartPie,
       title: _p.pick([
         '$name يستحوذ على الحصة الأكبر',
         '${_p.percent(share)} من صرفك على $name',
@@ -225,7 +225,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'category-spike',
       tone: InsightTone.warning,
-      icon: Icons.warning_amber_rounded,
+      icon: AppIcons.warning,
       title: _p.pick([
         'ارتفاع الصرف على $name بنسبة ${_p.percent(worstGrowth)}',
         'قفزة في $name',
@@ -264,7 +264,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'category-drop',
       tone: InsightTone.positive,
-      icon: Icons.thumb_up_alt_outlined,
+      icon: AppIcons.thumbsUp,
       title: _p.pick([
         'تحسّن في $name',
         'وفّرت على $name',
@@ -294,7 +294,7 @@ class ReportInsights {
       return SmartInsight(
         id: 'projection',
         tone: InsightTone.warning,
-        icon: Icons.insights_rounded,
+        icon: AppIcons.chartSpline,
         title: _p.pick([
           'التوقع يتجاوز دخلك',
           'بهذه الوتيرة ستتخطى دخلك',
@@ -314,7 +314,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'projection',
       tone: tone,
-      icon: Icons.insights_rounded,
+      icon: AppIcons.chartSpline,
       title: _p.pick([
         'توقّع نهاية الشهر',
         'إلى أين يتجه صرفك؟',
@@ -343,7 +343,7 @@ class ReportInsights {
       return SmartInsight(
         id: 'runway',
         tone: InsightTone.warning,
-        icon: Icons.account_balance_wallet_outlined,
+        icon: AppIcons.wallet,
         title: _p.pick(['نفد رصيدك', 'الرصيد صفر']),
         body:
             'لم يبقَ رصيد حتى الدخل القادم بعد ${_p.days(untilIncome)}، فأجّل غير الضروري إن استطعت.',
@@ -360,7 +360,7 @@ class ReportInsights {
       return SmartInsight(
         id: 'runway',
         tone: InsightTone.warning,
-        icon: Icons.hourglass_bottom_rounded,
+        icon: AppIcons.hourglass,
         title: _p.pick([
           'قد ينفد الرصيد قبل الدخل',
           'انتبه: ${_p.days(gap)} بلا رصيد',
@@ -378,7 +378,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'runway',
       tone: InsightTone.positive,
-      icon: Icons.verified_outlined,
+      icon: AppIcons.verified,
       title: _p.pick([
         'رصيدك يكفي حتى الدخل',
         'وضعك آمن حتى الدخل القادم',
@@ -407,7 +407,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'weekday-peak',
       tone: InsightTone.tip,
-      icon: Icons.calendar_month_outlined,
+      icon: AppIcons.calendarDays,
       title: _p.pick([
         'يوم $day هو الأغلى',
         'نمط أسبوعي: يوم $day',
@@ -438,7 +438,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'small-expenses',
       tone: InsightTone.tip,
-      icon: Icons.local_cafe_outlined,
+      icon: AppIcons.coffee,
       title: _p.pick([
         'المصاريف الصغيرة تتراكم',
         '$counted هذا الشهر',
@@ -470,7 +470,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'largest-expense',
       tone: InsightTone.info,
-      icon: Icons.receipt_long_outlined,
+      icon: AppIcons.receipt,
       title: _p.pick(['مصروف كبير واحد', 'أكبر مصروف هذا الشهر']),
       body: _p.say(InsightTone.info, [
         'يمثّل مصروفك $label بقيمة ${_p.money(biggest.amount)} نسبة ${_p.percent(share)} من صرفك هذا الشهر.',
@@ -489,7 +489,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'no-spend-days',
       tone: InsightTone.positive,
-      icon: Icons.celebration_outlined,
+      icon: AppIcons.celebration,
       title: _p.pick([
         '${_p.days(days)} بلا صرف',
         'أيام خالية من الصرف',
@@ -518,7 +518,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'payment-mix',
       tone: InsightTone.tip,
-      icon: Icons.credit_card_rounded,
+      icon: AppIcons.creditCard,
       title: _p.pick([
         'معظم صرفك بالبطاقة',
         '${_p.percent(share)} من صرفك بالبطاقة',
@@ -546,7 +546,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'night-spending',
       tone: InsightTone.tip,
-      icon: Icons.nightlight_round,
+      icon: AppIcons.moon,
       title: _p.pick(['صرف ليلي ملحوظ', 'السهر مكلف']),
       body: _p.say(InsightTone.tip, [
         'كان ${Ar.expenses.of(night.length)} من مصاريفك الأخيرة في وقت متأخر ليلاً، بمجموع ${_p.money(sum)}.',
@@ -563,7 +563,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'uncategorized',
       tone: InsightTone.tip,
-      icon: Icons.label_outline_rounded,
+      icon: AppIcons.tag,
       title: _p.pick(['الكثير تحت «أخرى»', 'صنّف مصاريفك بدقة']),
       body: _p.say(InsightTone.tip, [
         'يقع ${_p.percent(other / facts.monthSpent)} من صرفك تحت تصنيف «أخرى»، وتصنيفه بدقة يجعل التحليل أوضح.',
@@ -591,7 +591,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'obligations-soon',
       tone: tone,
-      icon: Icons.event_repeat_rounded,
+      icon: AppIcons.calendarRepeat,
       title: _p.pick(['التزامات خلال أيام', 'دفعات قادمة قريباً']),
       body: _p.say(tone, [
         'تستحق خلال الأيام القليلة القادمة: $names، بمجموع ${_p.money(total)}.',
@@ -614,7 +614,7 @@ class ReportInsights {
     return SmartInsight(
       id: 'obligations-share',
       tone: tone,
-      icon: Icons.repeat_rounded,
+      icon: AppIcons.repeat,
       title: heavy
           ? _p.pick(['الالتزامات ثقيلة', 'التزاماتك تستهلك الكثير'])
           : _p.pick(['التزاماتك الشهرية', 'حصة الالتزامات من الدخل']),

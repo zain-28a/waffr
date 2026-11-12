@@ -1,6 +1,7 @@
 // Privacy policy style copy: what stays on-device vs what account fields are
 // kept. Not linked from any screen at the moment (only the smoke test uses it).
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/core/theme/app_palette.dart';
@@ -35,7 +36,7 @@ class PrivacyInfoScreen extends StatelessWidget {
         children: [
           // One card per privacy topic.
           _InfoSection(
-            icon: Icons.visibility_off_outlined,
+            icon: AppIcons.eyeOff,
             title: 'خصوصيتك المالية',
             description: 'وفّر لا يطّلع على بياناتك المالية ولا يقرأها ولا يشاركها مع أي جهة. رصيدك، أهدافك، تفاصيل مصروفاتك، ونشاط حسابك المالي تبقى خاصة بك وحدك على جهازك.',
             accent: accent,
@@ -47,7 +48,7 @@ class PrivacyInfoScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           _InfoSection(
-            icon: Icons.badge_outlined,
+            icon: AppIcons.idCard,
             title: 'ما الذي يُحفظ عنك؟',
             description: 'نحفظ فقط معلومات حساب أساسية: الاسم، الجنس، العمر، والبريد الإلكتروني. الهدف منها الاحتفاظ بسجل المستخدم وفهم طبيعة المستخدمين بشكل عام، وليس متابعة سلوكك المالي أو الاطلاع على مصروفاتك.',
             accent: accent,
@@ -59,7 +60,7 @@ class PrivacyInfoScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           _InfoSection(
-            icon: Icons.person_off_outlined,
+            icon: AppIcons.userOff,
             title: 'وضع الضيف',
             description: 'إذا كنت تستخدم التطبيق كضيف، فكل بياناتك تُحفظ على جهازك فقط. لا تُرسل إلى أي مكان ولا تُخزَّن على أي خادم خارجي.',
             accent: accent,
@@ -71,7 +72,7 @@ class PrivacyInfoScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           _InfoSection(
-            icon: Icons.storage_rounded,
+            icon: AppIcons.database,
             title: 'تخزين البيانات',
             description: 'بياناتك المالية تُحفظ محلياً على جهازك. تسجيل الدخول يتم بالبريد وكلمة المرور، والمزامنة بين الأجهزة تتم عبر حساب وفّر.',
             accent: accent,
@@ -83,7 +84,7 @@ class PrivacyInfoScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           _InfoSection(
-            icon: Icons.phone_android_rounded,
+            icon: AppIcons.phone,
             title: 'التشغيل دون اتصال',
             description: 'عندما يعمل التطبيق دون اتصال بالإنترنت، تبقى جميع بياناتك على جهازك. لا يحتاج التطبيق إلى الإنترنت للعمل، وبياناتك محفوظة محلياً فقط.',
             accent: accent,
@@ -95,7 +96,7 @@ class PrivacyInfoScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           _InfoSection(
-            icon: Icons.lock_outline_rounded,
+            icon: AppIcons.lock,
             title: 'حماية الوصول',
             description: 'عند تفعيل «قفل التطبيق» تُحمى الوصول إلى التطبيق باستخدام مصادقة الجهاز (البصمة، التعرف على الوجه، رمز الجهاز، أو النمط). هذا يمنع أي شخص من فتح التطبيق دون إذنك.',
             accent: accent,
@@ -107,7 +108,7 @@ class PrivacyInfoScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           _InfoSection(
-            icon: Icons.delete_outline_rounded,
+            icon: AppIcons.trash,
             title: 'إعادة ضبط التطبيق',
             description: 'عند إعادة ضبط التطبيق من الإعدادات، يتم حذف جميع بياناتك المحلية بشكل دائم من جهازك: معلوماتك الشخصية، الرصيد، سجل المصروفات والدخل، أهداف التوفير، والإشعارات. هذا الإجراء لا يمكن التراجع عنه.',
             accent: accent,
@@ -135,7 +136,7 @@ class PrivacyInfoScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.info_outline_rounded, color: accent, size: 28),
+                    Icon(AppIcons.info, color: accent, size: 28),
 
                     const SizedBox(width: 14),
 
@@ -160,7 +161,7 @@ class PrivacyInfoScreen extends StatelessWidget {
 
                 Row(
                   children: [
-                    Icon(Icons.shield_outlined, color: accent, size: 28),
+                    Icon(AppIcons.shield, color: accent, size: 28),
 
                     const SizedBox(width: 14),
 

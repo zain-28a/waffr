@@ -1,6 +1,8 @@
 // Add-expense bottom sheet: one-off or recurring expenses, presets, a smart
 // category suggestion from the note, and the category grid (part file).
 
+import 'package:waffr/core/theme/app_icons.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -504,7 +506,7 @@ class _PresetStarButton extends StatelessWidget {
               child: FadeTransition(opacity: animation, child: child),
             ),
             child: Icon(
-              filled ? Icons.star_rounded : Icons.star_border_rounded,
+              filled ? AppIcons.star : AppIcons.star,
               key: ValueKey(filled),
               size: 22,
               color: filled ? accent : textSecondary,

@@ -1,8 +1,9 @@
 // Savings-scope insight rules: goals, saving rate and habits.
 
+import 'package:waffr/core/theme/app_icons.dart';
+
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:waffr/core/insights/smart/arabic_text.dart';
 import 'package:waffr/core/insights/smart/insight_phrasing.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';
@@ -40,7 +41,7 @@ class SavingsInsights {
     return SmartInsight(
       id: 'no-goals',
       tone: InsightTone.tip,
-      icon: Icons.flag_outlined,
+      icon: AppIcons.flag,
       title: _p.pick([
         'لا يوجد هدف بعد',
         'حدّد هدفك الأول',
@@ -74,7 +75,7 @@ class SavingsInsights {
           SmartInsight(
             id: 'goal-near-${goal.id}',
             tone: InsightTone.positive,
-            icon: Icons.emoji_events_outlined,
+            icon: AppIcons.trophy,
             title: _p.pick([
               'اقتربت من $name',
               '$name على وشك الاكتمال',
@@ -99,7 +100,7 @@ class SavingsInsights {
           SmartInsight(
             id: 'goal-late-${goal.id}',
             tone: InsightTone.warning,
-            icon: Icons.event_busy_outlined,
+            icon: AppIcons.calendarX,
             title: _p.pick(['انتهى موعد $name', '$name تجاوز موعده']),
             body: _p.say(InsightTone.warning, [
               'انتهت المدة التي حدّدتها لـ$name وما زال ينقصه ${_p.money(goal.remaining)}، فمدّد المدة أو زِد المبلغ الشهري.',
@@ -118,7 +119,7 @@ class SavingsInsights {
           SmartInsight(
             id: 'goal-behind-${goal.id}',
             tone: InsightTone.warning,
-            icon: Icons.speed_rounded,
+            icon: AppIcons.gauge,
             title: _p.pick(['$name يحتاج إلى تسريع', 'وتيرة $name بطيئة']),
             body: _p.say(InsightTone.warning, [
               'لتحقيق $name في موعده تحتاج إلى قرابة ${_p.money(needed)} شهرياً.',
@@ -134,7 +135,7 @@ class SavingsInsights {
           SmartInsight(
             id: 'goal-ontrack-${goal.id}',
             tone: InsightTone.positive,
-            icon: Icons.track_changes_rounded,
+            icon: AppIcons.target,
             title: _p.pick(['$name على المسار', 'تقدّم جيد في $name']),
             body: _p.say(InsightTone.positive, [
               'وصلت إلى ${_p.percent(goal.ratio)} من $name، وبهذه الوتيرة ستحققه في موعده.',
@@ -160,7 +161,7 @@ class SavingsInsights {
       return SmartInsight(
         id: 'goal-stalled-${goal.id}',
         tone: InsightTone.tip,
-        icon: Icons.pause_circle_outline_rounded,
+        icon: AppIcons.pause,
         title: _p.pick(['$name متوقف', 'لم توفّر لـ$name مؤخراً']),
         body: _p.say(InsightTone.tip, [
           'مرّ أكثر من شهر دون إضافة إلى $name، وحتى مبلغ صغير يعيد الزخم.',
@@ -182,7 +183,7 @@ class SavingsInsights {
       return SmartInsight(
         id: 'savings-rate',
         tone: InsightTone.positive,
-        icon: Icons.savings_outlined,
+        icon: AppIcons.piggyBank,
         title: _p.pick([
           'نسبة توفير ممتازة',
           'توفّر ${_p.percent(rate)} من دخلك',
@@ -198,7 +199,7 @@ class SavingsInsights {
       return SmartInsight(
         id: 'savings-rate',
         tone: InsightTone.tip,
-        icon: Icons.savings_outlined,
+        icon: AppIcons.piggyBank,
         title: _p.pick([
           'التوفير منخفض هذا الشهر',
           'ابدأ بنسبة ${_p.percent(0.05)} فقط',
@@ -214,7 +215,7 @@ class SavingsInsights {
     return SmartInsight(
       id: 'savings-rate',
       tone: InsightTone.info,
-      icon: Icons.savings_outlined,
+      icon: AppIcons.piggyBank,
       title: _p.pick(['نسبة توفيرك', 'أنت في منتصف الطريق']),
       body: _p.say(InsightTone.info, [
         'وفّرت ${_p.percent(rate)} من دخلك خلال آخر 30 يوماً، والوصول إلى ${_p.percent(0.2)} يعني ${_p.money(income * 0.2)} شهرياً.',
@@ -246,7 +247,7 @@ class SavingsInsights {
     return SmartInsight(
       id: 'saving-suggestion',
       tone: InsightTone.tip,
-      icon: Icons.lightbulb_outline_rounded,
+      icon: AppIcons.lightbulb,
       title: _p.pick([
         'اقتراح: وفّر ${_p.money(amount)} شهرياً',
         'مبلغ توفير واقعي لك',
@@ -276,7 +277,7 @@ class SavingsInsights {
     return SmartInsight(
       id: 'withdrawals',
       tone: InsightTone.warning,
-      icon: Icons.output_rounded,
+      icon: AppIcons.withdraw,
       title: _p.pick(['سحوبات متكررة من التوفير', 'سحبت من التوفير $times']),
       body: _p.say(InsightTone.warning, [
         'سحبت من التوفير $times خلال آخر 30 يوماً، والتوفير ينجح أكثر حين يبقى بعيداً عن الصرف اليومي.',
@@ -293,7 +294,7 @@ class SavingsInsights {
     return SmartInsight(
       id: 'leftover-habit',
       tone: InsightTone.positive,
-      icon: Icons.move_down_rounded,
+      icon: AppIcons.deposit,
       title: _p.pick(['عادة ذكية', 'تنقل الفائض إلى التوفير']),
       body: _p.say(InsightTone.positive, [
         'نقلت باقي رصيدك إلى التوفير ${Ar.times.of(count)}، وهذه من أفضل العادات المالية.',
@@ -311,7 +312,7 @@ class SavingsInsights {
     return SmartInsight(
       id: 'completed-goals',
       tone: InsightTone.positive,
-      icon: Icons.workspace_premium_outlined,
+      icon: AppIcons.award,
       title: _p.pick([
         count == 1 ? 'حققت هدفاً!' : 'حققت $counted',
         'إنجازاتك في التوفير',
@@ -335,7 +336,7 @@ class SavingsInsights {
       return SmartInsight(
         id: 'emergency-fund',
         tone: InsightTone.positive,
-        icon: Icons.shield_outlined,
+        icon: AppIcons.shield,
         title: _p.pick([
           'صندوق طوارئ متين',
           'أمان يكفي ${Ar.months.of(months.floor())}',
@@ -349,7 +350,7 @@ class SavingsInsights {
     return SmartInsight(
       id: 'emergency-fund',
       tone: InsightTone.tip,
-      icon: Icons.shield_outlined,
+      icon: AppIcons.shield,
       title: _p.pick(['ابنِ صندوق طوارئ', 'كم يغطي توفيرك؟']),
       body: _p.say(InsightTone.tip, [
         'يغطي توفيرك صرفك المعتاد لمدة \u2066$covered\u2069 شهر فقط، والحدّ الآمن ثلاثة أشهر، أي ${_p.money(monthly * 3)}.',
@@ -370,7 +371,7 @@ class SavingsInsights {
     return SmartInsight(
       id: 'shopping-list',
       tone: InsightTone.tip,
-      icon: Icons.checklist_rounded,
+      icon: AppIcons.listChecks,
       title: _p.pick(['$counted في قائمة المشتريات', 'قائمتك بانتظارك']),
       body: _p.say(InsightTone.tip, [
         'لديك $counted لم تشترِها بعد، فحدّد ميزانية للقائمة قبل الخروج للتسوق.',

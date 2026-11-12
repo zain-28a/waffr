@@ -2,6 +2,8 @@
 // The cards live in the part files online_cards.dart,
 // online_exchange_rates.dart and online_news.dart.
 
+import 'package:waffr/core/theme/app_icons.dart';
+
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';

@@ -1,4 +1,5 @@
 // Shared top app bar for the shell and settings-style screens.
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_motion.dart';
@@ -124,7 +125,7 @@ class WaffrBackHeader extends StatelessWidget implements PreferredSizeWidget {
       leading: showBack
           ? IconButton(
               tooltip: 'رجوع',
-              icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
+              icon: Icon(AppIcons.chevronForward, color: textPrimary),
               onPressed: enabled
                   ? (onBack ?? () => Navigator.of(context).maybePop())
                   : null,

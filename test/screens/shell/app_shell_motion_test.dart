@@ -1,5 +1,6 @@
 // Shell motion: a retained tab stops its tickers when another tab is shown.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,12 +39,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.person_rounded).last);
+    await tester.tap(find.byIcon(AppIcons.profile).last);
     await tester.pumpAndSettle();
     expect(find.byType(WalletBackdrop), findsOneWidget);
     final profileContext = tester.element(find.byType(WalletBackdrop));
     expect(TickerMode.valuesOf(profileContext).enabled, isTrue);
-    await tester.tap(find.byIcon(Icons.home_rounded).last);
+    await tester.tap(find.byIcon(AppIcons.home).last);
     await tester.pumpAndSettle();
     expect(TickerMode.valuesOf(profileContext).enabled, isFalse);
     expect(tester.binding.transientCallbackCount, 0);

@@ -1,5 +1,6 @@
 // Second signup step: email and password for a new account.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/data/models/registration_profile.dart';
@@ -218,9 +219,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       suffixIcon: IconButton(
                         onPressed: () => setState(() => _obscure = !_obscure),
                         icon: Icon(
-                          _obscure
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
+                          _obscure ? AppIcons.eye : AppIcons.eyeOff,
                           color: textSecondary,
                         ),
                       ),

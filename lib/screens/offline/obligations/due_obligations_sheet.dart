@@ -143,7 +143,7 @@ class _DueObligationsSheetState extends State<DueObligationsSheet> {
           )
         else if (items.isEmpty)
           const AppEmptyState(
-            icon: Icons.task_alt_rounded,
+            icon: AppIcons.checkCircle,
             title: 'لا توجد التزامات بانتظار تأكيدك',
           )
         else ...[

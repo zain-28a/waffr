@@ -1,6 +1,7 @@
 // Expense category catalog: lookups for built-in, fallback and custom
 // labels, palette clamping and slot assignment, and the chart color by theme.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/data/models/expense_categories.dart';
@@ -26,7 +27,7 @@ void main() {
   test('unknown labels use the lookup hook, else a hashed category', () {
     const custom = ExpenseCategory(
       label: 'قهوة',
-      icon: Icons.local_cafe_outlined,
+      icon: AppIcons.coffee,
       color: Color(0xFF000001),
       darkColor: Color(0xFF000002),
     );

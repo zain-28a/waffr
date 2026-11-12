@@ -82,11 +82,7 @@ class _SpendingSummary extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.receipt_long_outlined,
-                    size: 18,
-                    color: colors.accent,
-                  ),
+                  Icon(AppIcons.receipt, size: 18, color: colors.accent),
                   const SizedBox(width: 7),
                   Text(
                     'سجل المصروفات',
@@ -159,7 +155,7 @@ class _ExpenseDistribution extends StatelessWidget {
           const SizedBox(height: 16),
           if (report.total <= 0 || report.categoryTotals.isEmpty)
             const _EmptyState(
-              icon: Icons.stacked_bar_chart_sharp,
+              icon: AppIcons.chartStacked,
               message: 'ستظهر تفاصيل التصنيفات بعد تسجيل مصروف',
             )
           else ...[
@@ -365,9 +361,9 @@ class _ImprovementCard extends StatelessWidget {
       SpendingChange.neutral => colors.textSecondary,
     };
     final icon = switch (comparison.kind) {
-      SpendingChange.positive => Icons.trending_up_rounded,
-      SpendingChange.negative => Icons.trending_down_rounded,
-      SpendingChange.neutral => Icons.trending_flat_rounded,
+      SpendingChange.positive => AppIcons.trendingUp,
+      SpendingChange.negative => AppIcons.trendingDown,
+      SpendingChange.neutral => AppIcons.trendingFlat,
     };
 
     return GlassContainer(

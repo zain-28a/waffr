@@ -1,6 +1,7 @@
 // Smart analysis settings: a shortcut to the full analysis, switches for the
 // smart features, and a note on where the analysis runs.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/data/services/smart_settings.dart';
@@ -49,7 +50,7 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
             children: [
               // Shortcut to the full smart analysis.
               AppListTile(
-                icon: Icons.auto_awesome,
+                icon: AppIcons.sparkles,
                 leading: const SmartSpark(size: 32),
                 title: 'افتح التحليل الشامل',
                 subtitle: 'ملاحظات واقتراحات عن مصاريفك وتوفيرك وعاداتك',
@@ -59,10 +60,8 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
               const AppSectionTitle(title: 'الميزات'),
               // Feature switches.
               AppListTile(
-                icon: Icons.notifications_active_outlined,
-                leading: const SmartGradientIcon(
-                  Icons.notifications_active_outlined,
-                ),
+                icon: AppIcons.bellRing,
+                leading: const SmartGradientIcon(AppIcons.bellRing),
                 title: 'تنبيهات ذكية',
                 subtitle:
                     'تنبيه قبل نفاد الرصيد، وتذكيرات قصيرة إن غبت عن التطبيق',
@@ -76,8 +75,8 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
               ),
               const SizedBox(height: 10),
               AppListTile(
-                icon: Icons.category_outlined,
-                leading: const SmartGradientIcon(Icons.category_outlined),
+                icon: AppIcons.shapes,
+                leading: const SmartGradientIcon(AppIcons.shapes),
                 title: 'تصنيف تلقائي للمصروف',
                 subtitle: 'يقترح التصنيف من الملاحظة التي تكتبها',
                 showChevron: false,

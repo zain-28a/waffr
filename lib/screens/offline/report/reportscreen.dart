@@ -7,6 +7,8 @@
 // (transaction_history_*). TransactionHistoryScreen is public and reached
 // through this file.
 
+import 'package:waffr/core/theme/app_icons.dart';
+
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';

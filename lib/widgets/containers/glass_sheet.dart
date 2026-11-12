@@ -9,6 +9,7 @@
 // files next to this one and are re-exported here, so one import gives a
 // sheet everything.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
@@ -243,7 +244,7 @@ class GlassSheetHeader extends StatelessWidget {
               Positioned(
                 left: 0,
                 child: SheetCircleButton(
-                  icon: Icons.close_rounded,
+                  icon: AppIcons.close,
                   onTap: () => Navigator.of(context).maybePop(),
                 ),
               ),
@@ -251,7 +252,7 @@ class GlassSheetHeader extends StatelessWidget {
                 Positioned(
                   right: 0,
                   child: SheetCircleButton(
-                    icon: Icons.chevron_right_rounded,
+                    icon: AppIcons.chevronForward,
                     onTap: onNext!,
                   ),
                 ),

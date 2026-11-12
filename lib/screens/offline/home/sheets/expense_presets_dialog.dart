@@ -1,6 +1,7 @@
 // Saved-expense box opened from the star on the expense sheet. Same frame as
 // the custom-category box: a grid of tiles plus Cancel / Add actions.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
@@ -234,7 +235,7 @@ class _EmptyPresets extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const AppEmptyState(
-      icon: Icons.star_border_rounded,
+      icon: AppIcons.star,
       title: 'لا توجد مصروفات محفوظة بعد',
     );
   }

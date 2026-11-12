@@ -1,6 +1,7 @@
 // In-app FAQ grouped by topic (balance, expenses, reports, savings, shopping,
 // notifications, account, security). Opened from settings.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
@@ -282,9 +283,7 @@ class _FAQItemState extends State<_FAQItem> {
             bottom: 16,
           ),
           trailing: Icon(
-            _isExpanded
-                ? Icons.keyboard_arrow_up_rounded
-                : Icons.keyboard_arrow_down_rounded,
+            _isExpanded ? AppIcons.chevronUp : AppIcons.chevronDown,
             color: widget.accent,
           ),
           onExpansionChanged: (expanded) {

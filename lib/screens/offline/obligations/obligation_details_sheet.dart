@@ -125,7 +125,7 @@ class _ObligationDetailsSheetState extends State<_ObligationDetailsSheet> {
                           ),
                         ),
                       ),
-                      Icon(Icons.edit_rounded, size: 19, color: colors.accent),
+                      Icon(AppIcons.edit, size: 19, color: colors.accent),
                     ],
                   ),
                 ),

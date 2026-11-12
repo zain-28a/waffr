@@ -229,9 +229,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     final emptyMessage = isIncome
         ? 'لا يوجد دخل مسجّل بعد'
         : 'لا يوجد مصروف مسجّل بعد';
-    final summaryIcon = isIncome
-        ? Icons.payments_outlined
-        : Icons.receipt_long_outlined;
+    final summaryIcon = isIncome ? AppIcons.banknote : AppIcons.receipt;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -254,7 +252,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                       : colors.accent.withValues(alpha: 0.35),
                   foregroundColor: colors.onAccent,
                   elevation: canShare || !_selecting ? 4 : 0,
-                  child: const Icon(Icons.share_rounded),
+                  child: const Icon(AppIcons.share),
                 );
               },
             ),

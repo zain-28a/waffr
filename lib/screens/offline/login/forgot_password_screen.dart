@@ -1,5 +1,6 @@
 // Password reset screen: request an emailed code, then set a new password.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
@@ -164,7 +165,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final visibilityToggle = IconButton(
       onPressed: () => setState(() => _obscure = !_obscure),
       icon: Icon(
-        _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+        _obscure ? AppIcons.eye : AppIcons.eyeOff,
         color: textSecondary,
       ),
     );

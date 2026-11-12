@@ -114,10 +114,7 @@ class _NewsPreviewCardState extends State<_NewsPreviewCard> {
                       ),
                     ),
                   const SizedBox(width: 4),
-                  Icon(
-                    Icons.keyboard_arrow_up_rounded,
-                    color: colors.textSecondary,
-                  ),
+                  Icon(AppIcons.chevronUp, color: colors.textSecondary),
                 ],
               ),
               const SizedBox(height: 17),

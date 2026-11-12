@@ -1,5 +1,6 @@
 // App-lock screen: asks for device authentication before the app opens.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
@@ -96,7 +97,7 @@ class _LockScreenState extends State<LockScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           // Lock icon, title, hint, then the unlock button.
           children: [
-            Icon(Icons.lock_rounded, size: 70, color: accent),
+            Icon(AppIcons.lock, size: 70, color: accent),
 
             const SizedBox(height: 25),
 
@@ -129,7 +130,7 @@ class _LockScreenState extends State<LockScreen> {
               width: 200,
               child: AppPrimaryButton(
                 label: 'فتح القفل',
-                icon: Icons.fingerprint,
+                icon: AppIcons.fingerprint,
                 busy: _loading,
                 onTap: _authenticate,
               ),

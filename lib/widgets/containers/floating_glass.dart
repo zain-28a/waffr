@@ -1,14 +1,12 @@
-// Floating liquid-glass chrome: the blurred pill behind the bottom bar and
-// the pinned period selector, and its selection bubble.
-
-import 'dart:ui' show ImageFilter;
+// Floating liquid-glass chrome: the refracting pill behind the bottom bar
+// and the pinned period selector, and its selection bubble.
 
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_palette.dart';
-import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/glass/liquid_glass.dart';
 
 /// Shared floating chrome for navigation and pinned period controls.
-/// Keep the blur clipped to this pill instead of blurring the whole page.
+/// A [LiquidGlass] pill: it bends and lightly blurs what scrolls beneath.
 class FloatingGlass extends StatelessWidget {
   /// Content inside the glass.
   final Widget child;
@@ -25,42 +23,7 @@ class FloatingGlass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = AppPalette.of(context).surface;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
-            blurRadius: 26,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: CustomPaint(
-            foregroundPainter: LiquidGlassPainter(
-              radius: radius,
-              isDark: isDark,
-            ),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: liquidGlassFill(
-                  surface.withValues(alpha: isDark ? 0.15 : 0.11),
-                  isDark: isDark,
-                  sheen: isDark ? null : 0.2,
-                ),
-              ),
-              child: child,
-            ),
-          ),
-        ),
-      ),
-    );
+    return LiquidGlass(radius: radius, child: child);
   }
 }
 

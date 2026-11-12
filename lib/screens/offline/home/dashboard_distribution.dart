@@ -24,7 +24,7 @@ class _DistributionCard extends StatelessWidget {
       caption: 'النسبة من إجمالي الصرف ',
       child: totals.isEmpty || totalExpense <= 0
           ? const _EmptyState(
-              icon: Icons.pie_chart_outline_rounded,
+              icon: AppIcons.chartPie,
               message: 'ستظهر النسب بعد تسجيل أول مصروف',
             )
           : Row(

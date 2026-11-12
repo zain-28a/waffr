@@ -1,6 +1,7 @@
 // Login screen: email/password sign-in, links to registration and password
 // reset, and the guest option.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/data/services/backup_service.dart';
@@ -258,9 +259,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         suffixIcon: IconButton(
                           onPressed: () => setState(() => _obscure = !_obscure),
                           icon: Icon(
-                            _obscure
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
+                            _obscure ? AppIcons.eye : AppIcons.eyeOff,
                             color: textSecondary,
                           ),
                         ),

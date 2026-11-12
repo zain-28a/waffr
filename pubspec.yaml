@@ -53,6 +53,7 @@ dependencies:
   timezone: ^0.11.1
   cryptography: ^2.9.0
   home_widget: ^0.10.0
+  sensors_plus: ^7.1.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -74,6 +75,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  shaders:
+    - shaders/liquid_glass.frag
 
   assets:
     - assets/brand/waffr_logo.png
@@ -104,6 +108,9 @@ flutter:
     - family: BebasNeue
       fonts:
         - asset: fonts/BebasNeue-Regular.ttf
+    - family: WaffrIcons
+      fonts:
+        - asset: fonts/WaffrIcons.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -1,5 +1,6 @@
 // Smoke tests for the shared buttons, enabled, disabled and busy.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
@@ -10,11 +11,7 @@ import '../../helpers/widget_harness.dart';
 void main() {
   smokeTestWidget(
     AppPrimaryButton,
-    () => AppPrimaryButton(
-      label: 'save',
-      onTap: () {},
-      icon: Icons.check_rounded,
-    ),
+    () => AppPrimaryButton(label: 'save', onTap: () {}, icon: AppIcons.check),
   );
   smokeTestWidget(
     AppPrimaryButton,
@@ -34,7 +31,7 @@ void main() {
   smokeTestWidget(
     GlassIconButton,
     () => GlassIconButton(
-      icon: Icons.settings_rounded,
+      icon: AppIcons.settings,
       label: 'settings',
       onPressed: () {},
       showDot: true,

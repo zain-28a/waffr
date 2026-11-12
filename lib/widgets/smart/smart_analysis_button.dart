@@ -2,6 +2,8 @@
 // small square tile that sits inside a card, and a full-width banner. All
 // open SmartAnalysisScreen.
 
+import 'package:waffr/core/theme/app_icons.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -154,7 +156,7 @@ class _SmartAnalysisButtonState extends State<SmartAnalysisButton>
               ],
             ),
           ),
-          Icon(Icons.chevron_left_rounded, color: palette.textSecondary),
+          Icon(AppIcons.chevronBack, color: palette.textSecondary),
         ],
       ),
       SmartButtonStyle.tile => Column(

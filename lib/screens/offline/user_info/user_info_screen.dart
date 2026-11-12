@@ -1,5 +1,6 @@
 // Profile form shown as the first signup step, before email and password.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
@@ -240,11 +241,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                           fontSize: 16,
                         ),
                       ),
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        size: 20,
-                        color: accent,
-                      ),
+                      Icon(AppIcons.calendar, size: 20, color: accent),
                     ],
                   ),
                 ),
@@ -313,7 +310,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                           ),
                         ),
                       ),
-                      Icon(Icons.keyboard_arrow_down_rounded, color: accent),
+                      Icon(AppIcons.chevronDown, color: accent),
                     ],
                   ),
                 ),
@@ -509,11 +506,7 @@ class _PhoneField extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    Icon(
-                      Icons.arrow_drop_down_rounded,
-                      size: 20,
-                      color: textSecondary,
-                    ),
+                    Icon(AppIcons.chevronDown, size: 20, color: textSecondary),
                   ],
                 ),
               ),

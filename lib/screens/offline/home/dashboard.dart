@@ -4,6 +4,7 @@
 //
 // The cards live in dashboard_* part files of this library.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
@@ -109,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen>
                   Expanded(
                     child: _ActionButton(
                       label: 'إضافة دخل',
-                      icon: Icons.add_circle_outline_rounded,
+                      icon: AppIcons.addCircle,
                       onTap: () => showAddIncomeSheet(context),
                     ),
                   ),
@@ -117,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen>
                   Expanded(
                     child: _ActionButton(
                       label: 'إضافة مصروف',
-                      icon: Icons.remove_circle_outline_rounded,
+                      icon: AppIcons.removeCircle,
                       onTap: () => showAddExpenseSheet(context),
                     ),
                   ),

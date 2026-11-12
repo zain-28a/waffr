@@ -1,6 +1,7 @@
 // Currencies sheet: pick the active currency, hide extra ones, or open the
 // stacked picker that adds a new one. Backed by CurrencyStore.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
@@ -89,7 +90,7 @@ class _CurrenciesSheetState extends State<_CurrenciesSheet> {
             if (available.isNotEmpty)
               AppPrimaryButton(
                 label: 'إضافة عملة',
-                icon: Icons.add_rounded,
+                icon: AppIcons.add,
                 onTap: () => showAddCurrencySheet(context),
               ),
           ],
@@ -131,7 +132,7 @@ class _AddCurrencySheet extends StatelessWidget {
             const SizedBox(height: 16),
             if (available.isEmpty)
               const AppEmptyState(
-                icon: Icons.check_circle_outline_rounded,
+                icon: AppIcons.checkCircle,
                 title: 'كل العملات المتاحة مضافة',
               )
             else
@@ -179,7 +180,7 @@ class _AddCurrencySheet extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Icon(Icons.add_rounded, color: accent, size: 20),
+                          Icon(AppIcons.add, color: accent, size: 20),
                         ],
                       ),
                     ),
@@ -278,7 +279,7 @@ class _CurrencyTile extends StatelessWidget {
                 IconButton(
                   onPressed: onRemove,
                   icon: Icon(
-                    Icons.remove_circle_outline_rounded,
+                    AppIcons.removeCircle,
                     color: textSecondary.withValues(alpha: 0.8),
                   ),
                 ),

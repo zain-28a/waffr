@@ -1,4 +1,5 @@
 // Circular profile icon: crossed out for guests, plain when signed in.
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 
 /// Person icon on an accent circle. There are no profile photos.
@@ -26,7 +27,7 @@ class ProfileAvatar extends StatelessWidget {
       radius: radius,
       backgroundColor: accent.withValues(alpha: 0.15),
       child: Icon(
-        signedIn ? Icons.person_outline_rounded : Icons.person_off_outlined,
+        signedIn ? AppIcons.user : AppIcons.userOff,
         color: accent,
         size: radius,
       ),

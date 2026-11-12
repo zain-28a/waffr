@@ -1,6 +1,7 @@
 // Small edit / delete popup anchored to a tile. Used by expense categories
 // and shopping-list items so both long-press menus look the same.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_palette.dart';
@@ -51,7 +52,7 @@ Future<EditDeleteAction?> showEditDeleteMenu(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.edit_rounded,
+                AppIcons.edit,
                 size: 18,
                 color: textPrimary.withValues(alpha: 0.8),
               ),
@@ -73,7 +74,7 @@ Future<EditDeleteAction?> showEditDeleteMenu(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.delete_rounded, size: 18, color: deleteColor),
+            Icon(AppIcons.trash, size: 18, color: deleteColor),
             const SizedBox(width: 8),
             Text(
               'حذف',

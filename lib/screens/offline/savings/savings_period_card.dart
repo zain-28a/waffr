@@ -48,7 +48,7 @@ class _PeriodSavingsCard extends StatelessWidget {
           Row(
             children: [
               _PeriodArrow(
-                icon: Icons.chevron_right_rounded,
+                icon: AppIcons.chevronForward,
                 tooltip: 'الفترة الأحدث',
                 enabled: canShowNewer,
                 onTap: onNewer,
@@ -88,7 +88,7 @@ class _PeriodSavingsCard extends StatelessWidget {
                 ),
               ),
               _PeriodArrow(
-                icon: Icons.chevron_left_rounded,
+                icon: AppIcons.chevronBack,
                 tooltip: 'الفترة السابقة',
                 enabled: true,
                 onTap: onOlder,
@@ -192,9 +192,7 @@ class _SavingsComparison {
     final isPositive = percentage > 0;
 
     return _SavingsComparison(
-      icon: isPositive
-          ? Icons.trending_up_rounded
-          : Icons.trending_down_rounded,
+      icon: isPositive ? AppIcons.trendingUp : AppIcons.trendingDown,
       color: isPositive ? colors.accent : colors.textPrimary,
       text:
           '${isPositive ? '+' : '−'}'

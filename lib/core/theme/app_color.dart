@@ -75,4 +75,37 @@ class AppColors {
       Theme.of(context).brightness == Brightness.dark
       ? darkDestructive
       : lightDestructive;
+
+  /// Cool teal light that plays around the brand green (glows, auroras,
+  /// the smart analysis). Never used for text on its own.
+  static const Color lightGlow = Color(0xFF1C8C7C);
+
+  /// Dark-theme teal glow.
+  static const Color darkGlow = Color(0xFF63D6C6);
+
+  /// Deep green at the lit corner of hero surfaces (balance card).
+  static const Color heroStart = Color(0xFF2F6B3C);
+
+  /// Forest green in the body of hero surfaces.
+  static const Color heroMiddle = Color(0xFF1B4423);
+
+  /// Teal-black at the far corner of hero surfaces.
+  static const Color heroEnd = Color(0xFF0E3A3A);
+
+  /// Text and icons on hero surfaces, in both themes.
+  static const Color onHero = Color(0xFFF2F7F1);
+
+  /// Soft light-field colors behind pages (mint, teal, lime), light theme.
+  static const List<Color> lightAurora = [
+    Color(0xFFB4E2BA),
+    Color(0xFF9EDCD3),
+    Color(0xFFDDEFBE),
+  ];
+
+  /// Light-field colors behind pages, dark theme.
+  static const List<Color> darkAurora = [
+    Color(0xFF1F6A35),
+    Color(0xFF0E6660),
+    Color(0xFF3A5A1C),
+  ];
 }

@@ -1,6 +1,7 @@
 // Notifications page: mute toggle, mark-all-read, clear history, a device
 // permission banner, and the alert history grouped by time.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
@@ -150,14 +151,14 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                 const Spacer(),
                                 if (hasUnread)
                                   _HeaderAction(
-                                    icon: Icons.done_all_rounded,
+                                    icon: AppIcons.checkAll,
                                     tooltip: 'تعيين الكل كمقروء',
                                     onTap: _service.markAllRead,
                                   ),
                                 if (items.isNotEmpty) ...[
                                   const SizedBox(width: 6),
                                   _HeaderAction(
-                                    icon: Icons.delete_outline_rounded,
+                                    icon: AppIcons.trash,
                                     tooltip: 'مسح السجل',
                                     onTap: _confirmClear,
                                   ),
@@ -182,7 +183,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                   ? Padding(
                                       padding: const EdgeInsets.only(top: 10),
                                       child: AppListTile(
-                                        icon: Icons.notifications_off_outlined,
+                                        icon: AppIcons.bellOff,
                                         title: 'إشعارات الجهاز متوقفة',
                                         subtitle: 'اسمح لوفّر بإرسال التنبيهات إلى هاتفك',
                                         status: 'سماح',
@@ -267,9 +268,7 @@ class _MuteControl extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  muted
-                      ? Icons.notifications_off_rounded
-                      : Icons.notifications_rounded,
+                  muted ? AppIcons.bellOff : AppIcons.bell,
                   color: muted ? colors.textSecondary : colors.accent,
                   size: 22,
                 ),
@@ -308,9 +307,7 @@ class _MuteControl extends StatelessWidget {
                 ),
               ),
               Icon(
-                muted
-                    ? Icons.notifications_off_outlined
-                    : Icons.notifications_active_outlined,
+                muted ? AppIcons.bellOff : AppIcons.bellRing,
                 size: 20,
                 color: muted ? colors.textSecondary : colors.accent,
               ),
@@ -369,7 +366,7 @@ class _EmptyNotifications extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: AppEmptyState(
-        icon: Icons.notifications_none_rounded,
+        icon: AppIcons.bell,
         title: 'لا توجد إشعارات بعد',
         message:
             'ستظهر هنا تنبيهات الرصيد والأهداف والتوفير والالتزامات عند حدوثها',
@@ -453,7 +450,7 @@ class _DismissBackground extends StatelessWidget {
         color: destructive.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(22),
       ),
-      child: Icon(Icons.delete_outline_rounded, color: destructive),
+      child: Icon(AppIcons.trash, color: destructive),
     );
   }
 }
@@ -583,18 +580,17 @@ class _NotificationTile extends StatelessWidget {
   /// Icon for each notification type.
   IconData _iconFor(NotificationType type) {
     return switch (type) {
-      NotificationType.balanceWarning => Icons.account_balance_wallet_outlined,
-      NotificationType.highSpending => Icons.trending_up_rounded,
-      NotificationType.largeExpense => Icons.priority_high_rounded,
-      NotificationType.goalReached => Icons.emoji_events_outlined,
-      NotificationType.goalProgress => Icons.flag_outlined,
-      NotificationType.savingsTransferred => Icons.savings_outlined,
-      NotificationType.recurringPeriodCompleted =>
-        Icons.event_available_outlined,
-      NotificationType.recurringExpenseBlocked => Icons.block_rounded,
-      NotificationType.recurringExpenseApplied => Icons.event_repeat_rounded,
-      NotificationType.recurringExpenseUpcoming => Icons.event_busy_outlined,
-      NotificationType.recurringExpenseDue => Icons.pending_actions_rounded,
+      NotificationType.balanceWarning => AppIcons.wallet,
+      NotificationType.highSpending => AppIcons.trendingUp,
+      NotificationType.largeExpense => AppIcons.error,
+      NotificationType.goalReached => AppIcons.trophy,
+      NotificationType.goalProgress => AppIcons.flag,
+      NotificationType.savingsTransferred => AppIcons.piggyBank,
+      NotificationType.recurringPeriodCompleted => AppIcons.calendarCheck,
+      NotificationType.recurringExpenseBlocked => AppIcons.block,
+      NotificationType.recurringExpenseApplied => AppIcons.calendarRepeat,
+      NotificationType.recurringExpenseUpcoming => AppIcons.calendarX,
+      NotificationType.recurringExpenseDue => AppIcons.pending,
     };
   }
 }

@@ -1,6 +1,7 @@
 // smart_insight value types: health band cut-offs, scope and action labels,
 // and the SmartInsight defaults.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
@@ -19,7 +20,7 @@ void main() {
 
   test('every scope and action has a label', () {
     expect(InsightScope.values.map((s) => s.label).toSet(), hasLength(3));
-    expect(InsightScope.reports.icon, Icons.bar_chart_rounded);
+    expect(InsightScope.reports.icon, AppIcons.reports);
     expect(
       InsightAction.values.map((a) => a.label).toSet(),
       hasLength(InsightAction.values.length),

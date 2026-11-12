@@ -1,5 +1,6 @@
 // Reorder, delete, or add active savings goals.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
@@ -92,7 +93,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
                     constraints: BoxConstraints(maxHeight: maxListHeight),
                     child: goals.isEmpty
                         ? const AppEmptyState(
-                            icon: Icons.flag_outlined,
+                            icon: AppIcons.flag,
                             title: 'لا توجد أهداف حالياً',
                           )
                         // Drag order is the goal priority; the store persists it.
@@ -144,7 +145,7 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
                   // Add a goal on top of this sheet.
                   AppPrimaryButton(
                     label: 'إضافة هدف',
-                    icon: Icons.add_rounded,
+                    icon: AppIcons.add,
                     onTap: () => showCreateGoalSheet(context),
                   ),
                 ],
@@ -196,7 +197,7 @@ class _ManageGoalRow extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsetsDirectional.only(end: 6),
               child: Icon(
-                Icons.drag_handle_rounded,
+                AppIcons.dragHandle,
                 color: textSecondary.withValues(alpha: 0.7),
               ),
             ),
@@ -258,7 +259,7 @@ class _ManageGoalRow extends StatelessWidget {
                 width: 36,
                 height: 36,
                 child: Icon(
-                  Icons.delete_outline_rounded,
+                  AppIcons.trash,
                   size: 18,
                   color: textPrimary.withValues(alpha: 0.75),
                 ),

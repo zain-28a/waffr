@@ -1,6 +1,7 @@
 // Savings hub: period net-saved card, total balance, active goals, and entry
 // points that open create / manual save / withdraw / shopping / recurring sheets.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/motion/active_listenable_builder.dart';

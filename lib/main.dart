@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffr/widgets/glass/liquid_glass.dart';
 import 'package:waffr/data/services/backup_service.dart';
 import 'package:waffr/data/services/legacy_profile_photo.dart';
 import 'package:waffr/data/services/notification_service.dart';
@@ -40,6 +41,8 @@ Future<void> main() async {
 
   unawaited(SyncService.instance.initialize());
   unawaited(LegacyProfilePhoto.remove());
+  // Warm the glass lens shader so the first frame of chrome can refract.
+  unawaited(LiquidGlassShader.ensureLoaded());
   _registerFontLicenses();
 
   runApp(const WafarApp());

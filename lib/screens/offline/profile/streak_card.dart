@@ -2,6 +2,8 @@
 // next milestone with the Waffr mark inside, and this week's days lighting
 // up one after another. Plays when the tab opens.
 
+import 'package:waffr/core/theme/app_icons.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -453,7 +455,7 @@ class _DayMark extends StatelessWidget {
                 ? Opacity(
                     opacity: reveal.clamp(0.0, 1.0),
                     child: Icon(
-                      Icons.check_rounded,
+                      AppIcons.check,
                       size: 16,
                       color: palette.onAccent,
                     ),

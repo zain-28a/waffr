@@ -2,6 +2,7 @@
 // the currency picker and the ×1–×10 multiplier, each opening a short list
 // under the row.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:waffr/core/theme/app_motion.dart';
@@ -462,9 +463,7 @@ class _AmountSlotButton extends StatelessWidget {
             ),
             if (showChevron)
               Icon(
-                open
-                    ? Icons.arrow_drop_up_rounded
-                    : Icons.arrow_drop_down_rounded,
+                open ? AppIcons.chevronUp : AppIcons.chevronDown,
                 size: 18,
                 color: color,
               ),
@@ -647,9 +646,7 @@ class _SheetCurrencySelectorState extends State<SheetCurrencySelector> {
                   ),
                   if (selectable)
                     Icon(
-                      _open
-                          ? Icons.arrow_drop_up_rounded
-                          : Icons.arrow_drop_down_rounded,
+                      _open ? AppIcons.chevronUp : AppIcons.chevronDown,
                       size: widget.dense ? 16 : 18,
                       color: textSecondary,
                     ),
