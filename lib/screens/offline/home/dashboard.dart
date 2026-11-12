@@ -84,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen>
       listenable: _listenables,
       builder: (context, _) {
         return SingleChildScrollView(
+          clipBehavior: Clip.none,
           padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

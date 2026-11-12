@@ -39,6 +39,8 @@ class PinnedPeriodScrollView extends StatelessWidget {
   Widget build(BuildContext context) {
     final height = FloatingPeriodSelector.heightOf(context);
     return CustomScrollView(
+      // Content scrolls on beneath the shell's glass header.
+      clipBehavior: Clip.none,
       slivers: [
         SliverPersistentHeader(
           pinned: true,

@@ -501,7 +501,14 @@ class _RenderGlassLens extends RenderProxyBox {
     _paintedRect = rect;
     final dpr = _devicePixelRatio;
     final optical = _bleed.inflateRect(rect);
-    final radius = _radius.topLeft.x;
+    // The lens has one radius; surfaces attached to an edge round only the
+    // free corners, so take the largest.
+    final radius = [
+      _radius.topLeft.x,
+      _radius.topRight.x,
+      _radius.bottomLeft.x,
+      _radius.bottomRight.x,
+    ].reduce((a, b) => a > b ? a : b);
     shader
       ..setFloat(2, optical.left * dpr)
       ..setFloat(3, optical.top * dpr)
@@ -563,7 +570,16 @@ class _GlassLightPainter extends CustomPainter {
     if (size.isEmpty) return;
     final rect = Offset.zero & size;
     // The optical outline; sides that bleed fall outside the clip.
-    final outline = radius.toRRect(bleed.inflateRect(rect)).deflate(0.5);
+    final corner = [
+      radius.topLeft,
+      radius.topRight,
+      radius.bottomLeft,
+      radius.bottomRight,
+    ].reduce((a, b) => a.x > b.x ? a : b);
+    final outline = RRect.fromRectAndRadius(
+      bleed.inflateRect(rect),
+      corner,
+    ).deflate(0.5);
     final gain = specular * (isDark ? 0.55 : 1.0);
     Color white(double a) =>
         Colors.white.withValues(alpha: (a * gain).clamp(0.0, 1.0));

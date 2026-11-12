@@ -131,6 +131,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         // a page tall, so its smile lands just below the stats and the cards
         // are painted over the rest of it.
         return SingleChildScrollView(
+          clipBehavior: Clip.none,
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: page.height),
             child: Stack(

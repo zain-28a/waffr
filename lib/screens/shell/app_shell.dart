@@ -38,6 +38,8 @@ import 'package:waffr/widgets/brand/waffr_mood_logo.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/floating_glass.dart';
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
+import 'package:waffr/widgets/glass/liquid_glass.dart';
 import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/data/services/smart_settings.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
@@ -442,62 +444,79 @@ class _AppShellState extends State<AppShell>
         body: Stack(
           fit: StackFit.expand,
           children: [
-            // Header (settings, bell, mood logo, wordmark) above the pager.
+            // The light field every tab sits on; the glass chrome bends it.
+            const Positioned.fill(child: AuroraBackdrop()),
+            // Tab pager. It starts below the header, but its pages paint
+            // past that edge, so content scrolls up beneath the glass.
             SafeArea(
-              // The header paints under the status bar so the two read as
-              // one surface; it applies the top inset itself.
               top: false,
-              child: Column(
-                children: [
-                  WaffrPageHeader(
-                    leadingWidth: 104,
-                    // The logo, smiling with the wallet's current mood.
-                    center: const WaffrMoodLogo(size: 46),
-                    leading: Row(
-                      children: [
-                        GlassIconButton(
-                          icon: AppIcons.settings,
-                          label: 'الإعدادات',
-                          onPressed: _openSettings,
-                        ),
-                        const SizedBox(width: 8),
-                        _NotificationsButton(
-                          onPressed: _openNotifications,
-                          onLongPress: _toggleNotificationsMuted,
-                        ),
-                      ],
-                    ),
-                    title: Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        'WAFFR',
-                        style: Theme.of(context).textTheme.displayLarge
-                            ?.copyWith(
-                              fontFamily: 'BebasNeue',
-                              fontStyle: FontStyle.italic,
-                            ),
-                      ),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  top:
+                      MediaQuery.paddingOf(context).top +
+                      WaffrPageHeader.height,
+                ),
+                // Only the visible page is built: zero viewport cache and no
+                // implicit neighbor scrolling. Pages come from _tabAt.
+                child: AnimatedBuilder(
+                  animation: _pagerFade,
+                  // The lens needs a settled page; blur stays while fading.
+                  builder: (context, child) => LiquidGlassScope(
+                    refract: _pagerFade.value >= 1,
+                    child: child!,
+                  ),
+                  child: FadeTransition(
+                    opacity: _pagerFade,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: _tabCount,
+                      clipBehavior: Clip.none,
+                      allowImplicitScrolling: false,
+                      scrollCacheExtent: const ScrollCacheExtent.viewport(0),
+                      onPageChanged: _onPageChanged,
+                      itemBuilder: (context, index) => _tabAt(index),
                     ),
                   ),
-                  Expanded(
-                    // Only the visible page is built: zero viewport cache and no
-                    // implicit neighbor scrolling. Pages come from _tabAt.
-                    child: FadeTransition(
-                      opacity: _pagerFade,
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: _tabCount,
-                        allowImplicitScrolling: false,
-                        scrollCacheExtent: const ScrollCacheExtent.viewport(0),
-                        onPageChanged: _onPageChanged,
-                        itemBuilder: (context, index) => _tabAt(index),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-            // Floats over the pages so content scrolls under its blur.
+            // Glass header (settings, bell, mood logo, wordmark) over the
+            // pager.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: WaffrPageHeader(
+                leadingWidth: 104,
+                // The logo, smiling with the wallet's current mood.
+                center: const WaffrMoodLogo(size: 46),
+                leading: Row(
+                  children: [
+                    GlassIconButton(
+                      icon: AppIcons.settings,
+                      label: 'الإعدادات',
+                      onPressed: _openSettings,
+                    ),
+                    const SizedBox(width: 8),
+                    _NotificationsButton(
+                      onPressed: _openNotifications,
+                      onLongPress: _toggleNotificationsMuted,
+                    ),
+                  ],
+                ),
+                title: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'WAFFR',
+                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                      fontFamily: 'BebasNeue',
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Floats over the pages so content scrolls under its glass.
             // Hidden while the keyboard is up so it never covers a field.
             Positioned(
               left: 16,
@@ -561,9 +580,9 @@ class _HideOnKeyboard extends StatelessWidget {
   }
 }
 
-/// Floating "liquid glass" tab bar: a blurred, translucent pill over the
-/// pages. The highlight follows the pager position, stretching while it moves
-/// between tabs and settling round under the selected icon.
+/// Floating liquid-glass tab bar over the pages. The highlight follows the
+/// pager position, stretching while it moves between tabs, and the selected
+/// tab opens to show its name beside the icon.
 class _BottomNavBar extends StatelessWidget {
   final ValueNotifier<int> tabIndex;
   final int tabCount;
@@ -595,8 +614,33 @@ class _BottomNavBar extends StatelessWidget {
     'الملف الشخصي',
   ];
 
+  /// Short names shown inside the highlight of the selected tab.
+  static const List<String> _titles = [
+    'الرئيسية',
+    'التقارير',
+    'التوفير',
+    'الإنترنت',
+    'حسابي',
+  ];
+
   static const double _height = 64;
   static const BorderRadius _radius = BorderRadius.all(Radius.circular(32));
+
+  /// How much wider than its neighbors the selected slot grows, as a
+  /// multiple of a plain slot.
+  static const double _grow = 1.5;
+
+  static const TextStyle _titleStyle = TextStyle(
+    fontFamily: 'Outfit',
+    fontFamilyFallback: ['Tajawal'],
+    fontSize: 12.5,
+    fontWeight: FontWeight.w700,
+    height: 1.1,
+  );
+
+  /// 1 on the tab the pager rests on, 0 one tab away.
+  static double _nearness(double page, int index) =>
+      (1 - (page - index).abs()).clamp(0.0, 1.0);
 
   @override
   Widget build(BuildContext context) {
@@ -611,7 +655,8 @@ class _BottomNavBar extends StatelessWidget {
         height: _height,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final slot = constraints.maxWidth / tabCount;
+            const inset = 6.0;
+            final track = constraints.maxWidth - inset * 2;
             return AnimatedBuilder(
               animation: Listenable.merge([pageController, tabIndex]),
               builder: (context, _) {
@@ -620,15 +665,36 @@ class _BottomNavBar extends StatelessWidget {
                         pageController.position.haveDimensions
                     ? (pageController.page ?? tabIndex.value.toDouble())
                     : tabIndex.value.toDouble();
+
+                // The selected slot is wider to hold its name; widths
+                // follow the pager, so two neighbors share the room while
+                // it moves between them.
+                final weights = [
+                  for (var i = 0; i < tabCount; i++)
+                    1 + _grow * _nearness(page, i),
+                ];
+                final unit = track / weights.fold<double>(0, (a, b) => a + b);
+                final widths = [for (final w in weights) w * unit];
+                final starts = <double>[];
+                var x = inset;
+                for (final w in widths) {
+                  starts.add(x);
+                  x += w;
+                }
+
                 return Stack(
                   children: [
-                    _indicator(page, slot, rtl),
-                    Row(
-                      children: [
-                        for (var i = 0; i < tabCount; i++)
-                          Expanded(child: _tab(i, page, accent, textPrimary)),
-                      ],
-                    ),
+                    _indicator(page, starts, widths, constraints.maxWidth, rtl),
+                    for (var i = 0; i < tabCount; i++)
+                      Positioned(
+                        left: rtl
+                            ? constraints.maxWidth - starts[i] - widths[i]
+                            : starts[i],
+                        top: 0,
+                        bottom: 0,
+                        width: widths[i],
+                        child: _tab(context, i, page, accent, textPrimary),
+                      ),
                   ],
                 );
               },
@@ -639,14 +705,28 @@ class _BottomNavBar extends StatelessWidget {
     );
   }
 
-  /// Highlight bubble for the fractional pager [page]: widest and flattest
-  /// halfway between two tabs, mirrored in RTL.
-  Widget _indicator(double page, double slot, bool rtl) {
+  /// Highlight bubble for the fractional pager [page]: it blends the two
+  /// slots it is between and stretches a little while it travels.
+  Widget _indicator(
+    double page,
+    List<double> starts,
+    List<double> widths,
+    double total,
+    bool rtl,
+  ) {
+    final from = page.floor().clamp(0, tabCount - 1);
+    final to = page.ceil().clamp(0, tabCount - 1);
     final frac = page - page.floorToDouble();
     final stretch = math.sin(frac * math.pi);
-    final width = slot * 0.66 * (1 + 0.55 * stretch);
-    final height = 44 - 6 * stretch;
-    final center = (rtl ? tabCount - 1 - page : page) * slot + slot / 2;
+    double mix(double a, double b) => a + (b - a) * frac;
+
+    final centerLtr = mix(
+      starts[from] + widths[from] / 2,
+      starts[to] + widths[to] / 2,
+    );
+    final width = mix(widths[from], widths[to]) * (1 + 0.12 * stretch) - 4;
+    final height = 48 - 6 * stretch;
+    final center = rtl ? total - centerLtr : centerLtr;
 
     return Positioned(
       left: center - width / 2,
@@ -657,11 +737,18 @@ class _BottomNavBar extends StatelessWidget {
     );
   }
 
-  /// One tap target; the icon scales and tints toward [accent] as the
-  /// highlight approaches it.
-  Widget _tab(int index, double page, Color accent, Color textPrimary) {
-    // 1 under the highlight, 0 one tab away.
-    final t = (1 - (page - index).abs()).clamp(0.0, 1.0);
+  /// One tap target. The icon tints toward [accent] as the highlight
+  /// approaches, and the tab's name opens beside it.
+  Widget _tab(
+    BuildContext context,
+    int index,
+    double page,
+    Color accent,
+    Color textPrimary,
+  ) {
+    final t = _nearness(page, index);
+    final eased = AppMotion.soft.transform(t);
+    final color = Color.lerp(textPrimary.withValues(alpha: 0.45), accent, t)!;
     return Semantics(
       button: true,
       label: _labels[index],
@@ -672,13 +759,37 @@ class _BottomNavBar extends StatelessWidget {
           HapticFeedback.selectionClick();
           onTap(index);
         },
-        child: Center(
-          child: Transform.scale(
-            scale: 1 + 0.18 * AppMotion.soft.transform(t),
-            child: Icon(
-              _icons[index],
-              size: 25,
-              color: Color.lerp(textPrimary.withValues(alpha: 0.38), accent, t),
+        child: ExcludeSemantics(
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Transform.scale(
+                  scale: 1 + 0.08 * eased,
+                  child: Icon(_icons[index], size: 24, color: color),
+                ),
+                // The name takes its room only as the tab is selected.
+                ClipRect(
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    widthFactor: eased,
+                    child: Opacity(
+                      opacity: (t * 1.6 - 0.6).clamp(0.0, 1.0),
+                      child: Padding(
+                        padding: const EdgeInsetsDirectional.only(start: 7),
+                        child: Text(
+                          _titles[index],
+                          maxLines: 1,
+                          softWrap: false,
+                          textScaler: MediaQuery.textScalerOf(context)
+                              .clamp(maxScaleFactor: 1.15),
+                          style: _titleStyle.copyWith(color: accent),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

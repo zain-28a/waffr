@@ -172,6 +172,7 @@ class _OnlineScreenState extends State<OnlineScreen>
 
     // The three cards, staggered in on first build.
     final content = SingleChildScrollView(
+      clipBehavior: Clip.none,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
