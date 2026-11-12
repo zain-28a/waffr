@@ -10,6 +10,7 @@ import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/widgets/containers/sheet_fields.dart';
+import 'package:waffr/widgets/motion/pressable.dart';
 
 /// Which inline menu under the amount row is open.
 enum _AmountMenu {
@@ -59,6 +60,9 @@ class SheetAmountField extends StatefulWidget {
   /// Optional control stacked above the × button in the same column.
   final Widget? multiplierAccessory;
 
+  /// Opens the keypad as soon as the sheet appears.
+  final bool autofocus;
+
   /// Creates a [SheetAmountField].
   const SheetAmountField({
     super.key,
@@ -72,6 +76,7 @@ class SheetAmountField extends StatefulWidget {
     this.multiplier,
     this.onMultiplierChanged,
     this.multiplierAccessory,
+    this.autofocus = false,
   });
 
   @override
@@ -88,6 +93,79 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
   _AmountMenu _menu = _AmountMenu.none;
   OverlayEntry? _entry;
 
+  /// Focus of the amount; while it has focus the keypad is open.
+  final FocusNode _focus = FocusNode(debugLabel: 'amount');
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_onFocus);
+  }
+
+  void _onFocus() {
+    if (!mounted) return;
+    setState(() {});
+    if (!_focus.hasFocus) return;
+    // Bring the amount and its keypad into view once the keypad has opened.
+    Future<void>.delayed(AppMotion.of(context, AppMotion.slow), () {
+      if (!mounted || !_focus.hasFocus) return;
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.1,
+        duration: AppMotion.of(context, AppMotion.medium),
+        curve: AppMotion.enter,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      );
+    });
+  }
+
+  /// Replaces the amount with [digits], formatted, and reports the edit.
+  void _setDigits(String digits) {
+    final next = ThousandsInputFormatter().formatEditUpdate(
+      widget.controller.value,
+      TextEditingValue(text: digits),
+    );
+    if (next.text == widget.controller.text) {
+      // Too long, or nothing to delete.
+      if (digits.isNotEmpty) AppHaptics.warning();
+      return;
+    }
+    widget.controller.value = next;
+    widget.onChanged?.call(next.text);
+  }
+
+  String get _digits =>
+      widget.controller.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+  void _onKey(String key) {
+    AppHaptics.selection();
+    _setDigits(_digits + key);
+  }
+
+  void _onBackspace() {
+    final digits = _digits;
+    if (digits.isEmpty) return;
+    AppHaptics.selection();
+    _setDigits(digits.substring(0, digits.length - 1));
+  }
+
+  void _onClear() {
+    if (_digits.isEmpty) return;
+    AppHaptics.warning();
+    _setDigits('');
+  }
+
+  void _onAdd(int amount) {
+    AppHaptics.selection();
+    final current = int.tryParse(_digits) ?? 0;
+    _setDigits('${current + amount}');
+  }
+
+  /// Round amounts offered above the keys, sized to the currency.
+  List<int> get _quickAmounts => _code == 'SYP'
+      ? const [1000, 5000, 10000, 50000]
+      : const [5, 10, 50, 100];
+
   String get _code {
     return Currencies.normalize(
       widget.currencyCode ?? CurrencyStore.instance.activeCode,
@@ -97,6 +175,9 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
   @override
   void dispose() {
     _removeEntry();
+    _focus
+      ..removeListener(_onFocus)
+      ..dispose();
     super.dispose();
   }
 
@@ -288,9 +369,18 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
                   Expanded(
                     child: TextField(
                       controller: widget.controller,
+                      focusNode: _focus,
+                      autofocus: widget.autofocus,
+                      // Keys and other controls must not close the keypad;
+                      // the done key and other fields do.
+                      onTapOutside: (_) {},
                       onChanged: widget.onChanged,
                       textAlign: TextAlign.center,
-                      keyboardType: TextInputType.number,
+                      // Waffr's own keypad opens below; no system keyboard.
+                      // A hardware keyboard still types into the field.
+                      keyboardType: TextInputType.none,
+                      showCursor: false,
+                      enableInteractiveSelection: false,
                       inputFormatters: [ThousandsInputFormatter()],
                       cursorColor: textPrimary,
                       style: TextStyle(
@@ -341,10 +431,194 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
                   ),
                 ),
               ],
+              // The keypad opens with the amount's focus.
+              AnimatedSize(
+                duration: AppMotion.sizeOf(context, AppMotion.slow),
+                curve: AppMotion.enter,
+                alignment: Alignment.topCenter,
+                child: _focus.hasFocus
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: _AmountKeypad(
+                          quickAmounts: _quickAmounts,
+                          onKey: _onKey,
+                          onBackspace: _onBackspace,
+                          onClear: _onClear,
+                          onAdd: _onAdd,
+                          onDone: _focus.unfocus,
+                        ),
+                      )
+                    : const SizedBox(width: double.infinity),
+              ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+/// Waffr's number pad: quick amounts, the ten digits, 000, delete and done.
+/// Digits are always laid out left to right, as on a phone dialer.
+class _AmountKeypad extends StatelessWidget {
+  final List<int> quickAmounts;
+  final ValueChanged<String> onKey;
+  final VoidCallback onBackspace;
+  final VoidCallback onClear;
+  final ValueChanged<int> onAdd;
+  final VoidCallback onDone;
+
+  const _AmountKeypad({
+    required this.quickAmounts,
+    required this.onKey,
+    required this.onBackspace,
+    required this.onClear,
+    required this.onAdd,
+    required this.onDone,
+  });
+
+  static const double _gap = 8;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
+    Widget row(List<Widget> keys) => Padding(
+      padding: const EdgeInsets.only(top: _gap),
+      child: Row(
+        children: [
+          for (final (index, key) in keys.indexed) ...[
+            if (index > 0) const SizedBox(width: _gap),
+            Expanded(child: key),
+          ],
+        ],
+      ),
+    );
+
+    Widget digit(String value) =>
+        _KeypadKey(label: value, semantics: value, onTap: () => onKey(value));
+
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              for (final (index, amount) in quickAmounts.indexed) ...[
+                if (index > 0) const SizedBox(width: _gap),
+                Expanded(
+                  child: _KeypadKey(
+                    label: '+${formatMoney(amount)}',
+                    semantics: 'إضافة ${formatMoney(amount)}',
+                    height: 36,
+                    fontSize: 13,
+                    tinted: true,
+                    onTap: () => onAdd(amount),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          row([digit('1'), digit('2'), digit('3')]),
+          row([digit('4'), digit('5'), digit('6')]),
+          row([digit('7'), digit('8'), digit('9')]),
+          row([
+            _KeypadKey(
+              icon: AppIcons.backspace,
+              semantics: 'حذف',
+              onTap: onBackspace,
+              onLongPress: onClear,
+            ),
+            digit('0'),
+            _KeypadKey(
+              icon: AppIcons.check,
+              semantics: 'تم',
+              color: palette.accent,
+              foreground: palette.onAccent,
+              onTap: onDone,
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+}
+
+/// One key of [_AmountKeypad]: it sinks under the finger and springs back.
+class _KeypadKey extends StatelessWidget {
+  final String? label;
+  final IconData? icon;
+  final String semantics;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final double height;
+  final double fontSize;
+
+  /// A soft accent tint, for the quick amounts.
+  final bool tinted;
+
+  /// Fill and content colors of a filled key (done).
+  final Color? color;
+  final Color? foreground;
+
+  const _KeypadKey({
+    required this.semantics,
+    required this.onTap,
+    this.label,
+    this.icon,
+    this.onLongPress,
+    this.height = 48,
+    this.fontSize = 21,
+    this.tinted = false,
+    this.color,
+    this.foreground,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fill =
+        color ??
+        (tinted
+            ? palette.accent.withValues(alpha: 0.12)
+            : palette.surface.withValues(alpha: isDark ? 0.5 : 0.9));
+    final ink = foreground ?? (tinted ? palette.accent : palette.textPrimary);
+
+    return Semantics(
+      button: true,
+      label: semantics,
+      child: Pressable(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        // The keypad fires its own haptic once the edit is accepted.
+        haptic: false,
+        depth: 0.08,
+        child: ExcludeSemantics(
+          child: Container(
+            height: height,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: BorderRadius.circular(height / 2.6),
+            ),
+            child: icon != null
+                ? Icon(icon, size: 22, color: ink)
+                : Text(
+                    label!,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: const ['Tajawal'],
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w600,
+                      color: ink,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+          ),
+        ),
+      ),
     );
   }
 }

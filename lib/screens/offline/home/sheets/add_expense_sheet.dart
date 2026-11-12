@@ -320,6 +320,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         ),
         const SizedBox(height: 10),
         SheetAmountField(
+          autofocus: true,
           label: 'المبلغ',
           controller: _amountController,
           helper: check.helper,

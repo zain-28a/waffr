@@ -80,6 +80,7 @@ class _ManualSaveSheetState extends State<_ManualSaveSheet> {
         ),
         const SizedBox(height: 18),
         SheetAmountField(
+          autofocus: true,
           label: 'المبلغ',
           controller: _amountController,
           helper:

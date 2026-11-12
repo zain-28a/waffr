@@ -148,6 +148,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
         const SizedBox(height: 18),
         // Amount with currency and the max-amount hint.
         SheetAmountField(
+          autofocus: true,
           label: 'مبلغ الدخل',
           controller: _amountController,
           helper:

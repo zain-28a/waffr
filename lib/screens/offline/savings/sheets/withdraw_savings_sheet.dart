@@ -83,6 +83,7 @@ class _WithdrawSavingsSheetState extends State<_WithdrawSavingsSheet> {
         ),
         const SizedBox(height: 18),
         SheetAmountField(
+          autofocus: true,
           label: 'المبلغ',
           controller: _amountController,
           helper:
