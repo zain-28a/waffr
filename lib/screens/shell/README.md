@@ -5,7 +5,7 @@ and lock gates are passed. Every tab lives inside it.
 
 | File | Contents |
 | --- | --- |
-| `app_shell.dart` | `AppShell`: header (settings, notification bell, wordmark), lazy tab `PageView`, floating bottom bar, streak overlay. |
+| `app_shell.dart` | `AppShell`: header (settings, notification bell, `WaffrMoodLogo` in the middle, wordmark), lazy tab `PageView`, floating bottom bar, streak overlay. |
 | `app_shell_scope.dart` | `AppShellScope` (inherited tab switcher), `AppShellTabs` (tab indices), and the shared layout constants `kFloatingNavClearance` and `kCardGap`. |
 
 Tabs, in page order: home, report, savings, online, profile. `_tabAt`

@@ -10,7 +10,7 @@ and `edit_amount_dialog.dart` read a store (`CurrencyStore`).
 | [`button/`](button/README.md) | `AppPrimaryButton` (the one primary action, also behind `SheetSaveButton`), `GlassButton` / `GlassIconButton`. |
 | [`dialogs/`](dialogs/README.md) | `EditAmountDialog`, `showEditDeleteMenu`, `showWaffrDatePicker` / `showWaffrDateRangePicker`. |
 | [`sheets/`](sheets/README.md) | `showMonthlyIncomeRequiredSheet`. |
-| [`brand/`](brand/README.md) | `WaffrLogo` / `WaffrSplash`, `WaffrPageHeader` / `WaffrBackHeader`, `ProfileAvatar`, `StreakCelebrationOverlay`. |
+| [`brand/`](brand/README.md) | `WaffrLogo` / `WaffrSplash`, `WaffrMoodLogo` and its `MouthShape`s, `WaffrPageHeader` / `WaffrBackHeader`, `ProfileAvatar`, `StreakCelebrationOverlay`. |
 | [`motion/`](motion/README.md) | `Reveal`, `staggered()`, `RollingMoney`, `AnimatedRatio`, `RevealClip`, `ActiveListenableBuilder`. Timings come from `AppMotion`. |
 | [`smart/`](smart/README.md) | `SmartAnalysisButton` (pill, tile or banner) and the `SmartGlowBackground` / `SmartSpark` effects. |
 

@@ -1,24 +1,25 @@
 // The Waffr wallet drawn large and faint behind the profile's lower cards.
 // The wallet is the logo artwork with its mouth removed; the mouth is a
-// vector path redrawn on top, so only the smile changes with the health
-// score and it morphs between poses instead of swapping images. While the
-// tab is on screen the wallet breathes slowly.
+// vector path redrawn on top (waffr_mouth.dart), so only the smile changes
+// with the wallet's mood and it morphs between poses instead of swapping
+// images. While the tab is on screen the wallet breathes slowly.
 
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/core/insights/smart/wallet_mood.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/widgets/brand/waffr_mouth.dart';
 
 /// Fills its box and hangs the wallet from the box's bottom edge. Fades in
-/// once the artwork is cached and a [band] is known.
+/// once the artwork is cached and a [form] is known.
 class WalletBackdrop extends StatefulWidget {
   /// The visible page; the wallet is sized from it.
   final Size page;
 
   /// Drives the smile. Null keeps the wallet hidden until the first read.
-  final HealthBand? band;
+  final SmileForm? form;
 
   /// False while another tab is showing, so the idle motion stops.
   final bool active;
@@ -27,7 +28,7 @@ class WalletBackdrop extends StatefulWidget {
   const WalletBackdrop({
     super.key,
     required this.page,
-    required this.band,
+    required this.form,
     required this.active,
   });
 
@@ -53,7 +54,7 @@ class WalletBackdrop extends StatefulWidget {
   /// its last card.
   static double contentClearance(Size page) {
     final size = _sizeFor(page);
-    return size * (1 - _MouthShape.excellent.cornerY - _sink) + 20;
+    return size * (1 - MouthShape.topmost - _sink) + 20;
   }
 
   @override
@@ -111,8 +112,8 @@ class _WalletBackdropState extends State<WalletBackdrop>
     _sync();
   }
 
-  /// Shown only once the artwork is ready and a band is known.
-  bool get _visible => _imageReady && widget.band != null;
+  /// Shown only once the artwork is ready and a form is known.
+  bool get _visible => _imageReady && widget.form != null;
 
   /// Starts or stops the fade-in and breathing to match visibility, the
   /// active tab and the motion settings.
@@ -148,8 +149,8 @@ class _WalletBackdropState extends State<WalletBackdrop>
 
   @override
   Widget build(BuildContext context) {
-    final band = widget.band;
-    if (!_visible || band == null) return const SizedBox.shrink();
+    final form = widget.form;
+    if (!_visible || form == null) return const SizedBox.shrink();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final ink = isDark ? AppPalette.of(context).accent : _ink;
@@ -177,15 +178,15 @@ class _WalletBackdropState extends State<WalletBackdrop>
                     filterQuality: FilterQuality.medium,
                     gaplessPlayback: true,
                   ),
-                  TweenAnimationBuilder<_MouthShape>(
-                    tween: _MouthTween(end: _MouthShape.of(band)),
+                  TweenAnimationBuilder<MouthShape>(
+                    tween: MouthTween(end: MouthShape.of(form)),
                     duration: AppMotion.of(
                       context,
                       const Duration(milliseconds: 900),
                     ),
                     curve: AppMotion.standard,
                     builder: (context, mouth, _) => CustomPaint(
-                      painter: _MouthPainter(
+                      painter: MouthPainter(
                         shape: mouth,
                         opacity: opacity,
                         color: ink,
@@ -203,7 +204,7 @@ class _WalletBackdropState extends State<WalletBackdrop>
               clipBehavior: Clip.hardEdge,
               children: [
                 Positioned(
-                  left: box.width / 2 - _MouthShape.centerX * size,
+                  left: box.width / 2 - MouthShape.centerX * size,
                   top: box.height - size * (1 - WalletBackdrop._sink),
                   width: size,
                   height: size,
@@ -213,8 +214,12 @@ class _WalletBackdropState extends State<WalletBackdrop>
                     builder: (context, child) {
                       // 0 at rest, 1 at the top of the breath.
                       final t = (1 - math.cos(_breath.value * 2 * math.pi)) / 2;
+                      // Grow from under the mouth so the smile stays put.
                       return Transform(
-                        alignment: Alignment.bottomCenter,
+                        alignment: const Alignment(
+                          MouthShape.centerX * 2 - 1,
+                          1,
+                        ),
                         transform: Matrix4.translationValues(0, -3 * t, 0)
                           ..scaleByDouble(1 + 0.012 * t, 1 + 0.012 * t, 1, 1),
                         child: child,
@@ -229,151 +234,4 @@ class _WalletBackdropState extends State<WalletBackdrop>
       ),
     );
   }
-}
-
-/// One pose of the mouth, in shares of the mark's size. Both lips are cubic
-/// curves between the two corners; depths are how far their control points
-/// sit below the corners (negative is above) and pulls how far those points
-/// sit in from the corners, as a share of the half width.
-@immutable
-class _MouthShape {
-  final double halfWidth;
-  final double cornerY;
-  final double upperDepth;
-  final double lowerDepth;
-  final double upperPull;
-  final double lowerPull;
-
-  const _MouthShape({
-    required this.halfWidth,
-    required this.cornerY,
-    required this.upperDepth,
-    required this.lowerDepth,
-    required this.upperPull,
-    required this.lowerPull,
-  });
-
-  /// Horizontal middle of the mouth in the artwork.
-  static const double centerX = 651.5 / 1440;
-
-  /// Traced from waffr_logo.png: the logo's own smile.
-  static const excellent = _MouthShape(
-    halfWidth: 301.5 / 1440,
-    cornerY: 806.5 / 1440,
-    upperDepth: 218 / 1440,
-    lowerDepth: 343 / 1440,
-    upperPull: 0.49,
-    lowerPull: 0.2,
-  );
-
-  /// A smaller, softer smile around the same middle.
-  static const good = _MouthShape(
-    halfWidth: 262 / 1440,
-    cornerY: 843 / 1440,
-    upperDepth: 150 / 1440,
-    lowerDepth: 245 / 1440,
-    upperPull: 0.49,
-    lowerPull: 0.2,
-  );
-
-  /// Close to a straight line.
-  static const fair = _MouthShape(
-    halfWidth: 222 / 1440,
-    cornerY: 917 / 1440,
-    upperDepth: -8 / 1440,
-    lowerDepth: 56 / 1440,
-    upperPull: 0.36,
-    lowerPull: 0.36,
-  );
-
-  /// Corners turned slightly down.
-  static const low = _MouthShape(
-    halfWidth: 212 / 1440,
-    cornerY: 974 / 1440,
-    upperDepth: -104 / 1440,
-    lowerDepth: -44 / 1440,
-    upperPull: 0.2,
-    lowerPull: 0.49,
-  );
-
-  /// The pose for a health band.
-  static _MouthShape of(HealthBand band) => switch (band) {
-    HealthBand.excellent => excellent,
-    HealthBand.good => good,
-    HealthBand.fair => fair,
-    HealthBand.low => low,
-  };
-
-  /// Linear blend toward [other] at [t].
-  _MouthShape lerpTo(_MouthShape other, double t) {
-    double mix(double a, double b) => a + (b - a) * t;
-    return _MouthShape(
-      halfWidth: mix(halfWidth, other.halfWidth),
-      cornerY: mix(cornerY, other.cornerY),
-      upperDepth: mix(upperDepth, other.upperDepth),
-      lowerDepth: mix(lowerDepth, other.lowerDepth),
-      upperPull: mix(upperPull, other.upperPull),
-      lowerPull: mix(lowerPull, other.lowerPull),
-    );
-  }
-
-  /// Closed path of both lips for a mark [size] pixels wide.
-  Path toPath(double size) {
-    final left = (centerX - halfWidth) * size;
-    final right = (centerX + halfWidth) * size;
-    final y = cornerY * size;
-    final half = halfWidth * size;
-    final upperIn = upperPull * half;
-    final lowerIn = lowerPull * half;
-    final upperY = y + upperDepth * size;
-    final lowerY = y + lowerDepth * size;
-
-    return Path()
-      ..moveTo(left, y)
-      ..cubicTo(left + upperIn, upperY, right - upperIn, upperY, right, y)
-      ..cubicTo(right - lowerIn, lowerY, left + lowerIn, lowerY, left, y)
-      ..close();
-  }
-}
-
-/// Tween that morphs between mouth poses.
-class _MouthTween extends Tween<_MouthShape> {
-  _MouthTween({super.end});
-
-  @override
-  _MouthShape lerp(double t) => begin!.lerpTo(end!, t);
-}
-
-/// Paints the mouth in [color] with the artwork's blur and fade.
-class _MouthPainter extends CustomPainter {
-  final _MouthShape shape;
-  final Animation<double> opacity;
-  final Color color;
-  final double blur;
-
-  _MouthPainter({
-    required this.shape,
-    required this.opacity,
-    required this.color,
-    required this.blur,
-  }) : super(repaint: opacity);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final alpha = opacity.value;
-    if (alpha <= 0 || size.isEmpty) return;
-    canvas.drawPath(
-      shape.toPath(size.width),
-      Paint()
-        ..color = color.withValues(alpha: alpha)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur * size.width),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _MouthPainter oldDelegate) =>
-      oldDelegate.shape != shape ||
-      oldDelegate.opacity != opacity ||
-      oldDelegate.color != color ||
-      oldDelegate.blur != blur;
 }

@@ -32,6 +32,7 @@ import 'package:waffr/screens/offline/savings/savings_screen.dart';
 import 'package:waffr/screens/offline/settings/settings_screen.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/brand/streak_celebration.dart';
+import 'package:waffr/widgets/brand/waffr_mood_logo.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/floating_glass.dart';
@@ -439,7 +440,7 @@ class _AppShellState extends State<AppShell>
         body: Stack(
           fit: StackFit.expand,
           children: [
-            // Header (settings, bell, wordmark) above the tab pager.
+            // Header (settings, bell, mood logo, wordmark) above the pager.
             SafeArea(
               // The header paints under the status bar so the two read as
               // one surface; it applies the top inset itself.
@@ -448,6 +449,8 @@ class _AppShellState extends State<AppShell>
                 children: [
                   WaffrPageHeader(
                     leadingWidth: 104,
+                    // The logo, smiling with the wallet's current mood.
+                    center: const WaffrMoodLogo(size: 46),
                     leading: Row(
                       children: [
                         GlassIconButton(

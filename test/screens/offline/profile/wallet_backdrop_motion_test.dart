@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/core/insights/smart/wallet_mood.dart';
 import 'package:waffr/screens/offline/profile/wallet_backdrop.dart';
 
 void main() {
@@ -11,7 +11,7 @@ void main() {
     'wallet updates all expressions and stops motion when hidden or reduced',
     (tester) async {
       Widget view(
-        HealthBand? band, {
+        SmileForm? form, {
         bool reduced = false,
         bool active = true,
       }) => MaterialApp(
@@ -24,14 +24,14 @@ void main() {
               height: 800,
               child: WalletBackdrop(
                 page: const Size(400, 800),
-                band: band,
+                form: form,
                 active: active,
               ),
             ),
           ),
         ),
       );
-      await tester.pumpWidget(view(HealthBand.excellent));
+      await tester.pumpWidget(view(SmileForm.excellent));
       await tester.runAsync(
         () => precacheImage(
           const AssetImage('assets/brand/waffr_logo_backdrop.png'),
@@ -41,10 +41,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       expect(tester.binding.transientCallbackCount, greaterThan(0));
-      await tester.pumpWidget(view(HealthBand.good, active: false));
+      await tester.pumpWidget(view(SmileForm.happy, active: false));
       expect(tester.binding.transientCallbackCount, 0);
-      for (final band in HealthBand.values) {
-        await tester.pumpWidget(view(band, reduced: true));
+      for (final form in SmileForm.values) {
+        await tester.pumpWidget(view(form, reduced: true));
         await tester.pumpAndSettle();
         expect(tester.binding.transientCallbackCount, 0);
         expect(tester.takeException(), isNull);

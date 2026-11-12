@@ -21,6 +21,10 @@ class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
   /// Center the title instead of starting it after [leading].
   final bool centerTitle;
 
+  /// Optional widget pinned to the exact middle of the bar (the shell's
+  /// logo), independent of [leading] and [title].
+  final Widget? center;
+
   /// When true the header casts its scroll shadow.
   final ValueListenable<bool>? elevated;
 
@@ -34,6 +38,7 @@ class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
     this.leading,
     this.leadingWidth = 48,
     this.centerTitle = false,
+    this.center,
     this.elevated,
     this.applySafeArea = true,
   });
@@ -49,6 +54,7 @@ class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
         leading: leading,
         leadingWidth: leadingWidth,
         centerTitle: centerTitle,
+        center: center,
         elevated: false,
         applySafeArea: applySafeArea,
       );
@@ -62,6 +68,7 @@ class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
           leading: leading,
           leadingWidth: leadingWidth,
           centerTitle: centerTitle,
+          center: center,
           elevated: isElevated,
           applySafeArea: applySafeArea,
         );
@@ -139,6 +146,7 @@ class _HeaderChrome extends StatelessWidget {
   final Widget? leading;
   final double leadingWidth;
   final bool centerTitle;
+  final Widget? center;
   final bool elevated;
   final bool applySafeArea;
 
@@ -147,6 +155,7 @@ class _HeaderChrome extends StatelessWidget {
     required this.leading,
     required this.leadingWidth,
     required this.centerTitle,
+    required this.center,
     required this.elevated,
     required this.applySafeArea,
   });
@@ -193,28 +202,38 @@ class _HeaderChrome extends StatelessWidget {
   }
 
   Widget get _bar {
+    final row = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        children: [
+          SizedBox(width: leadingWidth, child: leading),
+          Expanded(
+            child: centerTitle
+                ? Center(child: title)
+                : Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 12),
+                      child: title,
+                    ),
+                  ),
+          ),
+          if (centerTitle) SizedBox(width: leadingWidth),
+        ],
+      ),
+    );
+    final middle = center;
     return SizedBox(
       height: WaffrPageHeader.height,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Row(
-          children: [
-            SizedBox(width: leadingWidth, child: leading),
-            Expanded(
-              child: centerTitle
-                  ? Center(child: title)
-                  : Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: Padding(
-                        padding: const EdgeInsetsDirectional.only(end: 12),
-                        child: title,
-                      ),
-                    ),
+      child: middle == null
+          ? row
+          : Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned.fill(child: row),
+                middle,
+              ],
             ),
-            if (centerTitle) SizedBox(width: leadingWidth),
-          ],
-        ),
-      ),
     );
   }
 }

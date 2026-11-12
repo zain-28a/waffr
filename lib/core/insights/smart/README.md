@@ -8,6 +8,7 @@ stores -> `SmartFactsLoader` -> `SmartFacts` -> `InsightEngine` -> `SmartReport`
 | --- | --- |
 | `smart_facts.dart` | `SmartFacts` (plus `GoalFact`, `ObligationFact`): the numbers for one run, with lazily cached derived figures. Pure data, so rules are testable without stores. |
 | `smart_facts_loader.dart` | `SmartFactsLoader.load()`: awaits the stores and snapshots the active currency into `SmartFacts`. |
+| `wallet_mood.dart` | `SmileForm` (seven faces by health score, the logo's own smile being the happiest, with a 3-point hysteresis so a score on an edge cannot flip the face) and `WalletMood.instance` (shared, coalesced recompute while a widget `retain`s it). Drives the header logo and the profile backdrop. |
 | `smart_insight.dart` | Output types: `InsightScope` (reports / savings / profile), `InsightTone`, `HealthBand`, `InsightAction`, `SmartInsight`, `SmartReport`. |
 | `insight_engine.dart` | `InsightEngine(facts, seed:).analyze(scope)`: runs one rule group, ranks and caps the cards, adds the closing tip. Also `healthScore()` and `suggestedMonthlySaving()`. |
 | `report_insights.dart` | `ReportInsights.all()`: spending rules (trends, top category, spikes, projection, runway, weekday, small/large/night spending). Also `largestCategory()`. |

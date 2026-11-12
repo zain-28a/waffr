@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
-import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/core/insights/smart/wallet_mood.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/data/models/transaction.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
@@ -21,7 +21,7 @@ void main() {
     // Timer-based coalescing can schedule another read while stores hydrate.
     // Flush both the fake timer queue and cached futures from the real zone.
     for (var pass = 0; pass < 4; pass++) {
-      await tester.pump(const Duration(milliseconds: 1));
+      await tester.pump(WalletMood.coalesce);
       await tester.runAsync(() => SmartFactsLoader.load());
     }
     await tester.pumpAndSettle();
@@ -65,6 +65,7 @@ void main() {
     RecurringExpenseStore.instance.resetCache();
     ShoppingListStore.instance.resetCache();
     UsageStreakService.instance.resetCache();
+    WalletMood.instance.resetForTest();
     final tab = ValueNotifier<int>(4);
     addTearDown(tab.dispose);
     await tester.runAsync(() => SmartFactsLoader.load());
@@ -78,8 +79,8 @@ void main() {
     );
     await refreshHealth(tester);
     expect(
-      tester.widget<WalletBackdrop>(find.byType(WalletBackdrop)).band,
-      isIn([HealthBand.excellent, HealthBand.good]),
+      tester.widget<WalletBackdrop>(find.byType(WalletBackdrop)).form,
+      isIn([SmileForm.excellent, SmileForm.happy, SmileForm.pleased]),
     );
 
     records.add(
@@ -98,8 +99,13 @@ void main() {
     await tester.runAsync(() => SmartFactsLoader.load());
     await refreshHealth(tester);
     expect(
-      tester.widget<WalletBackdrop>(find.byType(WalletBackdrop)).band,
-      isIn([HealthBand.fair, HealthBand.low]),
+      tester.widget<WalletBackdrop>(find.byType(WalletBackdrop)).form,
+      isIn([
+        SmileForm.content,
+        SmileForm.neutral,
+        SmileForm.uneasy,
+        SmileForm.sad,
+      ]),
     );
     await tester.pumpWidget(const SizedBox());
     await tester.pump();
