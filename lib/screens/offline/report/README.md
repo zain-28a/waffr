@@ -9,7 +9,7 @@ separate libraries for exporting expenses.
 | File | What it holds |
 | --- | --- |
 | `reportscreen.dart` | `ReportScreen`: range chips, period pager (240 pages back), summary cards; per-(range, offset) report cache. |
-| `report_data.dart` | Pure period math: `_ReportRange`, `_ReportPeriod`, `_ReportData`, chart bucketing, the comparable previous period, axis label helpers. |
+| `report_data.dart` | Pure period math: `_ReportRange`, `_ReportPeriod`, `_ReportData`, chart bucketing, axis label helpers. |
 | `report_chart.dart` | `_SpendingChartCard` (one pager page) and `_SpendingLineChart` (fl_chart), `_EmptyState`. |
 | `report_summary.dart` | `_SpendingSummary`, `_ExpenseDistribution` (stacked bar + ranked list), `_ImprovementCard` (vs previous period, with the smart analysis button). |
 | `transaction_history_screen.dart` | `TransactionHistoryScreen.expenses()` / `.incomes()`: ledger by day, per-row undo, multi-select sharing (expenses only). |
@@ -29,9 +29,9 @@ How it connects:
   summary and smart analysis actions.
 - The PDF is shared through the `waffr/share_pdf` method channel on Android
   and `share_plus` elsewhere (or when the channel fails).
-- `SpendingImprovement` (core/insights) computes the comparison; the
-  previous period is cut to the same elapsed span while the current one is
-  still running.
+- `SpendingImprovement` (core/insights) computes the comparison against the
+  whole earlier period of the same range (the page after the visible one),
+  and the card names that period. The percentage is always shown.
 
 Tests: `test/screens/offline/report/reportscreen_test.dart`,
 `test/screens/offline/report/expense_history_pdf_test.dart`.

@@ -6,7 +6,7 @@ their own; they read `TransactionStore` / `CurrencyStore` or plain values.
 | File | Contents |
 | --- | --- |
 | `profile_snapshot.dart` | `ProfileSnapshot.fromStore(store)`: record counts (every currency) and lifetime spent/saved (active currency) for the profile tiles. Also `earliestUsageDate(store)`, the fallback start date when the streak service has none. |
-| `spending_improvement.dart` | `SpendingImprovement.calculate(currentTotal:, previousTotal:)`: the Reports badge ("+12.5%", "-3.0%", "-") and its Arabic sentence. A drop in spending is the positive direction. |
+| `spending_improvement.dart` | `SpendingImprovement.calculate(currentTotal:, previousTotal:)`: the Reports badge ("+12.5%", "-3.0%", "0%"; always a percentage) and its Arabic sentence. A drop in spending is the positive direction. |
 | [`smart/`](smart/README.md) | The on-device smart analysis: facts, rules, phrasing, reminder texts, category suggestions. |
 
 Who uses them:

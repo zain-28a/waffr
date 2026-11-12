@@ -156,18 +156,9 @@ class _ReportScreenState extends State<ReportScreen>
     return ActiveListenableBuilder(
       listenable: _listenables,
       builder: (context, _) {
-        final expenses = _expenses;
         final report = _reportFor(_range, _periodOffset);
-        final period = report.period;
-        // Compare against the same elapsed span of the previous period.
-        final previousPeriod = _comparablePeriod(
-          _periodFor(_range, _periodOffset + 1),
-          current: period,
-          now: DateTime.now(),
-        );
-        final previousTotal = _sumExpenses(
-          _expensesInPeriod(expenses, previousPeriod),
-        );
+        // Always compare against the whole earlier period of the same range.
+        final previous = _reportFor(_range, _periodOffset + 1);
         final chartHeight = (MediaQuery.sizeOf(context).height * 0.32).clamp(
           220.0,
           300.0,
@@ -218,7 +209,8 @@ class _ReportScreenState extends State<ReportScreen>
               const SizedBox(height: kCardGap),
               _ImprovementCard(
                 currentTotal: report.total,
-                previousTotal: previousTotal,
+                previousTotal: previous.total,
+                previousLabel: previous.period.label,
               ),
               const SizedBox(height: kCardGap),
               _ExpenseDistribution(report: report),

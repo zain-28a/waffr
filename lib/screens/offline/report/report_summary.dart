@@ -342,9 +342,13 @@ class _ImprovementCard extends StatelessWidget {
   final double currentTotal;
   final double previousTotal;
 
+  /// Caption of the earlier period the percentage refers to.
+  final String previousLabel;
+
   const _ImprovementCard({
     required this.currentTotal,
     required this.previousTotal,
+    required this.previousLabel,
   });
 
   @override
@@ -387,31 +391,27 @@ class _ImprovementCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                // Without a previous period there is no number to show, so
-                // the reason is the whole message instead of a bare dash.
-                if (comparison.hasPercentage) ...[
-                  Row(
-                    children: [
-                      Icon(icon, size: 20, color: valueColor),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          comparison.text,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: 'Outfit',
-                            fontFamilyFallback: const ['Tajawal'],
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: valueColor,
-                          ),
+                Row(
+                  children: [
+                    Icon(icon, size: 20, color: valueColor),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        comparison.text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontFamilyFallback: const ['Tajawal'],
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: valueColor,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
                 Text(
                   comparison.detail,
                   maxLines: 2,
@@ -419,8 +419,21 @@ class _ImprovementCard extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Outfit',
                     fontFamilyFallback: const ['Tajawal'],
-                    fontSize: comparison.hasPercentage ? 12 : 13,
+                    fontSize: 12,
                     color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                // Names the earlier period the percentage refers to.
+                Text(
+                  'مقارنة بـ $previousLabel',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 11,
+                    color: colors.textSecondary.withValues(alpha: 0.8),
                   ),
                 ),
               ],

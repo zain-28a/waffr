@@ -142,26 +142,6 @@ _ReportPeriod _periodFor(_ReportRange range, int offset) {
   return _ReportPeriod(start: period.start, end: period.end, range: range);
 }
 
-/// While [current] is still running, only the same elapsed span of
-/// [previous] is fair to compare: ten days into this month against the first
-/// ten days of last month, not against all of it.
-_ReportPeriod _comparablePeriod(
-  _ReportPeriod previous, {
-  required _ReportPeriod current,
-  required DateTime now,
-}) {
-  if (!now.isBefore(current.end) || now.isBefore(current.start)) {
-    return previous;
-  }
-  final elapsed = now.difference(current.start);
-  final end = previous.start.add(elapsed);
-  return _ReportPeriod(
-    start: previous.start,
-    end: end.isBefore(previous.end) ? end : previous.end,
-    range: previous.range,
-  );
-}
-
 /// Expenses whose time falls inside [period].
 List<WaffrTransaction> _expensesInPeriod(
   List<WaffrTransaction> expenses,

@@ -1,5 +1,5 @@
 // SpendingImprovement.calculate: a drop is a positive percentage, a rise a
-// negative one, and nothing to compare gives a neutral dash.
+// negative one, and an empty previous period still gives a percentage.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/core/insights/spending_improvement.dart';
@@ -33,16 +33,18 @@ void main() {
     expect(result.detail, 'لا تغيير في المصروف');
   });
 
-  test('nothing in the previous period', () {
+  test('nothing in the previous period still shows a percentage', () {
     final empty = calc(0, 0);
     expect(empty.kind, SpendingChange.neutral);
-    expect(empty.text, '—');
-    expect(empty.detail, 'لا توجد بيانات للمقارنة');
-    expect(empty.hasPercentage, isFalse);
+    expect(empty.text, '0%');
+    expect(empty.detail, 'لا توجد مصروفات في الفترتين');
+    expect(empty.hasPercentage, isTrue);
 
     final fresh = calc(50, 0);
+    expect(fresh.kind, SpendingChange.negative);
+    expect(fresh.text, '−100.0%');
     expect(fresh.detail, 'لا توجد مصروفات في الفترة السابقة');
-    expect(fresh.hasPercentage, isFalse);
+    expect(fresh.hasPercentage, isTrue);
   });
 
   test('spending dropped to zero is a full improvement', () {

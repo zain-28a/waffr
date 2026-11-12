@@ -17,13 +17,14 @@ class SpendingImprovement {
   /// Whether the change is good, bad or neutral.
   final SpendingChange kind;
 
-  /// The badge text ("+12.5%", "−3.0%", "—").
+  /// The badge text ("+12.5%", "−3.0%", "0%").
   final String text;
 
   /// One Arabic sentence explaining the badge.
   final String detail;
 
-  /// False when there was nothing to compare against.
+  /// Always true now: the badge always shows a percentage against the
+  /// previous period. Kept for callers that branch on it.
   final bool hasPercentage;
 
   /// A comparison result.
@@ -40,21 +41,22 @@ class SpendingImprovement {
     required double currentTotal,
     required double previousTotal,
   }) {
-    // Nothing spent before: no percentage, just say why.
+    // Nothing spent before: there is no base for a ratio, so the change is
+    // shown at its bound (no change, or a full rise) and the sentence says why.
     if (previousTotal <= 0) {
       if (currentTotal <= 0) {
         return const SpendingImprovement(
           SpendingChange.neutral,
-          '—',
-          'لا توجد بيانات للمقارنة',
-          false,
+          '0%',
+          'لا توجد مصروفات في الفترتين',
+          true,
         );
       }
       return const SpendingImprovement(
-        SpendingChange.neutral,
-        '—',
+        SpendingChange.negative,
+        '−100.0%',
         'لا توجد مصروفات في الفترة السابقة',
-        false,
+        true,
       );
     }
 
