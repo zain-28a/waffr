@@ -511,13 +511,23 @@ class _AreaChartPainter extends CustomPainter {
         ).createShader(plot),
     );
 
+    // A soft glow under the line, then the line.
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
     canvas.drawPath(
       line,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..strokeWidth = 2.4
+      stroke
+        ..strokeWidth = 7
+        ..color = color.withValues(alpha: 0.26)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
+    );
+    canvas.drawPath(
+      line,
+      stroke
+        ..maskFilter = null
+        ..strokeWidth = 2.5
         ..color = color,
     );
 

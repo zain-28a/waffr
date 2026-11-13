@@ -1,14 +1,14 @@
 // Home balance hero (part of dashboard.dart): the balance on a dimensional
-// glass card. The card leans toward a finger and with the phone's motion,
-// its light and inner glow shift with the lean, and the wallet's current
-// smile is pressed faintly into its surface.
+// card. The card leans toward a finger and with the phone's motion, its
+// lights shift with the lean, and it flips over when the currency changes.
 
 part of 'dashboard.dart';
 
 /// Current balance, how much of the period's money is left, and spend vs
-/// max. A vertical swipe cycles currency when more than one is enabled.
-/// Corner chips open the income history and the shopping list.
-class _BalanceHero extends StatelessWidget {
+/// max. A vertical swipe cycles currency when more than one is enabled, and
+/// the whole card flips over to the next currency. Corner chips open the
+/// income history and the shopping list.
+class _BalanceHero extends StatefulWidget {
   // Values for the active currency, taken from TransactionStore.
   final double balance;
   final double spent;
@@ -27,173 +27,302 @@ class _BalanceHero extends StatelessWidget {
     required this.onIncomeLog,
   });
 
+  @override
+  State<_BalanceHero> createState() => _BalanceHeroState();
+}
+
+class _BalanceHeroState extends State<_BalanceHero> {
   static const BorderRadius _radius = BorderRadius.all(Radius.circular(30));
 
-  /// Mint used for the ring and highlights on the dark card surface.
+  /// Mint used for the bar and highlights on the dark card surface.
   static const Color _mint = Color(0xFF9FD8A6);
+
+  /// The currency on the card's face, and which way the last flip turned.
+  String _code = CurrencyStore.instance.activeCode;
+  bool _forward = true;
+
+  /// Notes a currency change so the flip turns the way the list moved.
+  void _trackCurrency(List<String> codes, String active) {
+    if (active == _code) return;
+    final from = codes.indexOf(_code);
+    final to = codes.indexOf(active);
+    final count = codes.length;
+    _forward = from < 0 || to < 0 || count < 2
+        ? true
+        : (to - from + count) % count <= count / 2;
+    _code = active;
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencies = CurrencyStore.instance;
     final codes = currencies.enabledCodes;
-    final activeIndex = codes.indexOf(currencies.activeCode);
+    final active = currencies.activeCode;
+    final activeIndex = codes.indexOf(active);
     final many = codes.length > 1;
+    _trackCurrency(codes, active);
+
+    // One face of the card: everything on it belongs to one currency.
+    final face = KeyedSubtree(
+      key: ValueKey(active),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: _radius,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.heroEnd.withValues(alpha: isDark ? 0.6 : 0.4),
+              blurRadius: 34,
+              spreadRadius: -6,
+              offset: const Offset(0, 18),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: _radius,
+          child: _HeroFace(
+            balance: widget.balance,
+            spent: widget.spent,
+            maxBalance: widget.maxBalance,
+            ratio: widget.ratio,
+            symbol: currencyLabel,
+            dots: many ? codes.length : 0,
+            activeDot: activeIndex < 0 ? 0 : activeIndex,
+            mint: _mint,
+            onShoppingList: widget.onShoppingList,
+            onIncomeLog: widget.onIncomeLog,
+          ),
+        ),
+      ),
+    );
+
+    return RepaintBoundary(
+      // An empty drag-update handler claims the vertical gesture so the
+      // swipe switches currency instead of scrolling the page.
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onVerticalDragUpdate: many ? (_) {} : null,
+        onVerticalDragEnd: many
+            ? (details) {
+                final velocity = details.primaryVelocity ?? 0;
+                if (velocity < -180) {
+                  AppHaptics.selection();
+                  currencies.selectNext();
+                } else if (velocity > 180) {
+                  AppHaptics.selection();
+                  currencies.selectPrevious();
+                }
+              }
+            : null,
+        child: AnimatedSwitcher(
+          duration: AppMotion.of(context, const Duration(milliseconds: 560)),
+          switchInCurve: Curves.linear,
+          switchOutCurve: Curves.linear,
+          layoutBuilder: (current, previous) => Stack(
+            alignment: Alignment.center,
+            children: [...previous, ?current],
+          ),
+          transitionBuilder: (child, animation) => _CardFlip(
+            animation: animation,
+            incoming: child.key == ValueKey(active),
+            forward: _forward,
+            child: child,
+          ),
+          child: face,
+        ),
+      ),
+    );
+  }
+}
+
+/// Turns the whole card over its horizontal axis. The outgoing face swings
+/// away during the first half, the incoming one swings in during the
+/// second, so the card reads as one object with two sides.
+class _CardFlip extends StatelessWidget {
+  final Animation<double> animation;
+
+  /// True for the face arriving, false for the one leaving.
+  final bool incoming;
+
+  /// Which way the card turns.
+  final bool forward;
+  final Widget child;
+
+  const _CardFlip({
+    required this.animation,
+    required this.incoming,
+    required this.forward,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (context, child) {
+        // The switcher runs 0..1 for the incoming face and 1..0 for the
+        // outgoing one; each face owns half of that range.
+        final t = animation.value;
+        final visible = incoming ? t >= 0.5 : t > 0.5;
+        if (!visible) return Visibility.maintain(visible: false, child: child!);
+        final half = AppMotion.standard.transform(
+          ((1 - t) * 2).clamp(0.0, 1.0),
+        );
+        final turn = (incoming == forward ? -1 : 1) * half * math.pi / 2;
+        return Transform(
+          alignment: Alignment.center,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.0008)
+            ..rotateX(turn),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+/// One side of the card: the surface, its light, and one currency's balance
+/// with a large bar for what is left of the period. The card leans toward
+/// a finger and with the phone's motion.
+class _HeroFace extends StatelessWidget {
+  final double balance;
+  final double spent;
+  final double maxBalance;
+  final double ratio;
+  final String symbol;
+
+  /// Number of currency dots; 0 hides them.
+  final int dots;
+  final int activeDot;
+  final Color mint;
+  final VoidCallback onShoppingList;
+  final VoidCallback onIncomeLog;
+
+  const _HeroFace({
+    required this.balance,
+    required this.spent,
+    required this.maxBalance,
+    required this.ratio,
+    required this.symbol,
+    required this.dots,
+    required this.activeDot,
+    required this.mint,
+    required this.onShoppingList,
+    required this.onIncomeLog,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     const ink = AppColors.onHero;
-    final soft = ink.withValues(alpha: 0.72);
+    final soft = ink.withValues(alpha: 0.74);
 
     final content = Stack(
       children: [
-        // An empty drag-update handler claims the vertical gesture so the
-        // swipe switches currency instead of scrolling the page.
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onVerticalDragUpdate: many ? (_) {} : null,
-          onVerticalDragEnd: many
-              ? (details) {
-                  final velocity = details.primaryVelocity ?? 0;
-                  if (velocity < -180) {
-                    AppHaptics.selection();
-                    currencies.selectNext();
-                  } else if (velocity > 180) {
-                    AppHaptics.selection();
-                    currencies.selectPrevious();
-                  }
-                }
-              : null,
-          // Content slides in when the active currency changes.
-          child: AnimatedSwitcher(
-            duration: AppMotion.of(context, AppMotion.medium),
-            switchInCurve: AppMotion.enter,
-            switchOutCurve: AppMotion.exit,
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.12),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
+        Padding(
+          padding: EdgeInsetsDirectional.fromSTEB(
+            dots > 0 ? 36 : 24,
+            22,
+            24,
+            22,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Leaves room for the corner chips on the same line.
+              SizedBox(
+                height: 40,
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text('الرصيد الحالي', style: _text(14, color: soft)),
+                ),
               ),
-            ),
-            child: Padding(
-              key: ValueKey(currencies.activeCode),
-              padding: EdgeInsetsDirectional.fromSTEB(
-                many ? 36 : 24,
-                22,
-                24,
-                22,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 2),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
                 children: [
-                  // Leaves room for the corner chips on the same line.
-                  SizedBox(
-                    height: 40,
-                    child: Align(
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
                       alignment: AlignmentDirectional.centerStart,
-                      child: Text(
-                        'الرصيد الحالي',
-                        style: _text(14, color: soft),
+                      child: RollingMoney(
+                        value: balance,
+                        style: _text(
+                          48,
+                          weight: FontWeight.w700,
+                          color: ink,
+                          tabular: true,
+                        ).copyWith(height: 1.05, letterSpacing: -0.5),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Flexible(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: AlignmentDirectional.centerStart,
-                          child: RollingMoney(
-                            value: balance,
-                            style: _text(
-                              48,
-                              weight: FontWeight.w700,
-                              color: ink,
-                              tabular: true,
-                            ).copyWith(height: 1.05, letterSpacing: -0.5),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(currencyLabel, style: _text(16, color: soft)),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  // How much of the period's money is left, as a ring.
-                  Row(
-                    children: [
-                      AnimatedRatio(
-                        value: ratio,
-                        builder: (context, shown) => SizedBox.square(
-                          dimension: 54,
-                          child: CustomPaint(
-                            painter: _RingPainter(
-                              ratio: shown,
-                              track: ink.withValues(alpha: 0.16),
-                              color: _mint,
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${(shown * 100).round()}%',
-                                style: _text(
-                                  12.5,
-                                  weight: FontWeight.w700,
-                                  color: ink,
-                                  tabular: true,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'المتبقي من رصيد الفترة',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: _text(12.5, color: soft),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'مصروف ${formatMoney(spent)} '
-                              'من ${formatMoney(maxBalance)} $currencyLabel',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: _text(
-                                13.5,
-                                weight: FontWeight.w600,
-                                color: ink.withValues(alpha: 0.94),
-                                tabular: true,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                  const SizedBox(width: 8),
+                  Text(symbol, style: _text(16, color: soft)),
                 ],
               ),
-            ),
+              const SizedBox(height: 16),
+              // How much of the period's money is left: the share in large
+              // figures over a thick bar.
+              AnimatedRatio(
+                value: ratio,
+                builder: (context, shown) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'المتبقي من رصيد الفترة',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: _text(13, color: soft),
+                          ),
+                        ),
+                        Text(
+                          '${(shown * 100).round()}%',
+                          style: _text(
+                            20,
+                            weight: FontWeight.w700,
+                            color: ink,
+                            tabular: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    _HeroBar(ratio: shown, color: mint),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'مصروف ${formatMoney(spent)} '
+                'من ${formatMoney(maxBalance)} $symbol',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _text(
+                  13,
+                  weight: FontWeight.w500,
+                  color: ink.withValues(alpha: 0.86),
+                  tabular: true,
+                ),
+              ),
+            ],
           ),
         ),
         // Currency page dots on the start edge.
-        if (many)
+        if (dots > 0)
           PositionedDirectional(
             start: 14,
             top: 0,
             bottom: 0,
             child: Center(
               child: _CurrencyDots(
-                count: codes.length,
-                activeIndex: activeIndex < 0 ? 0 : activeIndex,
+                count: dots,
+                activeIndex: activeDot,
                 activeColor: ink,
                 inactiveColor: ink.withValues(alpha: 0.3),
               ),
@@ -223,63 +352,80 @@ class _BalanceHero extends StatelessWidget {
       ],
     );
 
-    // The smile pressed into the card follows the wallet's mood.
-    return RepaintBoundary(
-      child: ListenableBuilder(
-        listenable: WalletMood.instance,
-        builder: (context, child) {
-          final mouth = MouthShape.of(
-            WalletMood.instance.form ?? SmileForm.excellent,
-          );
-          return TiltBuilder(
-            child: child,
-            builder: (context, tilt, child) => Transform(
-              alignment: Alignment.center,
-              // A slight perspective lean: the pressed side sinks away.
-              transform: Matrix4.identity()
-                ..setEntry(3, 2, 0.0011)
-                ..rotateX(-tilt.dy * 0.075)
-                ..rotateY(tilt.dx * 0.075),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: _radius,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.heroEnd.withValues(
-                        alpha: isDark ? 0.55 : 0.34,
-                      ),
-                      blurRadius: 30,
-                      spreadRadius: -6,
-                      offset: Offset(-tilt.dx * 10, 18 - tilt.dy * 6),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: _radius,
-                  child: CustomPaint(
-                    painter: _HeroSurfacePainter(tilt: tilt, mouth: mouth),
-                    foregroundPainter: _HeroLightPainter(tilt: tilt),
-                    child: child,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-        child: content,
+    return TiltBuilder(
+      child: content,
+      builder: (context, tilt, child) => Transform(
+        alignment: Alignment.center,
+        // A slight perspective lean: the pressed side sinks away.
+        transform: Matrix4.identity()
+          ..setEntry(3, 2, 0.0011)
+          ..rotateX(-tilt.dy * 0.075)
+          ..rotateY(tilt.dx * 0.075),
+        child: CustomPaint(
+          painter: _HeroSurfacePainter(tilt: tilt),
+          foregroundPainter: _HeroLightPainter(tilt: tilt),
+          child: child,
+        ),
       ),
     );
   }
 }
 
-/// The card body: deep green with one soft light, the wallet's stitching,
-/// and its smile as a faint watermark. The light and the smile slide a
-/// little against the lean, which reads as depth.
+/// The thick bar under the balance: how much of the period's money is left.
+/// It fills from the start edge, so in Arabic it grows from the right.
+class _HeroBar extends StatelessWidget {
+  final double ratio;
+  final Color color;
+
+  const _HeroBar({required this.ratio, required this.color});
+
+  static const double _height = 18;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(_height / 2),
+      child: SizedBox(
+        height: _height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ColoredBox(color: Colors.white.withValues(alpha: 0.16)),
+            FractionallySizedBox(
+              alignment: AlignmentDirectional.centerStart,
+              widthFactor: ratio.clamp(0.0, 1.0),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(_height / 2),
+                  // Lit from above, like the card it sits on.
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color.lerp(color, Colors.white, 0.22)!, color],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.5),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The card body: deep green with a soft white light in one corner, a
+/// cooler one in the opposite corner, and the wallet's stitching. The
+/// lights slide a little against the lean, which reads as depth.
 class _HeroSurfacePainter extends CustomPainter {
   final Offset tilt;
-  final MouthShape mouth;
 
-  const _HeroSurfacePainter({required this.tilt, required this.mouth});
+  const _HeroSurfacePainter({required this.tilt});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -300,54 +446,32 @@ class _HeroSurfacePainter extends CustomPainter {
         ).createShader(rect),
     );
 
-    // One soft light near the top corner; it slides against the lean,
-    // which is what reads as depth.
-    final lit = Offset(
-      (0.86 - tilt.dx * 0.12) * size.width,
-      (0.02 - tilt.dy * 0.12) * size.height,
-    );
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [
-            Colors.white.withValues(alpha: 0.13),
-            Colors.white.withValues(alpha: 0),
-          ],
-        ).createShader(Rect.fromCircle(center: lit, radius: size.width * 0.7)),
-    );
-    // A cooler, fainter light in the opposite corner balances it.
-    final cool = Offset(
-      (0.08 - tilt.dx * 0.1) * size.width,
-      (1.0 - tilt.dy * 0.1) * size.height,
-    );
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader =
-            RadialGradient(
-              colors: [
-                AppColors.darkGlow.withValues(alpha: 0.14),
-                AppColors.darkGlow.withValues(alpha: 0),
-              ],
-            ).createShader(
-              Rect.fromCircle(center: cool, radius: size.width * 0.55),
-            ),
-    );
+    void light(Offset at, double radius, Color color, double alpha) {
+      final center = Offset(at.dx * size.width, at.dy * size.height);
+      canvas.drawRect(
+        rect,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [
+              color.withValues(alpha: alpha),
+              color.withValues(alpha: 0),
+            ],
+          ).createShader(Rect.fromCircle(center: center, radius: radius)),
+      );
+    }
 
-    // The smile: the logo's mouth, large and faint, toward the left.
-    final mark = size.height * 1.15;
-    canvas
-      ..save()
-      ..translate(
-        size.width * 0.23 - MouthShape.centerX * mark - tilt.dx * 6,
-        size.height * 0.56 - mouth.cornerY * mark - tilt.dy * 4,
-      )
-      ..drawPath(
-        mouth.toPath(mark),
-        Paint()..color = Colors.white.withValues(alpha: 0.075),
-      )
-      ..restore();
+    light(
+      Offset(0.86 - tilt.dx * 0.12, 0.02 - tilt.dy * 0.12),
+      size.width * 0.72,
+      Colors.white,
+      0.18,
+    );
+    light(
+      Offset(0.08 - tilt.dx * 0.1, 1.0 - tilt.dy * 0.1),
+      size.width * 0.6,
+      AppColors.darkGlow,
+      0.24,
+    );
 
     // Stitching, as on the wallet in the logo.
     final stitch = Path()
@@ -368,7 +492,7 @@ class _HeroSurfacePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HeroSurfacePainter oldDelegate) =>
-      oldDelegate.tilt != tilt || oldDelegate.mouth != mouth;
+      oldDelegate.tilt != tilt;
 }
 
 /// Light on the card's edge: a rim that is bright toward the light and a
@@ -427,40 +551,6 @@ class _HeroLightPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _HeroLightPainter oldDelegate) =>
       oldDelegate.tilt != tilt;
-}
-
-/// Progress ring: a faint full track and a solid arc from the top.
-class _RingPainter extends CustomPainter {
-  final double ratio;
-  final Color track;
-  final Color color;
-  final double stroke;
-
-  const _RingPainter({
-    required this.ratio,
-    required this.track,
-    required this.color,
-    this.stroke = 5.5,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = (Offset.zero & size).deflate(stroke / 2);
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = track);
-    final sweep = math.pi * 2 * ratio.clamp(0.0, 1.0);
-    if (sweep <= 0.01) return;
-    canvas.drawArc(rect, -math.pi / 2, sweep, false, paint..color = color);
-  }
-
-  @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
-      oldDelegate.ratio != ratio ||
-      oldDelegate.track != track ||
-      oldDelegate.color != color;
 }
 
 /// Small translucent button in the hero's corner.

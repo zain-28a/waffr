@@ -106,9 +106,9 @@ class _QuickAction extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: palette.accent.withValues(alpha: isDark ? 0.2 : 0.26),
-                  blurRadius: 14,
-                  offset: const Offset(0, 6),
+                  color: palette.accent.withValues(alpha: isDark ? 0.36 : 0.38),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),

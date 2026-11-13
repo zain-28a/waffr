@@ -12,7 +12,6 @@ import 'package:flutter/material.dart';
 import 'package:waffr/core/insights/smart/insight_engine.dart';
 import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
-import 'package:waffr/core/insights/smart/wallet_mood.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_icons.dart';
@@ -38,7 +37,6 @@ import 'package:waffr/screens/offline/savings/sheets/manual_save_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
-import 'package:waffr/widgets/brand/waffr_mouth.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/glass/tilt.dart';
 import 'package:waffr/widgets/motion/active_listenable_builder.dart';
@@ -195,11 +193,15 @@ class _HomeScreenState extends State<HomeScreen>
                 onObligations: () => showObligationsSheet(context),
               ),
               const SizedBox(height: 20),
-              _InsightStrip(
-                text: _insight ?? 'سجّل دخلك ومصروفك ليبدأ التحليل الذكي',
-                onTap: () => openSmartAnalysis(context, InsightScope.reports),
-              ),
-              const SizedBox(height: kCardGap),
+              // Only once the analysis has something to say; an empty
+              // strip would just be a button with no reason to press it.
+              if (_insight case final insight?) ...[
+                _InsightStrip(
+                  text: insight,
+                  onTap: () => openSmartAnalysis(context, InsightScope.reports),
+                ),
+                const SizedBox(height: kCardGap),
+              ],
               // expensesByCategory is rolled up in memory from the store.
               _SpendingStrip(
                 totals: _store.expensesByCategory(),

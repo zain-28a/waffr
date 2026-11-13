@@ -76,29 +76,14 @@ abstract final class AppIcons {
   /// Lucide `gripHorizontal`.
   static const IconData dragHandle = IconData(0xe0ea, fontFamily: _family);
 
-  /// Lucide `search`.
-  static const IconData search = IconData(0xe151, fontFamily: _family);
-
   /// Lucide `searchX`.
   static const IconData searchOff = IconData(0xe4ad, fontFamily: _family);
-
-  /// Lucide `listFilter`.
-  static const IconData filter = IconData(0xe460, fontFamily: _family);
 
   /// Lucide `slidersHorizontal`.
   static const IconData tune = IconData(0xe29a, fontFamily: _family);
 
-  /// Lucide `externalLink`.
-  static const IconData externalLink = IconData(0xe0b9, fontFamily: _family);
-
   /// Lucide `plus`.
   static const IconData add = IconData(0xe13d, fontFamily: _family);
-
-  /// Lucide `minus`.
-  static const IconData remove = IconData(0xe11c, fontFamily: _family);
-
-  /// Lucide `circlePlus`.
-  static const IconData addCircle = IconData(0xe081, fontFamily: _family);
 
   /// Lucide `circleMinus`.
   static const IconData removeCircle = IconData(0xe07e, fontFamily: _family);
@@ -137,12 +122,6 @@ abstract final class AppIcons {
   /// Lucide `share2`.
   static const IconData share = IconData(0xe156, fontFamily: _family);
 
-  /// Lucide `copy`.
-  static const IconData copy = IconData(0xe09e, fontFamily: _family);
-
-  /// Lucide `download`.
-  static const IconData download = IconData(0xe0b2, fontFamily: _family);
-
   /// Lucide `delete`.
   static const IconData backspace = IconData(0xe0ae, fontFamily: _family);
 
@@ -158,13 +137,6 @@ abstract final class AppIcons {
   /// Lucide `logOut`.
   static const IconData logOut = IconData(
     0xe10e,
-    fontFamily: _family,
-    matchTextDirection: true,
-  );
-
-  /// Lucide `logIn`.
-  static const IconData logIn = IconData(
-    0xe10d,
     fontFamily: _family,
     matchTextDirection: true,
   );
@@ -206,9 +178,6 @@ abstract final class AppIcons {
   /// Lucide `sparkles`.
   static const IconData sparkles = IconData(0xe412, fontFamily: _family);
 
-  /// Lucide `sparkle`.
-  static const IconData sparkle = IconData(0xe47e, fontFamily: _family);
-
   /// Lucide `lightbulb`.
   static const IconData lightbulb = IconData(0xe1c2, fontFamily: _family);
 
@@ -239,23 +208,11 @@ abstract final class AppIcons {
   /// Lucide `hourglass`.
   static const IconData hourglass = IconData(0xe296, fontFamily: _family);
 
-  /// Lucide `zap`.
-  static const IconData zap = IconData(0xe1b4, fontFamily: _family);
-
-  /// Lucide `smile`.
-  static const IconData smile = IconData(0xe164, fontFamily: _family);
-
   /// Lucide `wallet`.
   static const IconData wallet = IconData(0xe204, fontFamily: _family);
 
   /// Lucide `banknote`.
   static const IconData banknote = IconData(0xe052, fontFamily: _family);
-
-  /// Lucide `coins`.
-  static const IconData coins = IconData(0xe097, fontFamily: _family);
-
-  /// Lucide `handCoins`.
-  static const IconData handCoins = IconData(0xe5b8, fontFamily: _family);
 
   /// Lucide `creditCard`.
   static const IconData creditCard = IconData(0xe0aa, fontFamily: _family);
@@ -268,9 +225,6 @@ abstract final class AppIcons {
 
   /// Lucide `circleDollarSign`.
   static const IconData exchange = IconData(0xe47d, fontFamily: _family);
-
-  /// Lucide `badgePercent`.
-  static const IconData percent = IconData(0xe479, fontFamily: _family);
 
   /// Lucide `arrowUpFromLine`.
   static const IconData withdraw = IconData(0xe45a, fontFamily: _family);
@@ -286,12 +240,6 @@ abstract final class AppIcons {
 
   /// Lucide `arrowDownLeft`.
   static const IconData arrowDownLeft = IconData(0xe043, fontFamily: _family);
-
-  /// Lucide `arrowUp`.
-  static const IconData arrowUp = IconData(0xe04a, fontFamily: _family);
-
-  /// Lucide `arrowDown`.
-  static const IconData arrowDown = IconData(0xe042, fontFamily: _family);
 
   /// Lucide `trendingUp`.
   static const IconData trendingUp = IconData(
@@ -324,9 +272,6 @@ abstract final class AppIcons {
     matchTextDirection: true,
   );
 
-  /// Lucide `chartNoAxesColumn`.
-  static const IconData chartColumn = IconData(0xe068, fontFamily: _family);
-
   /// Lucide `chartColumnStacked`.
   static const IconData chartStacked = IconData(0xe60a, fontFamily: _family);
 
@@ -342,17 +287,11 @@ abstract final class AppIcons {
   /// Lucide `target`.
   static const IconData target = IconData(0xe180, fontFamily: _family);
 
-  /// Lucide `goal`.
-  static const IconData goal = IconData(0xe4a5, fontFamily: _family);
-
   /// Lucide `flag`.
   static const IconData flag = IconData(0xe0d1, fontFamily: _family);
 
   /// Lucide `brain`.
   static const IconData brain = IconData(0xe3c6, fontFamily: _family);
-
-  /// Lucide `rocket`.
-  static const IconData rocket = IconData(0xe286, fontFamily: _family);
 
   /// Lucide `calendar`.
   static const IconData calendar = IconData(0xe063, fontFamily: _family);
@@ -374,9 +313,6 @@ abstract final class AppIcons {
 
   /// Lucide `calendarCog`.
   static const IconData calendarEdit = IconData(0xe5ed, fontFamily: _family);
-
-  /// Lucide `calendarClock`.
-  static const IconData calendarClock = IconData(0xe304, fontFamily: _family);
 
   /// Lucide `history`.
   static const IconData history = IconData(0xe1f5, fontFamily: _family);
@@ -430,20 +366,11 @@ abstract final class AppIcons {
   /// Lucide `userX`.
   static const IconData userOff = IconData(0xe1a3, fontFamily: _family);
 
-  /// Lucide `userPlus`.
-  static const IconData userPlus = IconData(0xe1a2, fontFamily: _family);
-
   /// Lucide `idCard`.
   static const IconData idCard = IconData(0xe617, fontFamily: _family);
 
-  /// Lucide `mail`.
-  static const IconData mail = IconData(0xe10f, fontFamily: _family);
-
   /// Lucide `lock`.
   static const IconData lock = IconData(0xe10b, fontFamily: _family);
-
-  /// Lucide `lockOpen`.
-  static const IconData lockOpen = IconData(0xe10c, fontFamily: _family);
 
   /// Lucide `keyRound`.
   static const IconData key = IconData(0xe4a3, fontFamily: _family);
@@ -463,9 +390,6 @@ abstract final class AppIcons {
   /// Lucide `smartphone`.
   static const IconData phone = IconData(0xe163, fontFamily: _family);
 
-  /// Lucide `vibrate`.
-  static const IconData vibrate = IconData(0xe223, fontFamily: _family);
-
   /// Lucide `rotate3d`.
   static const IconData rotate3d = IconData(0xe2ea, fontFamily: _family);
 
@@ -475,35 +399,20 @@ abstract final class AppIcons {
   /// Lucide `moon`.
   static const IconData moon = IconData(0xe11e, fontFamily: _family);
 
-  /// Lucide `palette`.
-  static const IconData palette = IconData(0xe1dd, fontFamily: _family);
-
   /// Lucide `languages`.
   static const IconData language = IconData(0xe0fe, fontFamily: _family);
-
-  /// Lucide `globe`.
-  static const IconData globe = IconData(0xe0e8, fontFamily: _family);
 
   /// Lucide `wifi`.
   static const IconData wifi = IconData(0xe1ae, fontFamily: _family);
 
-  /// Lucide `cloud`.
-  static const IconData cloud = IconData(0xe088, fontFamily: _family);
-
   /// Lucide `cloudSync`.
   static const IconData cloudSync = IconData(0xe6e3, fontFamily: _family);
-
-  /// Lucide `cloudOff`.
-  static const IconData cloudOff = IconData(0xe08d, fontFamily: _family);
 
   /// Lucide `database`.
   static const IconData database = IconData(0xe0ad, fontFamily: _family);
 
   /// Lucide `wrench`.
   static const IconData wrench = IconData(0xe1b1, fontFamily: _family);
-
-  /// Lucide `mapPin`.
-  static const IconData mapPin = IconData(0xe111, fontFamily: _family);
 
   /// Lucide `utensils`.
   static const IconData food = IconData(0xe2f6, fontFamily: _family);
@@ -546,9 +455,6 @@ abstract final class AppIcons {
 
   /// Lucide `gift`.
   static const IconData gift = IconData(0xe0e1, fontFamily: _family);
-
-  /// Lucide `heart`.
-  static const IconData health = IconData(0xe0f2, fontFamily: _family);
 
   /// Lucide `pill`.
   static const IconData pill = IconData(0xe3bd, fontFamily: _family);

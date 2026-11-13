@@ -283,3 +283,37 @@ class _DashedBorderPainter extends CustomPainter {
   bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
       oldDelegate.color != color || oldDelegate.radius != radius;
 }
+
+/// Progress ring: a faint full track and a solid arc from the top.
+class _RingPainter extends CustomPainter {
+  final double ratio;
+  final Color track;
+  final Color color;
+  final double stroke;
+
+  const _RingPainter({
+    required this.ratio,
+    required this.track,
+    required this.color,
+    this.stroke = 5.5,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = (Offset.zero & size).deflate(stroke / 2);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = track);
+    final sweep = math.pi * 2 * ratio.clamp(0.0, 1.0);
+    if (sweep <= 0.01) return;
+    canvas.drawArc(rect, -math.pi / 2, sweep, false, paint..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
+      oldDelegate.ratio != ratio ||
+      oldDelegate.track != track ||
+      oldDelegate.color != color;
+}

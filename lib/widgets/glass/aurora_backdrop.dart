@@ -82,7 +82,7 @@ class _AuroraBackdropState extends State<AuroraBackdrop>
           time: _time,
           background: palette.background,
           colors: palette.aurora,
-          strength: widget.intensity * (isDark ? 0.34 : 0.5),
+          strength: widget.intensity * (isDark ? 0.46 : 0.62),
         ),
         size: Size.infinite,
       ),
