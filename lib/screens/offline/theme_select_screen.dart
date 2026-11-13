@@ -1,5 +1,6 @@
 // First-launch theme picker with live light and dark home-screen previews.
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_palette.dart';
@@ -60,80 +61,82 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
-              child: Column(
-                children: [
-                  // Logo, title and subtitle.
-                  const Spacer(flex: 2),
-                  const WaffrLogo(size: 64),
-                  const SizedBox(height: 20),
-                  Text.rich(
-                    TextSpan(
+      body: AuroraPage(
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+                child: Column(
+                  children: [
+                    // Logo, title and subtitle.
+                    const Spacer(flex: 2),
+                    const WaffrLogo(size: 64),
+                    const SizedBox(height: 20),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(text: 'اختر مظهر '),
+                          TextSpan(
+                            text: 'وفّر',
+                            style: TextStyle(
+                              color: colors.accent,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: const ['Tajawal'],
+                        fontSize: 30,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'يمكنك تغييره لاحقاً من الإعدادات',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: const ['Tajawal'],
+                        fontSize: 15,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    const Spacer(),
+                    // Light and dark preview cards side by side.
+                    Row(
                       children: [
-                        const TextSpan(text: 'اختر مظهر '),
-                        TextSpan(
-                          text: 'وفّر',
-                          style: TextStyle(
-                            color: colors.accent,
-                            fontWeight: FontWeight.w800,
+                        Expanded(
+                          child: _ThemeOption(
+                            label: 'فاتح',
+                            icon: AppIcons.sun,
+                            preview: AppPalette.light,
+                            selected: !_isDark,
+                            onTap: () => _select(false),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _ThemeOption(
+                            label: 'داكن',
+                            icon: AppIcons.moon,
+                            preview: AppPalette.dark,
+                            selected: _isDark,
+                            onTap: () => _select(true),
                           ),
                         ),
                       ],
                     ),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontFamilyFallback: const ['Tajawal'],
-                      fontSize: 30,
-                      fontWeight: FontWeight.w600,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'يمكنك تغييره لاحقاً من الإعدادات',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontFamilyFallback: const ['Tajawal'],
-                      fontSize: 15,
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  const Spacer(),
-                  // Light and dark preview cards side by side.
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ThemeOption(
-                          label: 'فاتح',
-                          icon: AppIcons.sun,
-                          preview: AppPalette.light,
-                          selected: !_isDark,
-                          onTap: () => _select(false),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: _ThemeOption(
-                          label: 'داكن',
-                          icon: AppIcons.moon,
-                          preview: AppPalette.dark,
-                          selected: _isDark,
-                          onTap: () => _select(true),
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Continue button pinned to the bottom.
-                  const Spacer(flex: 2),
-                  AppPrimaryButton(label: 'متابعة', onTap: _continue),
-                ],
+                    // Continue button pinned to the bottom.
+                    const Spacer(flex: 2),
+                    AppPrimaryButton(label: 'متابعة', onTap: _continue),
+                  ],
+                ),
               ),
             ),
           ),

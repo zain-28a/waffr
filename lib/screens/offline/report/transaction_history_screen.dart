@@ -243,166 +243,198 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                 final rows = _rows;
                 final selectedCount = _selected.where(rows.ids.contains).length;
                 final canShare = _selecting && selectedCount > 0 && !_sharing;
-                return FloatingActionButton(
-                  onPressed: _selecting
-                      ? (canShare ? () => _confirmShare(rows.items) : null)
-                      : () => _enterSelection(),
-                  backgroundColor: canShare || !_selecting
-                      ? colors.accent
-                      : colors.accent.withValues(alpha: 0.35),
-                  foregroundColor: colors.onAccent,
-                  elevation: canShare || !_selecting ? 4 : 0,
-                  child: const Icon(AppIcons.share),
-                );
-              },
-            ),
-      body: AnimatedBuilder(
-        animation: _listenables,
-        builder: (context, _) {
-          final rows = _rows;
-          final items = rows.items;
-          final groups = rows.groups;
-          final selectedCount = _selected.where(rows.ids.contains).length;
-          // Every listed id is selected exactly when the selected live ids
-          // are as many as the listed ids.
-          final allSelected =
-              items.isNotEmpty && selectedCount == rows.ids.length;
-          return Column(
-            children: [
-              // Selection bar slides in above the list while selecting.
-              if (!isIncome)
-                ClipRect(
-                  child: SizeTransition(
-                    sizeFactor: _selectionReveal,
-                    alignment: Alignment.topCenter,
-                    child: FadeTransition(
-                      opacity: _selectionReveal,
-                      child: _SelectionBar(
-                        count: selectedCount,
-                        allSelected: allSelected,
-                        onClose: _exitSelection,
-                        onToggleAll: () => _toggleAll(items),
-                        onPickRange: () => _pickRange(items),
+                final enabled = canShare || !_selecting;
+                return Semantics(
+                  button: true,
+                  enabled: enabled,
+                  label: _selecting ? 'مشاركة المحدد' : 'تحديد للمشاركة',
+                  child: Pressable(
+                    onTap: !enabled
+                        ? null
+                        : (_selecting
+                              ? () => _confirmShare(rows.items)
+                              : _enterSelection),
+                    depth: 0.07,
+                    child: ExcludeSemantics(
+                      child: AnimatedContainer(
+                        duration: AppMotion.of(context, AppMotion.fast),
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          color: colors.accent.withValues(
+                            alpha: enabled ? 1 : 0.35,
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            if (enabled)
+                              BoxShadow(
+                                color: colors.accent.withValues(alpha: 0.28),
+                                blurRadius: 16,
+                                offset: const Offset(0, 8),
+                              ),
+                          ],
+                        ),
+                        child: Icon(
+                          AppIcons.share,
+                          size: 24,
+                          color: colors.onAccent,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              // Ledger total card.
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
-                child: GlassContainer(
-                  colorType: GlassColorType.surface,
-                  borderRadius: 24,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 14,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              summaryLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontFamily: 'Outfit',
-                                fontFamilyFallback: const ['Tajawal'],
-                                fontSize: 13,
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                            Text(
-                              '${formatMoney(rows.total)} '
-                              '$currencyLabel',
-                              style: TextStyle(
-                                fontFamily: 'Outfit',
-                                fontFamilyFallback: const ['Tajawal'],
-                                fontSize: 21,
-                                fontWeight: FontWeight.bold,
-                                color: colors.accent,
-                              ),
-                            ),
-                          ],
+                );
+              },
+            ),
+      body: AuroraPage(
+        child: AnimatedBuilder(
+          animation: _listenables,
+          builder: (context, _) {
+            final rows = _rows;
+            final items = rows.items;
+            final groups = rows.groups;
+            final selectedCount = _selected.where(rows.ids.contains).length;
+            // Every listed id is selected exactly when the selected live ids
+            // are as many as the listed ids.
+            final allSelected =
+                items.isNotEmpty && selectedCount == rows.ids.length;
+            return Column(
+              children: [
+                // Selection bar slides in above the list while selecting.
+                if (!isIncome)
+                  ClipRect(
+                    child: SizeTransition(
+                      sizeFactor: _selectionReveal,
+                      alignment: Alignment.topCenter,
+                      child: FadeTransition(
+                        opacity: _selectionReveal,
+                        child: _SelectionBar(
+                          count: selectedCount,
+                          allSelected: allSelected,
+                          onClose: _exitSelection,
+                          onToggleAll: () => _toggleAll(items),
+                          onPickRange: () => _pickRange(items),
                         ),
                       ),
-                      Icon(summaryIcon, color: colors.accent),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-              // Day groups, or the empty state.
-              Expanded(
-                child: items.isEmpty
-                    ? Center(
-                        child: _EmptyState(
-                          icon: summaryIcon,
-                          message: emptyMessage,
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: EdgeInsets.fromLTRB(
-                          18,
-                          0,
-                          18,
-                          isIncome ? 28 : 96,
-                        ),
-                        itemCount: groups.length,
-                        itemBuilder: (context, index) {
-                          final group = groups[index];
-                          final row = AnimatedBuilder(
-                            animation: _selectionReveal,
-                            builder: (context, _) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 14),
-                                child: _HistoryDayGroup(
-                                  date: group.date,
-                                  expenses: group.expenses,
-                                  isIncome: isIncome,
-                                  selecting:
-                                      !isIncome && _selectionReveal.value > 0,
-                                  reveal: _selectionReveal.value,
-                                  selectedIds: _selected,
-                                  onToggleDay: () => _toggleDay(group.expenses),
-                                  onLongPressDay: () {
-                                    if (_selecting) {
-                                      _toggleDay(group.expenses);
-                                    } else {
-                                      _enterSelection(
-                                        selected: group.expenses
-                                            .map((item) => item.id)
-                                            .toSet(),
-                                      );
-                                    }
-                                  },
-                                  onToggleExpense: _toggleExpense,
-                                  onLongPressExpense: (expense) {
-                                    if (_selecting) {
-                                      _toggleExpense(expense.id);
-                                    } else {
-                                      _enterSelection(selected: {expense.id});
-                                    }
-                                  },
+                // Ledger total card.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
+                  child: GlassContainer(
+                    colorType: GlassColorType.surface,
+                    borderRadius: 24,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 14,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                summaryLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: 'Outfit',
+                                  fontFamilyFallback: const ['Tajawal'],
+                                  fontSize: 13,
+                                  color: colors.textSecondary,
                                 ),
-                              );
-                            },
-                          );
-                          // Only the first screenful animates in.
-                          return index < 6
-                              ? Reveal(
-                                  index: index,
-                                  play: _playEntrance,
-                                  child: row,
-                                )
-                              : row;
-                        },
-                      ),
-              ),
-            ],
-          );
-        },
+                              ),
+                              Text(
+                                '${formatMoney(rows.total)} '
+                                '$currencyLabel',
+                                style: TextStyle(
+                                  fontFamily: 'Outfit',
+                                  fontFamilyFallback: const ['Tajawal'],
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.bold,
+                                  color: colors.accent,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(summaryIcon, color: colors.accent),
+                      ],
+                    ),
+                  ),
+                ),
+                // Day groups, or the empty state.
+                Expanded(
+                  child: items.isEmpty
+                      ? Center(
+                          child: _EmptyState(
+                            icon: summaryIcon,
+                            message: emptyMessage,
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: EdgeInsets.fromLTRB(
+                            18,
+                            0,
+                            18,
+                            isIncome ? 28 : 96,
+                          ),
+                          itemCount: groups.length,
+                          itemBuilder: (context, index) {
+                            final group = groups[index];
+                            final row = AnimatedBuilder(
+                              animation: _selectionReveal,
+                              builder: (context, _) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 14),
+                                  child: _HistoryDayGroup(
+                                    date: group.date,
+                                    expenses: group.expenses,
+                                    isIncome: isIncome,
+                                    selecting:
+                                        !isIncome && _selectionReveal.value > 0,
+                                    reveal: _selectionReveal.value,
+                                    selectedIds: _selected,
+                                    onToggleDay: () =>
+                                        _toggleDay(group.expenses),
+                                    onLongPressDay: () {
+                                      if (_selecting) {
+                                        _toggleDay(group.expenses);
+                                      } else {
+                                        _enterSelection(
+                                          selected: group.expenses
+                                              .map((item) => item.id)
+                                              .toSet(),
+                                        );
+                                      }
+                                    },
+                                    onToggleExpense: _toggleExpense,
+                                    onLongPressExpense: (expense) {
+                                      if (_selecting) {
+                                        _toggleExpense(expense.id);
+                                      } else {
+                                        _enterSelection(selected: {expense.id});
+                                      }
+                                    },
+                                  ),
+                                );
+                              },
+                            );
+                            // Only the first screenful animates in.
+                            return index < 6
+                                ? Reveal(
+                                    index: index,
+                                    play: _playEntrance,
+                                    child: row,
+                                  )
+                                : row;
+                          },
+                        ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

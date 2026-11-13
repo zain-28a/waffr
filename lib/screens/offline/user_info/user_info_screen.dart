@@ -1,5 +1,6 @@
 // Profile form shown as the first signup step, before email and password.
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -179,192 +180,197 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         showBack: widget.onBack != null,
         onBack: widget.onBack,
       ),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Intro line.
-              Text(
-                'تساعدنا هذه المعلومات على تقديم تجربة أفضل لك',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15, color: textSecondary),
-              ),
-
-              const SizedBox(height: 28),
-
-              // Name.
-              AuthFieldLabel(text: 'الاسم', color: textPrimary),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _nameController,
-                textAlign: TextAlign.right,
-                onChanged: (_) => setState(() {}),
-                style: TextStyle(color: textPrimary, fontSize: 16),
-                decoration: authFieldDecoration(
-                  hint: 'الاسم الكامل',
-                  fillColor: surface,
-                  textSecondary: textSecondary,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Birth date picker row, with the computed age below.
-              AuthFieldLabel(text: 'تاريخ الميلاد', color: textPrimary),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _pickBirthDate,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: surface,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _birthDate != null
-                            ? formatDate(_birthDate!)
-                            : 'DD/MM/YYYY',
-                        textDirection: TextDirection.ltr,
-                        style: TextStyle(
-                          color: _birthDate != null
-                              ? textPrimary
-                              : textSecondary.withValues(alpha: 0.6),
-                          fontSize: 16,
-                        ),
-                      ),
-                      Icon(AppIcons.calendar, size: 20, color: accent),
-                    ],
-                  ),
-                ),
-              ),
-              if (_birthDate != null) ...[
-                const SizedBox(height: 8),
+      body: AuroraPage(
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Intro line.
                 Text(
-                  'العمر ${ageInYears(_birthDate!)} سنة',
-                  style: TextStyle(color: textSecondary, fontSize: 13),
+                  'تساعدنا هذه المعلومات على تقديم تجربة أفضل لك',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 15, color: textSecondary),
                 ),
-              ],
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 28),
 
-              // Optional gender radios.
-              AuthFieldLabel(text: 'الجنس (اختياري)', color: textPrimary),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  _GenderRadio(
-                    label: 'ذكر',
-                    selected: _selectedGender == Gender.male,
-                    accent: accent,
-                    textPrimary: textPrimary,
+                // Name.
+                AuthFieldLabel(text: 'الاسم', color: textPrimary),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _nameController,
+                  textAlign: TextAlign.right,
+                  onChanged: (_) => setState(() {}),
+                  style: TextStyle(color: textPrimary, fontSize: 16),
+                  decoration: authFieldDecoration(
+                    hint: 'الاسم الكامل',
+                    fillColor: surface,
                     textSecondary: textSecondary,
-                    onTap: () => _toggleGender(Gender.male),
                   ),
-                  const SizedBox(width: 28),
-                  _GenderRadio(
-                    label: 'أنثى',
-                    selected: _selectedGender == Gender.female,
-                    accent: accent,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    onTap: () => _toggleGender(Gender.female),
-                  ),
-                ],
-              ),
+                ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
-              // Country picker row with its calling code.
-              AuthFieldLabel(text: 'الدولة', color: textPrimary),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _pickCountry,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: surface,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _country?.arabicName ?? 'اختر الدولة',
+                // Birth date picker row, with the computed age below.
+                AuthFieldLabel(text: 'تاريخ الميلاد', color: textPrimary),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: _pickBirthDate,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: surface,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _birthDate != null
+                              ? formatDate(_birthDate!)
+                              : 'DD/MM/YYYY',
+                          textDirection: TextDirection.ltr,
                           style: TextStyle(
-                            color: _country != null
+                            color: _birthDate != null
                                 ? textPrimary
                                 : textSecondary.withValues(alpha: 0.6),
                             fontSize: 16,
                           ),
                         ),
-                      ),
-                      Icon(AppIcons.chevronDown, color: accent),
-                    ],
+                        Icon(AppIcons.calendar, size: 20, color: accent),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+                if (_birthDate != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'العمر ${ageInYears(_birthDate!)} سنة',
+                    style: TextStyle(color: textSecondary, fontSize: 13),
+                  ),
+                ],
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Single address line, split into city and street on submit.
-              AuthFieldLabel(
-                text: 'العنوان (الشارع اختياري)',
-                color: textPrimary,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _addressController,
-                textAlign: TextAlign.right,
-                maxLength: maxCityLength + maxStreetLength + 2,
-                onChanged: (_) => setState(() {}),
-                style: TextStyle(color: textPrimary, fontSize: 16),
-                decoration: authFieldDecoration(
-                  hint: 'مثال: اللاذقية، المشروع الثاني',
-                  fillColor: surface,
+                // Optional gender radios.
+                AuthFieldLabel(text: 'الجنس (اختياري)', color: textPrimary),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    _GenderRadio(
+                      label: 'ذكر',
+                      selected: _selectedGender == Gender.male,
+                      accent: accent,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      onTap: () => _toggleGender(Gender.male),
+                    ),
+                    const SizedBox(width: 28),
+                    _GenderRadio(
+                      label: 'أنثى',
+                      selected: _selectedGender == Gender.female,
+                      accent: accent,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      onTap: () => _toggleGender(Gender.female),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Country picker row with its calling code.
+                AuthFieldLabel(text: 'الدولة', color: textPrimary),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: _pickCountry,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: surface,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _country?.arabicName ?? 'اختر الدولة',
+                            style: TextStyle(
+                              color: _country != null
+                                  ? textPrimary
+                                  : textSecondary.withValues(alpha: 0.6),
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        Icon(AppIcons.chevronDown, color: accent),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Single address line, split into city and street on submit.
+                AuthFieldLabel(
+                  text: 'العنوان (الشارع اختياري)',
+                  color: textPrimary,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _addressController,
+                  textAlign: TextAlign.right,
+                  maxLength: maxCityLength + maxStreetLength + 2,
+                  onChanged: (_) => setState(() {}),
+                  style: TextStyle(color: textPrimary, fontSize: 16),
+                  decoration: authFieldDecoration(
+                    hint: 'مثال: اللاذقية، المشروع الثاني',
+                    fillColor: surface,
+                    textSecondary: textSecondary,
+                  ).copyWith(counterText: ''),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Optional phone number behind the country's calling code.
+                AuthFieldLabel(
+                  text: 'رقم الهاتف (اختياري)',
+                  color: textPrimary,
+                ),
+                const SizedBox(height: 8),
+                _PhoneField(
+                  controller: _phoneController,
+                  country: _phoneCountry,
+                  surface: surface,
+                  accent: accent,
+                  textPrimary: textPrimary,
                   textSecondary: textSecondary,
-                ).copyWith(counterText: ''),
-              ),
+                  onPickCountry: _pickPhoneCountry,
+                  onChanged: (_) => setState(() {}),
+                ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 48),
 
-              // Optional phone number behind the country's calling code.
-              AuthFieldLabel(text: 'رقم الهاتف (اختياري)', color: textPrimary),
-              const SizedBox(height: 8),
-              _PhoneField(
-                controller: _phoneController,
-                country: _phoneCountry,
-                surface: surface,
-                accent: accent,
-                textPrimary: textPrimary,
-                textSecondary: textSecondary,
-                onPickCountry: _pickPhoneCountry,
-                onChanged: (_) => setState(() {}),
-              ),
+                // Continue; a disabled tap still explains what is missing.
+                AppPrimaryButton(
+                  label: 'متابعة',
+                  enabled: _isFormValid,
+                  onTap: _continue,
+                  onDisabledTap: _continue,
+                ),
 
-              const SizedBox(height: 48),
-
-              // Continue; a disabled tap still explains what is missing.
-              AppPrimaryButton(
-                label: 'متابعة',
-                enabled: _isFormValid,
-                onTap: _continue,
-                onDisabledTap: _continue,
-              ),
-
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),

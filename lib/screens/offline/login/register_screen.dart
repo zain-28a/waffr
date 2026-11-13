@@ -1,5 +1,6 @@
 // Second signup step: email and password for a new account.
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
@@ -168,106 +169,114 @@ class _RegisterScreenState extends State<RegisterScreen> {
         onBack: _leaveCredentials,
         title: 'إنشاء حساب',
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'أنشئ حساباً لحفظ بياناتك ومزامنتها',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: textSecondary, fontSize: 15),
-            ),
-            const SizedBox(height: 28),
-            // Email, password and confirmation card.
-            GlassContainer(
-              colorType: GlassColorType.surface,
-              borderRadius: 28,
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  AuthFieldLabel(text: 'البريد الإلكتروني', color: textPrimary),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _emailController,
-                    enabled: !_busy,
-                    keyboardType: TextInputType.emailAddress,
-                    textDirection: TextDirection.ltr,
-                    autocorrect: false,
-                    onChanged: (_) => setState(() => _message = null),
-                    style: TextStyle(color: textPrimary, fontSize: 16),
-                    decoration: authFieldDecoration(
-                      hint: 'example@email.com',
-                      fillColor: surface,
-                      textSecondary: textSecondary,
+      body: AuroraPage(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'أنشئ حساباً لحفظ بياناتك ومزامنتها',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: textSecondary, fontSize: 15),
+              ),
+              const SizedBox(height: 28),
+              // Email, password and confirmation card.
+              GlassContainer(
+                colorType: GlassColorType.surface,
+                borderRadius: 28,
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AuthFieldLabel(
+                      text: 'البريد الإلكتروني',
+                      color: textPrimary,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  AuthFieldLabel(text: 'كلمة المرور', color: textPrimary),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _passwordController,
-                    enabled: !_busy,
-                    obscureText: _obscure,
-                    onChanged: (_) => setState(() => _message = null),
-                    style: TextStyle(color: textPrimary, fontSize: 16),
-                    decoration: authFieldDecoration(
-                      hint: '8 أحرف على الأقل',
-                      fillColor: surface,
-                      textSecondary: textSecondary,
-                      suffixIcon: IconButton(
-                        onPressed: () => setState(() => _obscure = !_obscure),
-                        icon: Icon(
-                          _obscure ? AppIcons.eye : AppIcons.eyeOff,
-                          color: textSecondary,
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _emailController,
+                      enabled: !_busy,
+                      keyboardType: TextInputType.emailAddress,
+                      textDirection: TextDirection.ltr,
+                      autocorrect: false,
+                      onChanged: (_) => setState(() => _message = null),
+                      style: TextStyle(color: textPrimary, fontSize: 16),
+                      decoration: authFieldDecoration(
+                        hint: 'example@email.com',
+                        fillColor: surface,
+                        textSecondary: textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    AuthFieldLabel(text: 'كلمة المرور', color: textPrimary),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _passwordController,
+                      enabled: !_busy,
+                      obscureText: _obscure,
+                      onChanged: (_) => setState(() => _message = null),
+                      style: TextStyle(color: textPrimary, fontSize: 16),
+                      decoration: authFieldDecoration(
+                        hint: '8 أحرف على الأقل',
+                        fillColor: surface,
+                        textSecondary: textSecondary,
+                        suffixIcon: IconButton(
+                          onPressed: () => setState(() => _obscure = !_obscure),
+                          icon: Icon(
+                            _obscure ? AppIcons.eye : AppIcons.eyeOff,
+                            color: textSecondary,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  AuthFieldLabel(text: 'تأكيد كلمة المرور', color: textPrimary),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _confirmController,
-                    enabled: !_busy,
-                    obscureText: _obscure,
-                    onChanged: (_) => setState(() => _message = null),
-                    style: TextStyle(color: textPrimary, fontSize: 16),
-                    decoration: authFieldDecoration(
-                      hint: 'أعد كتابة كلمة المرور',
-                      fillColor: surface,
-                      textSecondary: textSecondary,
+                    const SizedBox(height: 16),
+                    AuthFieldLabel(
+                      text: 'تأكيد كلمة المرور',
+                      color: textPrimary,
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 28),
-            // Message, create button, and the back-to-login link.
-            AppInlineMessage(message: _message, kind: _messageKind),
-            AppPrimaryButton(
-              label: 'إنشاء الحساب',
-              enabled: _canSubmit,
-              onDisabledTap: () => _show(_missingReason),
-              busy: _busy,
-              onTap: _register,
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: _busy ? null : () => Navigator.pop(context),
-              child: Text(
-                'لديك حساب؟ تسجيل الدخول',
-                style: TextStyle(
-                  color: accent,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Outfit',
-                  fontFamilyFallback: ['Tajawal'],
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _confirmController,
+                      enabled: !_busy,
+                      obscureText: _obscure,
+                      onChanged: (_) => setState(() => _message = null),
+                      style: TextStyle(color: textPrimary, fontSize: 16),
+                      decoration: authFieldDecoration(
+                        hint: 'أعد كتابة كلمة المرور',
+                        fillColor: surface,
+                        textSecondary: textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 28),
+              // Message, create button, and the back-to-login link.
+              AppInlineMessage(message: _message, kind: _messageKind),
+              AppPrimaryButton(
+                label: 'إنشاء الحساب',
+                enabled: _canSubmit,
+                onDisabledTap: () => _show(_missingReason),
+                busy: _busy,
+                onTap: _register,
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: _busy ? null : () => Navigator.pop(context),
+                child: Text(
+                  'لديك حساب؟ تسجيل الدخول',
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

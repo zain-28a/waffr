@@ -20,9 +20,11 @@ class _PrivacyDetailScaffold extends StatelessWidget {
     return Scaffold(
       backgroundColor: colors.background,
       appBar: WaffrBackHeader(title: title),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        children: children,
+      body: AuroraPage(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          children: children,
+        ),
       ),
     );
   }

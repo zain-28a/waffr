@@ -2,6 +2,7 @@
 // pages. The detail pages and shared row widgets live in the part files
 // privacy_detail_pages.dart and privacy_widgets.dart.
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
@@ -85,97 +86,103 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            WaffrBackHeader(
-              elevated: _headerElevated,
-              title: 'الخصوصية والأمان',
-            ),
-            Expanded(
-              child: _loading
-                  ? Center(
-                      child: CircularProgressIndicator(color: colors.accent),
-                    )
-                  : NotificationListener<ScrollNotification>(
-                      // Elevate the header once the list leaves the top.
-                      onNotification: (notification) {
-                        if (notification.depth != 0) return false;
-                        final next = notification.metrics.pixels > 6;
-                        if (_headerElevated.value != next) {
-                          _headerElevated.value = next;
-                        }
-                        return false;
-                      },
-                      child: ListView(
-                        padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
-                        children: staggered([
-                          // Your data: account data, cloud sync, synced data.
-                          AppSectionTitle(title: 'بياناتك'),
-                          _SettingsGroup(
-                            children: [
-                              _SettingsRow(
-                                icon: AppIcons.idCard,
-                                title: 'بيانات الحساب',
-                                onTap: () =>
-                                    _openDetail(const _AccountDataDetailPage()),
-                              ),
-                              _SettingsRow(
-                                icon: AppIcons.cloudSync,
-                                title: 'المزامنة السحابية',
-                                status: _loggedIn ? 'مفعّلة' : 'وضع الضيف',
-                                statusEmphasis: _loggedIn,
-                                onTap: () => _openDetail(
-                                  _CloudSyncDetailPage(loggedIn: _loggedIn),
-                                ),
-                              ),
-                              _SettingsRow(
-                                icon: AppIcons.swap,
-                                title: 'البيانات المتزامنة',
-                                onTap: () =>
-                                    _openDetail(const _SyncedDataDetailPage()),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 22),
-                          // App protection: app lock.
-                          AppSectionTitle(title: 'حماية التطبيق'),
-                          _SettingsGroup(
-                            children: [
-                              _SettingsRow(
-                                icon: AppIcons.lock,
-                                title: 'قفل التطبيق',
-                                status: _appLock ? 'مفعّل' : 'غير مفعّل',
-                                statusEmphasis: _appLock,
-                                onTap: () => _openDetail(
-                                  _AppLockDetailPage(
-                                    appFlowController: widget.appFlowController,
-                                    auth: _auth,
-                                    initiallyEnabled: _appLock,
+      body: AuroraPage(
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              WaffrBackHeader(
+                elevated: _headerElevated,
+                title: 'الخصوصية والأمان',
+              ),
+              Expanded(
+                child: _loading
+                    ? Center(
+                        child: CircularProgressIndicator(color: colors.accent),
+                      )
+                    : NotificationListener<ScrollNotification>(
+                        // Elevate the header once the list leaves the top.
+                        onNotification: (notification) {
+                          if (notification.depth != 0) return false;
+                          final next = notification.metrics.pixels > 6;
+                          if (_headerElevated.value != next) {
+                            _headerElevated.value = next;
+                          }
+                          return false;
+                        },
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+                          children: staggered([
+                            // Your data: account data, cloud sync, synced data.
+                            AppSectionTitle(title: 'بياناتك'),
+                            _SettingsGroup(
+                              children: [
+                                _SettingsRow(
+                                  icon: AppIcons.idCard,
+                                  title: 'بيانات الحساب',
+                                  onTap: () => _openDetail(
+                                    const _AccountDataDetailPage(),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 22),
-                          // Data and account: local reset.
-                          AppSectionTitle(title: 'البيانات والحساب'),
-                          _SettingsGroup(
-                            children: [
-                              _SettingsRow(
-                                icon: AppIcons.trash,
-                                title: 'إعادة ضبط البيانات المحلية',
-                                onTap: () =>
-                                    _openDetail(const _LocalResetDetailPage()),
-                              ),
-                            ],
-                          ),
-                        ]),
+                                _SettingsRow(
+                                  icon: AppIcons.cloudSync,
+                                  title: 'المزامنة السحابية',
+                                  status: _loggedIn ? 'مفعّلة' : 'وضع الضيف',
+                                  statusEmphasis: _loggedIn,
+                                  onTap: () => _openDetail(
+                                    _CloudSyncDetailPage(loggedIn: _loggedIn),
+                                  ),
+                                ),
+                                _SettingsRow(
+                                  icon: AppIcons.swap,
+                                  title: 'البيانات المتزامنة',
+                                  onTap: () => _openDetail(
+                                    const _SyncedDataDetailPage(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 22),
+                            // App protection: app lock.
+                            AppSectionTitle(title: 'حماية التطبيق'),
+                            _SettingsGroup(
+                              children: [
+                                _SettingsRow(
+                                  icon: AppIcons.lock,
+                                  title: 'قفل التطبيق',
+                                  status: _appLock ? 'مفعّل' : 'غير مفعّل',
+                                  statusEmphasis: _appLock,
+                                  onTap: () => _openDetail(
+                                    _AppLockDetailPage(
+                                      appFlowController:
+                                          widget.appFlowController,
+                                      auth: _auth,
+                                      initiallyEnabled: _appLock,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 22),
+                            // Data and account: local reset.
+                            AppSectionTitle(title: 'البيانات والحساب'),
+                            _SettingsGroup(
+                              children: [
+                                _SettingsRow(
+                                  icon: AppIcons.trash,
+                                  title: 'إعادة ضبط البيانات المحلية',
+                                  onTap: () => _openDetail(
+                                    const _LocalResetDetailPage(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ]),
+                        ),
                       ),
-                    ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

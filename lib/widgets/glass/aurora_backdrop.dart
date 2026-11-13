@@ -146,3 +146,22 @@ class _AuroraPainter extends CustomPainter {
       oldDelegate.colors != colors ||
       oldDelegate.strength != strength;
 }
+
+/// Puts a page on the light field: the [AuroraBackdrop] behind [child].
+/// Used as the body of pushed screens so their glass header has the same
+/// living background as the tabs.
+class AuroraPage extends StatelessWidget {
+  /// The page content.
+  final Widget child;
+
+  /// Creates an [AuroraPage].
+  const AuroraPage({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [const AuroraBackdrop(), child],
+    );
+  }
+}

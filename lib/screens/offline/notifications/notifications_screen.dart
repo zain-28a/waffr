@@ -1,6 +1,7 @@
 // Notifications page: mute toggle, mark-all-read, clear history, a device
 // permission banner, and the alert history grouped by time.
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
@@ -126,112 +127,114 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            WaffrBackHeader(title: 'الإشعارات'),
-            Expanded(
-              child: AnimatedBuilder(
-                animation: _service,
-                builder: (context, _) {
-                  final items = _service.notifications;
-                  final groups = NotificationTimeGroup.from(items);
-                  final hasUnread = _service.unreadCount > 0;
+      body: AuroraPage(
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              WaffrBackHeader(title: 'الإشعارات'),
+              Expanded(
+                child: AnimatedBuilder(
+                  animation: _service,
+                  builder: (context, _) {
+                    final items = _service.notifications;
+                    final groups = NotificationTimeGroup.from(items);
+                    final hasUnread = _service.unreadCount > 0;
 
-                  return Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
-                        child: Column(
-                          children: [
-                            // Header actions: mark all read, clear history.
-                            Row(
-                              children: [
-                                const Spacer(),
-                                if (hasUnread)
-                                  _HeaderAction(
-                                    icon: AppIcons.checkAll,
-                                    tooltip: 'تعيين الكل كمقروء',
-                                    onTap: _service.markAllRead,
-                                  ),
-                                if (items.isNotEmpty) ...[
-                                  const SizedBox(width: 6),
-                                  _HeaderAction(
-                                    icon: AppIcons.trash,
-                                    tooltip: 'مسح السجل',
-                                    onTap: _confirmClear,
-                                  ),
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
+                          child: Column(
+                            children: [
+                              // Header actions: mark all read, clear history.
+                              Row(
+                                children: [
+                                  const Spacer(),
+                                  if (hasUnread)
+                                    _HeaderAction(
+                                      icon: AppIcons.checkAll,
+                                      tooltip: 'تعيين الكل كمقروء',
+                                      onTap: _service.markAllRead,
+                                    ),
+                                  if (items.isNotEmpty) ...[
+                                    const SizedBox(width: 6),
+                                    _HeaderAction(
+                                      icon: AppIcons.trash,
+                                      tooltip: 'مسح السجل',
+                                      onTap: _confirmClear,
+                                    ),
+                                  ],
                                 ],
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            _MuteControl(
-                              muted: _service.isMuted,
-                              onTap: _service.toggleMuted,
-                            ),
-                            // The permission banner comes and goes as the phone
-                            // setting changes; grow and shrink instead of jumping.
-                            AnimatedSize(
-                              duration: AppMotion.sizeOf(
-                                context,
-                                AppMotion.medium,
                               ),
-                              curve: AppMotion.enter,
-                              alignment: Alignment.topCenter,
-                              child: _deviceAllowed == false
-                                  ? Padding(
-                                      padding: const EdgeInsets.only(top: 10),
-                                      child: AppListTile(
-                                        icon: AppIcons.bellOff,
-                                        title: 'إشعارات الجهاز متوقفة',
-                                        subtitle: 'اسمح لوفّر بإرسال التنبيهات إلى هاتفك',
-                                        status: 'سماح',
-                                        statusOn: true,
-                                        onTap: _allowDeviceNotifications,
-                                      ),
-                                    )
-                                  : const SizedBox(width: double.infinity),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // Grouped history, or the empty state.
-                      Expanded(
-                        child: items.isEmpty
-                            ? const _EmptyNotifications()
-                            : ListView.builder(
-                                padding: const EdgeInsets.fromLTRB(
-                                  18,
-                                  8,
-                                  18,
-                                  26,
+                              const SizedBox(height: 12),
+                              _MuteControl(
+                                muted: _service.isMuted,
+                                onTap: _service.toggleMuted,
+                              ),
+                              // The permission banner comes and goes as the phone
+                              // setting changes; grow and shrink instead of jumping.
+                              AnimatedSize(
+                                duration: AppMotion.sizeOf(
+                                  context,
+                                  AppMotion.medium,
                                 ),
-                                itemCount: groups.length,
-                                itemBuilder: (context, index) {
-                                  final view = _NotificationGroupView(
-                                    group: groups[index],
-                                    onOpen: _open,
-                                    onDismiss: _dismiss,
-                                  );
-                                  // Only the first screenful animates in.
-                                  return index < 6
-                                      ? Reveal(
-                                          index: index,
-                                          play: _playEntrance,
-                                          child: view,
-                                        )
-                                      : view;
-                                },
+                                curve: AppMotion.enter,
+                                alignment: Alignment.topCenter,
+                                child: _deviceAllowed == false
+                                    ? Padding(
+                                        padding: const EdgeInsets.only(top: 10),
+                                        child: AppListTile(
+                                          icon: AppIcons.bellOff,
+                                          title: 'إشعارات الجهاز متوقفة',
+                                          subtitle: 'اسمح لوفّر بإرسال التنبيهات إلى هاتفك',
+                                          status: 'سماح',
+                                          statusOn: true,
+                                          onTap: _allowDeviceNotifications,
+                                        ),
+                                      )
+                                    : const SizedBox(width: double.infinity),
                               ),
-                      ),
-                    ],
-                  );
-                },
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Grouped history, or the empty state.
+                        Expanded(
+                          child: items.isEmpty
+                              ? const _EmptyNotifications()
+                              : ListView.builder(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    18,
+                                    8,
+                                    18,
+                                    26,
+                                  ),
+                                  itemCount: groups.length,
+                                  itemBuilder: (context, index) {
+                                    final view = _NotificationGroupView(
+                                      group: groups[index],
+                                      onOpen: _open,
+                                      onDismiss: _dismiss,
+                                    );
+                                    // Only the first screenful animates in.
+                                    return index < 6
+                                        ? Reveal(
+                                            index: index,
+                                            play: _playEntrance,
+                                            child: view,
+                                          )
+                                        : view;
+                                  },
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

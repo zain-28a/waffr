@@ -1,6 +1,8 @@
 // App settings: account, income, currencies, obligations, theme, app lock,
 // smart analysis, privacy, help, and the guest data reset.
 
+import 'package:waffr/widgets/glass/tilt.dart';
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
@@ -423,42 +425,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: palette.background,
-      body: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            WaffrBackHeader(elevated: _headerElevated, title: 'الإعدادات'),
-            Expanded(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: _onScroll,
-                child: ListView(
-                  padding: const EdgeInsets.all(20),
-                  children: staggered([
-                    ..._accountSection(palette),
-                    const SizedBox(height: 25),
-                    ..._appearanceSection(isDark),
-                    const SizedBox(height: 25),
-                    ..._privacySection(),
-                    const SizedBox(height: 25),
-                    ..._supportSection(),
-                    const SizedBox(height: 25),
-                    ..._dataSection(),
-                    // Version label.
-                    Center(
-                      child: Text(
-                        'waffr 2.13.8',
-                        style: TextStyle(
-                          color: palette.textSecondary.withValues(alpha: 0.6),
-                          fontSize: 12,
+      body: AuroraPage(
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              WaffrBackHeader(elevated: _headerElevated, title: 'الإعدادات'),
+              Expanded(
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: _onScroll,
+                  child: ListView(
+                    padding: const EdgeInsets.all(20),
+                    children: staggered([
+                      ..._accountSection(palette),
+                      const SizedBox(height: 25),
+                      ..._appearanceSection(isDark),
+                      const SizedBox(height: 25),
+                      ..._privacySection(),
+                      const SizedBox(height: 25),
+                      ..._supportSection(),
+                      const SizedBox(height: 25),
+                      ..._dataSection(),
+                      // Version label.
+                      Center(
+                        child: Text(
+                          'waffr 2.13.8',
+                          style: TextStyle(
+                            color: palette.textSecondary.withValues(alpha: 0.6),
+                            fontSize: 12,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                  ]),
+                      const SizedBox(height: 20),
+                    ]),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -514,7 +518,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ];
   }
 
-  /// Dark mode switch and the language note.
+  /// Dark mode switch, the card motion switch and the language note.
   List<Widget> _appearanceSection(bool isDark) {
     return [
       const AppSectionTitle(title: 'المظهر'),
@@ -529,6 +533,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         ),
         onTap: widget.onThemeChanged,
+      ),
+      const SizedBox(height: 12),
+      // The balance card can lean with the phone; touch tilt always works.
+      ListenableBuilder(
+        listenable: TiltSettings.instance,
+        builder: (context, _) {
+          final on = TiltSettings.instance.enabled;
+          return AppListTile(
+            icon: AppIcons.rotate3d,
+            title: 'حركة البطاقة مع الهاتف',
+            subtitle: on
+                ? 'بطاقة الرصيد تميل مع حركة الهاتف'
+                : 'البطاقة تميل باللمس فقط',
+            trailing: Switch(
+              value: on,
+              onChanged: TiltSettings.instance.setEnabled,
+            ),
+            onTap: () => TiltSettings.instance.setEnabled(!on),
+          );
+        },
       ),
       const SizedBox(height: 12),
       AppListTile(

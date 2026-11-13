@@ -1,6 +1,7 @@
 // Privacy policy style copy: what stays on-device vs what account fields are
 // kept. Not linked from any screen at the moment (only the smoke test uses it).
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
@@ -30,163 +31,165 @@ class PrivacyInfoScreen extends StatelessWidget {
 
       appBar: WaffrBackHeader(title: 'الخصوصية والبيانات'),
 
-      body: ListView(
-        padding: const EdgeInsets.all(20),
+      body: AuroraPage(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
 
-        children: [
-          // One card per privacy topic.
-          _InfoSection(
-            icon: AppIcons.eyeOff,
-            title: 'خصوصيتك المالية',
-            description: 'وفّر لا يطّلع على بياناتك المالية ولا يقرأها ولا يشاركها مع أي جهة. رصيدك، أهدافك، تفاصيل مصروفاتك، ونشاط حسابك المالي تبقى خاصة بك وحدك على جهازك.',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-          ),
+          children: [
+            // One card per privacy topic.
+            _InfoSection(
+              icon: AppIcons.eyeOff,
+              title: 'خصوصيتك المالية',
+              description: 'وفّر لا يطّلع على بياناتك المالية ولا يقرأها ولا يشاركها مع أي جهة. رصيدك، أهدافك، تفاصيل مصروفاتك، ونشاط حسابك المالي تبقى خاصة بك وحدك على جهازك.',
+              accent: accent,
+              surface: surface,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+            ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          _InfoSection(
-            icon: AppIcons.idCard,
-            title: 'ما الذي يُحفظ عنك؟',
-            description: 'نحفظ فقط معلومات حساب أساسية: الاسم، الجنس، العمر، والبريد الإلكتروني. الهدف منها الاحتفاظ بسجل المستخدم وفهم طبيعة المستخدمين بشكل عام، وليس متابعة سلوكك المالي أو الاطلاع على مصروفاتك.',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-          ),
+            _InfoSection(
+              icon: AppIcons.idCard,
+              title: 'ما الذي يُحفظ عنك؟',
+              description: 'نحفظ فقط معلومات حساب أساسية: الاسم، الجنس، العمر، والبريد الإلكتروني. الهدف منها الاحتفاظ بسجل المستخدم وفهم طبيعة المستخدمين بشكل عام، وليس متابعة سلوكك المالي أو الاطلاع على مصروفاتك.',
+              accent: accent,
+              surface: surface,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+            ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          _InfoSection(
-            icon: AppIcons.userOff,
-            title: 'وضع الضيف',
-            description: 'إذا كنت تستخدم التطبيق كضيف، فكل بياناتك تُحفظ على جهازك فقط. لا تُرسل إلى أي مكان ولا تُخزَّن على أي خادم خارجي.',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-          ),
+            _InfoSection(
+              icon: AppIcons.userOff,
+              title: 'وضع الضيف',
+              description: 'إذا كنت تستخدم التطبيق كضيف، فكل بياناتك تُحفظ على جهازك فقط. لا تُرسل إلى أي مكان ولا تُخزَّن على أي خادم خارجي.',
+              accent: accent,
+              surface: surface,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+            ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          _InfoSection(
-            icon: AppIcons.database,
-            title: 'تخزين البيانات',
-            description: 'بياناتك المالية تُحفظ محلياً على جهازك. تسجيل الدخول يتم بالبريد وكلمة المرور، والمزامنة بين الأجهزة تتم عبر حساب وفّر.',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-          ),
+            _InfoSection(
+              icon: AppIcons.database,
+              title: 'تخزين البيانات',
+              description: 'بياناتك المالية تُحفظ محلياً على جهازك. تسجيل الدخول يتم بالبريد وكلمة المرور، والمزامنة بين الأجهزة تتم عبر حساب وفّر.',
+              accent: accent,
+              surface: surface,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+            ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          _InfoSection(
-            icon: AppIcons.phone,
-            title: 'التشغيل دون اتصال',
-            description: 'عندما يعمل التطبيق دون اتصال بالإنترنت، تبقى جميع بياناتك على جهازك. لا يحتاج التطبيق إلى الإنترنت للعمل، وبياناتك محفوظة محلياً فقط.',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-          ),
+            _InfoSection(
+              icon: AppIcons.phone,
+              title: 'التشغيل دون اتصال',
+              description: 'عندما يعمل التطبيق دون اتصال بالإنترنت، تبقى جميع بياناتك على جهازك. لا يحتاج التطبيق إلى الإنترنت للعمل، وبياناتك محفوظة محلياً فقط.',
+              accent: accent,
+              surface: surface,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+            ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          _InfoSection(
-            icon: AppIcons.lock,
-            title: 'حماية الوصول',
-            description: 'عند تفعيل «قفل التطبيق» تُحمى الوصول إلى التطبيق باستخدام مصادقة الجهاز (البصمة، التعرف على الوجه، رمز الجهاز، أو النمط). هذا يمنع أي شخص من فتح التطبيق دون إذنك.',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-          ),
+            _InfoSection(
+              icon: AppIcons.lock,
+              title: 'حماية الوصول',
+              description: 'عند تفعيل «قفل التطبيق» تُحمى الوصول إلى التطبيق باستخدام مصادقة الجهاز (البصمة، التعرف على الوجه، رمز الجهاز، أو النمط). هذا يمنع أي شخص من فتح التطبيق دون إذنك.',
+              accent: accent,
+              surface: surface,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+            ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          _InfoSection(
-            icon: AppIcons.trash,
-            title: 'إعادة ضبط التطبيق',
-            description: 'عند إعادة ضبط التطبيق من الإعدادات، يتم حذف جميع بياناتك المحلية بشكل دائم من جهازك: معلوماتك الشخصية، الرصيد، سجل المصروفات والدخل، أهداف التوفير، والإشعارات. هذا الإجراء لا يمكن التراجع عنه.',
-            accent: accent,
-            surface: surface,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-          ),
-          const SizedBox(height: 30),
+            _InfoSection(
+              icon: AppIcons.trash,
+              title: 'إعادة ضبط التطبيق',
+              description: 'عند إعادة ضبط التطبيق من الإعدادات، يتم حذف جميع بياناتك المحلية بشكل دائم من جهازك: معلوماتك الشخصية، الرصيد، سجل المصروفات والدخل، أهداف التوفير، والإشعارات. هذا الإجراء لا يمكن التراجع عنه.',
+              accent: accent,
+              surface: surface,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+            ),
+            const SizedBox(height: 30),
 
-          // Closing callout: data control and smart-feature consent.
-          Container(
-            padding: const EdgeInsets.all(18),
+            // Closing callout: data control and smart-feature consent.
+            Container(
+              padding: const EdgeInsets.all(18),
 
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
 
-              border: Border.all(
-                color: accent.withValues(alpha: 0.3),
-                width: 1.5,
+                border: Border.all(
+                  color: accent.withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
+              ),
+
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(AppIcons.info, color: accent, size: 28),
+
+                      const SizedBox(width: 14),
+
+                      Expanded(
+                        child: Text(
+                          'بياناتك تحت سيطرتك الكاملة ولا تغادر جهازك.',
+
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: textPrimary,
+                            fontFamily: 'Outfit',
+                            fontFamilyFallback: ['Tajawal'],
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Row(
+                    children: [
+                      Icon(AppIcons.shield, color: accent, size: 28),
+
+                      const SizedBox(width: 14),
+
+                      Expanded(
+                        child: Text(
+                          'أنت من يقرر أي بيانات يمكن استخدامها لميزات الذكاء الاصطناعي.',
+
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: textPrimary,
+                            fontFamily: 'Outfit',
+                            fontFamilyFallback: ['Tajawal'],
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
 
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Icon(AppIcons.info, color: accent, size: 28),
-
-                    const SizedBox(width: 14),
-
-                    Expanded(
-                      child: Text(
-                        'بياناتك تحت سيطرتك الكاملة ولا تغادر جهازك.',
-
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: textPrimary,
-                          fontFamily: 'Outfit',
-                          fontFamilyFallback: ['Tajawal'],
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Icon(AppIcons.shield, color: accent, size: 28),
-
-                    const SizedBox(width: 14),
-
-                    Expanded(
-                      child: Text(
-                        'أنت من يقرر أي بيانات يمكن استخدامها لميزات الذكاء الاصطناعي.',
-
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: textPrimary,
-                          fontFamily: 'Outfit',
-                          fontFamilyFallback: ['Tajawal'],
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-        ],
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }

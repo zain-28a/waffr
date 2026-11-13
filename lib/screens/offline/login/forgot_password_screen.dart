@@ -1,5 +1,6 @@
 // Password reset screen: request an emailed code, then set a new password.
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
@@ -173,130 +174,132 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Scaffold(
       backgroundColor: bg,
       appBar: WaffrBackHeader(enabled: !_busy, title: 'نسيت كلمة المرور'),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Instructions for the current phase.
-              Text(
-                _codeSent
-                    ? 'أدخل الرمز الذي وصلك على بريدك وكلمة مرور جديدة'
-                    : 'أدخل بريدك وسنرسل لك رمزاً لإعادة التعيين',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: textSecondary, fontSize: 15),
-              ),
-              const SizedBox(height: 28),
-              // Email, then (after the code is sent) code and new password.
-              GlassContainer(
-                colorType: GlassColorType.surface,
-                borderRadius: 28,
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AuthFieldLabel(
-                      text: 'البريد الإلكتروني',
-                      color: textPrimary,
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _emailController,
-                      enabled: !_busy && !_codeSent,
-                      keyboardType: TextInputType.emailAddress,
-                      textDirection: TextDirection.ltr,
-                      autocorrect: false,
-                      onChanged: (_) => setState(() => _message = null),
-                      style: TextStyle(color: textPrimary, fontSize: 16),
-                      decoration: decoration('example@email.com'),
-                    ),
-                    if (_codeSent) ...[
-                      const SizedBox(height: 16),
-                      AuthFieldLabel(text: 'الرمز', color: textPrimary),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _codeController,
-                        enabled: !_busy,
-                        keyboardType: TextInputType.number,
-                        textDirection: TextDirection.ltr,
-                        maxLength: 6,
-                        onChanged: (_) => setState(() => _message = null),
-                        style: TextStyle(color: textPrimary, fontSize: 16),
-                        decoration: decoration('123456'),
-                      ),
-                      const SizedBox(height: 8),
-                      AuthFieldLabel(
-                        text: 'كلمة المرور الجديدة',
-                        color: textPrimary,
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _passwordController,
-                        enabled: !_busy,
-                        obscureText: _obscure,
-                        onChanged: (_) => setState(() => _message = null),
-                        style: TextStyle(color: textPrimary, fontSize: 16),
-                        decoration: decoration(
-                          '8 أحرف على الأقل',
-                          suffixIcon: visibilityToggle,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      AuthFieldLabel(
-                        text: 'تأكيد كلمة المرور',
-                        color: textPrimary,
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _confirmController,
-                        enabled: !_busy,
-                        obscureText: _obscure,
-                        onChanged: (_) => setState(() => _message = null),
-                        style: TextStyle(color: textPrimary, fontSize: 16),
-                        decoration: decoration('أعد كتابة كلمة المرور'),
-                      ),
-                      const SizedBox(height: 14),
-                      // Note on what a reset means for encrypted data.
-                      Text(
-                        'ملاحظاتك وأسماء أهدافك وقوائمك مشفّرة بكلمة المرور القديمة. '
-                        'الموجود منها على هذا الجهاز يبقى، وما ليس على هذا الجهاز لا يمكن استرجاعه. '
-                        'المبالغ لا تتأثر.',
-                        style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 13,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ],
+      body: AuroraPage(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Instructions for the current phase.
+                Text(
+                  _codeSent
+                      ? 'أدخل الرمز الذي وصلك على بريدك وكلمة مرور جديدة'
+                      : 'أدخل بريدك وسنرسل لك رمزاً لإعادة التعيين',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: textSecondary, fontSize: 15),
                 ),
-              ),
-              const SizedBox(height: 28),
-              // Message, main action for the phase, and resend.
-              AppInlineMessage(message: _message, kind: _messageKind),
-              AppPrimaryButton(
-                label: _codeSent ? 'تعيين كلمة المرور' : 'إرسال الرمز',
-                enabled: _codeSent ? _canReset : _canSend,
-                onDisabledTap: () => _show(_missingReason),
-                busy: _busy,
-                onTap: _codeSent ? _reset : _sendCode,
-              ),
-              if (_codeSent)
-                TextButton(
-                  onPressed: _busy ? null : _sendCode,
-                  child: Text(
-                    'إعادة إرسال الرمز',
-                    style: TextStyle(
-                      color: accent,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Outfit',
-                      fontFamilyFallback: ['Tajawal'],
-                    ),
+                const SizedBox(height: 28),
+                // Email, then (after the code is sent) code and new password.
+                GlassContainer(
+                  colorType: GlassColorType.surface,
+                  borderRadius: 28,
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      AuthFieldLabel(
+                        text: 'البريد الإلكتروني',
+                        color: textPrimary,
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _emailController,
+                        enabled: !_busy && !_codeSent,
+                        keyboardType: TextInputType.emailAddress,
+                        textDirection: TextDirection.ltr,
+                        autocorrect: false,
+                        onChanged: (_) => setState(() => _message = null),
+                        style: TextStyle(color: textPrimary, fontSize: 16),
+                        decoration: decoration('example@email.com'),
+                      ),
+                      if (_codeSent) ...[
+                        const SizedBox(height: 16),
+                        AuthFieldLabel(text: 'الرمز', color: textPrimary),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _codeController,
+                          enabled: !_busy,
+                          keyboardType: TextInputType.number,
+                          textDirection: TextDirection.ltr,
+                          maxLength: 6,
+                          onChanged: (_) => setState(() => _message = null),
+                          style: TextStyle(color: textPrimary, fontSize: 16),
+                          decoration: decoration('123456'),
+                        ),
+                        const SizedBox(height: 8),
+                        AuthFieldLabel(
+                          text: 'كلمة المرور الجديدة',
+                          color: textPrimary,
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _passwordController,
+                          enabled: !_busy,
+                          obscureText: _obscure,
+                          onChanged: (_) => setState(() => _message = null),
+                          style: TextStyle(color: textPrimary, fontSize: 16),
+                          decoration: decoration(
+                            '8 أحرف على الأقل',
+                            suffixIcon: visibilityToggle,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        AuthFieldLabel(
+                          text: 'تأكيد كلمة المرور',
+                          color: textPrimary,
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _confirmController,
+                          enabled: !_busy,
+                          obscureText: _obscure,
+                          onChanged: (_) => setState(() => _message = null),
+                          style: TextStyle(color: textPrimary, fontSize: 16),
+                          decoration: decoration('أعد كتابة كلمة المرور'),
+                        ),
+                        const SizedBox(height: 14),
+                        // Note on what a reset means for encrypted data.
+                        Text(
+                          'ملاحظاتك وأسماء أهدافك وقوائمك مشفّرة بكلمة المرور القديمة. '
+                          'الموجود منها على هذا الجهاز يبقى، وما ليس على هذا الجهاز لا يمكن استرجاعه. '
+                          'المبالغ لا تتأثر.',
+                          style: TextStyle(
+                            color: textSecondary,
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-            ],
+                const SizedBox(height: 28),
+                // Message, main action for the phase, and resend.
+                AppInlineMessage(message: _message, kind: _messageKind),
+                AppPrimaryButton(
+                  label: _codeSent ? 'تعيين كلمة المرور' : 'إرسال الرمز',
+                  enabled: _codeSent ? _canReset : _canSend,
+                  onDisabledTap: () => _show(_missingReason),
+                  busy: _busy,
+                  onTap: _codeSent ? _reset : _sendCode,
+                ),
+                if (_codeSent)
+                  TextButton(
+                    onPressed: _busy ? null : _sendCode,
+                    child: Text(
+                      'إعادة إرسال الرمز',
+                      style: TextStyle(
+                        color: accent,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: ['Tajawal'],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

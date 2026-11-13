@@ -1,5 +1,6 @@
 // Change the account password. Other devices are signed out; data stays.
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/button/app_primary_button.dart';
@@ -136,43 +137,45 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return Scaffold(
       backgroundColor: bg,
       appBar: WaffrBackHeader(enabled: !_busy, title: 'تغيير كلمة المرور'),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          // Current, new and confirm fields; the eye toggle sits on the first.
-          field(
-            'كلمة المرور الحالية',
-            _currentController,
-            '••••••••',
-            suffixIcon: IconButton(
-              onPressed: () => setState(() => _obscure = !_obscure),
-              icon: Icon(
-                _obscure ? AppIcons.eye : AppIcons.eyeOff,
-                color: textSecondary,
+      body: AuroraPage(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            // Current, new and confirm fields; the eye toggle sits on the first.
+            field(
+              'كلمة المرور الحالية',
+              _currentController,
+              '••••••••',
+              suffixIcon: IconButton(
+                onPressed: () => setState(() => _obscure = !_obscure),
+                icon: Icon(
+                  _obscure ? AppIcons.eye : AppIcons.eyeOff,
+                  color: textSecondary,
+                ),
               ),
             ),
-          ),
-          field('كلمة المرور الجديدة', _newController, '8 أحرف على الأقل'),
-          field(
-            'تأكيد كلمة المرور الجديدة',
-            _confirmController,
-            'أعد كتابة كلمة المرور',
-          ),
-          // Sign-out note, inline message and save.
-          Text(
-            'سيتم تسجيل الخروج من أجهزتك الأخرى. بياناتك تبقى كما هي.',
-            style: TextStyle(color: textSecondary, fontSize: 13, height: 1.5),
-          ),
-          const SizedBox(height: 20),
-          AppInlineMessage(message: _message, kind: _messageKind),
-          AppPrimaryButton(
-            label: 'حفظ',
-            enabled: _canSave,
-            onDisabledTap: () => _show(_missingReason),
-            busy: _busy,
-            onTap: _save,
-          ),
-        ],
+            field('كلمة المرور الجديدة', _newController, '8 أحرف على الأقل'),
+            field(
+              'تأكيد كلمة المرور الجديدة',
+              _confirmController,
+              'أعد كتابة كلمة المرور',
+            ),
+            // Sign-out note, inline message and save.
+            Text(
+              'سيتم تسجيل الخروج من أجهزتك الأخرى. بياناتك تبقى كما هي.',
+              style: TextStyle(color: textSecondary, fontSize: 13, height: 1.5),
+            ),
+            const SizedBox(height: 20),
+            AppInlineMessage(message: _message, kind: _messageKind),
+            AppPrimaryButton(
+              label: 'حفظ',
+              enabled: _canSave,
+              onDisabledTap: () => _show(_missingReason),
+              busy: _busy,
+              onTap: _save,
+            ),
+          ],
+        ),
       ),
     );
   }

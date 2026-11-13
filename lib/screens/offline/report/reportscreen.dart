@@ -7,6 +7,7 @@
 // (transaction_history_*). TransactionHistoryScreen is public and reached
 // through this file.
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 
 import 'dart:async';

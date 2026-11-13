@@ -2,6 +2,7 @@
 // its findings out as if typing them, over a soft moving glow. Cards expand
 // to show the numbers behind each finding and offer the matching action.
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 
 import 'dart:async';
@@ -334,53 +335,55 @@ class _SmartAnalysisScreenState extends State<SmartAnalysisScreen>
 
     return Scaffold(
       backgroundColor: palette.background,
-      body: Stack(
-        children: [
-          // Animated glow behind everything; calmer once done.
-          Positioned.fill(
-            child: RepaintBoundary(
-              child: SmartGlowBackground(intensity: generating ? 1 : 0.4),
+      body: AuroraPage(
+        child: Stack(
+          children: [
+            // Animated glow behind everything; calmer once done.
+            Positioned.fill(
+              child: RepaintBoundary(
+                child: SmartGlowBackground(intensity: generating ? 1 : 0.4),
+              ),
             ),
-          ),
-          SafeArea(
-            top: false,
-            child: Column(
-              children: [
-                // Header, scope chips, then the headline row.
-                WaffrBackHeader(title: 'التحليل الذكي'),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
-                  child: SheetChoiceChips(
-                    options: [
-                      for (final scope in InsightScope.values) scope.label,
-                    ],
-                    selected: _scope.label,
-                    onSelected: _selectScope,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 6),
-                  child: _headlineRow(palette),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    // Tap while writing to show everything at once.
-                    behavior: HitTestBehavior.translucent,
-                    onTap: _phase == _Phase.writing ? _finish : null,
-                    child: AnimatedSwitcher(
-                      duration: AppMotion.of(context, AppMotion.slow),
-                      switchInCurve: AppMotion.enter,
-                      switchOutCurve: AppMotion.exit,
-                      child: _phase == _Phase.thinking || _report == null
-                          ? const _ThinkingView(key: ValueKey('thinking'))
-                          : _reportView(_report!, palette),
+            SafeArea(
+              top: false,
+              child: Column(
+                children: [
+                  // Header, scope chips, then the headline row.
+                  WaffrBackHeader(title: 'التحليل الذكي'),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
+                    child: SheetChoiceChips(
+                      options: [
+                        for (final scope in InsightScope.values) scope.label,
+                      ],
+                      selected: _scope.label,
+                      onSelected: _selectScope,
                     ),
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 6),
+                    child: _headlineRow(palette),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      // Tap while writing to show everything at once.
+                      behavior: HitTestBehavior.translucent,
+                      onTap: _phase == _Phase.writing ? _finish : null,
+                      child: AnimatedSwitcher(
+                        duration: AppMotion.of(context, AppMotion.slow),
+                        switchInCurve: AppMotion.enter,
+                        switchOutCurve: AppMotion.exit,
+                        child: _phase == _Phase.thinking || _report == null
+                            ? const _ThinkingView(key: ValueKey('thinking'))
+                            : _reportView(_report!, palette),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

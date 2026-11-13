@@ -19,7 +19,6 @@ import 'package:waffr/core/sync/sync_dirty.dart';
 import 'package:waffr/core/sync/sync_service.dart';
 import 'package:waffr/core/l10n/waffr_material_localizations.dart';
 import 'package:waffr/core/theme/app_motion.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_theme.dart';
 import 'package:waffr/screens/offline/applock/applockscreen.dart';
 import 'package:waffr/screens/offline/login/login_screen.dart';
@@ -42,6 +41,8 @@ Future<void> main() async {
 
   unawaited(SyncService.instance.initialize());
   unawaited(LegacyProfilePhoto.remove());
+  // Draw behind the system bars; pages keep their own safe areas.
+  unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
   // Warm the glass lens shader so the first frame of chrome can refract.
   unawaited(LiquidGlassShader.ensureLoaded());
   _registerFontLicenses();
@@ -459,9 +460,10 @@ SystemUiOverlayStyle _systemBarsFor(Brightness brightness) {
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
     statusBarBrightness: brightness,
-    systemNavigationBarColor: dark
-        ? AppColors.darkBackground
-        : AppColors.lightBackground,
+    // Edge to edge: the app draws under a transparent navigation bar.
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarContrastEnforced: false,
     systemNavigationBarIconBrightness: dark
         ? Brightness.light
         : Brightness.dark,
