@@ -71,6 +71,25 @@ class _ExpenseRow extends StatelessWidget {
     final note = expense.note?.trim() ?? '';
     final recurring = RecurringExpense.isRecurringSource(expense.sourceId);
 
+    // A tap opens the editor for this expense.
+    return Semantics(
+      button: true,
+      hint: 'تعديل',
+      child: Pressable(
+        onTap: () => showEditTransactionSheet(context, expense),
+        depth: 0.02,
+        child: _content(palette, category, color, note, recurring),
+      ),
+    );
+  }
+
+  Widget _content(
+    AppPalette palette,
+    ExpenseCategory category,
+    Color color,
+    String note,
+    bool recurring,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(

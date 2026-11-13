@@ -474,61 +474,6 @@ class _ExpenseDayGroup {
   const _ExpenseDayGroup(this.date, this.expenses);
 }
 
-/// Confirms, deletes the expense, refunds balance, and undoes linked
-/// shopping purchases.
-Future<void> _undoExpense(
-  BuildContext context,
-  WaffrTransaction expense,
-) async {
-  final confirmed = await showAppConfirmDialog(
-    context,
-    title: 'التراجع عن المصروف',
-    message:
-        'سيُحذف هذا المصروف من السجل ويُعاد ${formatMoney(expense.amount)} ${currencyLabelFor(expense.currencyCode)} إلى رصيدك.',
-    confirmLabel: 'تراجع',
-    kind: AppFeedbackKind.warning,
-  );
-
-  if (confirmed != true || !context.mounted) return;
-
-  final undone = await TransactionStore.instance.undoExpense(expense.id);
-  if (!context.mounted) return;
-
-  if (!undone) {
-    showAppSnackBar(context, 'تعذّر التراجع عن هذا المصروف.');
-    return;
-  }
-
-  await ShoppingListStore.instance.revertPurchaseForExpense(expense.id);
-  if (!context.mounted) return;
-  showAppSnackBar(context, 'تم التراجع عن المصروف', success: true);
-}
-
-/// Confirms, deletes the income entry, and subtracts it from the running
-/// balance.
-Future<void> _undoIncome(BuildContext context, WaffrTransaction income) async {
-  final confirmed = await showAppConfirmDialog(
-    context,
-    title: 'التراجع عن الدخل',
-    message:
-        'سيُحذف هذا الدخل من السجل ويُخصم ${formatMoney(income.amount)} ${currencyLabelFor(income.currencyCode)} من رصيدك.',
-    confirmLabel: 'تراجع',
-    kind: AppFeedbackKind.warning,
-  );
-
-  if (confirmed != true || !context.mounted) return;
-
-  final undone = await TransactionStore.instance.undoIncome(income.id);
-  if (!context.mounted) return;
-
-  if (!undone) {
-    showAppSnackBar(context, 'تعذّر التراجع عن هذا الدخل.');
-    return;
-  }
-
-  showAppSnackBar(context, 'تم التراجع عن الدخل', success: true);
-}
-
 /// [expenses] grouped by local day, newest day first.
 List<_ExpenseDayGroup> _groupExpensesByDay(List<WaffrTransaction> expenses) {
   final grouped = <DateTime, List<WaffrTransaction>>{};

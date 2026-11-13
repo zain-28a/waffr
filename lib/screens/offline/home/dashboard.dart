@@ -31,6 +31,7 @@ import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffr/screens/offline/home/sheets/add_income_sheet.dart';
 import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
+import 'package:waffr/screens/offline/report/edit_transaction_sheet.dart';
 import 'package:waffr/screens/offline/report/reportscreen.dart';
 import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/manual_save_sheet.dart';
