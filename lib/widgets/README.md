@@ -11,7 +11,8 @@ and `edit_amount_dialog.dart` read a store (`CurrencyStore`).
 | [`dialogs/`](dialogs/README.md) | `EditAmountDialog`, `showEditDeleteMenu`, `showWaffrDatePicker` / `showWaffrDateRangePicker`. |
 | [`sheets/`](sheets/README.md) | `showMonthlyIncomeRequiredSheet`. |
 | [`brand/`](brand/README.md) | `WaffrLogo` / `WaffrSplash`, `WaffrMoodLogo` and its `MouthShape`s, `WaffrPageHeader` / `WaffrBackHeader`, `ProfileAvatar`, `StreakCelebrationOverlay`. |
-| [`motion/`](motion/README.md) | `Reveal`, `staggered()`, `RollingMoney`, `AnimatedRatio`, `RevealClip`, `ActiveListenableBuilder`. Timings come from `AppMotion`. |
+| [`motion/`](motion/README.md) | `Reveal`, `staggered()`, `RollingMoney`, `AnimatedRatio`, `RevealClip`, `ActiveListenableBuilder`, `Pressable`. Timings come from `AppMotion`, springs from `AppSprings`. |
+| [`glass/`](glass/README.md) | `LiquidGlass` (refracting chrome), `AuroraBackdrop` / `AuroraPage` (the page light field), `TiltBuilder` (touch and phone-motion lean). |
 | [`smart/`](smart/README.md) | `SmartAnalysisButton` (pill, tile or banner) and the `SmartGlowBackground` / `SmartSpark` effects. |
 
 New sheets should start from `glass_sheet.dart` instead of copying the

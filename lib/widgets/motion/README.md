@@ -4,6 +4,7 @@
 | --- | --- |
 | `motion.dart` | `Reveal`, `staggered()`, `RollingMoney`, `RollingText`, `AnimatedRatio`, `RevealClip`. |
 | `active_listenable_builder.dart` | `ActiveListenableBuilder`: a `ListenableBuilder` that sleeps while its tab is hidden. |
+| `pressable.dart` | `Pressable`: spring press feedback (the surface sinks under the finger and bounces back) with a selection haptic. Use it for every custom tappable surface. |
 
 `AppMotion` owns durations, curves and the reduced-motion setting.
 `AppMotion.enabled(context)` also checks the enclosing `TickerMode`: repeating

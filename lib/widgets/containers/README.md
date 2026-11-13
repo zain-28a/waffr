@@ -2,22 +2,27 @@
 
 | File | Contents |
 | --- | --- |
-| `glass.dart` | `GlassContainer` (tinted translucent card, `GlassColorType`), `liquidGlassFill()` and `LiquidGlassPainter` (rim). No live blur. |
-| `floating_glass.dart` | `FloatingGlass` (clipped 18px backdrop blur pill) and `FloatingGlassHighlight` (tinted selection bubble). |
+| `glass.dart` | `GlassContainer` (solid tinted content card, `GlassColorType`), `liquidGlassFill()` and `LiquidGlassPainter` (rim). No live blur: content cards are not glass. |
+| `floating_glass.dart` | `FloatingGlass` (a `LiquidGlass` pill) and `FloatingGlassHighlight` (tinted selection bubble). |
+| `amount_keypad.dart` | `AmountKeypad` (digits, delete, done and the quick amounts), `QuickAmounts` (the editable list, 10/25/50/100/200/500 by default, kept in prefs), `showQuickAmountsEditor`, and `AmountKeypadScope` / `AmountKeypadController` that let a sheet dock the keypad. |
 | `pinned_period_scroll_view.dart` | `PinnedPeriodScrollView` and `FloatingPeriodSelector` for Reports and Savings. |
-| `glass_sheet.dart` | `showGlassSheet`, `GlassSheetBody`, `GlassSheetFixedBody`, `GlassSheetHeader`, `kSheetBarrierColor`. Re-exports the four `sheet_*.dart` files. |
+| `glass_sheet.dart` | `showGlassSheet` (frosted `LiquidGlass` sheet that follows Android's predictive back gesture and docks the amount keypad at the bottom of the screen), `GlassSheetBody`, `GlassSheetFixedBody`, `GlassSheetHeader`, `kSheetBarrierColor`. Re-exports the four `sheet_*.dart` files. |
 | `sheet_fields.dart` | `SheetFieldLabel`, `SheetInfoButton` (the (i) help), `SheetOptionTile`, `SheetTextField`, `SheetChoiceChips`, `sheetFieldColor()`. |
-| `sheet_amount_field.dart` | `SheetAmountField` (large amount, currency list, ×1-×10 multiplier), `SheetCurrencySelector`, `ThousandsInputFormatter`. |
+| `sheet_amount_field.dart` | `SheetAmountField` (large amount typed on Waffr's own keypad, currency list, ×1-×10 multiplier), `SheetCurrencySelector`, `ThousandsInputFormatter`. |
 | `sheet_transitions.dart` | `SheetExpand` (show/hide a section) and `SheetSwap` (cross-fade on option change). |
 | `sheet_buttons.dart` | `SheetCircleButton` (header close/next), `SheetSaveButton` (wraps `AppPrimaryButton`), `SheetDestructiveButton`. |
 | `app_list_tile.dart` | `AppListTile` (settings-style row card with icon, status chip, chevron) and `AppSectionTitle`. |
 | `app_empty_state.dart` | `AppEmptyState`: the one "nothing here yet" block. |
 
 `glass_sheet.dart` was split; import only it and you get every sheet piece.
-The sheet barrier is a flat dim, not a blur, and content cards avoid live
-blur. Only `FloatingGlass` blurs, clipped to its pill; change it (and
-`FloatingGlassHighlight`) to keep the navigation bar and the period selector
-aligned.
+The sheet barrier is a light flat dim; only glass surfaces blur what is
+behind them, and content cards stay solid. Floating chrome uses `LiquidGlass`
+(`widgets/glass/`); change `FloatingGlass` and `FloatingGlassHighlight` to keep
+the navigation bar and the period selector aligned.
+
+The amount field never opens the system keyboard. While it has focus the
+keypad is docked under the sheet, along the bottom edge; outside a sheet it
+opens under the field. Another text field taking focus closes it.
 
 `PinnedPeriodScrollView` gives Reports and Savings one vertical scroll view.
 Its fixed-extent pinned sliver keeps `FloatingPeriodSelector` below the shell

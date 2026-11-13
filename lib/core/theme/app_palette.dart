@@ -23,9 +23,6 @@ class AppPalette {
   /// Captions and hints.
   final Color textSecondary;
 
-  /// Teal light used for glows and the aurora, beside the brand green.
-  final Color glow;
-
   /// The page light-field colors (see `AuroraBackdrop`).
   final List<Color> aurora;
 
@@ -37,7 +34,6 @@ class AppPalette {
     required this.onAccent,
     required this.textPrimary,
     required this.textSecondary,
-    required this.glow,
     required this.aurora,
   });
 
@@ -49,7 +45,6 @@ class AppPalette {
     onAccent: AppColors.lightOnAccent,
     textPrimary: AppColors.lightTextPrimary,
     textSecondary: AppColors.lightTextSecondary,
-    glow: AppColors.lightGlow,
     aurora: AppColors.lightAurora,
   );
 
@@ -61,7 +56,6 @@ class AppPalette {
     onAccent: AppColors.darkOnAccent,
     textPrimary: AppColors.darkTextPrimary,
     textSecondary: AppColors.darkTextSecondary,
-    glow: AppColors.darkGlow,
     aurora: AppColors.darkAurora,
   );
 

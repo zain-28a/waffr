@@ -76,11 +76,8 @@ class AppColors {
       ? darkDestructive
       : lightDestructive;
 
-  /// Cool teal light that plays around the brand green (glows, auroras,
-  /// the smart analysis). Never used for text on its own.
-  static const Color lightGlow = Color(0xFF1C8C7C);
-
-  /// Dark-theme teal glow.
+  /// A cool teal light, used only as a faint second light on hero
+  /// surfaces. Never used for text.
   static const Color darkGlow = Color(0xFF63D6C6);
 
   /// Green at the lit corner of hero surfaces (balance card).

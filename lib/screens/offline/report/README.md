@@ -10,7 +10,7 @@ separate libraries for exporting expenses.
 | --- | --- |
 | `reportscreen.dart` | `ReportScreen`: range chips, period pager (240 pages back), summary cards; per-(range, offset) report cache. |
 | `report_data.dart` | Pure period math: `_ReportRange`, `_ReportPeriod`, `_ReportData`, chart bucketing, axis label helpers. |
-| `report_chart.dart` | `_SpendingChartCard` (one pager page) and `_SpendingLineChart` (fl_chart), `_EmptyState`. |
+| `report_chart.dart` | `_SpendingChartCard` (one pager page), `_SpendingAreaChart` (custom-painted smooth area that ends at today; tap to read a point, hold and drag to scrub with haptic ticks), `_ChartTooltip`, `_EmptyState`. |
 | `report_summary.dart` | `_SpendingSummary`, `_ExpenseDistribution` (stacked bar + ranked list), `_ImprovementCard` (vs previous period, with the smart analysis button). |
 | `transaction_history_screen.dart` | `TransactionHistoryScreen.expenses()` / `.incomes()`: ledger by day, per-row undo, multi-select sharing (expenses only). |
 | `transaction_history_rows.dart` | Day groups, history rows, the recurring badge and schedule-text helpers. |
@@ -32,6 +32,10 @@ How it connects:
 - `SpendingImprovement` (core/insights) computes the comparison against the
   whole earlier period of the same range (the page after the visible one),
   and the card names that period. The percentage is always shown.
+
+- Tapping a category in the distribution narrows the total, the chart and
+  the comparison to it (`_focus` in `ReportScreen`, `_ReportData.focus`);
+  tapping it again or the chip above the total widens the report.
 
 Tests: `test/screens/offline/report/reportscreen_test.dart`,
 `test/screens/offline/report/expense_history_pdf_test.dart`.
