@@ -1,6 +1,7 @@
 // Moves money from the operating balance into savings without a goal.
 
 import 'package:flutter/material.dart';
+import 'package:waffr/widgets/brand/waffr_mood_logo.dart';
 import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/utils/money.dart';
@@ -64,6 +65,7 @@ class _ManualSaveSheetState extends State<_ManualSaveSheet> {
     if (!mounted) return;
     if (ok) {
       AppHaptics.success();
+      MascotReactions.instance.play(MascotReaction.happy);
       Navigator.of(context).maybePop();
     }
     setState(() => _saving = false);

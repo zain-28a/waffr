@@ -1,5 +1,7 @@
 // App-lock screen: asks for device authentication before the app opens.
 
+import 'package:waffr/widgets/brand/waffr_mood_logo.dart';
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
@@ -92,51 +94,83 @@ class _LockScreenState extends State<LockScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          // Lock icon, title, hint, then the unlock button.
-          children: [
-            Icon(AppIcons.lock, size: 70, color: accent),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const AuroraBackdrop(),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              // The wallet with a lock badge, title, hint, then the button.
+              children: [
+                SizedBox.square(
+                  dimension: 108,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const WaffrMoodLogo(size: 108, idle: true),
+                      PositionedDirectional(
+                        bottom: -4,
+                        end: -6,
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: accent,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: bg, width: 3),
+                          ),
+                          child: Icon(
+                            AppIcons.lock,
+                            size: 18,
+                            color: palette.onAccent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-            const SizedBox(height: 25),
+                const SizedBox(height: 25),
 
-            Text(
-              'مقفل',
-              style: TextStyle(
-                color: textPrimary,
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Outfit',
-                fontFamilyFallback: ['Tajawal'],
-              ),
+                Text(
+                  'مقفل',
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                Text(
+                  'افتح القفل للدخول إلى التطبيق',
+                  style: TextStyle(
+                    color: textPrimary.withValues(alpha: 0.6),
+                    fontSize: 14,
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                SizedBox(
+                  width: 200,
+                  child: AppPrimaryButton(
+                    label: 'فتح القفل',
+                    icon: AppIcons.fingerprint,
+                    busy: _loading,
+                    onTap: _authenticate,
+                  ),
+                ),
+              ],
             ),
-
-            const SizedBox(height: 10),
-
-            Text(
-              'افتح القفل للدخول إلى التطبيق',
-              style: TextStyle(
-                color: textPrimary.withValues(alpha: 0.6),
-                fontSize: 14,
-                fontFamily: 'Outfit',
-                fontFamilyFallback: ['Tajawal'],
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            SizedBox(
-              width: 200,
-              child: AppPrimaryButton(
-                label: 'فتح القفل',
-                icon: AppIcons.fingerprint,
-                busy: _loading,
-                onTap: _authenticate,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

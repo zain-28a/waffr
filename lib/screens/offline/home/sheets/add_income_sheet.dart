@@ -2,6 +2,7 @@
 // balance, and an optional source. Offers to review waiting obligations after.
 
 import 'package:flutter/material.dart';
+import 'package:waffr/widgets/brand/waffr_mood_logo.dart';
 import 'package:waffr/data/models/transaction.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
@@ -115,6 +116,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
 
     if (!mounted) return;
     AppHaptics.success();
+    MascotReactions.instance.play(MascotReaction.happy);
     // Pop first, then ask on the navigator's context (this sheet is gone).
     final navigator = Navigator.of(context);
     await navigator.maybePop();
