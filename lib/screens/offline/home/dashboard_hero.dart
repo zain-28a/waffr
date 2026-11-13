@@ -19,6 +19,7 @@ class _BalanceHero extends StatefulWidget {
   final VoidCallback onIncomeLog;
 
   const _BalanceHero({
+    super.key,
     required this.balance,
     required this.spent,
     required this.maxBalance,

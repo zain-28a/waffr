@@ -7,6 +7,7 @@
 // (transaction_history_*). TransactionHistoryScreen is public and reached
 // through this file.
 
+import 'package:waffr/widgets/motion/origin_route.dart';
 import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 
@@ -163,11 +164,15 @@ class _ReportScreenState extends State<ReportScreen>
   /// Pushes the expense history screen.
   void _openExpenseHistory() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const TransactionHistoryScreen.expenses(),
+      originPageRoute<void>(
+        _summary.currentContext ?? context,
+        (_) => const TransactionHistoryScreen.expenses(),
       ),
     );
   }
+
+  /// The total row; the history page grows out of it.
+  final GlobalKey _summary = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -222,6 +227,7 @@ class _ReportScreenState extends State<ReportScreen>
               const SizedBox(height: kCardGap),
               // Summary cards for the visible period.
               _SpendingSummary(
+                key: _summary,
                 total: report.total,
                 focus: report.focus,
                 onClearFocus: () => setState(() => _focus = null),

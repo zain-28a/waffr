@@ -2,6 +2,7 @@
 // navigation bar, and the background work that runs while the app is open
 // (due periods, reminders, home-widget and notification taps).
 
+import 'package:waffr/widgets/motion/origin_route.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 
 import 'dart:async';
@@ -33,6 +34,7 @@ import 'package:waffr/screens/offline/report/reportscreen.dart';
 import 'package:waffr/screens/offline/savings/savings_screen.dart';
 import 'package:waffr/screens/offline/settings/settings_screen.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
+import 'package:waffr/widgets/brand/goal_celebration.dart';
 import 'package:waffr/widgets/brand/streak_celebration.dart';
 import 'package:waffr/widgets/brand/waffr_mood_logo.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
@@ -108,6 +110,13 @@ class _AppShellState extends State<AppShell>
   /// Set when today's open extended the streak; drives the overlay once.
   StreakIncrease? _streakIncrease;
 
+  /// Completed goals already known, so only a goal finished while the app
+  /// is open is celebrated. Null until the store has loaded.
+  Set<String>? _completedGoals;
+
+  /// Name of the goal being celebrated, if one just completed.
+  String? _goalReached;
+
   static const int _tabCount = 5;
 
   /// Lazy tab cache: [_tabAt] builds a page on first visit and reuses it.
@@ -147,6 +156,8 @@ class _AppShellState extends State<AppShell>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    TransactionStore.instance.addListener(_watchGoals);
+    TransactionStore.instance.ensureLoaded().then((_) => _watchGoals());
     _startDueTimer();
     _syncFinancialEvents();
     unawaited(HomeWidgetSync.instance.start());
@@ -298,9 +309,16 @@ class _AppShellState extends State<AppShell>
     setState(() => _streakIncrease = increase);
   }
 
+  /// The header buttons; pages they open grow out of them.
+  final GlobalKey _settingsButton = GlobalKey();
+  final GlobalKey _bellButton = GlobalKey();
+
   void _openNotifications() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
+      originPageRoute<void>(
+        _bellButton.currentContext ?? context,
+        (_) => const NotificationsScreen(),
+      ),
     );
   }
 
@@ -322,8 +340,9 @@ class _AppShellState extends State<AppShell>
   /// changed there.
   Future<void> _openSettings() async {
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => SettingsScreen(
+      originPageRoute<void>(
+        _settingsButton.currentContext ?? context,
+        (_) => SettingsScreen(
           themeNotifier: widget.themeNotifier,
           onThemeChanged: widget.onThemeChanged,
           appFlowController: widget.appFlowController,
@@ -413,8 +432,25 @@ class _AppShellState extends State<AppShell>
     _tabIndex.value = index;
   }
 
+  /// Celebrates a goal that was completed since the last look. The first
+  /// look only records what is already complete.
+  void _watchGoals() {
+    final store = TransactionStore.instance;
+    if (!mounted || !store.isLoaded) return;
+    final done = {for (final goal in store.allCompletedGoals) goal.id: goal};
+    final known = _completedGoals;
+    _completedGoals = done.keys.toSet();
+    if (known == null) return;
+    for (final id in done.keys) {
+      if (known.contains(id)) continue;
+      setState(() => _goalReached = done[id]!.name);
+      return;
+    }
+  }
+
   @override
   void dispose() {
+    TransactionStore.instance.removeListener(_watchGoals);
     _dueTimer?.cancel();
     _widgetTaps?.cancel();
     _notificationTaps?.cancel();
@@ -493,12 +529,14 @@ class _AppShellState extends State<AppShell>
                 leading: Row(
                   children: [
                     GlassIconButton(
+                      key: _settingsButton,
                       icon: AppIcons.settings,
                       label: 'الإعدادات',
                       onPressed: _openSettings,
                     ),
                     const SizedBox(width: 8),
                     _NotificationsButton(
+                      key: _bellButton,
                       onPressed: _openNotifications,
                       onLongPress: _toggleNotificationsMuted,
                     ),
@@ -533,6 +571,17 @@ class _AppShellState extends State<AppShell>
                 ),
               ),
             ),
+            // One-shot goal celebration over everything.
+            if (_goalReached case final name?)
+              Positioned.fill(
+                child: GoalCelebrationOverlay(
+                  key: ValueKey('goal-$name'),
+                  goalName: name,
+                  onFinished: () {
+                    if (mounted) setState(() => _goalReached = null);
+                  },
+                ),
+              ),
             // One-shot streak celebration over everything.
             if (increase != null)
               Positioned.fill(
@@ -805,6 +854,7 @@ class _NotificationsButton extends StatelessWidget {
   final VoidCallback onLongPress;
 
   const _NotificationsButton({
+    super.key,
     required this.onPressed,
     required this.onLongPress,
   });

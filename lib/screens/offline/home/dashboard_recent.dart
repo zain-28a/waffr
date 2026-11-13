@@ -20,7 +20,7 @@ class _RecentCard extends StatelessWidget {
   final List<WaffrTransaction> expenses;
   final VoidCallback onAll;
 
-  const _RecentCard({required this.expenses, required this.onAll});
+  const _RecentCard({super.key, required this.expenses, required this.onAll});
 
   static const int _shown = 4;
 

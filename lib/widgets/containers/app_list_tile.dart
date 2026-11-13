@@ -1,6 +1,7 @@
-// Settings-style rows shared by Settings, Account and Privacy screens:
-// one card per row with an icon box, title, optional subtitle or status,
-// and a chevron. Section titles above groups of rows use AppSectionTitle.
+// Settings-style rows shared by Settings, Account and Privacy screens: an
+// icon box, title, optional subtitle or status, and a chevron. A row is its
+// own card, or a flat member of an AppListGroup (one card per section).
+// Section titles above groups of rows use AppSectionTitle.
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
@@ -92,14 +93,20 @@ class AppListTile extends StatelessWidget {
       );
     }
 
+    // Inside an AppListGroup the group is the card; the row is flat.
+    final grouped = _ListGroupScope.of(context);
+    final radius = BorderRadius.circular(grouped ? 0 : 20);
     return Material(
-      color: surface,
-      borderRadius: BorderRadius.circular(20),
+      color: grouped ? Colors.transparent : surface,
+      borderRadius: radius,
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: radius,
         onTap: busy ? null : onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          padding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: grouped ? 12 : 15,
+          ),
           child: Row(
             children: [
               Container(
@@ -198,6 +205,54 @@ class AppSectionTitle extends StatelessWidget {
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: 5, bottom: 10),
       child: Text(title, style: _tileText(textSecondary, 14, FontWeight.bold)),
+    );
+  }
+}
+
+/// Marks the rows below as members of an [AppListGroup].
+class _ListGroupScope extends InheritedWidget {
+  const _ListGroupScope({required super.child});
+
+  static bool of(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<_ListGroupScope>() != null;
+
+  @override
+  bool updateShouldNotify(_ListGroupScope oldWidget) => false;
+}
+
+/// Several [AppListTile] rows as one card with hairlines between them: the
+/// denser form for a section of related settings.
+class AppListGroup extends StatelessWidget {
+  /// The rows, top to bottom.
+  final List<Widget> children;
+
+  /// Creates an [AppListGroup].
+  const AppListGroup({super.key, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final line = palette.textSecondary.withValues(alpha: 0.12);
+    return _ListGroupScope(
+      child: Material(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(22),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final (index, child) in children.indexed) ...[
+              if (index > 0)
+                // Starts after the icon box, like a contacts list.
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 73),
+                  child: Divider(height: 1, thickness: 1, color: line),
+                ),
+              child,
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:waffr/widgets/motion/origin_route.dart';
 import 'package:waffr/core/insights/smart/insight_engine.dart';
 import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
@@ -139,18 +140,24 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  /// The cards the history pages grow out of.
+  final GlobalKey _heroCard = GlobalKey();
+  final GlobalKey _recentCard = GlobalKey();
+
   void _openIncomeLog() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const TransactionHistoryScreen.incomes(),
+      originPageRoute<void>(
+        _heroCard.currentContext ?? context,
+        (_) => const TransactionHistoryScreen.incomes(),
       ),
     );
   }
 
   void _openExpenseLog() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const TransactionHistoryScreen.expenses(),
+      originPageRoute<void>(
+        _recentCard.currentContext ?? context,
+        (_) => const TransactionHistoryScreen.expenses(),
       ),
     );
   }
@@ -178,6 +185,7 @@ class _HomeScreenState extends State<HomeScreen>
             children: staggered([
               // The balance on its dimensional glass card.
               _BalanceHero(
+                key: _heroCard,
                 balance: _store.balance,
                 spent: _store.cycleSpent,
                 maxBalance: _store.maxBalance,
@@ -221,7 +229,11 @@ class _HomeScreenState extends State<HomeScreen>
                     AppShellScope.selectTabOf(context, AppShellTabs.report),
               ),
               const SizedBox(height: kCardGap),
-              _RecentCard(expenses: _store.expenses, onAll: _openExpenseLog),
+              _RecentCard(
+                key: _recentCard,
+                expenses: _store.expenses,
+                onAll: _openExpenseLog,
+              ),
               if (hasObligations) ...[
                 const SizedBox(height: kCardGap),
                 _ObligationsCard(

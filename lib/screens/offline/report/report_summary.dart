@@ -13,6 +13,7 @@ class _SpendingSummary extends StatelessWidget {
   final VoidCallback onHistory;
 
   const _SpendingSummary({
+    super.key,
     required this.total,
     required this.focus,
     required this.onClearFocus,

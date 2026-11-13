@@ -350,7 +350,7 @@ class _CreateGoalCard extends StatelessWidget {
   }
 }
 
-/// Name, progress bar, and saved/target amounts for one active goal.
+/// A filling vessel, the name, and saved/target amounts for one active goal.
 class _GoalProgressCard extends StatelessWidget {
   final SavingsGoal goal;
   final double saved;
@@ -365,141 +365,80 @@ class _GoalProgressCard extends StatelessWidget {
         ? 0.0
         : (saved / goal.targetAmount).clamp(0.0, 1.0);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    // A vessel that fills as the goal is saved for, then the name and the
+    // saved / target amounts beside it.
+    return Row(
       children: [
-        // Goal name.
-        Text(
-          goal.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontFamily: 'Outfit',
-            fontFamilyFallback: const ['Tajawal'],
-            fontSize: 14.5,
-            fontWeight: FontWeight.bold,
-            color: colors.textPrimary,
-          ),
-        ),
-
-        const SizedBox(height: 10),
-
-        // Progress bar and percent.
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: _HorizontalProgress(
-                ratio: ratio,
-                height: 18,
-                trackColor: colors.textPrimary.withValues(alpha: 0.08),
-                fillColor: colors.accent,
-              ),
-            ),
-
-            const SizedBox(width: 10),
-
-            Text(
-              '${(ratio * 100).round()}%',
-              style: TextStyle(
-                fontFamily: 'Outfit',
-                fontFamilyFallback: const ['Tajawal'],
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: colors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 10),
-
-        // Saved / target amounts.
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text:
-                      '${formatMoney(saved)} / ${formatMoney(goal.targetAmount)}',
-                ),
-                TextSpan(
-                  text: ' $currencyLabel',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
+        LiquidVessel(
+          ratio: ratio,
+          size: 66,
+          color: colors.accent,
+          track: colors.textPrimary.withValues(alpha: 0.07),
+          child: Text(
+            '${(ratio * 100).round()}%',
             style: TextStyle(
               fontFamily: 'Outfit',
               fontFamilyFallback: const ['Tajawal'],
               fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
+              // Dark on an empty vessel, light once the liquid is behind it.
+              color: ratio > 0.5 ? colors.onAccent : colors.textPrimary,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ),
-      ],
-    );
-  }
-}
-
-/// Rounded track with a fractionally filled accent bar that animates to
-/// [ratio].
-class _HorizontalProgress extends StatelessWidget {
-  final double ratio;
-  final double height;
-  final Color trackColor;
-  final Color fillColor;
-
-  const _HorizontalProgress({
-    required this.ratio,
-    required this.trackColor,
-    required this.fillColor,
-    this.height = 18,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: SizedBox(
-        width: double.infinity,
-        height: height,
-        child: Stack(
-          children: [
-            Positioned.fill(child: ColoredBox(color: trackColor)),
-
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: AnimatedRatio(
-                value: ratio,
-                builder: (context, shown) => FractionallySizedBox(
-                  widthFactor: shown,
-                  child: Container(
-                    height: height,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color.lerp(fillColor, Colors.white, 0.18)!,
-                          fillColor,
-                        ],
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                goal.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: const ['Tajawal'],
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: formatMoney(saved),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: colors.accent,
+                        ),
                       ),
-                    ),
+                      TextSpan(
+                        text:
+                            ' / ${formatMoney(goal.targetAmount)} $currencyLabel',
+                      ),
+                    ],
+                  ),
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textSecondary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

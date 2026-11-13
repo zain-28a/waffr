@@ -22,6 +22,7 @@ import 'package:waffr/screens/offline/savings/sheets/savings_log_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/withdraw_savings_sheet.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
+import 'package:waffr/widgets/motion/liquid_vessel.dart';
 import 'package:waffr/widgets/motion/pressable.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/pinned_period_scroll_view.dart';

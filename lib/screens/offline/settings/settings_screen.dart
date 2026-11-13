@@ -484,36 +484,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       const SizedBox(height: 12),
-      AppListTile(
-        icon: AppIcons.banknote,
-        title: 'الدخل الشهري',
-        subtitle: _hasMonthlyIncome
-            ? '${formatMoney(_monthlyIncome)} $currencyLabel'
-            : 'لم يُحدَّد بعد',
-        onTap: () => _editIncome(RecurringFrequency.monthly),
-      ),
-      if (_weeklyIncomeChoiceEnabled && _hasWeeklyIncome) ...[
-        const SizedBox(height: 12),
-        AppListTile(
-          icon: AppIcons.calendarRange,
-          title: 'الدخل الأسبوعي',
-          subtitle: '${formatMoney(_weeklyIncome)} $currencyLabel',
-          onTap: () => _editIncome(RecurringFrequency.weekly),
-        ),
-      ],
-      const SizedBox(height: 12),
-      AppListTile(
-        icon: AppIcons.exchange,
-        title: 'العملات',
-        subtitle: 'إضافة عملة أو اختيار العملة النشطة',
-        onTap: () => showCurrenciesSheet(context),
-      ),
-      const SizedBox(height: 12),
-      AppListTile(
-        icon: AppIcons.calendarRepeat,
-        title: 'الالتزامات',
-        subtitle: 'المصروفات المتكررة وطريقة خصمها',
-        onTap: () => showObligationsSheet(context),
+      AppListGroup(
+        children: [
+          AppListTile(
+            icon: AppIcons.banknote,
+            title: 'الدخل الشهري',
+            subtitle: _hasMonthlyIncome
+                ? '${formatMoney(_monthlyIncome)} $currencyLabel'
+                : 'لم يُحدَّد بعد',
+            onTap: () => _editIncome(RecurringFrequency.monthly),
+          ),
+          if (_weeklyIncomeChoiceEnabled && _hasWeeklyIncome) ...[
+            AppListTile(
+              icon: AppIcons.calendarRange,
+              title: 'الدخل الأسبوعي',
+              subtitle: '${formatMoney(_weeklyIncome)} $currencyLabel',
+              onTap: () => _editIncome(RecurringFrequency.weekly),
+            ),
+          ],
+          AppListTile(
+            icon: AppIcons.exchange,
+            title: 'العملات',
+            subtitle: 'إضافة عملة أو اختيار العملة النشطة',
+            onTap: () => showCurrenciesSheet(context),
+          ),
+          AppListTile(
+            icon: AppIcons.calendarRepeat,
+            title: 'الالتزامات',
+            subtitle: 'المصروفات المتكررة وطريقة خصمها',
+            onTap: () => showObligationsSheet(context),
+          ),
+        ],
       ),
     ];
   }
@@ -522,44 +523,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<Widget> _appearanceSection(bool isDark) {
     return [
       const AppSectionTitle(title: 'المظهر'),
-      AppListTile(
-        icon: AppIcons.moon,
-        title: 'الوضع الداكن',
-        subtitle: isDark ? 'مفعّل' : 'غير مفعّل',
-        trailing: Switch(
-          value: isDark,
-          onChanged: (_) {
-            widget.onThemeChanged();
-          },
-        ),
-        onTap: widget.onThemeChanged,
-      ),
-      const SizedBox(height: 12),
-      // The balance card can lean with the phone; touch tilt always works.
-      ListenableBuilder(
-        listenable: TiltSettings.instance,
-        builder: (context, _) {
-          final on = TiltSettings.instance.enabled;
-          return AppListTile(
-            icon: AppIcons.rotate3d,
-            title: 'حركة البطاقة مع الهاتف',
-            subtitle: on
-                ? 'بطاقة الرصيد تميل مع حركة الهاتف'
-                : 'البطاقة تميل باللمس فقط',
+      AppListGroup(
+        children: [
+          AppListTile(
+            icon: AppIcons.moon,
+            title: 'الوضع الداكن',
+            subtitle: isDark ? 'مفعّل' : 'غير مفعّل',
             trailing: Switch(
-              value: on,
-              onChanged: TiltSettings.instance.setEnabled,
+              value: isDark,
+              onChanged: (_) {
+                widget.onThemeChanged();
+              },
             ),
-            onTap: () => TiltSettings.instance.setEnabled(!on),
-          );
-        },
-      ),
-      const SizedBox(height: 12),
-      AppListTile(
-        icon: AppIcons.language,
-        title: 'اللغة',
-        subtitle: 'العربية (اللغة الوحيدة المتاحة)',
-        onTap: _showLanguageInfo,
+            onTap: widget.onThemeChanged,
+          ),
+          // The balance card can lean with the phone; touch tilt always works.
+          ListenableBuilder(
+            listenable: TiltSettings.instance,
+            builder: (context, _) {
+              final on = TiltSettings.instance.enabled;
+              return AppListTile(
+                icon: AppIcons.rotate3d,
+                title: 'حركة البطاقة مع الهاتف',
+                subtitle: on
+                    ? 'بطاقة الرصيد تميل مع حركة الهاتف'
+                    : 'البطاقة تميل باللمس فقط',
+                trailing: Switch(
+                  value: on,
+                  onChanged: TiltSettings.instance.setEnabled,
+                ),
+                onTap: () => TiltSettings.instance.setEnabled(!on),
+              );
+            },
+          ),
+          AppListTile(
+            icon: AppIcons.language,
+            title: 'اللغة',
+            subtitle: 'العربية (اللغة الوحيدة المتاحة)',
+            onTap: _showLanguageInfo,
+          ),
+        ],
       ),
     ];
   }
@@ -568,27 +571,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<Widget> _privacySection() {
     return [
       const AppSectionTitle(title: 'الحماية والخصوصية'),
-      AppListTile(
-        icon: AppIcons.lock,
-        title: 'قفل التطبيق',
-        subtitle: 'طلب البصمة أو رمز الجهاز عند فتح وفّر',
-        trailing: Switch(value: _appLock, onChanged: _toggleAppLock),
-        onTap: () => _toggleAppLock(!_appLock),
-      ),
-      const SizedBox(height: 12),
-      AppListTile(
-        icon: AppIcons.chartCombined,
-        leading: const SmartSpark(size: 32),
-        title: 'التحليل الذكي',
-        subtitle: 'ملاحظات واقتراحات وتنبيهات ذكية',
-        onTap: _openSmartSettings,
-      ),
-      const SizedBox(height: 12),
-      AppListTile(
-        icon: AppIcons.shieldAlert,
-        title: 'الخصوصية والأمان',
-        subtitle: 'البيانات والمزامنة وحماية الجهاز',
-        onTap: _openPrivacySecurity,
+      AppListGroup(
+        children: [
+          AppListTile(
+            icon: AppIcons.lock,
+            title: 'قفل التطبيق',
+            subtitle: 'طلب البصمة أو رمز الجهاز عند فتح وفّر',
+            trailing: Switch(value: _appLock, onChanged: _toggleAppLock),
+            onTap: () => _toggleAppLock(!_appLock),
+          ),
+          AppListTile(
+            icon: AppIcons.chartCombined,
+            leading: const SmartSpark(size: 32),
+            title: 'التحليل الذكي',
+            subtitle: 'ملاحظات واقتراحات وتنبيهات ذكية',
+            onTap: _openSmartSettings,
+          ),
+          AppListTile(
+            icon: AppIcons.shieldAlert,
+            title: 'الخصوصية والأمان',
+            subtitle: 'البيانات والمزامنة وحماية الجهاز',
+            onTap: _openPrivacySecurity,
+          ),
+        ],
       ),
     ];
   }
@@ -597,18 +602,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<Widget> _supportSection() {
     return [
       const AppSectionTitle(title: 'الدعم'),
-      AppListTile(
-        icon: AppIcons.help,
-        title: 'المساعدة',
-        subtitle: 'الأسئلة الشائعة والدعم',
-        onTap: _openHelp,
-      ),
-      const SizedBox(height: 12),
-      AppListTile(
-        icon: AppIcons.info,
-        title: 'عن وفّر',
-        subtitle: 'معلومات عن التطبيق',
-        onTap: _showAbout,
+      AppListGroup(
+        children: [
+          AppListTile(
+            icon: AppIcons.help,
+            title: 'المساعدة',
+            subtitle: 'الأسئلة الشائعة والدعم',
+            onTap: _openHelp,
+          ),
+          AppListTile(
+            icon: AppIcons.info,
+            title: 'عن وفّر',
+            subtitle: 'معلومات عن التطبيق',
+            onTap: _showAbout,
+          ),
+        ],
       ),
     ];
   }

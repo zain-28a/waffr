@@ -72,6 +72,10 @@ extension TransactionQueries on TransactionStore {
   /// True when an active goal saves automatically each period.
   bool get hasActivePeriodicPlan => activePeriodicGoal != null;
 
+  /// Completed goals in every currency.
+  List<SavingsGoal> get allCompletedGoals =>
+      _goals.where((goal) => goal.isCompleted).toList(growable: false);
+
   /// [completedGoalsFor] the active currency.
   List<SavingsGoal> get completedGoals => completedGoalsFor(_activeCode);
 
