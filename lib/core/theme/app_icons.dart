@@ -85,6 +85,9 @@ abstract final class AppIcons {
   /// Lucide `plus`.
   static const IconData add = IconData(0xe13d, fontFamily: _family);
 
+  /// Lucide `minus`.
+  static const IconData remove = IconData(0xe11c, fontFamily: _family);
+
   /// Lucide `circleMinus`.
   static const IconData removeCircle = IconData(0xe07e, fontFamily: _family);
 

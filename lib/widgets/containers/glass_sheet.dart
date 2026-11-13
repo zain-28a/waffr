@@ -42,11 +42,15 @@ const BorderRadius _sheetRadius = BorderRadius.vertical(
 );
 
 /// The sheet's frosted glass. It hangs off the bottom of the screen, so
-/// only its top edge and corners are optical.
-class _SheetGlass extends StatelessWidget {
+/// only its top edge and corners are optical. [GlassSheetBody] and
+/// [GlassSheetFixedBody] already use it; sheets with their own layout wrap
+/// their content in it directly.
+class GlassSheetSurface extends StatelessWidget {
+  /// The sheet content.
   final Widget child;
 
-  const _SheetGlass({required this.child});
+  /// Creates a [GlassSheetSurface].
+  const GlassSheetSurface({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -317,7 +321,7 @@ class GlassSheetFixedBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
-      child: _SheetGlass(
+      child: GlassSheetSurface(
         child: SafeArea(
           top: false,
           child: Column(
@@ -354,7 +358,7 @@ class GlassSheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SheetGlass(
+    return GlassSheetSurface(
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(

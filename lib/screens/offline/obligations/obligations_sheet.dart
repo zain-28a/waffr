@@ -15,12 +15,17 @@ import 'package:waffr/data/models/recurring_expense.dart';
 import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart'
+    show ExpenseCategoryGrid;
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/widgets/dialogs/edit_amount_dialog.dart';
+import 'package:waffr/widgets/dialogs/waffr_date_picker.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/utils/calendar_days.dart';
 
 part 'due_obligations_sheet.dart';
 part 'obligation_details_sheet.dart';
+part 'obligation_edit_sheet.dart';
 part 'obligation_labels.dart';
 
 /// Opens the obligations list for the active currency.

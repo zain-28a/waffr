@@ -18,9 +18,11 @@ import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/manage_goals_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/manual_save_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/periodic_goals_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/savings_log_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/withdraw_savings_sheet.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
+import 'package:waffr/widgets/motion/pressable.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/pinned_period_scroll_view.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
@@ -186,7 +188,10 @@ class _SavingsScreenState extends State<SavingsScreen>
 
               // Total savings, smart analysis tile, save and withdraw buttons.
               _SplitActionRow(
-                leading: _TotalSavingsCard(total: _store.savingsBalance),
+                leading: _TotalSavingsCard(
+                  total: _store.savingsBalance,
+                  onTap: () => showSavingsLogSheet(context),
+                ),
                 first: _ActionButton(
                   label: 'توفير مبلغ',
                   onTap: () => showManualSaveSheet(context),

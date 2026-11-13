@@ -45,6 +45,7 @@ ICONS = [
     ("tune", "slidersHorizontal", False),
     # Actions
     ("add", "plus", False),
+    ("remove", "minus", False),
     ("removeCircle", "circleMinus", False),
     ("check", "check", False),
     ("checkAll", "checkCheck", False),

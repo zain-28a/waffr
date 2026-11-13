@@ -10,7 +10,6 @@ import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
-import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
@@ -64,12 +63,8 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
     final textPrimary = palette.textPrimary;
     final textSecondary = palette.textSecondary;
 
-    // Own sheet chrome: rounded glass top, safe-area padding.
-    return GlassContainer(
-      colorType: GlassColorType.surface,
-      tintOpacity: 1,
-      radius: const BorderRadius.vertical(top: Radius.circular(34)),
-      padding: EdgeInsets.zero,
+    // Own layout on the shared sheet glass, with safe-area padding.
+    return GlassSheetSurface(
       child: SafeArea(
         top: false,
         child: Padding(
@@ -135,6 +130,8 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
                                   accent: accent,
                                   textPrimary: textPrimary,
                                   textSecondary: textSecondary,
+                                  onEdit: () =>
+                                      showEditGoalDialog(context, goal),
                                   onDelete: () => _confirmDelete(goal),
                                 ),
                               );
@@ -158,7 +155,8 @@ class _ManageGoalsSheetState extends State<_ManageGoalsSheet> {
   }
 }
 
-/// Drag handle, progress summary, and delete for one goal in the manage list.
+/// Drag handle, progress summary, edit and delete for one goal in the
+/// manage list.
 class _ManageGoalRow extends StatelessWidget {
   final int index;
   final SavingsGoal goal;
@@ -166,6 +164,7 @@ class _ManageGoalRow extends StatelessWidget {
   final Color accent;
   final Color textPrimary;
   final Color textSecondary;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _ManageGoalRow({
@@ -175,6 +174,7 @@ class _ManageGoalRow extends StatelessWidget {
     required this.accent,
     required this.textPrimary,
     required this.textSecondary,
+    required this.onEdit,
     required this.onDelete,
   });
 
@@ -249,6 +249,24 @@ class _ManageGoalRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
+          Semantics(
+            button: true,
+            label: 'تعديل الهدف',
+            child: Material(
+              color: textPrimary.withValues(alpha: 0.08),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onEdit,
+                child: SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: Icon(AppIcons.edit, size: 17, color: textSecondary),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
           Material(
             color: textPrimary.withValues(alpha: 0.08),
             shape: const CircleBorder(),
@@ -265,6 +283,124 @@ class _ManageGoalRow extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Opens a dialog to rename [goal] and change its target.
+Future<void> showEditGoalDialog(BuildContext context, SavingsGoal goal) {
+  return showAppDialog<void>(
+    context: context,
+    builder: (_) => _EditGoalDialog(goal: goal),
+  );
+}
+
+class _EditGoalDialog extends StatefulWidget {
+  final SavingsGoal goal;
+
+  const _EditGoalDialog({required this.goal});
+
+  @override
+  State<_EditGoalDialog> createState() => _EditGoalDialogState();
+}
+
+class _EditGoalDialogState extends State<_EditGoalDialog> {
+  late final TextEditingController _name = TextEditingController(
+    text: widget.goal.name,
+  );
+  late final TextEditingController _target = TextEditingController(
+    text: formatMoney(widget.goal.targetAmount),
+  );
+
+  bool get _valid =>
+      _name.text.trim().isNotEmpty && parseAmount(_target.text) > 0;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _target.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_valid) return;
+    final saved = await TransactionStore.instance.updateGoal(
+      widget.goal.id,
+      name: _name.text,
+      targetAmount: parseAmount(_target.text),
+    );
+    if (!mounted) return;
+    if (saved) {
+      AppHaptics.success();
+      Navigator.pop(context);
+    } else {
+      AppHaptics.warning();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    InputDecoration field(String hint) => InputDecoration(
+      isDense: true,
+      filled: true,
+      fillColor: palette.textSecondary.withValues(alpha: 0.1),
+      hintText: hint,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+    );
+    final style = TextStyle(
+      fontFamily: 'Outfit',
+      fontFamilyFallback: const ['Tajawal'],
+      fontSize: 15,
+      fontWeight: FontWeight.w600,
+      color: palette.textPrimary,
+    );
+
+    return AppDialogFrame(
+      title: 'تعديل الهدف',
+      message: 'غيّر اسم الهدف أو المبلغ المستهدف.',
+      kind: AppFeedbackKind.info,
+      actions: [
+        AppDialogAction(
+          label: 'إلغاء',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppDialogAction(
+          label: 'حفظ',
+          primary: true,
+          enabled: _valid,
+          onPressed: _save,
+        ),
+      ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _name,
+            textInputAction: TextInputAction.next,
+            onChanged: (_) => setState(() {}),
+            style: style,
+            decoration: field('اسم الهدف'),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _target,
+            keyboardType: TextInputType.number,
+            inputFormatters: [ThousandsInputFormatter()],
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => _save(),
+            textDirection: TextDirection.ltr,
+            textAlign: TextAlign.center,
+            style: style.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+            decoration: field('المبلغ المستهدف'),
           ),
         ],
       ),
