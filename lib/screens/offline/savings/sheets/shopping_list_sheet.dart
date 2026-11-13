@@ -2,6 +2,7 @@
 // (add, rename, delete, clear), and the purchase sheet that records an item
 // as an expense through ShoppingListStore.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/stores/category_store.dart';
@@ -74,11 +75,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                       color: colors.accent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(13),
                     ),
-                    child: Icon(
-                      Icons.format_list_bulleted_rounded,
-                      size: 21,
-                      color: colors.accent,
-                    ),
+                    child: Icon(AppIcons.list, size: 21, color: colors.accent),
                   ),
                   const SizedBox(width: 11),
                   Expanded(
@@ -109,7 +106,7 @@ class _ShoppingListPreviewCardState extends State<ShoppingListPreviewCard> {
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_left_rounded, color: colors.textSecondary),
+                  Icon(AppIcons.chevronBack, color: colors.textSecondary),
                 ],
               ),
               if (preview.isNotEmpty) ...[
@@ -155,9 +152,7 @@ class _PreviewItem extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            item.isPurchased
-                ? Icons.check_circle_rounded
-                : Icons.radio_button_unchecked_rounded,
+            item.isPurchased ? AppIcons.checkCircle : AppIcons.circle,
             size: 17,
             color: item.isPurchased
                 ? colors.accent
@@ -345,7 +340,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
                               ),
                             )
                           : Icon(
-                              Icons.add_rounded,
+                              AppIcons.add,
                               color: AppColors.onAccentOf(context),
                             ),
                     ),
@@ -357,7 +352,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
             // Empty state, or a clear button over the item tiles.
             if (_store.items.isEmpty)
               const AppEmptyState(
-                icon: Icons.shopping_basket_outlined,
+                icon: AppIcons.shoppingBasket,
                 title: 'قائمة المشتريات فارغة',
                 message: 'اكتب اسم ما تحتاج إليه ثم اضغط +.',
               )
@@ -367,7 +362,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
                 child: TextButton.icon(
                   onPressed: _clearList,
                   icon: Icon(
-                    Icons.delete_outline_rounded,
+                    AppIcons.trash,
                     size: 18,
                     color: colors.textSecondary,
                   ),
@@ -482,7 +477,7 @@ class _ShoppingItemTile extends StatelessWidget {
                   ),
                   onPressed: () => onActions(anchorContext),
                   icon: Icon(
-                    Icons.more_vert_rounded,
+                    AppIcons.moreVertical,
                     size: 19,
                     color: colors.textSecondary,
                   ),

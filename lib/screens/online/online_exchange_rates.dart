@@ -180,10 +180,7 @@ class _ExchangeRateCardState extends State<_ExchangeRateCard> {
                     turns: _menuOpen ? 0.5 : 0,
                     duration: AppMotion.of(context, AppMotion.medium),
                     curve: AppMotion.overshoot,
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: colors.accent,
-                    ),
+                    child: Icon(AppIcons.chevronDown, color: colors.accent),
                   ),
                 ],
               ),
@@ -494,7 +491,7 @@ class _CurrencyOption extends StatelessWidget {
                   ),
                 ),
                 if (selected)
-                  Icon(Icons.check_rounded, size: 18, color: colors.accent),
+                  Icon(AppIcons.check, size: 18, color: colors.accent),
               ],
             ),
           ),

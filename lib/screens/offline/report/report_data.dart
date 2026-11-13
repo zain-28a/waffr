@@ -79,32 +79,52 @@ class _ChartBucket {
 }
 
 /// Filters expenses for a period, sums by category, and buckets them into
-/// chart points.
+/// chart points. With a [focus] category the total and the chart cover only
+/// that category, while [categoryTotals] still lists them all.
 class _ReportData {
   final _ReportPeriod period;
+
+  /// The expenses behind [total] and the chart (one category when focused).
   final List<WaffrTransaction> expenses;
+
+  /// Spending shown: the focused category, or everything.
   final double total;
+
+  /// Spending in every category; shares are measured against it.
+  final double allTotal;
+
+  /// The focused category's label, or null for all categories.
+  final String? focus;
+
   // Category totals, largest first.
   final List<_CategoryTotal> categoryTotals;
   final List<_ChartBucket> chartBuckets;
+
+  /// Last bucket that has started; later ones are still in the future and
+  /// are not drawn.
+  final int lastBucket;
 
   const _ReportData({
     required this.period,
     required this.expenses,
     required this.total,
+    required this.allTotal,
+    required this.focus,
     required this.categoryTotals,
     required this.chartBuckets,
+    required this.lastBucket,
   });
 
   /// Builds the report for [period] from the full expense list.
   factory _ReportData.from(
     List<WaffrTransaction> allExpenses,
-    _ReportPeriod period,
-  ) {
-    final expenses = _expensesInPeriod(allExpenses, period);
-    final total = _sumExpenses(expenses);
+    _ReportPeriod period, {
+    String? focus,
+    DateTime? now,
+  }) {
+    final inPeriod = _expensesInPeriod(allExpenses, period);
     final totals = <String, double>{};
-    for (final expense in expenses) {
+    for (final expense in inPeriod) {
       final category = categoryFor(expense.category).label;
       totals[category] = (totals[category] ?? 0) + expense.amount;
     }
@@ -114,14 +134,58 @@ class _ReportData {
             .toList()
           ..sort((a, b) => b.amount.compareTo(a.amount));
 
+    final shown = focus == null
+        ? inPeriod
+        : inPeriod
+              .where((e) => categoryFor(e.category).label == focus)
+              .toList(growable: false);
+    final buckets = _buildChartBuckets(shown, period);
+
     return _ReportData(
       period: period,
-      expenses: expenses,
-      total: total,
+      expenses: shown,
+      total: _sumExpenses(shown),
+      allTotal: _sumExpenses(inPeriod),
+      focus: focus,
       categoryTotals: categoryTotals,
-      chartBuckets: _buildChartBuckets(expenses, period),
+      chartBuckets: buckets,
+      lastBucket: _lastStartedBucket(
+        period,
+        buckets.length,
+        now ?? DateTime.now(),
+      ),
     );
   }
+}
+
+/// The chart bucket [moment] falls in for [period]'s grain; may be outside
+/// 0..count-1 when the moment is outside the period.
+int _bucketIndex(_ReportPeriod period, DateTime moment) {
+  final local = moment.toLocal();
+  switch (period.range) {
+    case _ReportRange.day:
+      return local.hour;
+    case _ReportRange.week:
+    case _ReportRange.month:
+      return calendarDaysBetween(period.start, local);
+    case _ReportRange.threeMonths:
+      return calendarDaysBetween(period.start, local) ~/ 7;
+    case _ReportRange.sixMonths:
+    case _ReportRange.year:
+      return (local.year - period.start.year) * 12 +
+          local.month -
+          period.start.month;
+  }
+}
+
+/// The last bucket that has started at [now]: the one holding [now] while
+/// the period is running, otherwise the final bucket.
+int _lastStartedBucket(_ReportPeriod period, int count, DateTime now) {
+  if (count <= 0) return 0;
+  if (now.isBefore(period.start) || !now.isBefore(period.end)) {
+    return count - 1;
+  }
+  return _bucketIndex(period, now).clamp(0, count - 1);
 }
 
 /// Builds the [start, end) window for a range at the given PageView offset
@@ -140,26 +204,6 @@ _ReportPeriod _periodFor(_ReportRange range, int offset) {
   }
   final period = CalendarPeriod.forRange(calendarRange, offset);
   return _ReportPeriod(start: period.start, end: period.end, range: range);
-}
-
-/// While [current] is still running, only the same elapsed span of
-/// [previous] is fair to compare: ten days into this month against the first
-/// ten days of last month, not against all of it.
-_ReportPeriod _comparablePeriod(
-  _ReportPeriod previous, {
-  required _ReportPeriod current,
-  required DateTime now,
-}) {
-  if (!now.isBefore(current.end) || now.isBefore(current.start)) {
-    return previous;
-  }
-  final elapsed = now.difference(current.start);
-  final end = previous.start.add(elapsed);
-  return _ReportPeriod(
-    start: previous.start,
-    end: end.isBefore(previous.end) ? end : previous.end,
-    range: previous.range,
-  );
 }
 
 /// Expenses whose time falls inside [period].
@@ -269,23 +313,7 @@ List<_ChartBucket> _buildChartBuckets(
   // Drop each expense into its bucket by hour, day, week or month offset.
   final amounts = List<double>.filled(buckets.length, 0);
   for (final expense in expenses) {
-    final local = expense.dateTime.toLocal();
-    late int index;
-    switch (period.range) {
-      case _ReportRange.day:
-        index = local.hour;
-      case _ReportRange.week:
-      case _ReportRange.month:
-        index = calendarDaysBetween(period.start, local);
-      case _ReportRange.threeMonths:
-        index = calendarDaysBetween(period.start, local) ~/ 7;
-      case _ReportRange.sixMonths:
-      case _ReportRange.year:
-        index =
-            (local.year - period.start.year) * 12 +
-            local.month -
-            period.start.month;
-    }
+    final index = _bucketIndex(period, expense.dateTime);
     if (index >= 0 && index < amounts.length) {
       amounts[index] += expense.amount;
     }

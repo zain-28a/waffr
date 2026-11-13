@@ -1,6 +1,9 @@
 // Add-expense bottom sheet: one-off or recurring expenses, presets, a smart
 // category suggestion from the note, and the category grid (part file).
 
+import 'package:waffr/widgets/brand/waffr_mood_logo.dart';
+import 'package:waffr/core/theme/app_icons.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -260,6 +263,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     }
 
     // One-off: the store returns null when the balance is too low.
+    final before = TransactionStore.instance.balanceFor(_currencyCode);
     final added = await TransactionStore.instance.addExpense(
       amount: _amount,
       category: _category,
@@ -279,6 +283,10 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     await _storePresetIfMarked(note);
     if (!mounted) return;
     AppHaptics.success();
+    // A fifth of the balance in one go makes the wallet gulp.
+    if (before > 0 && _amount >= before * 0.2) {
+      MascotReactions.instance.play(MascotReaction.gulp);
+    }
     Navigator.of(context).maybePop();
   }
 
@@ -318,6 +326,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         ),
         const SizedBox(height: 10),
         SheetAmountField(
+          autofocus: true,
           label: 'المبلغ',
           controller: _amountController,
           helper: check.helper,
@@ -504,7 +513,7 @@ class _PresetStarButton extends StatelessWidget {
               child: FadeTransition(opacity: animation, child: child),
             ),
             child: Icon(
-              filled ? Icons.star_rounded : Icons.star_border_rounded,
+              filled ? AppIcons.star : AppIcons.star,
               key: ValueKey(filled),
               size: 22,
               color: filled ? accent : textSecondary,

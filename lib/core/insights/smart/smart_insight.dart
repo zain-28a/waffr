@@ -1,6 +1,7 @@
 // What the smart analysis produces: a headline, a short summary, and a
 // ranked list of insights for one area of the app.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 
 /// Which screen asked; each scope looks at a different slice of the data.
@@ -26,9 +27,9 @@ extension InsightScopeLabel on InsightScope {
 
   /// Icon shown beside [label].
   IconData get icon => switch (this) {
-    InsightScope.reports => Icons.bar_chart_rounded,
-    InsightScope.savings => Icons.savings_outlined,
-    InsightScope.profile => Icons.person_outline_rounded,
+    InsightScope.reports => AppIcons.reports,
+    InsightScope.savings => AppIcons.piggyBank,
+    InsightScope.profile => AppIcons.user,
   };
 }
 

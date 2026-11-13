@@ -2,6 +2,8 @@
 // The cards live in the part files online_cards.dart,
 // online_exchange_rates.dart and online_news.dart.
 
+import 'package:waffr/core/theme/app_icons.dart';
+
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
@@ -170,6 +172,7 @@ class _OnlineScreenState extends State<OnlineScreen>
 
     // The three cards, staggered in on first build.
     final content = SingleChildScrollView(
+      clipBehavior: Clip.none,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

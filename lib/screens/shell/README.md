@@ -5,7 +5,7 @@ and lock gates are passed. Every tab lives inside it.
 
 | File | Contents |
 | --- | --- |
-| `app_shell.dart` | `AppShell`: header (settings, notification bell, wordmark), lazy tab `PageView`, floating bottom bar, streak overlay. |
+| `app_shell.dart` | `AppShell`: the `AuroraBackdrop`, the glass header over the pager (settings, notification bell, `WaffrMoodLogo` in the middle, wordmark), lazy tab `PageView`, floating glass bottom bar that names the selected tab, streak overlay, goal celebration. |
 | `app_shell_scope.dart` | `AppShellScope` (inherited tab switcher), `AppShellTabs` (tab indices), and the shared layout constants `kFloatingNavClearance` and `kCardGap`. |
 
 Tabs, in page order: home, report, savings, online, profile. `_tabAt`
@@ -21,12 +21,18 @@ Background work the shell owns while it is mounted:
   evaluation, and the usage streak (which can trigger the streak overlay).
 - Comeback reminders built from `SmartFactsLoader` / `ReminderDigest`, sent
   to `SystemNotifications`.
+- `_watchGoals`: when a goal first reaches its target, the
+  `GoalCelebrationOverlay` plays once for it.
 - Home-screen widget taps (`HomeWidget`) are routed by URI host to a tab
   and/or sheet. Smart-reminder notification taps open the smart analysis.
 
-Settings and notifications are pushed from the header. They are not tabs.
+Settings and notifications are pushed from the header. They are not tabs;
+each opens from its own button (`originPageRoute`).
 The bell's long press mutes notifications. Pages call
 `AppShellScope.selectTabOf(context, AppShellTabs.x)` to switch tabs, which
 does nothing outside the shell (for example, in widget tests). Every
 scrolling tab should end with `kFloatingNavClearance` of padding so its last
-card can clear the floating bar.
+card can clear the floating bar, and should set `clipBehavior: Clip.none` on
+its scroll view: the pager starts below the header, and unclipped content is
+what scrolls up beneath the glass. While the pager fades between far tabs a
+`LiquidGlassScope` pauses refraction below it.

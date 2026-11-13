@@ -1,6 +1,8 @@
 // In-app FAQ grouped by topic (balance, expenses, reports, savings, shopping,
 // notifications, account, security). Opened from settings.
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
@@ -186,48 +188,50 @@ class HelpScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: bg,
       appBar: WaffrBackHeader(title: 'المساعدة'),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: staggered([
-          Text(
-            'دليل وفّر',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: textPrimary,
-              fontFamily: 'Outfit',
-              fontFamilyFallback: ['Tajawal'],
-            ),
-          ),
-          const SizedBox(height: 5),
-
-          const SizedBox(height: 22),
-          for (final section in sections) ...[
+      body: AuroraPage(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: staggered([
             Text(
-              section.title,
+              'دليل وفّر',
               style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
                 fontFamily: 'Outfit',
                 fontFamilyFallback: ['Tajawal'],
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: accent,
               ),
             ),
-            const SizedBox(height: 12),
-            for (var index = 0; index < section.items.length; index++) ...[
-              if (index > 0) const SizedBox(height: 12),
-              _FAQItem(
-                question: section.items[index].question,
-                answer: section.items[index].answer,
-                accent: accent,
-                surface: surface,
-                textPrimary: textPrimary,
-                textSecondary: textSecondary,
-              ),
-            ],
+            const SizedBox(height: 5),
+
             const SizedBox(height: 22),
-          ],
-        ]),
+            for (final section in sections) ...[
+              Text(
+                section.title,
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontFamilyFallback: ['Tajawal'],
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(height: 12),
+              for (var index = 0; index < section.items.length; index++) ...[
+                if (index > 0) const SizedBox(height: 12),
+                _FAQItem(
+                  question: section.items[index].question,
+                  answer: section.items[index].answer,
+                  accent: accent,
+                  surface: surface,
+                  textPrimary: textPrimary,
+                  textSecondary: textSecondary,
+                ),
+              ],
+              const SizedBox(height: 22),
+            ],
+          ]),
+        ),
       ),
     );
   }
@@ -282,9 +286,7 @@ class _FAQItemState extends State<_FAQItem> {
             bottom: 16,
           ),
           trailing: Icon(
-            _isExpanded
-                ? Icons.keyboard_arrow_up_rounded
-                : Icons.keyboard_arrow_down_rounded,
+            _isExpanded ? AppIcons.chevronUp : AppIcons.chevronDown,
             color: widget.accent,
           ),
           onExpansionChanged: (expanded) {

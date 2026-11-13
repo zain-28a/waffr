@@ -16,7 +16,7 @@ class WaffrLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Decode at display size; the asset is 1440 px square.
+    // Decode at display size; the asset is 720 px square.
     final pixels = (size * MediaQuery.devicePixelRatioOf(context)).round();
     return Image.asset(
       assetPath,

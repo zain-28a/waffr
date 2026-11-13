@@ -1,6 +1,9 @@
 // App settings: account, income, currencies, obligations, theme, app lock,
 // smart analysis, privacy, help, and the guest data reset.
 
+import 'package:waffr/widgets/glass/tilt.dart';
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:waffr/widgets/motion/motion.dart';
@@ -422,42 +425,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: palette.background,
-      body: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            WaffrBackHeader(elevated: _headerElevated, title: 'الإعدادات'),
-            Expanded(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: _onScroll,
-                child: ListView(
-                  padding: const EdgeInsets.all(20),
-                  children: staggered([
-                    ..._accountSection(palette),
-                    const SizedBox(height: 25),
-                    ..._appearanceSection(isDark),
-                    const SizedBox(height: 25),
-                    ..._privacySection(),
-                    const SizedBox(height: 25),
-                    ..._supportSection(),
-                    const SizedBox(height: 25),
-                    ..._dataSection(),
-                    // Version label.
-                    Center(
-                      child: Text(
-                        'waffr 2.13.8',
-                        style: TextStyle(
-                          color: palette.textSecondary.withValues(alpha: 0.6),
-                          fontSize: 12,
+      body: AuroraPage(
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              WaffrBackHeader(elevated: _headerElevated, title: 'الإعدادات'),
+              Expanded(
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: _onScroll,
+                  child: ListView(
+                    padding: const EdgeInsets.all(20),
+                    children: staggered([
+                      ..._accountSection(palette),
+                      const SizedBox(height: 25),
+                      ..._appearanceSection(isDark),
+                      const SizedBox(height: 25),
+                      ..._privacySection(),
+                      const SizedBox(height: 25),
+                      ..._supportSection(),
+                      const SizedBox(height: 25),
+                      ..._dataSection(),
+                      // Version label.
+                      Center(
+                        child: Text(
+                          'waffr 2.13.8',
+                          style: TextStyle(
+                            color: palette.textSecondary.withValues(alpha: 0.6),
+                            fontSize: 12,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                  ]),
+                      const SizedBox(height: 20),
+                    ]),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -479,62 +484,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       const SizedBox(height: 12),
-      AppListTile(
-        icon: Icons.payments_outlined,
-        title: 'الدخل الشهري',
-        subtitle: _hasMonthlyIncome
-            ? '${formatMoney(_monthlyIncome)} $currencyLabel'
-            : 'لم يُحدَّد بعد',
-        onTap: () => _editIncome(RecurringFrequency.monthly),
-      ),
-      if (_weeklyIncomeChoiceEnabled && _hasWeeklyIncome) ...[
-        const SizedBox(height: 12),
-        AppListTile(
-          icon: Icons.date_range_outlined,
-          title: 'الدخل الأسبوعي',
-          subtitle: '${formatMoney(_weeklyIncome)} $currencyLabel',
-          onTap: () => _editIncome(RecurringFrequency.weekly),
-        ),
-      ],
-      const SizedBox(height: 12),
-      AppListTile(
-        icon: Icons.currency_exchange_rounded,
-        title: 'العملات',
-        subtitle: 'إضافة عملة أو اختيار العملة النشطة',
-        onTap: () => showCurrenciesSheet(context),
-      ),
-      const SizedBox(height: 12),
-      AppListTile(
-        icon: Icons.event_repeat_rounded,
-        title: 'الالتزامات',
-        subtitle: 'المصروفات المتكررة وطريقة خصمها',
-        onTap: () => showObligationsSheet(context),
+      AppListGroup(
+        children: [
+          AppListTile(
+            icon: AppIcons.banknote,
+            title: 'الدخل الشهري',
+            subtitle: _hasMonthlyIncome
+                ? '${formatMoney(_monthlyIncome)} $currencyLabel'
+                : 'لم يُحدَّد بعد',
+            onTap: () => _editIncome(RecurringFrequency.monthly),
+          ),
+          if (_weeklyIncomeChoiceEnabled && _hasWeeklyIncome) ...[
+            AppListTile(
+              icon: AppIcons.calendarRange,
+              title: 'الدخل الأسبوعي',
+              subtitle: '${formatMoney(_weeklyIncome)} $currencyLabel',
+              onTap: () => _editIncome(RecurringFrequency.weekly),
+            ),
+          ],
+          AppListTile(
+            icon: AppIcons.exchange,
+            title: 'العملات',
+            subtitle: 'إضافة عملة أو اختيار العملة النشطة',
+            onTap: () => showCurrenciesSheet(context),
+          ),
+          AppListTile(
+            icon: AppIcons.calendarRepeat,
+            title: 'الالتزامات',
+            subtitle: 'المصروفات المتكررة وطريقة خصمها',
+            onTap: () => showObligationsSheet(context),
+          ),
+        ],
       ),
     ];
   }
 
-  /// Dark mode switch and the language note.
+  /// Dark mode switch, the card motion switch and the language note.
   List<Widget> _appearanceSection(bool isDark) {
     return [
       const AppSectionTitle(title: 'المظهر'),
-      AppListTile(
-        icon: Icons.dark_mode_outlined,
-        title: 'الوضع الداكن',
-        subtitle: isDark ? 'مفعّل' : 'غير مفعّل',
-        trailing: Switch(
-          value: isDark,
-          onChanged: (_) {
-            widget.onThemeChanged();
-          },
-        ),
-        onTap: widget.onThemeChanged,
-      ),
-      const SizedBox(height: 12),
-      AppListTile(
-        icon: Icons.language_rounded,
-        title: 'اللغة',
-        subtitle: 'العربية (اللغة الوحيدة المتاحة)',
-        onTap: _showLanguageInfo,
+      AppListGroup(
+        children: [
+          AppListTile(
+            icon: AppIcons.moon,
+            title: 'الوضع الداكن',
+            subtitle: isDark ? 'مفعّل' : 'غير مفعّل',
+            trailing: Switch(
+              value: isDark,
+              onChanged: (_) {
+                widget.onThemeChanged();
+              },
+            ),
+            onTap: widget.onThemeChanged,
+          ),
+          // The balance card can lean with the phone; touch tilt always works.
+          ListenableBuilder(
+            listenable: TiltSettings.instance,
+            builder: (context, _) {
+              final on = TiltSettings.instance.enabled;
+              return AppListTile(
+                icon: AppIcons.rotate3d,
+                title: 'حركة البطاقة مع الهاتف',
+                subtitle: on
+                    ? 'بطاقة الرصيد تميل مع حركة الهاتف'
+                    : 'البطاقة تميل باللمس فقط',
+                trailing: Switch(
+                  value: on,
+                  onChanged: TiltSettings.instance.setEnabled,
+                ),
+                onTap: () => TiltSettings.instance.setEnabled(!on),
+              );
+            },
+          ),
+          AppListTile(
+            icon: AppIcons.language,
+            title: 'اللغة',
+            subtitle: 'العربية (اللغة الوحيدة المتاحة)',
+            onTap: _showLanguageInfo,
+          ),
+        ],
       ),
     ];
   }
@@ -543,27 +571,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<Widget> _privacySection() {
     return [
       const AppSectionTitle(title: 'الحماية والخصوصية'),
-      AppListTile(
-        icon: Icons.lock_outline_rounded,
-        title: 'قفل التطبيق',
-        subtitle: 'طلب البصمة أو رمز الجهاز عند فتح وفّر',
-        trailing: Switch(value: _appLock, onChanged: _toggleAppLock),
-        onTap: () => _toggleAppLock(!_appLock),
-      ),
-      const SizedBox(height: 12),
-      AppListTile(
-        icon: Icons.auto_graph_rounded,
-        leading: const SmartSpark(size: 32),
-        title: 'التحليل الذكي',
-        subtitle: 'ملاحظات واقتراحات وتنبيهات ذكية',
-        onTap: _openSmartSettings,
-      ),
-      const SizedBox(height: 12),
-      AppListTile(
-        icon: Icons.privacy_tip_outlined,
-        title: 'الخصوصية والأمان',
-        subtitle: 'البيانات والمزامنة وحماية الجهاز',
-        onTap: _openPrivacySecurity,
+      AppListGroup(
+        children: [
+          AppListTile(
+            icon: AppIcons.lock,
+            title: 'قفل التطبيق',
+            subtitle: 'طلب البصمة أو رمز الجهاز عند فتح وفّر',
+            trailing: Switch(value: _appLock, onChanged: _toggleAppLock),
+            onTap: () => _toggleAppLock(!_appLock),
+          ),
+          AppListTile(
+            icon: AppIcons.chartCombined,
+            leading: const SmartSpark(size: 32),
+            title: 'التحليل الذكي',
+            subtitle: 'ملاحظات واقتراحات وتنبيهات ذكية',
+            onTap: _openSmartSettings,
+          ),
+          AppListTile(
+            icon: AppIcons.shieldAlert,
+            title: 'الخصوصية والأمان',
+            subtitle: 'البيانات والمزامنة وحماية الجهاز',
+            onTap: _openPrivacySecurity,
+          ),
+        ],
       ),
     ];
   }
@@ -572,18 +602,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<Widget> _supportSection() {
     return [
       const AppSectionTitle(title: 'الدعم'),
-      AppListTile(
-        icon: Icons.help_outline_rounded,
-        title: 'المساعدة',
-        subtitle: 'الأسئلة الشائعة والدعم',
-        onTap: _openHelp,
-      ),
-      const SizedBox(height: 12),
-      AppListTile(
-        icon: Icons.info_outline_rounded,
-        title: 'عن وفّر',
-        subtitle: 'معلومات عن التطبيق',
-        onTap: _showAbout,
+      AppListGroup(
+        children: [
+          AppListTile(
+            icon: AppIcons.help,
+            title: 'المساعدة',
+            subtitle: 'الأسئلة الشائعة والدعم',
+            onTap: _openHelp,
+          ),
+          AppListTile(
+            icon: AppIcons.info,
+            title: 'عن وفّر',
+            subtitle: 'معلومات عن التطبيق',
+            onTap: _showAbout,
+          ),
+        ],
       ),
     ];
   }
@@ -594,7 +627,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return [
       const AppSectionTitle(title: 'البيانات'),
       AppListTile(
-        icon: Icons.delete_outline_rounded,
+        icon: AppIcons.trash,
         title: 'إعادة ضبط التطبيق',
         subtitle: 'حذف جميع البيانات والبدء من جديد',
         onTap: _resetApp,

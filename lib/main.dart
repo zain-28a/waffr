@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffr/screens/offline/onboarding/onboarding_screen.dart';
+import 'package:waffr/widgets/glass/liquid_glass.dart';
 import 'package:waffr/data/services/backup_service.dart';
 import 'package:waffr/data/services/legacy_profile_photo.dart';
 import 'package:waffr/data/services/notification_service.dart';
@@ -17,7 +19,6 @@ import 'package:waffr/core/sync/sync_dirty.dart';
 import 'package:waffr/core/sync/sync_service.dart';
 import 'package:waffr/core/l10n/waffr_material_localizations.dart';
 import 'package:waffr/core/theme/app_motion.dart';
-import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_theme.dart';
 import 'package:waffr/screens/offline/applock/applockscreen.dart';
 import 'package:waffr/screens/offline/login/login_screen.dart';
@@ -40,6 +41,10 @@ Future<void> main() async {
 
   unawaited(SyncService.instance.initialize());
   unawaited(LegacyProfilePhoto.remove());
+  // Draw behind the system bars; pages keep their own safe areas.
+  unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
+  // Warm the glass lens shader so the first frame of chrome can refract.
+  unawaited(LiquidGlassShader.ensureLoaded());
   _registerFontLicenses();
 
   runApp(const WafarApp());
@@ -222,6 +227,9 @@ class _AppFlowControllerState extends State<AppFlowController>
   bool? _authChoiceMade;
   bool? _isFirstLaunch;
   bool? _appLockEnabled;
+
+  /// False only on a fresh install that has not seen the introduction.
+  bool _onboardingSeen = true;
   // True once the lock was passed for the current foreground session.
   bool _isAuthenticated = false;
 
@@ -279,6 +287,9 @@ class _AppFlowControllerState extends State<AppFlowController>
     final authChoiceMade =
         prefs.getBool(BackupService.authChoiceKey) ?? !firstLaunch;
 
+    // Only a fresh install sees the introduction; people who already use
+    // the app never do.
+    _onboardingSeen = prefs.getBool(_onboardingSeenKey) ?? !firstLaunch;
     _authChoiceMade = authChoiceMade;
     _isFirstLaunch = firstLaunch;
     _appLockEnabled = appLockEnabled;
@@ -317,6 +328,13 @@ class _AppFlowControllerState extends State<AppFlowController>
       _authChoiceMade = false;
       _isAuthenticated = false;
     });
+  }
+
+  /// The introduction was finished or skipped; go on to the sign-in choice.
+  Future<void> _markOnboardingSeen() async {
+    setState(() => _onboardingSeen = true);
+    final prefs = await AppPrefs.instance;
+    await prefs.setBool(_onboardingSeenKey, true);
   }
 
   /// First-launch theme screen is done; don't show it again.
@@ -368,7 +386,9 @@ class _AppFlowControllerState extends State<AppFlowController>
       return _FlowStage.splash;
     }
     // User has not chosen an account or guest mode yet.
-    if (_authChoiceMade == false) return _FlowStage.login;
+    if (_authChoiceMade == false) {
+      return _onboardingSeen ? _FlowStage.login : _FlowStage.onboarding;
+    }
     if (_isFirstLaunch == true) return _FlowStage.themeSelect;
     if (_appLockEnabled == true && !_isAuthenticated) return _FlowStage.lock;
     return _FlowStage.shell;
@@ -386,6 +406,9 @@ class _AppFlowControllerState extends State<AppFlowController>
 
     final Widget page = switch (baseStage) {
       _FlowStage.splash => const WaffrSplash(),
+      _FlowStage.onboarding => OnboardingScreen(
+        onDone: () => unawaited(_markOnboardingSeen()),
+      ),
       _FlowStage.login => LoginScreen(onCompleted: _onAuthChoiceCompleted),
       _FlowStage.themeSelect => ThemeSelectScreen(
         onThemeChanged: widget.onThemeChanged,
@@ -437,9 +460,10 @@ SystemUiOverlayStyle _systemBarsFor(Brightness brightness) {
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
     statusBarBrightness: brightness,
-    systemNavigationBarColor: dark
-        ? AppColors.darkBackground
-        : AppColors.lightBackground,
+    // Edge to edge: the app draws under a transparent navigation bar.
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarContrastEnforced: false,
     systemNavigationBarIconBrightness: dark
         ? Brightness.light
         : Brightness.dark,
@@ -447,7 +471,10 @@ SystemUiOverlayStyle _systemBarsFor(Brightness brightness) {
 }
 
 /// Gates shown by [AppFlowController], in the order they are checked.
-enum _FlowStage { splash, login, themeSelect, lock, shell }
+enum _FlowStage { splash, onboarding, login, themeSelect, lock, shell }
+
+/// Prefs flag: the first-launch introduction was finished or skipped.
+const String _onboardingSeenKey = 'onboarding_seen';
 
 /// No saved choice yet: follow the device. After a choice: the stored light or dark theme.
 ThemeMode _themeModeFromPrefs(SharedPreferences prefs) {

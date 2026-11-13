@@ -1,10 +1,12 @@
 // Shared top app bar for the shell and settings-style screens.
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/widgets/glass/liquid_glass.dart';
 
-/// Fixed-height page header with optional scroll-elevation shadow.
+/// Fixed-height liquid-glass page header. [elevated] thickens the glass
+/// while content is scrolled beneath it.
 class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
   /// Header height without the status bar.
   static const double height = 68;
@@ -21,6 +23,10 @@ class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
   /// Center the title instead of starting it after [leading].
   final bool centerTitle;
 
+  /// Optional widget pinned to the exact middle of the bar (the shell's
+  /// logo), independent of [leading] and [title].
+  final Widget? center;
+
   /// When true the header casts its scroll shadow.
   final ValueListenable<bool>? elevated;
 
@@ -34,6 +40,7 @@ class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
     this.leading,
     this.leadingWidth = 48,
     this.centerTitle = false,
+    this.center,
     this.elevated,
     this.applySafeArea = true,
   });
@@ -49,6 +56,7 @@ class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
         leading: leading,
         leadingWidth: leadingWidth,
         centerTitle: centerTitle,
+        center: center,
         elevated: false,
         applySafeArea: applySafeArea,
       );
@@ -62,6 +70,7 @@ class WaffrPageHeader extends StatelessWidget implements PreferredSizeWidget {
           leading: leading,
           leadingWidth: leadingWidth,
           centerTitle: centerTitle,
+          center: center,
           elevated: isElevated,
           applySafeArea: applySafeArea,
         );
@@ -117,7 +126,7 @@ class WaffrBackHeader extends StatelessWidget implements PreferredSizeWidget {
       leading: showBack
           ? IconButton(
               tooltip: 'رجوع',
-              icon: Icon(Icons.arrow_forward_ios_rounded, color: textPrimary),
+              icon: Icon(AppIcons.chevronForward, color: textPrimary),
               onPressed: enabled
                   ? (onBack ?? () => Navigator.of(context).maybePop())
                   : null,
@@ -133,12 +142,13 @@ class WaffrBackHeader extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-/// Gradient bar chrome, shadow, and title/leading layout.
+/// Glass bar chrome and title/leading layout.
 class _HeaderChrome extends StatelessWidget {
   final Widget title;
   final Widget? leading;
   final double leadingWidth;
   final bool centerTitle;
+  final Widget? center;
   final bool elevated;
   final bool applySafeArea;
 
@@ -147,74 +157,82 @@ class _HeaderChrome extends StatelessWidget {
     required this.leading,
     required this.leadingWidth,
     required this.centerTitle,
+    required this.center,
     required this.elevated,
     required this.applySafeArea,
   });
 
+  /// A little more frost than floating pills: titles and the status bar
+  /// icons must stay readable over anything that scrolls beneath.
+  static const GlassPreset _resting = GlassPreset(
+    blur: 12,
+    refraction: 18,
+    thickness: 14,
+    opacity: 0.26,
+    saturation: 1.4,
+    specular: 0.8,
+    chroma: 0.05,
+  );
+
+  static const GlassPreset _raised = GlassPreset(
+    blur: 14,
+    refraction: 18,
+    thickness: 14,
+    opacity: 0.4,
+    saturation: 1.4,
+    specular: 0.8,
+    chroma: 0.05,
+  );
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final palette = AppPalette.of(context);
-    final accent = palette.accent;
-    final surface = palette.surface;
-
-    return AnimatedContainer(
-      duration: AppMotion.of(context, AppMotion.fast),
-      curve: AppMotion.soft,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            surface,
-            Color.alphaBlend(
-              accent.withValues(alpha: isDark ? 0.03 : 0.05),
-              surface,
-            ),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: elevated ? 0.10 : 0.05),
-            blurRadius: elevated ? 16 : 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-        border: Border(
-          bottom: BorderSide(
-            color: accent.withValues(alpha: elevated ? 0.18 : 0.08),
-            width: 1,
-          ),
-        ),
+    // A glass bar hanging from the top edge: only its bottom edge and
+    // corners are optical, the rest continues past the screen.
+    return LiquidGlass(
+      radius: const BorderRadius.vertical(bottom: Radius.circular(26)),
+      bleed: const EdgeInsets.only(top: 96),
+      preset: elevated ? _raised : _resting,
+      light: const Alignment(-0.4, 1),
+      child: SizedBox(
+        width: double.infinity,
+        child: applySafeArea ? SafeArea(bottom: false, child: _bar) : _bar,
       ),
-      child: applySafeArea ? SafeArea(bottom: false, child: _bar) : _bar,
     );
   }
 
   Widget get _bar {
+    final row = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        children: [
+          SizedBox(width: leadingWidth, child: leading),
+          Expanded(
+            child: centerTitle
+                ? Center(child: title)
+                : Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 12),
+                      child: title,
+                    ),
+                  ),
+          ),
+          if (centerTitle) SizedBox(width: leadingWidth),
+        ],
+      ),
+    );
+    final middle = center;
     return SizedBox(
       height: WaffrPageHeader.height,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Row(
-          children: [
-            SizedBox(width: leadingWidth, child: leading),
-            Expanded(
-              child: centerTitle
-                  ? Center(child: title)
-                  : Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: Padding(
-                        padding: const EdgeInsetsDirectional.only(end: 12),
-                        child: title,
-                      ),
-                    ),
+      child: middle == null
+          ? row
+          : Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned.fill(child: row),
+                middle,
+              ],
             ),
-            if (centerTitle) SizedBox(width: leadingWidth),
-          ],
-        ),
-      ),
     );
   }
 }

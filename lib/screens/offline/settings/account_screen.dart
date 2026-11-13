@@ -1,6 +1,8 @@
 // Signed-in account page: display name, email, change password, sign out,
 // and account deletion.
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
@@ -139,109 +141,113 @@ class _AccountScreenState extends State<AccountScreen> {
     return Scaffold(
       backgroundColor: bg,
       appBar: WaffrBackHeader(title: 'الحساب'),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: staggered([
-          // Avatar, name field and save button.
-          Center(
-            child: ProfileAvatar(accent: accent, radius: 42, signedIn: true),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            'الاسم',
-            style: TextStyle(
-              color: textPrimary,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
+      body: AuroraPage(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: staggered([
+            // Avatar, name field and save button.
+            Center(
+              child: ProfileAvatar(accent: accent, radius: 42, signedIn: true),
             ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _nameController,
-            textAlign: TextAlign.right,
-            style: TextStyle(color: textPrimary, fontSize: 16),
-            decoration: InputDecoration(
-              hintText: 'الاسم المعروض',
-              hintStyle: TextStyle(color: textSecondary.withValues(alpha: 0.6)),
-              filled: true,
-              fillColor: surface,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
+            const SizedBox(height: 18),
+            Text(
+              'الاسم',
+              style: TextStyle(
+                color: textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: _savingName ? null : _saveName,
-              child: Text(
-                _savingName ? 'جارٍ الحفظ...' : 'حفظ الاسم',
-                style: TextStyle(
-                  color: accent,
-                  fontFamily: 'Outfit',
-                  fontFamilyFallback: ['Tajawal'],
+            const SizedBox(height: 8),
+            TextField(
+              controller: _nameController,
+              textAlign: TextAlign.right,
+              style: TextStyle(color: textPrimary, fontSize: 16),
+              decoration: InputDecoration(
+                hintText: 'الاسم المعروض',
+                hintStyle: TextStyle(
+                  color: textSecondary.withValues(alpha: 0.6),
+                ),
+                filled: true,
+                fillColor: surface,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          // Read-only email.
-          Text(
-            'البريد الإلكتروني',
-            style: TextStyle(
-              color: textPrimary,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: _savingName ? null : _saveName,
+                child: Text(
+                  _savingName ? 'جارٍ الحفظ...' : 'حفظ الاسم',
+                  style: TextStyle(
+                    color: accent,
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: ['Tajawal'],
+                  ),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(14),
+            const SizedBox(height: 8),
+            // Read-only email.
+            Text(
+              'البريد الإلكتروني',
+              style: TextStyle(
+                color: textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
             ),
-            child: Text(
-              _email.isEmpty ? '—' : _email,
-              textDirection: TextDirection.ltr,
-              style: TextStyle(color: textSecondary, fontSize: 15),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                _email.isEmpty ? '—' : _email,
+                textDirection: TextDirection.ltr,
+                style: TextStyle(color: textSecondary, fontSize: 15),
+              ),
             ),
-          ),
-          const SizedBox(height: 25),
-          // Account actions.
-          AppListTile(
-            icon: Icons.lock_reset_rounded,
-            title: 'تغيير كلمة المرور',
-            subtitle: 'يسجّل الخروج من أجهزتك الأخرى',
-            busy: _busy,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+            const SizedBox(height: 25),
+            // Account actions.
+            AppListTile(
+              icon: AppIcons.key,
+              title: 'تغيير كلمة المرور',
+              subtitle: 'يسجّل الخروج من أجهزتك الأخرى',
+              busy: _busy,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          AppListTile(
-            icon: Icons.logout_rounded,
-            title: 'تسجيل الخروج',
-            subtitle: 'العودة إلى شاشة الدخول، والبيانات تبقى على الجهاز',
-            busy: _busy,
-            onTap: _signOut,
-          ),
-          const SizedBox(height: 12),
-          AppListTile(
-            icon: Icons.delete_forever_outlined,
-            title: 'حذف الحساب',
-            subtitle: 'حذف الحساب وبياناته من الخادم والجهاز',
-            busy: _busy,
-            onTap: _deleteAccount,
-          ),
-        ]),
+            const SizedBox(height: 12),
+            AppListTile(
+              icon: AppIcons.logOut,
+              title: 'تسجيل الخروج',
+              subtitle: 'العودة إلى شاشة الدخول، والبيانات تبقى على الجهاز',
+              busy: _busy,
+              onTap: _signOut,
+            ),
+            const SizedBox(height: 12),
+            AppListTile(
+              icon: AppIcons.trashForever,
+              title: 'حذف الحساب',
+              subtitle: 'حذف الحساب وبياناته من الخادم والجهاز',
+              busy: _busy,
+              onTap: _deleteAccount,
+            ),
+          ]),
+        ),
       ),
     );
   }

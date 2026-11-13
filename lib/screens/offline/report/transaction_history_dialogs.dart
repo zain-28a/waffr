@@ -22,7 +22,7 @@ class _ShareFormatDialog extends StatelessWidget {
           Expanded(
             child: _FormatChoice(
               label: 'PDF',
-              icon: Icons.picture_as_pdf_outlined,
+              icon: AppIcons.fileText,
               onTap: () => Navigator.pop(context, _ExpenseShareFormat.pdf),
             ),
           ),
@@ -30,7 +30,7 @@ class _ShareFormatDialog extends StatelessWidget {
           Expanded(
             child: _FormatChoice(
               label: 'نص',
-              icon: Icons.notes_rounded,
+              icon: AppIcons.notes,
               onTap: () => Navigator.pop(context, _ExpenseShareFormat.text),
             ),
           ),
@@ -111,7 +111,7 @@ class _SelectionBar extends StatelessWidget {
             IconButton(
               tooltip: 'إلغاء',
               onPressed: onClose,
-              icon: Icon(Icons.close_rounded, color: colors.textPrimary),
+              icon: Icon(AppIcons.close, color: colors.textPrimary),
             ),
             _SelectMark(
               state: allSelected ? _SelectState.checked : _SelectState.empty,
@@ -132,10 +132,7 @@ class _SelectionBar extends StatelessWidget {
             IconButton(
               tooltip: 'نطاق التاريخ',
               onPressed: onPickRange,
-              icon: Icon(
-                Icons.calendar_month_outlined,
-                color: colors.textPrimary,
-              ),
+              icon: Icon(AppIcons.calendarDays, color: colors.textPrimary),
             ),
           ],
         ),
@@ -174,7 +171,7 @@ class _SelectMark extends StatelessWidget {
           ),
         ),
         child: state == _SelectState.checked
-            ? Icon(Icons.check_rounded, size: 14, color: colors.onAccent)
+            ? Icon(AppIcons.check, size: 14, color: colors.onAccent)
             : state == _SelectState.partial
             ? Container(width: 10, height: 2, color: colors.accent)
             : null,

@@ -66,6 +66,9 @@ void mockPlatformPlugins() {
     'plugins.flutter.io/url_launcher',
     'dev.fluttercommunity.plus/share',
     'plugins.flutter.io/path_provider',
+    'dev.fluttercommunity.plus/sensors/method',
+    'dev.fluttercommunity.plus/sensors/accelerometer',
+    'home_widget/updates',
   ]) {
     messenger.setMockMethodCallHandler(MethodChannel(name), (call) async {
       if (call.method == 'check') return 'none';
@@ -132,6 +135,7 @@ Future<void> seedSampleData() async {
 /// Registers one smoke test per theme brightness (and per data state when
 /// [withSampleData] is set), plus one with reduced motion, that pumps
 /// [build] on a phone-sized RTL view and checks it renders cleanly.
+/// [seed] adds rows the screen needs in every variant.
 void smokeTestScreen(
   String name,
   Widget Function() build, {
@@ -139,6 +143,7 @@ void smokeTestScreen(
   bool withSampleData = true,
   Duration settle = const Duration(seconds: 3),
   Future<void> Function(WidgetTester tester)? interact,
+  Future<void> Function()? seed,
 }) {
   final variants = <({Brightness brightness, bool seeded, bool reduced})>[
     for (final brightness in Brightness.values)
@@ -157,6 +162,8 @@ void smokeTestScreen(
       await tester.runAsync(() async {
         await setUpStores();
         if (variant.seeded) await seedSampleData();
+        // Extra rows a screen needs before it can open at all.
+        if (seed != null) await seed();
       });
       final screen = build();
       await tester.pumpWidget(

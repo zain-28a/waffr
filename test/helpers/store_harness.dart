@@ -5,6 +5,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffr/widgets/containers/amount_keypad.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/core/security/data_key.dart';
 import 'package:waffr/core/sync/sync_dirty.dart';
@@ -52,5 +53,6 @@ void resetStoreCaches() {
   SmartSettings.instance.resetCache();
   SyncTombstones.instance.resetCache();
   ProfileIdentity.instance.reset();
+  QuickAmounts.instance.resetCache();
   SyncDirty.suppressed = false;
 }

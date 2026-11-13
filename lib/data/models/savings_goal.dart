@@ -149,6 +149,8 @@ class SavingsGoal {
 
   /// Copies fields; set [touch] to bump updatedAt for sync.
   SavingsGoal copyWith({
+    String? name,
+    double? targetAmount,
     DateTime? completedAt,
     double? completedAmount,
     double? allocatePercent,
@@ -162,8 +164,8 @@ class SavingsGoal {
   }) {
     return SavingsGoal(
       id: id,
-      name: name,
-      targetAmount: targetAmount,
+      name: name ?? this.name,
+      targetAmount: targetAmount ?? this.targetAmount,
       currencyCode: currencyCode,
       createdAt: createdAt,
       duration: duration,

@@ -33,11 +33,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
   intl: ^0.20.3
-  fl_chart: ^0.68.0
   shared_preferences: ^2.2.3
   local_auth: ^3.0.2
   flutter_secure_storage: ^11.2.0
@@ -53,6 +49,8 @@ dependencies:
   timezone: ^0.11.1
   cryptography: ^2.9.0
   home_widget: ^0.10.0
+  sensors_plus: ^7.1.1
+  cupertino_icons: ^2.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -75,18 +73,18 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  shaders:
+    - shaders/liquid_glass.frag
+
   assets:
     - assets/brand/waffr_logo.png
     - assets/brand/waffr_logo_backdrop.png
+    - assets/brand/waffr_logo_mouthless.png
     - assets/licenses/
 
   fonts:
     - family: Tajawal
       fonts:
-        - asset: fonts/Tajawal-ExtraLight.ttf
-          weight: 200
-        - asset: fonts/Tajawal-Light.ttf
-          weight: 300
         - asset: fonts/Tajawal-Regular.ttf
           weight: 400
         - asset: fonts/Tajawal-Medium.ttf
@@ -95,14 +93,15 @@ flutter:
           weight: 700
         - asset: fonts/Tajawal-ExtraBold.ttf
           weight: 800
-        - asset: fonts/Tajawal-Black.ttf
-          weight: 900
     - family: Outfit
       fonts:
         - asset: fonts/Outfit-Variable.ttf
     - family: BebasNeue
       fonts:
         - asset: fonts/BebasNeue-Regular.ttf
+    - family: WaffrIcons
+      fonts:
+        - asset: fonts/WaffrIcons.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

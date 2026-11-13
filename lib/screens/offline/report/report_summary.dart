@@ -6,9 +6,19 @@ part of 'reportscreen.dart';
 /// Total spent for the selected period, plus a shortcut into expense history.
 class _SpendingSummary extends StatelessWidget {
   final double total;
+
+  /// The category the report is narrowed to, shown as a removable chip.
+  final String? focus;
+  final VoidCallback onClearFocus;
   final VoidCallback onHistory;
 
-  const _SpendingSummary({required this.total, required this.onHistory});
+  const _SpendingSummary({
+    super.key,
+    required this.total,
+    required this.focus,
+    required this.onClearFocus,
+    required this.onHistory,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,14 +33,28 @@ class _SpendingSummary extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'الصرف',
-                  style: TextStyle(
-                    fontFamily: 'Outfit',
-                    fontFamilyFallback: const ['Tajawal'],
-                    fontSize: 13.5,
-                    color: colors.textSecondary,
+                AnimatedSwitcher(
+                  duration: AppMotion.of(context, AppMotion.fast),
+                  layoutBuilder: (current, previous) => Stack(
+                    alignment: AlignmentDirectional.centerStart,
+                    children: [...previous, ?current],
                   ),
+                  child: focus == null
+                      ? Text(
+                          'الصرف',
+                          key: const ValueKey('all'),
+                          style: TextStyle(
+                            fontFamily: 'Outfit',
+                            fontFamilyFallback: const ['Tajawal'],
+                            fontSize: 13.5,
+                            color: colors.textSecondary,
+                          ),
+                        )
+                      : _FocusChip(
+                          key: ValueKey(focus),
+                          category: focus!,
+                          onClear: onClearFocus,
+                        ),
                 ),
                 const SizedBox(height: 2),
                 Row(
@@ -82,11 +106,7 @@ class _SpendingSummary extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.receipt_long_outlined,
-                    size: 18,
-                    color: colors.accent,
-                  ),
+                  Icon(AppIcons.receipt, size: 18, color: colors.accent),
                   const SizedBox(width: 7),
                   Text(
                     'سجل المصروفات',
@@ -108,11 +128,62 @@ class _SpendingSummary extends StatelessWidget {
   }
 }
 
+/// The category the report is narrowed to; tap to show everything again.
+class _FocusChip extends StatelessWidget {
+  final String category;
+  final VoidCallback onClear;
+
+  const _FocusChip({super.key, required this.category, required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppPalette.of(context);
+    final swatch = categoryChartColor(context, category);
+    return Semantics(
+      button: true,
+      label: 'إلغاء تصفية $category',
+      child: Pressable(
+        onTap: onClear,
+        depth: 0.06,
+        child: ExcludeSemantics(
+          child: Container(
+            padding: const EdgeInsetsDirectional.fromSTEB(10, 4, 6, 4),
+            decoration: BoxDecoration(
+              color: swatch.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  category,
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(AppIcons.close, size: 14, color: colors.textSecondary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Category share of spending: stacked color bar plus a ranked list with %.
 class _ExpenseDistribution extends StatelessWidget {
   final _ReportData report;
 
-  const _ExpenseDistribution({required this.report});
+  /// Narrows the report to the tapped category (or widens it again).
+  final ValueChanged<String> onCategory;
+
+  const _ExpenseDistribution({required this.report, required this.onCategory});
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +213,7 @@ class _ExpenseDistribution extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'النسبة من إجمالي الصرف ',
+                  'اضغط تصنيفاً لعرضه وحده',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -157,18 +228,19 @@ class _ExpenseDistribution extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          if (report.total <= 0 || report.categoryTotals.isEmpty)
+          if (report.allTotal <= 0 || report.categoryTotals.isEmpty)
             const _EmptyState(
-              icon: Icons.stacked_bar_chart_sharp,
+              icon: AppIcons.chartStacked,
               message: 'ستظهر تفاصيل التصنيفات بعد تسجيل مصروف',
             )
           else ...[
             // Stacked bar, then one row per category.
             _DistributionBar(
               totals: report.categoryTotals,
-              total: report.total,
+              total: report.allTotal,
+              focus: report.focus,
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 10),
             for (
               var index = 0;
               index < report.categoryTotals.length;
@@ -176,12 +248,14 @@ class _ExpenseDistribution extends StatelessWidget {
             ) ...[
               if (index > 0)
                 Divider(
-                  height: 18,
+                  height: 1,
                   color: colors.textPrimary.withValues(alpha: 0.08),
                 ),
               _CategoryRow(
                 item: report.categoryTotals[index],
-                total: report.total,
+                total: report.allTotal,
+                focus: report.focus,
+                onTap: () => onCategory(report.categoryTotals[index].category),
               ),
             ],
           ],
@@ -196,7 +270,14 @@ class _DistributionBar extends StatelessWidget {
   final List<_CategoryTotal> totals;
   final double total;
 
-  const _DistributionBar({required this.totals, required this.total});
+  /// The focused category keeps its color; the others fade.
+  final String? focus;
+
+  const _DistributionBar({
+    required this.totals,
+    required this.total,
+    required this.focus,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -219,8 +300,9 @@ class _DistributionBar extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
       child: SizedBox(
-        height: 30,
+        height: 14,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (var index = 0; index < totals.length; index++) ...[
               if (index > 0) const SizedBox(width: 2),
@@ -232,7 +314,12 @@ class _DistributionBar extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: AppMotion.of(context, AppMotion.slow),
                   curve: AppMotion.soft,
-                  color: categoryChartColor(context, totals[index].category),
+                  color: categoryChartColor(context, totals[index].category)
+                      .withValues(
+                        alpha: focus == null || focus == totals[index].category
+                            ? 1
+                            : 0.22,
+                      ),
                 ),
               ),
             ],
@@ -270,7 +357,16 @@ class _CategoryRow extends StatelessWidget {
   final _CategoryTotal item;
   final double total;
 
-  const _CategoryRow({required this.item, required this.total});
+  /// The category the report is narrowed to, if any.
+  final String? focus;
+  final VoidCallback onTap;
+
+  const _CategoryRow({
+    required this.item,
+    required this.total,
+    required this.focus,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -278,6 +374,43 @@ class _CategoryRow extends StatelessWidget {
     final category = categoryFor(item.category);
     final swatch = categoryChartColor(context, item.category);
     final percentage = total <= 0 ? 0 : item.amount / total * 100;
+    final selected = focus == item.category;
+    final dimmed = focus != null && !selected;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: Pressable(
+        onTap: onTap,
+        haptic: false,
+        depth: 0.02,
+        child: AnimatedOpacity(
+          duration: AppMotion.of(context, AppMotion.fast),
+          opacity: dimmed ? 0.45 : 1,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            child: _row(
+              context,
+              colors,
+              category,
+              swatch,
+              percentage,
+              selected,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _row(
+    BuildContext context,
+    AppPalette colors,
+    ExpenseCategory category,
+    Color swatch,
+    num percentage,
+    bool selected,
+  ) {
     return Row(
       children: [
         Container(
@@ -285,9 +418,13 @@ class _CategoryRow extends StatelessWidget {
           height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: swatch.withValues(alpha: 0.18),
+            color: swatch.withValues(alpha: selected ? 1 : 0.18),
           ),
-          child: Icon(category.icon, size: 19, color: swatch),
+          child: Icon(
+            selected ? AppIcons.check : category.icon,
+            size: 19,
+            color: selected ? colors.surface : swatch,
+          ),
         ),
         const SizedBox(width: 11),
         Expanded(
@@ -342,9 +479,13 @@ class _ImprovementCard extends StatelessWidget {
   final double currentTotal;
   final double previousTotal;
 
+  /// Caption of the earlier period the percentage refers to.
+  final String previousLabel;
+
   const _ImprovementCard({
     required this.currentTotal,
     required this.previousTotal,
+    required this.previousLabel,
   });
 
   @override
@@ -361,9 +502,9 @@ class _ImprovementCard extends StatelessWidget {
       SpendingChange.neutral => colors.textSecondary,
     };
     final icon = switch (comparison.kind) {
-      SpendingChange.positive => Icons.trending_up_rounded,
-      SpendingChange.negative => Icons.trending_down_rounded,
-      SpendingChange.neutral => Icons.trending_flat_rounded,
+      SpendingChange.positive => AppIcons.trendingUp,
+      SpendingChange.negative => AppIcons.trendingDown,
+      SpendingChange.neutral => AppIcons.trendingFlat,
     };
 
     return GlassContainer(
@@ -387,31 +528,27 @@ class _ImprovementCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                // Without a previous period there is no number to show, so
-                // the reason is the whole message instead of a bare dash.
-                if (comparison.hasPercentage) ...[
-                  Row(
-                    children: [
-                      Icon(icon, size: 20, color: valueColor),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          comparison.text,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: 'Outfit',
-                            fontFamilyFallback: const ['Tajawal'],
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: valueColor,
-                          ),
+                Row(
+                  children: [
+                    Icon(icon, size: 20, color: valueColor),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        comparison.text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontFamilyFallback: const ['Tajawal'],
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: valueColor,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
                 Text(
                   comparison.detail,
                   maxLines: 2,
@@ -419,8 +556,21 @@ class _ImprovementCard extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Outfit',
                     fontFamilyFallback: const ['Tajawal'],
-                    fontSize: comparison.hasPercentage ? 12 : 13,
+                    fontSize: 12,
                     color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                // Names the earlier period the percentage refers to.
+                Text(
+                  'مقارنة بـ $previousLabel',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 11,
+                    color: colors.textSecondary.withValues(alpha: 0.8),
                   ),
                 ),
               ],

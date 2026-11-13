@@ -116,6 +116,36 @@ class WaffrTransaction {
   /// Last change for sync, falling back to the event time.
   DateTime get syncUpdatedAt => (updatedAt ?? dateTime).toUtc();
 
+  /// A copy changed by the user: a new amount, category, payment method,
+  /// note or time. [clearNote] removes the note. Stamps [updatedAt] now so
+  /// sync treats it as the newer version.
+  WaffrTransaction edited({
+    double? amount,
+    String? category,
+    String? paymentMethod,
+    String? note,
+    bool clearNote = false,
+    DateTime? dateTime,
+  }) {
+    return WaffrTransaction(
+      id: id,
+      type: type,
+      amount: amount ?? this.amount,
+      currencyCode: currencyCode,
+      dateTime: dateTime ?? this.dateTime,
+      category: category ?? this.category,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      note: clearNote ? null : (note ?? this.note),
+      sourceId: sourceId,
+      frequency: frequency,
+      periodKey: periodKey,
+      transferKind: transferKind,
+      goalId: goalId,
+      processedPeriodKey: processedPeriodKey,
+      updatedAt: DateTime.now().toUtc(),
+    );
+  }
+
   /// A copy with a new event time or currency.
   WaffrTransaction copyWith({DateTime? dateTime, String? currencyCode}) {
     return WaffrTransaction(

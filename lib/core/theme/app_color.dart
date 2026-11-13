@@ -75,4 +75,35 @@ class AppColors {
       Theme.of(context).brightness == Brightness.dark
       ? darkDestructive
       : lightDestructive;
+
+  /// A cool teal light, used only as a faint second light on hero
+  /// surfaces. Never used for text.
+  static const Color darkGlow = Color(0xFF63D6C6);
+
+  /// Green at the lit corner of hero surfaces (balance card).
+  static const Color heroStart = Color(0xFF2C6438);
+
+  /// Forest green in the body of hero surfaces.
+  static const Color heroMiddle = Color(0xFF1C4624);
+
+  /// Deepest green, at the far corner of hero surfaces and in their shadow.
+  static const Color heroEnd = Color(0xFF133B2E);
+
+  /// Text and icons on hero surfaces, in both themes.
+  static const Color onHero = Color(0xFFF2F7F1);
+
+  /// Soft light-field colors behind pages: quiet shades of the brand
+  /// green, light theme.
+  static const List<Color> lightAurora = [
+    Color(0xFFB8E0BD),
+    Color(0xFFB7DFD3),
+    Color(0xFFD2E8C6),
+  ];
+
+  /// Light-field colors behind pages, dark theme.
+  static const List<Color> darkAurora = [
+    Color(0xFF1E6233),
+    Color(0xFF155A4C),
+    Color(0xFF2A5422),
+  ];
 }

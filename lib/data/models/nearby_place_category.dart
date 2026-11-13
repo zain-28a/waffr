@@ -1,5 +1,6 @@
 // Place types for "near me" map searches, plus the launcher that opens Google Maps.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -27,22 +28,18 @@ const List<NearbyPlaceCategory> nearbyPlaceCategories = [
   NearbyPlaceCategory(
     label: 'بقاليات',
     mapsQuery: 'بقاليات',
-    icon: Icons.local_grocery_store_rounded,
+    icon: AppIcons.shoppingCart,
   ),
-  NearbyPlaceCategory(
-    label: 'مطاعم',
-    mapsQuery: 'مطاعم',
-    icon: Icons.restaurant_rounded,
-  ),
+  NearbyPlaceCategory(label: 'مطاعم', mapsQuery: 'مطاعم', icon: AppIcons.food),
   NearbyPlaceCategory(
     label: 'صيدليات',
     mapsQuery: 'صيدليات',
-    icon: Icons.local_pharmacy_rounded,
+    icon: AppIcons.pill,
   ),
   NearbyPlaceCategory(
     label: 'محطات وقود',
     mapsQuery: 'محطة وقود',
-    icon: Icons.local_gas_station_rounded,
+    icon: AppIcons.fuel,
   ),
 ];
 

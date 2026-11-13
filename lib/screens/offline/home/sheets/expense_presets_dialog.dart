@@ -1,6 +1,7 @@
 // Saved-expense box opened from the star on the expense sheet. Same frame as
 // the custom-category box: a grid of tiles plus Cancel / Add actions.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
@@ -9,6 +10,8 @@ import 'package:waffr/data/models/expense_categories.dart';
 import 'package:waffr/data/models/expense_preset.dart';
 import 'package:waffr/data/stores/expense_preset_store.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
+import 'package:waffr/widgets/dialogs/edit_delete_menu.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
 /// What the user chose in the box.
@@ -72,7 +75,21 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
     _store.ensureLoaded();
   }
 
-  /// Confirms, then removes [preset] from the store (long-press on a tile).
+  /// Long press on a tile: edit its amount and name, or delete it.
+  Future<void> _menu(ExpensePreset preset, BuildContext anchor) async {
+    final action = await showEditDeleteMenu(context, anchorContext: anchor);
+    if (!mounted || action == null) return;
+    if (action == EditDeleteAction.delete) {
+      await _delete(preset);
+    } else {
+      await showAppDialog<void>(
+        context: context,
+        builder: (_) => _EditPresetDialog(preset: preset),
+      );
+    }
+  }
+
+  /// Confirms, then removes [preset] from the store.
   Future<void> _delete(ExpensePreset preset) async {
     final confirmed = await showAppConfirmDialog(
       context,
@@ -164,7 +181,7 @@ class _ExpensePresetsDialogState extends State<_ExpensePresetsDialog> {
                         onTap: () =>
                             Navigator.of(context)
                                 .pop(ExpensePresetSelected(preset)),
-                        onLongPress: () => _delete(preset),
+                        onLongPress: (anchor) => _menu(preset, anchor),
                       );
                     },
                   );
@@ -218,7 +235,7 @@ const String _helpMessage =
     'المصروف وتُحفظ معه نسخة هنا.\n\n'
     'لاستخدام مصروف محفوظ: اضغط النجمة واختر البطاقة المناسبة، فتُملأ '
     'الحقول تلقائياً، ويمكنك تعديلها قبل الحفظ.\n\n'
-    'لحذف مصروف محفوظ: اضغط على بطاقته مطولاً. حذفه لا يؤثر على '
+    'لتعديل مصروف محفوظ أو حذفه: اضغط على بطاقته مطولاً. حذفه لا يؤثر على '
     'المصروفات المسجّلة سابقاً.';
 
 /// Display name of a preset: its note, or the category when there is none.
@@ -234,7 +251,7 @@ class _EmptyPresets extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const AppEmptyState(
-      icon: Icons.star_border_rounded,
+      icon: AppIcons.star,
       title: 'لا توجد مصروفات محفوظة بعد',
     );
   }
@@ -245,7 +262,9 @@ class _EmptyPresets extends StatelessWidget {
 class _PresetTile extends StatelessWidget {
   final ExpensePreset preset;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+
+  /// Called with the tile's own context, so a menu can open over it.
+  final ValueChanged<BuildContext> onLongPress;
 
   const _PresetTile({
     super.key,
@@ -268,7 +287,7 @@ class _PresetTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        onLongPress: onLongPress,
+        onLongPress: () => onLongPress(context),
         borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
@@ -324,6 +343,114 @@ class _PresetTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Changes a saved expense's amount and name.
+class _EditPresetDialog extends StatefulWidget {
+  final ExpensePreset preset;
+
+  const _EditPresetDialog({required this.preset});
+
+  @override
+  State<_EditPresetDialog> createState() => _EditPresetDialogState();
+}
+
+class _EditPresetDialogState extends State<_EditPresetDialog> {
+  late final TextEditingController _amount = TextEditingController(
+    text: formatMoney(widget.preset.amount),
+  );
+  late final TextEditingController _note = TextEditingController(
+    text: widget.preset.note ?? '',
+  );
+
+  bool get _valid => parseAmount(_amount.text) > 0;
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_valid) return;
+    final saved = await ExpensePresetStore.instance.update(
+      widget.preset.id,
+      amount: parseAmount(_amount.text),
+      note: _note.text,
+    );
+    if (!mounted) return;
+    if (saved) {
+      AppHaptics.success();
+      Navigator.pop(context);
+    } else {
+      AppHaptics.warning();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    InputDecoration field(String hint) => InputDecoration(
+      isDense: true,
+      filled: true,
+      fillColor: palette.textSecondary.withValues(alpha: 0.1),
+      hintText: hint,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+    );
+    final style = TextStyle(
+      fontFamily: 'Outfit',
+      fontFamilyFallback: const ['Tajawal'],
+      fontSize: 15,
+      fontWeight: FontWeight.w600,
+      color: palette.textPrimary,
+    );
+
+    return AppDialogFrame(
+      title: 'تعديل المصروف المحفوظ',
+      kind: AppFeedbackKind.info,
+      actions: [
+        AppDialogAction(
+          label: 'إلغاء',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppDialogAction(
+          label: 'حفظ',
+          primary: true,
+          enabled: _valid,
+          onPressed: _save,
+        ),
+      ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _amount,
+            keyboardType: TextInputType.number,
+            inputFormatters: [ThousandsInputFormatter()],
+            onChanged: (_) => setState(() {}),
+            textDirection: TextDirection.ltr,
+            textAlign: TextAlign.center,
+            style: style.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+            decoration: field('المبلغ'),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _note,
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => _save(),
+            style: style,
+            decoration: field('الاسم أو الملاحظة'),
+          ),
+        ],
       ),
     );
   }

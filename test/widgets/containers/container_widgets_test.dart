@@ -1,6 +1,7 @@
 // Smoke tests for the shared containers: glass surfaces, list tiles, empty
 // states, sheet fields and buttons, sheet transitions and the period selector.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
@@ -26,7 +27,7 @@ void main() {
   smokeTestWidget(
     AppListTile,
     () => AppListTile(
-      icon: Icons.lock_outline_rounded,
+      icon: AppIcons.lock,
       title: 'title',
       subtitle: 'subtitle',
       status: 'on',
@@ -37,7 +38,7 @@ void main() {
   smokeTestWidget(
     AppListTile,
     () => const AppListTile(
-      icon: Icons.delete_outline_rounded,
+      icon: AppIcons.trash,
       title: 'title',
       busy: true,
       destructive: true,
@@ -76,7 +77,7 @@ void main() {
   smokeTestWidget(
     SheetOptionTile,
     () => SheetOptionTile(
-      icon: Icons.edit_rounded,
+      icon: AppIcons.edit,
       label: 'edit',
       hint: 'hint',
       onTap: () {},
@@ -109,7 +110,7 @@ void main() {
   );
   smokeTestWidget(
     SheetCircleButton,
-    () => SheetCircleButton(icon: Icons.close_rounded, onTap: () {}),
+    () => SheetCircleButton(icon: AppIcons.close, onTap: () {}),
   );
   smokeTestWidget(
     SheetSaveButton,

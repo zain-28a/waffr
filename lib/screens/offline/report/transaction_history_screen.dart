@@ -229,9 +229,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     final emptyMessage = isIncome
         ? 'لا يوجد دخل مسجّل بعد'
         : 'لا يوجد مصروف مسجّل بعد';
-    final summaryIcon = isIncome
-        ? Icons.payments_outlined
-        : Icons.receipt_long_outlined;
+    final summaryIcon = isIncome ? AppIcons.banknote : AppIcons.receipt;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -245,166 +243,198 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                 final rows = _rows;
                 final selectedCount = _selected.where(rows.ids.contains).length;
                 final canShare = _selecting && selectedCount > 0 && !_sharing;
-                return FloatingActionButton(
-                  onPressed: _selecting
-                      ? (canShare ? () => _confirmShare(rows.items) : null)
-                      : () => _enterSelection(),
-                  backgroundColor: canShare || !_selecting
-                      ? colors.accent
-                      : colors.accent.withValues(alpha: 0.35),
-                  foregroundColor: colors.onAccent,
-                  elevation: canShare || !_selecting ? 4 : 0,
-                  child: const Icon(Icons.share_rounded),
-                );
-              },
-            ),
-      body: AnimatedBuilder(
-        animation: _listenables,
-        builder: (context, _) {
-          final rows = _rows;
-          final items = rows.items;
-          final groups = rows.groups;
-          final selectedCount = _selected.where(rows.ids.contains).length;
-          // Every listed id is selected exactly when the selected live ids
-          // are as many as the listed ids.
-          final allSelected =
-              items.isNotEmpty && selectedCount == rows.ids.length;
-          return Column(
-            children: [
-              // Selection bar slides in above the list while selecting.
-              if (!isIncome)
-                ClipRect(
-                  child: SizeTransition(
-                    sizeFactor: _selectionReveal,
-                    alignment: Alignment.topCenter,
-                    child: FadeTransition(
-                      opacity: _selectionReveal,
-                      child: _SelectionBar(
-                        count: selectedCount,
-                        allSelected: allSelected,
-                        onClose: _exitSelection,
-                        onToggleAll: () => _toggleAll(items),
-                        onPickRange: () => _pickRange(items),
+                final enabled = canShare || !_selecting;
+                return Semantics(
+                  button: true,
+                  enabled: enabled,
+                  label: _selecting ? 'مشاركة المحدد' : 'تحديد للمشاركة',
+                  child: Pressable(
+                    onTap: !enabled
+                        ? null
+                        : (_selecting
+                              ? () => _confirmShare(rows.items)
+                              : _enterSelection),
+                    depth: 0.07,
+                    child: ExcludeSemantics(
+                      child: AnimatedContainer(
+                        duration: AppMotion.of(context, AppMotion.fast),
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          color: colors.accent.withValues(
+                            alpha: enabled ? 1 : 0.35,
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            if (enabled)
+                              BoxShadow(
+                                color: colors.accent.withValues(alpha: 0.28),
+                                blurRadius: 16,
+                                offset: const Offset(0, 8),
+                              ),
+                          ],
+                        ),
+                        child: Icon(
+                          AppIcons.share,
+                          size: 24,
+                          color: colors.onAccent,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              // Ledger total card.
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
-                child: GlassContainer(
-                  colorType: GlassColorType.surface,
-                  borderRadius: 24,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 14,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              summaryLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontFamily: 'Outfit',
-                                fontFamilyFallback: const ['Tajawal'],
-                                fontSize: 13,
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                            Text(
-                              '${formatMoney(rows.total)} '
-                              '$currencyLabel',
-                              style: TextStyle(
-                                fontFamily: 'Outfit',
-                                fontFamilyFallback: const ['Tajawal'],
-                                fontSize: 21,
-                                fontWeight: FontWeight.bold,
-                                color: colors.accent,
-                              ),
-                            ),
-                          ],
+                );
+              },
+            ),
+      body: AuroraPage(
+        child: AnimatedBuilder(
+          animation: _listenables,
+          builder: (context, _) {
+            final rows = _rows;
+            final items = rows.items;
+            final groups = rows.groups;
+            final selectedCount = _selected.where(rows.ids.contains).length;
+            // Every listed id is selected exactly when the selected live ids
+            // are as many as the listed ids.
+            final allSelected =
+                items.isNotEmpty && selectedCount == rows.ids.length;
+            return Column(
+              children: [
+                // Selection bar slides in above the list while selecting.
+                if (!isIncome)
+                  ClipRect(
+                    child: SizeTransition(
+                      sizeFactor: _selectionReveal,
+                      alignment: Alignment.topCenter,
+                      child: FadeTransition(
+                        opacity: _selectionReveal,
+                        child: _SelectionBar(
+                          count: selectedCount,
+                          allSelected: allSelected,
+                          onClose: _exitSelection,
+                          onToggleAll: () => _toggleAll(items),
+                          onPickRange: () => _pickRange(items),
                         ),
                       ),
-                      Icon(summaryIcon, color: colors.accent),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-              // Day groups, or the empty state.
-              Expanded(
-                child: items.isEmpty
-                    ? Center(
-                        child: _EmptyState(
-                          icon: summaryIcon,
-                          message: emptyMessage,
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: EdgeInsets.fromLTRB(
-                          18,
-                          0,
-                          18,
-                          isIncome ? 28 : 96,
-                        ),
-                        itemCount: groups.length,
-                        itemBuilder: (context, index) {
-                          final group = groups[index];
-                          final row = AnimatedBuilder(
-                            animation: _selectionReveal,
-                            builder: (context, _) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 14),
-                                child: _HistoryDayGroup(
-                                  date: group.date,
-                                  expenses: group.expenses,
-                                  isIncome: isIncome,
-                                  selecting:
-                                      !isIncome && _selectionReveal.value > 0,
-                                  reveal: _selectionReveal.value,
-                                  selectedIds: _selected,
-                                  onToggleDay: () => _toggleDay(group.expenses),
-                                  onLongPressDay: () {
-                                    if (_selecting) {
-                                      _toggleDay(group.expenses);
-                                    } else {
-                                      _enterSelection(
-                                        selected: group.expenses
-                                            .map((item) => item.id)
-                                            .toSet(),
-                                      );
-                                    }
-                                  },
-                                  onToggleExpense: _toggleExpense,
-                                  onLongPressExpense: (expense) {
-                                    if (_selecting) {
-                                      _toggleExpense(expense.id);
-                                    } else {
-                                      _enterSelection(selected: {expense.id});
-                                    }
-                                  },
+                // Ledger total card.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
+                  child: GlassContainer(
+                    colorType: GlassColorType.surface,
+                    borderRadius: 24,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 14,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                summaryLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: 'Outfit',
+                                  fontFamilyFallback: const ['Tajawal'],
+                                  fontSize: 13,
+                                  color: colors.textSecondary,
                                 ),
-                              );
-                            },
-                          );
-                          // Only the first screenful animates in.
-                          return index < 6
-                              ? Reveal(
-                                  index: index,
-                                  play: _playEntrance,
-                                  child: row,
-                                )
-                              : row;
-                        },
-                      ),
-              ),
-            ],
-          );
-        },
+                              ),
+                              Text(
+                                '${formatMoney(rows.total)} '
+                                '$currencyLabel',
+                                style: TextStyle(
+                                  fontFamily: 'Outfit',
+                                  fontFamilyFallback: const ['Tajawal'],
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.bold,
+                                  color: colors.accent,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(summaryIcon, color: colors.accent),
+                      ],
+                    ),
+                  ),
+                ),
+                // Day groups, or the empty state.
+                Expanded(
+                  child: items.isEmpty
+                      ? Center(
+                          child: _EmptyState(
+                            icon: summaryIcon,
+                            message: emptyMessage,
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: EdgeInsets.fromLTRB(
+                            18,
+                            0,
+                            18,
+                            isIncome ? 28 : 96,
+                          ),
+                          itemCount: groups.length,
+                          itemBuilder: (context, index) {
+                            final group = groups[index];
+                            final row = AnimatedBuilder(
+                              animation: _selectionReveal,
+                              builder: (context, _) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 14),
+                                  child: _HistoryDayGroup(
+                                    date: group.date,
+                                    expenses: group.expenses,
+                                    isIncome: isIncome,
+                                    selecting:
+                                        !isIncome && _selectionReveal.value > 0,
+                                    reveal: _selectionReveal.value,
+                                    selectedIds: _selected,
+                                    onToggleDay: () =>
+                                        _toggleDay(group.expenses),
+                                    onLongPressDay: () {
+                                      if (_selecting) {
+                                        _toggleDay(group.expenses);
+                                      } else {
+                                        _enterSelection(
+                                          selected: group.expenses
+                                              .map((item) => item.id)
+                                              .toSet(),
+                                        );
+                                      }
+                                    },
+                                    onToggleExpense: _toggleExpense,
+                                    onLongPressExpense: (expense) {
+                                      if (_selecting) {
+                                        _toggleExpense(expense.id);
+                                      } else {
+                                        _enterSelection(selected: {expense.id});
+                                      }
+                                    },
+                                  ),
+                                );
+                              },
+                            );
+                            // Only the first screenful animates in.
+                            return index < 6
+                                ? Reveal(
+                                    index: index,
+                                    play: _playEntrance,
+                                    child: row,
+                                  )
+                                : row;
+                          },
+                        ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -442,61 +472,6 @@ class _ExpenseDayGroup {
   final List<WaffrTransaction> expenses;
 
   const _ExpenseDayGroup(this.date, this.expenses);
-}
-
-/// Confirms, deletes the expense, refunds balance, and undoes linked
-/// shopping purchases.
-Future<void> _undoExpense(
-  BuildContext context,
-  WaffrTransaction expense,
-) async {
-  final confirmed = await showAppConfirmDialog(
-    context,
-    title: 'التراجع عن المصروف',
-    message:
-        'سيُحذف هذا المصروف من السجل ويُعاد ${formatMoney(expense.amount)} ${currencyLabelFor(expense.currencyCode)} إلى رصيدك.',
-    confirmLabel: 'تراجع',
-    kind: AppFeedbackKind.warning,
-  );
-
-  if (confirmed != true || !context.mounted) return;
-
-  final undone = await TransactionStore.instance.undoExpense(expense.id);
-  if (!context.mounted) return;
-
-  if (!undone) {
-    showAppSnackBar(context, 'تعذّر التراجع عن هذا المصروف.');
-    return;
-  }
-
-  await ShoppingListStore.instance.revertPurchaseForExpense(expense.id);
-  if (!context.mounted) return;
-  showAppSnackBar(context, 'تم التراجع عن المصروف', success: true);
-}
-
-/// Confirms, deletes the income entry, and subtracts it from the running
-/// balance.
-Future<void> _undoIncome(BuildContext context, WaffrTransaction income) async {
-  final confirmed = await showAppConfirmDialog(
-    context,
-    title: 'التراجع عن الدخل',
-    message:
-        'سيُحذف هذا الدخل من السجل ويُخصم ${formatMoney(income.amount)} ${currencyLabelFor(income.currencyCode)} من رصيدك.',
-    confirmLabel: 'تراجع',
-    kind: AppFeedbackKind.warning,
-  );
-
-  if (confirmed != true || !context.mounted) return;
-
-  final undone = await TransactionStore.instance.undoIncome(income.id);
-  if (!context.mounted) return;
-
-  if (!undone) {
-    showAppSnackBar(context, 'تعذّر التراجع عن هذا الدخل.');
-    return;
-  }
-
-  showAppSnackBar(context, 'تم التراجع عن الدخل', success: true);
 }
 
 /// [expenses] grouped by local day, newest day first.

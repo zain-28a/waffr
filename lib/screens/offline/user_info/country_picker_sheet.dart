@@ -1,6 +1,7 @@
 // Country list with calling codes, opened from the profile form. Rows follow
 // the currency list under the amount field: name, with the code at the end.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/core/theme/app_palette.dart';
@@ -63,7 +64,7 @@ class _CountryPickerSheetState extends State<_CountryPickerSheet> {
       ),
       body: results.isEmpty
           ? const AppEmptyState(
-              icon: Icons.search_off_rounded,
+              icon: AppIcons.searchOff,
               title: 'لا توجد دولة بهذا الاسم',
             )
           : ListView.builder(
@@ -115,7 +116,7 @@ class _CountryTile extends StatelessWidget {
             child: Row(
               children: [
                 if (selected) ...[
-                  Icon(Icons.check_rounded, size: 18, color: palette.accent),
+                  Icon(AppIcons.check, size: 18, color: palette.accent),
                   const SizedBox(width: 6),
                 ],
                 Expanded(

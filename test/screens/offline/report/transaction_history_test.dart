@@ -1,7 +1,7 @@
 // The expense history screen: multi-select counts and totals, and that the
 // day groups it keeps between selection taps follow ledger changes.
 
-import 'package:flutter/material.dart';
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/data/models/expense_categories.dart';
@@ -48,7 +48,7 @@ void main() {
     expect(find.text('${formatMoney(600)} $currencyLabel'), findsOneWidget);
 
     // The share button starts selecting; taps on rows pick them.
-    await tester.tap(find.byIcon(Icons.share_rounded));
+    await tester.tap(find.byIcon(AppIcons.share));
     await pumpFor(tester, const Duration(seconds: 1));
     expect(count(0), findsOneWidget);
 

@@ -58,6 +58,49 @@ void main() {
     expect(TransactionStore.instance.expenses, hasLength(1));
   });
 
+  test('a charge due later today is posted now, not at its hour', () async {
+    await seedIncome(1000);
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    // Created yesterday at 23:59, so today's charge is stamped 23:59 today.
+    final dueToday = startOfDay.add(const Duration(hours: 23, minutes: 59));
+    final schedule = RecurringExpense(
+      id: 'late',
+      amount: 40,
+      category: 'فواتير',
+      paymentMethod: 'نقداً',
+      unit: RecurringUnit.day,
+      intervalCount: 1,
+      createdAt: dueToday.subtract(const Duration(days: 1)),
+      nextDueAt: dueToday,
+    );
+    final prefs = await AppPrefs.instance;
+    await prefs.setStringList(RecurringExpenseStore.itemsKey, [
+      schedule.encode(),
+    ]);
+    RecurringExpenseStore.instance.resetCache();
+    // Pretend yesterday's charge was posted, so this is not a first charge.
+    await TransactionStore.instance.addExpense(
+      amount: 40,
+      category: 'فواتير',
+      paymentMethod: 'نقداً',
+      sourceId: 'recurring:late:yesterday',
+      occurredAt: dueToday.subtract(const Duration(days: 1)),
+    );
+
+    await RecurringExpenseStore.instance.processDue();
+
+    final posted = TransactionStore.instance.expenses
+        .where((e) => e.sourceId != 'recurring:late:yesterday')
+        .toList();
+    expect(posted, hasLength(1));
+    expect(posted.single.amount, 40);
+    expect(
+      RecurringExpenseStore.instance.items.single.nextDueAt,
+      dueToday.add(const Duration(days: 1)),
+    );
+  });
+
   test('catches up missed periods without duplicating them', () async {
     await seedIncome(5000);
     final past = DateTime.now().subtract(const Duration(days: 3));

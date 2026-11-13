@@ -2,7 +2,7 @@
 // card's "coming soon" state. Network calls fail fast in tests, so the tab
 // shows its offline / sign-in states.
 
-import 'package:flutter/material.dart';
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/data/models/news_article.dart';
 import 'package:waffr/screens/online/online_screen.dart';
@@ -27,7 +27,7 @@ void main() {
     expect(find.text('قريباً...'), findsOneWidget);
     expect(find.text('Soon...'), findsOneWidget);
     expect(find.text('شراء'), findsNothing);
-    expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsNothing);
+    expect(find.byIcon(AppIcons.chevronDown), findsNothing);
     await unmountApp(tester);
   });
   smokeTestScreen(

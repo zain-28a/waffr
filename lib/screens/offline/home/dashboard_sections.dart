@@ -1,140 +1,177 @@
 // Home card chrome shared by every dashboard section (part of
-// dashboard.dart): the card frame, its title row and the empty state.
+// dashboard.dart): the card frame, its title row, the header link, the
+// empty state and the text style helper.
 
 part of 'dashboard.dart';
 
-/// Shared glass card shell used by the dashboard sections. Becomes a
-/// tappable [GlassButton] when [onTap] is set.
+/// The app's text style at [size]: Outfit with Tajawal for Arabic.
+/// [tabular] gives digits one width, so amounts line up and do not jitter
+/// while they roll.
+TextStyle _text(
+  double size, {
+  FontWeight weight = FontWeight.w400,
+  required Color color,
+  bool tabular = false,
+}) {
+  return TextStyle(
+    fontFamily: 'Outfit',
+    fontFamilyFallback: const ['Tajawal'],
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    fontFeatures: tabular ? const [FontFeature.tabularFigures()] : null,
+  );
+}
+
+/// Shared card shell used by the dashboard sections. With [onTap] the
+/// whole card is pressable and opens the screen with the full details.
 class _SectionCard extends StatelessWidget {
-  final String? title;
-  final String? caption;
+  final String title;
+
+  /// A link-style hint at the end of the title row ("show all").
+  final String? action;
+
+  /// A figure at the end of the title row, with its small caption.
+  final String? trailing;
+  final String? trailingCaption;
   final Widget child;
-  final bool compact;
-
-  /// Centers [child] in the leftover height; used in fixed-height rows.
-  final bool centerChild;
-
-  /// Opens the screen with the card's full details.
   final VoidCallback? onTap;
 
   const _SectionCard({
-    required this.child,
-    this.title,
-    this.caption,
-    this.compact = false,
-    this.centerChild = false,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final padding = compact
-        ? const EdgeInsets.fromLTRB(16, 15, 16, 16)
-        : const EdgeInsets.fromLTRB(20, 18, 20, 20);
-
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (title != null) ...[
-          _SectionTitle(title: title!, caption: caption, compact: compact),
-          SizedBox(height: compact ? 14 : 16),
-        ],
-        if (centerChild) Expanded(child: Center(child: child)) else child,
-      ],
-    );
-
-    if (onTap == null) {
-      return GlassContainer(
-        colorType: GlassColorType.surface,
-        borderRadius: 28,
-        padding: padding,
-        child: content,
-      );
-    }
-
-    return GlassButton(
-      onTap: onTap!,
-      colorType: GlassColorType.surface,
-      borderRadius: 28,
-      padding: padding,
-      child: content,
-    );
-  }
-}
-
-/// Card title with an optional caption beside it.
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  final String? caption;
-  final bool compact;
-
-  const _SectionTitle({
     required this.title,
-    this.caption,
-    this.compact = false,
+    required this.child,
+    this.action,
+    this.trailing,
+    this.trailingCaption,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
 
-    final textPrimary = palette.textPrimary;
-    final textSecondary = palette.textSecondary;
-
-    final titleText = Text(
-      title,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        fontFamily: 'Outfit',
-        fontFamilyFallback: ['Tajawal'],
-        fontSize: compact ? 14.5 : 16,
-        fontWeight: FontWeight.bold,
-        color: textPrimary,
+    final card = GlassContainer(
+      colorType: GlassColorType.surface,
+      borderRadius: 28,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _text(
+                    16.5,
+                    weight: FontWeight.w700,
+                    color: palette.textPrimary,
+                  ),
+                ),
+              ),
+              if (trailing != null)
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: trailing,
+                        style: _text(
+                          15.5,
+                          weight: FontWeight.w700,
+                          color: palette.accent,
+                          tabular: true,
+                        ),
+                      ),
+                      if (trailingCaption != null)
+                        TextSpan(
+                          text: ' $trailingCaption',
+                          style: _text(11.5, color: palette.textSecondary),
+                        ),
+                    ],
+                  ),
+                ),
+              if (action != null) _HeaderLink(label: action!),
+            ],
+          ),
+          const SizedBox(height: 10),
+          child,
+          const SizedBox(height: 6),
+        ],
       ),
     );
 
-    if (caption == null) return titleText;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        titleText,
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            caption!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Outfit',
-              fontFamilyFallback: ['Tajawal'],
-              fontSize: compact ? 10.5 : 11,
-              fontWeight: FontWeight.w500,
-              color: textSecondary,
-            ),
-          ),
-        ),
-      ],
+    if (onTap == null) return card;
+    return Semantics(
+      button: true,
+      child: Pressable(onTap: onTap, depth: 0.02, child: card),
     );
   }
 }
 
-/// Dashboard empty placeholder; a thin wrapper over [AppEmptyState].
-class _EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String message;
-  final bool compact;
+/// "Show all" at the end of a section header. Tappable on its own when
+/// [onTap] is set; otherwise the card around it takes the tap.
+class _HeaderLink extends StatelessWidget {
+  final String label;
+  final VoidCallback? onTap;
 
-  const _EmptyState({
-    required this.icon,
-    required this.message,
-    this.compact = false,
-  });
+  const _HeaderLink({required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return AppEmptyState(icon: icon, title: message, compact: compact);
+    final palette = AppPalette.of(context);
+    final link = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: _text(12.5, weight: FontWeight.w600, color: palette.accent),
+          ),
+          const SizedBox(width: 2),
+          Icon(AppIcons.chevronForward, size: 15, color: palette.accent),
+        ],
+      ),
+    );
+    if (onTap == null) return link;
+    return Pressable(onTap: onTap, depth: 0.06, child: link);
+  }
+}
+
+/// Icon and one line for a section with nothing to show yet.
+class _EmptyState extends StatelessWidget {
+  final IconData icon;
+  final String message;
+
+  const _EmptyState({required this.icon, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: palette.accent.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 21, color: palette.accent),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: _text(13.5, color: palette.textSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

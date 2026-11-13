@@ -9,8 +9,9 @@ separate libraries for exporting expenses.
 | File | What it holds |
 | --- | --- |
 | `reportscreen.dart` | `ReportScreen`: range chips, period pager (240 pages back), summary cards; per-(range, offset) report cache. |
-| `report_data.dart` | Pure period math: `_ReportRange`, `_ReportPeriod`, `_ReportData`, chart bucketing, the comparable previous period, axis label helpers. |
-| `report_chart.dart` | `_SpendingChartCard` (one pager page) and `_SpendingLineChart` (fl_chart), `_EmptyState`. |
+| `report_data.dart` | Pure period math: `_ReportRange`, `_ReportPeriod`, `_ReportData`, chart bucketing, axis label helpers. |
+| `report_chart.dart` | `_SpendingChartCard` (one pager page), `_SpendingAreaChart` (custom-painted smooth area that ends at today; tap to read a point, hold and drag to scrub with haptic ticks), `_ChartTooltip`, `_EmptyState`. |
+| `edit_transaction_sheet.dart` | `showEditTransactionSheet` (its own library): change or delete an expense, an income, or a manual saving / withdrawal; `confirmDeleteTransaction`. Opened from history rows, the home recent list and the savings log. |
 | `report_summary.dart` | `_SpendingSummary`, `_ExpenseDistribution` (stacked bar + ranked list), `_ImprovementCard` (vs previous period, with the smart analysis button). |
 | `transaction_history_screen.dart` | `TransactionHistoryScreen.expenses()` / `.incomes()`: ledger by day, per-row undo, multi-select sharing (expenses only). |
 | `transaction_history_rows.dart` | Day groups, history rows, the recurring badge and schedule-text helpers. |
@@ -29,9 +30,17 @@ How it connects:
   summary and smart analysis actions.
 - The PDF is shared through the `waffr/share_pdf` method channel on Android
   and `share_plus` elsewhere (or when the channel fails).
-- `SpendingImprovement` (core/insights) computes the comparison; the
-  previous period is cut to the same elapsed span while the current one is
-  still running.
+- `SpendingImprovement` (core/insights) computes the comparison against the
+  whole earlier period of the same range (the page after the visible one),
+  and the card names that period. The percentage is always shown.
 
-Tests: `test/screens/offline/report/reportscreen_test.dart`,
+- Tapping a category in the distribution narrows the total, the chart and
+  the comparison to it (`_focus` in `ReportScreen`, `_ReportData.focus`);
+  tapping it again or the chip above the total widens the report.
+
+- History rows open the editor on tap and uncover edit / delete on a swipe
+  (`SwipeActions`); both are off while rows are selected for sharing.
+
+Tests: `test/screens/offline/report/edit_transaction_sheet_test.dart`,
+`test/screens/offline/report/reportscreen_test.dart`,
 `test/screens/offline/report/expense_history_pdf_test.dart`.

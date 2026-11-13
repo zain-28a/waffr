@@ -1,6 +1,7 @@
 // Sheet form parts: field labels with optional (i) help, text fields,
 // choice chips, option rows, and the shared field fill color.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:waffr/core/theme/app_color.dart';
@@ -99,7 +100,7 @@ class SheetInfoButton extends StatelessWidget {
         child: SizedBox(
           width: 22,
           height: 22,
-          child: Icon(Icons.info_outline_rounded, size: 18, color: accent),
+          child: Icon(AppIcons.info, size: 18, color: accent),
         ),
       ),
     );

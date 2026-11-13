@@ -1,5 +1,6 @@
 // Lists finished savings goals with their completed amounts and dates.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/savings_goal.dart';
@@ -55,7 +56,7 @@ class _CompletedGoalsSheetState extends State<_CompletedGoalsSheet> {
         const SizedBox(height: 12),
         if (goals.isEmpty)
           const AppEmptyState(
-            icon: Icons.emoji_events_outlined,
+            icon: AppIcons.trophy,
             title: 'لا توجد أهداف محققة بعد',
             message: 'عندما تكمل هدفاً يظهر هنا.',
           )

@@ -2,12 +2,14 @@
 // the currency picker and the ×1–×10 multiplier, each opening a short list
 // under the row.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/widgets/containers/amount_keypad.dart';
 import 'package:waffr/widgets/containers/sheet_fields.dart';
 
 /// Which inline menu under the amount row is open.
@@ -58,6 +60,9 @@ class SheetAmountField extends StatefulWidget {
   /// Optional control stacked above the × button in the same column.
   final Widget? multiplierAccessory;
 
+  /// Opens the keypad as soon as the sheet appears.
+  final bool autofocus;
+
   /// Creates a [SheetAmountField].
   const SheetAmountField({
     super.key,
@@ -71,6 +76,7 @@ class SheetAmountField extends StatefulWidget {
     this.multiplier,
     this.onMultiplierChanged,
     this.multiplierAccessory,
+    this.autofocus = false,
   });
 
   @override
@@ -87,6 +93,110 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
   _AmountMenu _menu = _AmountMenu.none;
   OverlayEntry? _entry;
 
+  /// Focus of the amount; while it has focus the keypad is open.
+  final FocusNode _focus = FocusNode(debugLabel: 'amount');
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_onFocus);
+  }
+
+  /// The sheet's keypad dock, when the field lives inside a glass sheet.
+  AmountKeypadController? _dock;
+
+  late final AmountKeypadBinding _binding = AmountKeypadBinding(
+    onKey: _onKey,
+    onBackspace: _onBackspace,
+    onClear: _onClear,
+    onAdd: _onAdd,
+    onDone: _focus.unfocus,
+    onEditQuick: _editQuick,
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final dock = AmountKeypadScope.maybeOf(context);
+    if (!identical(dock, _dock)) {
+      _dock?.detach(_binding);
+      _dock = dock;
+      if (_focus.hasFocus) _dock?.attach(_binding);
+    }
+  }
+
+  void _onFocus() {
+    if (!mounted) return;
+    // The keypad follows the amount's focus: docked at the bottom of the
+    // sheet, or under the field when there is no dock.
+    if (_focus.hasFocus) {
+      _dock?.attach(_binding);
+    } else {
+      _dock?.detach(_binding);
+    }
+    setState(() {});
+    if (!_focus.hasFocus) return;
+    // Keep the amount in view once the keypad has taken its room.
+    Future<void>.delayed(AppMotion.of(context, AppMotion.slow), () {
+      if (!mounted || !_focus.hasFocus) return;
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.1,
+        duration: AppMotion.of(context, AppMotion.medium),
+        curve: AppMotion.enter,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      );
+    });
+  }
+
+  /// Opens the quick-amounts editor, then gives the keypad back.
+  Future<void> _editQuick() async {
+    await showQuickAmountsEditor(context);
+    if (mounted) _focus.requestFocus();
+  }
+
+  /// Replaces the amount with [digits], formatted, and reports the edit.
+  void _setDigits(String digits) {
+    final next = ThousandsInputFormatter().formatEditUpdate(
+      widget.controller.value,
+      TextEditingValue(text: digits),
+    );
+    if (next.text == widget.controller.text) {
+      // Too long, or nothing to delete.
+      if (digits.isNotEmpty) AppHaptics.warning();
+      return;
+    }
+    widget.controller.value = next;
+    widget.onChanged?.call(next.text);
+  }
+
+  String get _digits =>
+      widget.controller.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+  void _onKey(String key) {
+    AppHaptics.selection();
+    _setDigits(_digits + key);
+  }
+
+  void _onBackspace() {
+    final digits = _digits;
+    if (digits.isEmpty) return;
+    AppHaptics.selection();
+    _setDigits(digits.substring(0, digits.length - 1));
+  }
+
+  void _onClear() {
+    if (_digits.isEmpty) return;
+    AppHaptics.warning();
+    _setDigits('');
+  }
+
+  void _onAdd(int amount) {
+    AppHaptics.selection();
+    final current = int.tryParse(_digits) ?? 0;
+    _setDigits('${current + amount}');
+  }
+
   String get _code {
     return Currencies.normalize(
       widget.currencyCode ?? CurrencyStore.instance.activeCode,
@@ -96,6 +206,10 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
   @override
   void dispose() {
     _removeEntry();
+    _dock?.detach(_binding);
+    _focus
+      ..removeListener(_onFocus)
+      ..dispose();
     super.dispose();
   }
 
@@ -287,9 +401,18 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
                   Expanded(
                     child: TextField(
                       controller: widget.controller,
+                      focusNode: _focus,
+                      autofocus: widget.autofocus,
+                      // Keys and other controls must not close the keypad;
+                      // the done key and other fields do.
+                      onTapOutside: (_) {},
                       onChanged: widget.onChanged,
                       textAlign: TextAlign.center,
-                      keyboardType: TextInputType.number,
+                      // Waffr's own keypad opens below; no system keyboard.
+                      // A hardware keyboard still types into the field.
+                      keyboardType: TextInputType.none,
+                      showCursor: false,
+                      enableInteractiveSelection: false,
                       inputFormatters: [ThousandsInputFormatter()],
                       cursorColor: textPrimary,
                       style: TextStyle(
@@ -340,6 +463,19 @@ class _SheetAmountFieldState extends State<SheetAmountField> {
                   ),
                 ),
               ],
+              // Outside a sheet there is no dock: the keypad opens here.
+              if (_dock == null)
+                AnimatedSize(
+                  duration: AppMotion.sizeOf(context, AppMotion.slow),
+                  curve: AppMotion.enter,
+                  alignment: Alignment.topCenter,
+                  child: _focus.hasFocus
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: AmountKeypad(binding: _binding),
+                        )
+                      : const SizedBox(width: double.infinity),
+                ),
             ],
           ),
         );
@@ -462,9 +598,7 @@ class _AmountSlotButton extends StatelessWidget {
             ),
             if (showChevron)
               Icon(
-                open
-                    ? Icons.arrow_drop_up_rounded
-                    : Icons.arrow_drop_down_rounded,
+                open ? AppIcons.chevronUp : AppIcons.chevronDown,
                 size: 18,
                 color: color,
               ),
@@ -647,9 +781,7 @@ class _SheetCurrencySelectorState extends State<SheetCurrencySelector> {
                   ),
                   if (selectable)
                     Icon(
-                      _open
-                          ? Icons.arrow_drop_up_rounded
-                          : Icons.arrow_drop_down_rounded,
+                      _open ? AppIcons.chevronUp : AppIcons.chevronDown,
                       size: widget.dense ? 16 : 18,
                       color: textSecondary,
                     ),

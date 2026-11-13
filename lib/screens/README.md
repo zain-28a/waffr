@@ -1,15 +1,16 @@
 # lib/screens
 
 Feature screens. There is no router package. `main.dart` picks the gate
-(login, then the first-launch theme picker, then the app lock, then the
-shell), `AppShell` holds the five tabs, and everything else is opened with a
+(the introduction on a fresh install, login, then the first-launch theme
+picker, then the app lock, then the shell), `AppShell` holds the five tabs, and everything else is opened with a
 `Navigator.push` or a sheet.
 
 | Path | Contents |
 | --- | --- |
 | `shell/` | `AppShell`: header, lazy tab `PageView`, floating bottom bar; `AppShellScope` for switching tabs. |
-| `offline/home/` | Home tab: balance, add income/expense, category distribution, recent expenses, goals. |
-| `offline/report/` | Report tab: spending chart (`fl_chart`), category split, transaction history. |
+| `offline/home/` | Home tab: balance hero, quick actions, smart insight line, spending strip, recent expenses, obligations, goals carousel. |
+| `offline/onboarding/` | First-launch introduction (three pages), shown once before sign-in. |
+| `offline/report/` | Report tab: interactive area chart (painted in the app), category split and filter, transaction history. |
 | `offline/savings/` | Savings tab: goals and the save, withdraw, shopping and periodic-goal sheets. |
 | `online/` | Online tab: exchange rates, nearby places, news. Signed-in users only. |
 | `offline/profile/` | Profile tab: identity, usage streak, wallet backdrop. |

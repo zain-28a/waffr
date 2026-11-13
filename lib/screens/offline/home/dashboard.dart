@@ -1,42 +1,56 @@
-// Offline home tab (library root): balance, add actions, spending
-// distribution, recent expenses / obligations, and active savings goals.
-// Each card opens the screen that holds its full details.
+// Offline home tab (library root): the balance hero, quick actions, one
+// line from the smart analysis, the spending strip, recent expenses,
+// obligations and the savings goals carousel. Each section opens the
+// screen that holds its full details.
 //
-// The cards live in dashboard_* part files of this library.
+// The sections live in dashboard_* part files of this library.
 
-import 'package:fl_chart/fl_chart.dart';
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:waffr/core/prefs/app_prefs.dart';
-import 'package:waffr/widgets/motion/motion.dart';
-import 'package:waffr/widgets/motion/active_listenable_builder.dart';
-import 'package:waffr/widgets/containers/app_empty_state.dart';
-import 'package:waffr/data/stores/category_store.dart';
-import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/widgets/motion/origin_route.dart';
+import 'package:waffr/core/insights/smart/insight_engine.dart';
+import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
+import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/core/sync/sync_clock.dart';
+import 'package:waffr/core/theme/app_color.dart';
+import 'package:waffr/core/theme/app_icons.dart';
+import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/utils/calendar_days.dart';
+import 'package:waffr/core/utils/money.dart';
+import 'package:waffr/data/models/calendar_period.dart';
 import 'package:waffr/data/models/expense_categories.dart';
 import 'package:waffr/data/models/recurring_expense.dart';
 import 'package:waffr/data/models/savings_goal.dart';
 import 'package:waffr/data/models/transaction.dart';
+import 'package:waffr/data/stores/category_store.dart';
+import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
-import 'package:waffr/core/sync/sync_clock.dart';
-import 'package:waffr/core/theme/app_color.dart';
-import 'package:waffr/core/theme/app_motion.dart';
-import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/home/sheets/add_expense_sheet.dart';
 import 'package:waffr/screens/offline/home/sheets/add_income_sheet.dart';
 import 'package:waffr/screens/offline/obligations/obligations_sheet.dart';
+import 'package:waffr/screens/offline/report/edit_transaction_sheet.dart';
 import 'package:waffr/screens/offline/report/reportscreen.dart';
+import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
+import 'package:waffr/screens/offline/savings/sheets/manual_save_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
+import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
-import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
-import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/widgets/glass/tilt.dart';
+import 'package:waffr/widgets/motion/active_listenable_builder.dart';
+import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/widgets/motion/pressable.dart';
 
-part 'dashboard_balance_card.dart';
-part 'dashboard_distribution.dart';
-part 'dashboard_expenses.dart';
-part 'dashboard_savings_goals.dart';
+part 'dashboard_actions.dart';
+part 'dashboard_goals.dart';
+part 'dashboard_hero.dart';
+part 'dashboard_recent.dart';
 part 'dashboard_sections.dart';
+part 'dashboard_spending.dart';
 
 /// The home tab of the app shell: a scrollable stack of dashboard cards.
 class HomeScreen extends StatefulWidget {
@@ -64,6 +78,17 @@ class _HomeScreenState extends State<HomeScreen>
     RecurringExpenseStore.instance,
   ]);
 
+  /// One line from the smart analysis; null until the first read, and
+  /// with nothing logged yet.
+  String? _insight;
+
+  /// Data changed since the insight was last read.
+  bool _insightDirty = true;
+  bool _insightLoading = false;
+
+  /// Folds a burst of store notifications into one read.
+  Timer? _insightTimer;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -74,6 +99,67 @@ class _HomeScreenState extends State<HomeScreen>
     CategoryStore.instance.ensureLoaded();
     CurrencyStore.instance.ensureLoaded();
     RecurringExpenseStore.instance.ensureLoaded();
+    _listenables.addListener(_queueInsight);
+    _queueInsight();
+  }
+
+  @override
+  void dispose() {
+    _listenables.removeListener(_queueInsight);
+    _insightTimer?.cancel();
+    super.dispose();
+  }
+
+  void _queueInsight() {
+    _insightDirty = true;
+    if (_insightLoading || _insightTimer?.isActive == true) return;
+    _insightTimer = Timer(const Duration(milliseconds: 400), _readInsight);
+  }
+
+  /// The headline of the reports analysis. The wording is seeded by the
+  /// day, so it stays the same until tomorrow or until the data changes.
+  Future<void> _readInsight() async {
+    if (!mounted || _insightLoading || !_insightDirty) return;
+    _insightDirty = false;
+    _insightLoading = true;
+    try {
+      final facts = await SmartFactsLoader.load();
+      if (!mounted || _insightDirty) return;
+      final empty = facts.expenses.isEmpty && facts.incomes.isEmpty;
+      final now = facts.now;
+      final line = empty
+          ? null
+          : InsightEngine(
+              facts,
+              seed: now.year * 400 + now.month * 32 + now.day,
+            ).analyze(InsightScope.reports).headline;
+      if (line != _insight) setState(() => _insight = line);
+    } finally {
+      _insightLoading = false;
+      if (mounted && _insightDirty) _queueInsight();
+    }
+  }
+
+  /// The cards the history pages grow out of.
+  final GlobalKey _heroCard = GlobalKey();
+  final GlobalKey _recentCard = GlobalKey();
+
+  void _openIncomeLog() {
+    Navigator.of(context).push(
+      originPageRoute<void>(
+        _heroCard.currentContext ?? context,
+        (_) => const TransactionHistoryScreen.incomes(),
+      ),
+    );
+  }
+
+  void _openExpenseLog() {
+    Navigator.of(context).push(
+      originPageRoute<void>(
+        _recentCard.currentContext ?? context,
+        (_) => const TransactionHistoryScreen.expenses(),
+      ),
+    );
   }
 
   @override
@@ -82,86 +168,86 @@ class _HomeScreenState extends State<HomeScreen>
     return ActiveListenableBuilder(
       listenable: _listenables,
       builder: (context, _) {
+        final obligations = RecurringExpenseStore.instance.itemsFor(
+          CurrencyStore.instance.activeCode,
+        );
+        final now = deviceNow();
+        final attention = obligations
+            .where((item) => obligationNeedsAttention(item, now: now))
+            .length;
+        final hasObligations = obligations.any((item) => item.enabled);
+
         return SingleChildScrollView(
+          clipBehavior: Clip.none,
           padding: const EdgeInsets.fromLTRB(18, 18, 18, kFloatingNavClearance),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: staggered([
-              // Balance card: links to the shopping list and the income log.
-              _BalanceCard(
+              // The balance on its dimensional glass card.
+              _BalanceHero(
+                key: _heroCard,
                 balance: _store.balance,
                 spent: _store.cycleSpent,
                 maxBalance: _store.maxBalance,
                 ratio: _store.remainingRatio,
                 onShoppingList: () => showShoppingListSheet(context),
-                onIncomeLog: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const TransactionHistoryScreen.incomes(),
-                    ),
-                  );
-                },
+                onIncomeLog: _openIncomeLog,
               ),
-              const SizedBox(height: kCardGap),
-              // Quick add buttons for income and expense.
-              Row(
-                children: [
-                  Expanded(
-                    child: _ActionButton(
-                      label: 'إضافة دخل',
-                      icon: Icons.add_circle_outline_rounded,
-                      onTap: () => showAddIncomeSheet(context),
-                    ),
-                  ),
-                  const SizedBox(width: kCardGap),
-                  Expanded(
-                    child: _ActionButton(
-                      label: 'إضافة مصروف',
-                      icon: Icons.remove_circle_outline_rounded,
-                      onTap: () => showAddExpenseSheet(context),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 20),
+              _QuickActions(
+                attention: attention,
+                onExpense: () => showAddExpenseSheet(context),
+                onIncome: () => showAddIncomeSheet(context),
+                onSave: () => showManualSaveSheet(context),
+                onObligations: () => showObligationsSheet(context),
               ),
-              const SizedBox(height: kCardGap),
+              const SizedBox(height: 20),
+              // Only once the analysis has something to say; an empty
+              // strip would just be a button with no reason to press it.
+              // The slot is always in the list and opens smoothly, so the
+              // cards below keep their state and do not jump.
+              AnimatedSize(
+                duration: AppMotion.sizeOf(context, AppMotion.slow),
+                curve: AppMotion.enter,
+                alignment: Alignment.topCenter,
+                child: _insight == null
+                    ? const SizedBox(width: double.infinity)
+                    : Padding(
+                        padding: const EdgeInsets.only(bottom: kCardGap),
+                        child: _InsightStrip(
+                          text: _insight!,
+                          onTap: () =>
+                              openSmartAnalysis(context, InsightScope.reports),
+                        ),
+                      ),
+              ),
               // expensesByCategory is rolled up in memory from the store.
-              _DistributionCard(
+              _SpendingStrip(
                 totals: _store.expensesByCategory(),
                 totalExpense: _store.totalExpense,
                 onTap: () =>
                     AppShellScope.selectTabOf(context, AppShellTabs.report),
               ),
               const SizedBox(height: kCardGap),
-              // Bottom row: recent expenses / obligations beside savings goals.
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 7,
-                      child: _ExpensesAndObligationsCard(
-                        expenses: _store.expenses,
-                        obligations: RecurringExpenseStore.instance.itemsFor(
-                          CurrencyStore.instance.activeCode,
-                        ),
-                        compact: true,
-                      ),
-                    ),
-                    const SizedBox(width: kCardGap),
-                    Expanded(
-                      flex: 4,
-                      child: _SavingGoalCard(
-                        compact: true,
-                        goals: _store.activeGoals,
-                        store: _store,
-                        onTap: () => AppShellScope.selectTabOf(
-                          context,
-                          AppShellTabs.savings,
-                        ),
-                      ),
-                    ),
-                  ],
+              _RecentCard(
+                key: _recentCard,
+                expenses: _store.expenses,
+                onAll: _openExpenseLog,
+              ),
+              if (hasObligations) ...[
+                const SizedBox(height: kCardGap),
+                _ObligationsCard(
+                  obligations: obligations,
+                  onTap: () => showObligationsSheet(context),
                 ),
+              ],
+              const SizedBox(height: kCardGap),
+              _GoalsCarousel(
+                goals: _store.activeGoals,
+                store: _store,
+                onOpen: () =>
+                    AppShellScope.selectTabOf(context, AppShellTabs.savings),
+                onCreate: () => showCreateGoalSheet(context),
               ),
             ]),
           ),

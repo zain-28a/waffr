@@ -1,5 +1,6 @@
 // Full news list sheet opened from the online preview card.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/models/news_article.dart';
@@ -39,7 +40,7 @@ class _NewsSheet extends StatelessWidget {
       ),
       body: articles.isEmpty
           ? const AppEmptyState(
-              icon: Icons.newspaper_outlined,
+              icon: AppIcons.newspaper,
               title: 'لا توجد أخبار حالياً',
             )
           : ListView.separated(

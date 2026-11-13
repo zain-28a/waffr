@@ -1,5 +1,6 @@
 // Shared snackbars and dialogs: one visual language for the whole app.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_motion.dart';
@@ -48,25 +49,25 @@ _FeedbackStyle _styleFor(BuildContext context, AppFeedbackKind kind) {
       background: palette.accent,
       foreground: palette.onAccent,
       accent: palette.onAccent,
-      icon: Icons.check_rounded,
+      icon: AppIcons.check,
     ),
     AppFeedbackKind.error => _FeedbackStyle(
       background: palette.surface,
       foreground: palette.textPrimary,
       accent: AppColors.destructiveOf(context),
-      icon: Icons.error_outline_rounded,
+      icon: AppIcons.error,
     ),
     AppFeedbackKind.warning => _FeedbackStyle(
       background: palette.surface,
       foreground: palette.textPrimary,
       accent: AppColors.warningOf(context),
-      icon: Icons.warning_amber_rounded,
+      icon: AppIcons.warning,
     ),
     AppFeedbackKind.info => _FeedbackStyle(
       background: palette.surface,
       foreground: palette.textPrimary,
       accent: palette.accent,
-      icon: Icons.info_outline_rounded,
+      icon: AppIcons.info,
     ),
   };
 }

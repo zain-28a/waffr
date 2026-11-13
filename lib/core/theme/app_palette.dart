@@ -23,6 +23,9 @@ class AppPalette {
   /// Captions and hints.
   final Color textSecondary;
 
+  /// The page light-field colors (see `AuroraBackdrop`).
+  final List<Color> aurora;
+
   /// A palette of the given tokens.
   const AppPalette({
     required this.background,
@@ -31,6 +34,7 @@ class AppPalette {
     required this.onAccent,
     required this.textPrimary,
     required this.textSecondary,
+    required this.aurora,
   });
 
   /// The light theme tokens.
@@ -41,6 +45,7 @@ class AppPalette {
     onAccent: AppColors.lightOnAccent,
     textPrimary: AppColors.lightTextPrimary,
     textSecondary: AppColors.lightTextSecondary,
+    aurora: AppColors.lightAurora,
   );
 
   /// The dark theme tokens.
@@ -51,6 +56,7 @@ class AppPalette {
     onAccent: AppColors.darkOnAccent,
     textPrimary: AppColors.darkTextPrimary,
     textSecondary: AppColors.darkTextSecondary,
+    aurora: AppColors.darkAurora,
   );
 
   /// The palette for the theme around [context].

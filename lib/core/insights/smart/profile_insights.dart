@@ -1,7 +1,7 @@
 // Profile-scope insight rules: the health score, a money personality,
 // habits, and the strongest report and savings findings.
 
-import 'package:flutter/material.dart';
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:waffr/core/insights/smart/arabic_text.dart';
 import 'package:waffr/core/insights/smart/insight_phrasing.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';
@@ -124,7 +124,7 @@ class ProfileInsights {
       tone: good
           ? InsightTone.positive
           : (parts.score >= 45 ? InsightTone.info : InsightTone.warning),
-      icon: Icons.favorite_outline_rounded,
+      icon: AppIcons.heart,
       title: _p.pick([
         'صحتك المالية $label',
         'مؤشرك المالي \u2066${parts.score}/100\u2069',
@@ -195,7 +195,7 @@ class ProfileInsights {
     return SmartInsight(
       id: 'persona',
       tone: InsightTone.info,
-      icon: Icons.psychology_outlined,
+      icon: AppIcons.brain,
       title: _p.pick(['شخصيتك المالية: $name', 'أنت «$name»']),
       body: body,
       priority: 90,
@@ -211,7 +211,7 @@ class ProfileInsights {
       return SmartInsight(
         id: 'streak',
         tone: InsightTone.positive,
-        icon: Icons.local_fire_department_outlined,
+        icon: AppIcons.flame,
         title: _p.pick(['سلسلة من $run!', 'التزام رائع']),
         body: _p.say(InsightTone.positive, [
           'تفتح وفّر منذ $run، والاستمرار هو سرّ النتائج.',
@@ -223,7 +223,7 @@ class ProfileInsights {
     return SmartInsight(
       id: 'streak',
       tone: InsightTone.tip,
-      icon: Icons.local_fire_department_outlined,
+      icon: AppIcons.flame,
       title: _p.pick(['ابنِ سلسلتك', 'سلسلتك الحالية: ${_p.days(count)}']),
       body: _p.say(InsightTone.tip, [
         'سلسلتك الحالية ${_p.days(count)}. افتح التطبيق يومياً ولو لدقيقة لتصل إلى أسبوع كامل.',
@@ -242,7 +242,7 @@ class ProfileInsights {
     return SmartInsight(
       id: 'usage-duration',
       tone: InsightTone.info,
-      icon: Icons.history_rounded,
+      icon: AppIcons.history,
       title: _p.pick(['${_p.days(days)} مع وفّر', 'رحلتك مستمرة']),
       body: _p.pick([
         'بدأت قبل ${_p.days(days)}، وسجّلت ${Ar.expenses.of(facts.expenses.length)} منذ ذلك الحين.',
@@ -264,7 +264,7 @@ class ProfileInsights {
       return SmartInsight(
         id: 'logging-habit',
         tone: InsightTone.tip,
-        icon: Icons.edit_calendar_outlined,
+        icon: AppIcons.calendarEdit,
         title: _p.pick(['آخر مصروف قبل ${_p.days(idle)}', 'هل نسيت التسجيل؟']),
         body: _p.say(InsightTone.tip, [
           'لم تسجّل أي مصروف منذ ${_p.days(idle)}، والتحليل أدق حين تكون البيانات كاملة.',
@@ -278,7 +278,7 @@ class ProfileInsights {
       return SmartInsight(
         id: 'logging-habit',
         tone: InsightTone.positive,
-        icon: Icons.edit_calendar_outlined,
+        icon: AppIcons.calendarEdit,
         title: _p.pick(['تسجيل منتظم', 'بياناتك دقيقة']),
         body:
             'سجّلت مصاريف في ${_p.days(facts.activeDaysLast30)} من آخر 30 يوماً، وهذا ما يجعل الأرقام هنا موثوقة.',

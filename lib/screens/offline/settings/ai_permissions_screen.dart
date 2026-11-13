@@ -1,6 +1,8 @@
 // Smart analysis settings: a shortcut to the full analysis, switches for the
 // smart features, and a note on where the analysis runs.
 
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/data/services/smart_settings.dart';
@@ -41,75 +43,75 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
     return Scaffold(
       backgroundColor: background,
       appBar: WaffrBackHeader(title: 'التحليل الذكي'),
-      body: AnimatedBuilder(
-        animation: _settings,
-        builder: (context, _) {
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
-            children: [
-              // Shortcut to the full smart analysis.
-              AppListTile(
-                icon: Icons.auto_awesome,
-                leading: const SmartSpark(size: 32),
-                title: 'افتح التحليل الشامل',
-                subtitle: 'ملاحظات واقتراحات عن مصاريفك وتوفيرك وعاداتك',
-                onTap: () => openSmartAnalysis(context, InsightScope.profile),
-              ),
-              const SizedBox(height: 22),
-              const AppSectionTitle(title: 'الميزات'),
-              // Feature switches.
-              AppListTile(
-                icon: Icons.notifications_active_outlined,
-                leading: const SmartGradientIcon(
-                  Icons.notifications_active_outlined,
+      body: AuroraPage(
+        child: AnimatedBuilder(
+          animation: _settings,
+          builder: (context, _) {
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+              children: [
+                // Shortcut to the full smart analysis.
+                AppListTile(
+                  icon: AppIcons.sparkles,
+                  leading: const SmartSpark(size: 32),
+                  title: 'افتح التحليل الشامل',
+                  subtitle: 'ملاحظات واقتراحات عن مصاريفك وتوفيرك وعاداتك',
+                  onTap: () => openSmartAnalysis(context, InsightScope.profile),
                 ),
-                title: 'تنبيهات ذكية',
-                subtitle:
-                    'تنبيه قبل نفاد الرصيد، وتذكيرات قصيرة إن غبت عن التطبيق',
-                showChevron: false,
-                trailing: Switch(
-                  value: _settings.alerts,
-                  activeThumbColor: accent,
-                  onChanged: _settings.setAlerts,
+                const SizedBox(height: 22),
+                const AppSectionTitle(title: 'الميزات'),
+                // Feature switches.
+                AppListTile(
+                  icon: AppIcons.bellRing,
+                  leading: const SmartGradientIcon(AppIcons.bellRing),
+                  title: 'تنبيهات ذكية',
+                  subtitle:
+                      'تنبيه قبل نفاد الرصيد، وتذكيرات قصيرة إن غبت عن التطبيق',
+                  showChevron: false,
+                  trailing: Switch(
+                    value: _settings.alerts,
+                    activeThumbColor: accent,
+                    onChanged: _settings.setAlerts,
+                  ),
+                  onTap: () => _settings.setAlerts(!_settings.alerts),
                 ),
-                onTap: () => _settings.setAlerts(!_settings.alerts),
-              ),
-              const SizedBox(height: 10),
-              AppListTile(
-                icon: Icons.category_outlined,
-                leading: const SmartGradientIcon(Icons.category_outlined),
-                title: 'تصنيف تلقائي للمصروف',
-                subtitle: 'يقترح التصنيف من الملاحظة التي تكتبها',
-                showChevron: false,
-                trailing: Switch(
-                  value: _settings.categorize,
-                  activeThumbColor: accent,
-                  onChanged: _settings.setCategorize,
+                const SizedBox(height: 10),
+                AppListTile(
+                  icon: AppIcons.shapes,
+                  leading: const SmartGradientIcon(AppIcons.shapes),
+                  title: 'تصنيف تلقائي للمصروف',
+                  subtitle: 'يقترح التصنيف من الملاحظة التي تكتبها',
+                  showChevron: false,
+                  trailing: Switch(
+                    value: _settings.categorize,
+                    activeThumbColor: accent,
+                    onChanged: _settings.setCategorize,
+                  ),
+                  onTap: () => _settings.setCategorize(!_settings.categorize),
                 ),
-                onTap: () => _settings.setCategorize(!_settings.categorize),
-              ),
-              const SizedBox(height: 22),
-              // On-device privacy note.
-              const AppSectionTitle(title: 'الخصوصية'),
-              GlassContainer(
-                colorType: GlassColorType.surface,
-                borderRadius: 22,
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'كل التحليل يتم على جهازك. لا تُرسَل مصاريفك أو ملاحظاتك '
-                  'إلى أي خادم لتحليلها، ويعمل التحليل بدون إنترنت وفي وضع الضيف.',
-                  style: TextStyle(
-                    fontFamily: 'Outfit',
-                    fontFamilyFallback: const ['Tajawal'],
-                    fontSize: 13,
-                    height: 1.6,
-                    color: textSecondary,
+                const SizedBox(height: 22),
+                // On-device privacy note.
+                const AppSectionTitle(title: 'الخصوصية'),
+                GlassContainer(
+                  colorType: GlassColorType.surface,
+                  borderRadius: 22,
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'كل التحليل يتم على جهازك. لا تُرسَل مصاريفك أو ملاحظاتك '
+                    'إلى أي خادم لتحليلها، ويعمل التحليل بدون إنترنت وفي وضع الضيف.',
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontFamilyFallback: const ['Tajawal'],
+                      fontSize: 13,
+                      height: 1.6,
+                      color: textSecondary,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

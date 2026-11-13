@@ -243,6 +243,38 @@ extension GoalPlans on TransactionStore {
     return true;
   }
 
+  /// Renames a goal and/or changes its target. False when the goal is
+  /// missing, the name is blank, or the target is not a positive amount.
+  /// A target at or below what is already saved completes the goal.
+  Future<bool> updateGoal(
+    String id, {
+    String? name,
+    double? targetAmount,
+  }) async {
+    await ensureLoaded();
+
+    final index = _goals.indexWhere((goal) => goal.id == id);
+    if (index < 0) return false;
+
+    final trimmed = name?.trim();
+    if (trimmed != null && trimmed.isEmpty) return false;
+    if (targetAmount != null && (!targetAmount.isFinite || targetAmount <= 0)) {
+      return false;
+    }
+
+    _goals[index] = _goals[index].copyWith(
+      name: trimmed,
+      targetAmount: targetAmount,
+      touch: true,
+    );
+    _completeGoalIfNeeded();
+
+    final prefs = await AppPrefs.instance;
+    await _persistGoals(prefs);
+    notifyListeners();
+    return true;
+  }
+
   /// Deletes the goal record only; savings cash stays in the savings balance.
   Future<bool> deleteGoal(String id) async {
     await ensureLoaded();

@@ -1,6 +1,7 @@
 // Sheet buttons: the round header button, the full-width save button and
 // the quieter destructive action under it.
 
+import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_palette.dart';
@@ -69,7 +70,7 @@ class SheetSaveButton extends StatelessWidget {
       label: label,
       onTap: onTap,
       enabled: enabled,
-      icon: Icons.check_rounded,
+      icon: AppIcons.check,
     );
   }
 }
@@ -92,7 +93,7 @@ class SheetDestructiveButton extends StatelessWidget {
     super.key,
     required this.label,
     required this.onTap,
-    this.icon = Icons.delete_outline_rounded,
+    this.icon = AppIcons.trash,
   });
 
   @override

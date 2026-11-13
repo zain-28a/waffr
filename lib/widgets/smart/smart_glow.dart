@@ -1,6 +1,8 @@
 // Soft moving color glow behind the smart analysis, brighter while it is
 // "thinking" and calmer once the text is written.
 
+import 'package:waffr/core/theme/app_icons.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show listEquals;
@@ -272,7 +274,7 @@ class _SmartSparkState extends State<SmartSpark>
                   ),
                   Align(
                     alignment: Alignment.topRight,
-                    child: Icon(Icons.auto_awesome, size: widget.size * 0.4),
+                    child: Icon(AppIcons.sparkles, size: widget.size * 0.4),
                   ),
                 ],
               ),

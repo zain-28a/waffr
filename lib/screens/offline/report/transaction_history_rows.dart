@@ -82,7 +82,7 @@ class _HistoryDayGroup extends StatelessWidget {
             ),
           ),
         ),
-        // Card with one row per transaction; undo is hidden while selecting.
+        // Card with one row per transaction.
         GlassContainer(
           colorType: GlassColorType.surface,
           borderRadius: 25,
@@ -95,19 +95,41 @@ class _HistoryDayGroup extends StatelessWidget {
                     height: 22,
                     color: colors.textPrimary.withValues(alpha: 0.08),
                   ),
-                _HistoryExpenseRow(
-                  expense: expenses[index],
-                  isIncome: isIncome,
-                  selecting: selecting,
-                  reveal: reveal,
-                  selected: selectedIds.contains(expenses[index].id),
-                  onToggle: () => onToggleExpense?.call(expenses[index].id),
-                  onLongPress: () => onLongPressExpense?.call(expenses[index]),
-                  onUndo: selecting
-                      ? null
-                      : () => isIncome
-                            ? _undoIncome(context, expenses[index])
-                            : _undoExpense(context, expenses[index]),
+                // Tap to edit; swipe for edit and delete. Both are off while
+                // rows are being selected for sharing.
+                SwipeActions(
+                  enabled: !selecting,
+                  actions: [
+                    SwipeAction(
+                      icon: AppIcons.edit,
+                      label: 'تعديل',
+                      onTap: () =>
+                          showEditTransactionSheet(context, expenses[index]),
+                    ),
+                    SwipeAction(
+                      icon: AppIcons.trash,
+                      label: 'حذف',
+                      destructive: true,
+                      onTap: () =>
+                          confirmDeleteTransaction(context, expenses[index]),
+                    ),
+                  ],
+                  child: _HistoryExpenseRow(
+                    expense: expenses[index],
+                    isIncome: isIncome,
+                    selecting: selecting,
+                    reveal: reveal,
+                    selected: selectedIds.contains(expenses[index].id),
+                    onToggle: () => onToggleExpense?.call(expenses[index].id),
+                    onLongPress: () =>
+                        onLongPressExpense?.call(expenses[index]),
+                    onEdit: selecting
+                        ? null
+                        : () => showEditTransactionSheet(
+                            context,
+                            expenses[index],
+                          ),
+                  ),
                 ),
               ],
             ],
@@ -118,15 +140,16 @@ class _HistoryDayGroup extends StatelessWidget {
   }
 }
 
-/// Single history row: category/note, timestamp, amount, optional undo.
+/// Single history row: category/note, timestamp and amount. A tap opens
+/// the editor.
 class _HistoryExpenseRow extends StatelessWidget {
   final WaffrTransaction expense;
   final bool isIncome;
   final bool selecting;
   final double reveal;
   final bool selected;
-  // Undo for this transaction; null hides the button.
-  final VoidCallback? onUndo;
+  // Opens the editor for this transaction; null while selecting.
+  final VoidCallback? onEdit;
   final VoidCallback? onToggle;
   final VoidCallback? onLongPress;
 
@@ -136,7 +159,7 @@ class _HistoryExpenseRow extends StatelessWidget {
     this.selecting = false,
     this.reveal = 1,
     this.selected = false,
-    this.onUndo,
+    this.onEdit,
     this.onToggle,
     this.onLongPress,
   });
@@ -164,15 +187,15 @@ class _HistoryExpenseRow extends StatelessWidget {
     final subtitle = isIncome && note != null && note.isNotEmpty
         ? _incomeFrequencyLabel(expense.frequency)
         : (!isIncome && !noteIsSchedule ? note : null);
-    final icon = isIncome ? Icons.payments_outlined : category.icon;
+    final icon = isIncome ? AppIcons.banknote : category.icon;
     return GestureDetector(
       onLongPress: onLongPress,
-      onTap: selecting ? onToggle : null,
+      onTap: selecting ? onToggle : onEdit,
       behavior: HitTestBehavior.opaque,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Select mark, category icon, text column, then amount and undo.
+          // Select mark, category icon, text column, then the amount.
           if (selecting) ...[
             Padding(
               padding: const EdgeInsets.only(top: 10),
@@ -265,22 +288,6 @@ class _HistoryExpenseRow extends StatelessWidget {
                   ),
                 ),
               ),
-              if (onUndo != null)
-                IconButton(
-                  tooltip: 'تراجع',
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  onPressed: onUndo,
-                  icon: Icon(
-                    Icons.undo_rounded,
-                    size: 18,
-                    color: colors.textSecondary,
-                  ),
-                ),
             ],
           ),
         ],
@@ -322,7 +329,7 @@ class _RecurringBadge extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.autorenew_rounded, size: 12, color: colors.accent),
+              Icon(AppIcons.refresh, size: 12, color: colors.accent),
               const SizedBox(width: 4),
               Text('مصروف متكرر', style: text),
             ],

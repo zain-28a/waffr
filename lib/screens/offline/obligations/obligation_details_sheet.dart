@@ -125,7 +125,41 @@ class _ObligationDetailsSheetState extends State<_ObligationDetailsSheet> {
                           ),
                         ),
                       ),
-                      Icon(Icons.edit_rounded, size: 19, color: colors.accent),
+                      Icon(AppIcons.edit, size: 19, color: colors.accent),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Name, category, repeat interval and the next charge date.
+            Material(
+              color: sheetFieldColor(context),
+              borderRadius: BorderRadius.circular(18),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () => showEditObligationSheet(context, item.id),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'تعديل الاسم والتصنيف والتكرار والموعد',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _text(
+                            colors.textPrimary,
+                            size: 14,
+                            weight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        AppIcons.calendarEdit,
+                        size: 19,
+                        color: colors.accent,
+                      ),
                     ],
                   ),
                 ),

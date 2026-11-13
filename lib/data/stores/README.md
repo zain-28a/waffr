@@ -10,16 +10,16 @@ serves memory and notifies listeners on every change.
 | `transaction_store_queries.dart` | `TransactionQueries`: `expenses`, `incomes`, `goals`, `balance`, `savingsBalance`, totals, `expensesByCategory`. |
 | `transaction_store_cycle.dart` | `BalanceCycle`: cycle start, `cycleSpent`, `maxBalance` (the home bar's 100%), `remainingRatio`, `cycleKey`. |
 | `transaction_store_income.dart` | `IncomeSettings`: `addIncome`, configured weekly/monthly income per currency, `referenceIncome`. |
-| `transaction_store_entries.dart` | `LedgerEntries`: `addExpense`, `undoExpense`, `undoIncome`, `saveManually`, `withdrawFromSavings`. |
-| `transaction_store_goals.dart` | `GoalPlans`: `goalProgress`, `createGoal`, `applyPeriodicPlan`, `deleteGoal`, `reorderActiveGoals`, completion. |
+| `transaction_store_entries.dart` | `LedgerEntries`: `addExpense`, `undoExpense`, `undoIncome`, `saveManually`, `withdrawFromSavings`, and the edits `updateExpense`, `updateIncome`, `updateSavingsTransfer`, `deleteSavingsTransfer` (manual moves only; see `isEditableTransfer`). An edit is refused when it would leave the balance or the savings balance below zero. |
+| `transaction_store_goals.dart` | `GoalPlans`: `goalProgress`, `createGoal`, `updateGoal` (name, target), `applyPeriodicPlan`, `deleteGoal`, `reorderActiveGoals`, completion. |
 | `transaction_store_periods.dart` | `DuePeriods`: `processDuePeriods()` (periodic goal deductions, leftover to savings, each once by token). |
 | `transaction_store_persistence.dart` | `_LedgerPersistence`: load, migrate legacy formats, save. A save re-encodes only rows added since the last one (encoded text is kept per row); a ledger of `backgroundDecodeRows` rows or more is decoded off the UI isolate at load. |
 | `transaction_store_sync.dart` | `LedgerSync`: `applyRemoteSync(...)`, merging the server copy. |
 | `currency_store.dart` | `CurrencyStore`: enabled currencies and the active one (`activeCode`, `setActive`). Re-exports `models/currency.dart`. |
 | `category_store.dart` | `CategoryStore`: custom categories, hidden built-ins (synced in settings), local archive of removed ones; sets `customCategoryLookup`. |
-| `expense_preset_store.dart` | `ExpensePresetStore`: saved expenses (`add`, `remove`). |
+| `expense_preset_store.dart` | `ExpensePresetStore`: saved expenses (`add`, `update`, `remove`). |
 | `shopping_list_store.dart` | `ShoppingListStore`: items; `completePurchase` records the expense through `TransactionStore`. |
-| `recurring_expense_store.dart` | `RecurringExpenseStore`: recurring bills, `processDue()` catch-up that posts real expenses, confirmations and postponing. |
+| `recurring_expense_store.dart` | `RecurringExpenseStore`: recurring bills, `processDue()` catch-up that posts real expenses, confirmations and postponing; `updateAmount` and `updateDetails` (name, category, interval, next date). |
 
 Conventions:
 

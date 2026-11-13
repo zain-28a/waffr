@@ -40,7 +40,7 @@ class _SignInGate extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          Icons.public_rounded,
+                          AppIcons.online,
                           size: 28,
                           color: colors.accent,
                         ),

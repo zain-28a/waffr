@@ -171,6 +171,13 @@ void main() {
   });
 
   group('dueDates', () {
+    test('isDue starts at midnight of the due day', () {
+      final due = DateTime(2026, 5, 10, 21, 30);
+      expect(RecurringExpense.isDue(due, DateTime(2026, 5, 9, 23, 59)), false);
+      expect(RecurringExpense.isDue(due, DateTime(2026, 5, 10)), true);
+      expect(RecurringExpense.isDue(due, DateTime(2026, 5, 10, 8)), true);
+    });
+
     test('lists every passed charge oldest first, up to max', () {
       final bill = _bill(
         unit: RecurringUnit.day,
@@ -184,8 +191,12 @@ void main() {
         DateTime(2026, 5, 4, 9),
       ]);
       expect(bill.dueDates(DateTime(2026, 5, 4, 9), max: 2), hasLength(2));
-      expect(bill.dueDates(DateTime(2026, 5, 1, 8)), isEmpty);
-      expect(bill.dueDates(DateTime(2027), max: 500), hasLength(245));
+      expect(bill.dueDates(DateTime(2026, 4, 30, 23, 59)), isEmpty);
+      // A charge is owed from the start of its day, not from its time.
+      expect(bill.dueDates(DateTime(2026, 5, 1, 0, 1)), [
+        DateTime(2026, 5, 1, 9),
+      ]);
+      expect(bill.dueDates(DateTime(2027), max: 500), hasLength(246));
       expect(bill.dueDates(DateTime(2027)), hasLength(24));
     });
   });

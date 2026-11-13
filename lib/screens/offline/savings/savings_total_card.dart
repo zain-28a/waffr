@@ -8,10 +8,21 @@ part of 'savings_screen.dart';
 class _TotalSavingsCard extends StatelessWidget {
   final double total;
 
-  const _TotalSavingsCard({required this.total});
+  /// Opens the savings log.
+  final VoidCallback onTap;
+
+  const _TotalSavingsCard({required this.total, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'سجل التوفير',
+      child: Pressable(onTap: onTap, depth: 0.03, child: _card(context)),
+    );
+  }
+
+  Widget _card(BuildContext context) {
     final colors = AppPalette.of(context);
 
     return GlassContainer(
@@ -22,17 +33,24 @@ class _TotalSavingsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            'إجمالي المبالغ الموفرة',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Outfit',
-              fontFamilyFallback: const ['Tajawal'],
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: colors.textSecondary,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'إجمالي المبالغ الموفرة',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ),
+              Icon(AppIcons.history, size: 15, color: colors.textSecondary),
+            ],
           ),
 
           const SizedBox(height: 4),

@@ -15,7 +15,7 @@ widgets; `expense_categories.dart` uses `IconData`/`Color`, and
 | `expense_categories.dart` | Built-in `expenseCategories`, custom icon/color palettes, `paymentMethods`, `categoryFor(label)` and the `customCategoryLookup` hook. |
 | `custom_category_entry.dart` | `CustomCategoryEntry`: a user category with a stable id, label, icon and color slot; prefs and `/sync` forms, `legacyId()` for old label-only rows. |
 | `expense_preset.dart` | `ExpensePreset`: a saved expense reused from the star on the expense sheet (amount, ×multiplier, optional recurrence). |
-| `recurring_expense.dart` | `RecurringExpense` (`nextDueAt`, `requiresConfirmation`, `monthlyEquivalent`) and `RecurringUnit`. |
+| `recurring_expense.dart` | `RecurringExpense` (`nextDueAt`, `requiresConfirmation`, `monthlyEquivalent`) and `RecurringUnit`. A charge is owed from the start of its due day (`RecurringExpense.isDue`), not from the time of day it was scheduled. |
 | `shopping_item.dart` | `ShoppingItem`: one shopping-list row; `expenseId` links a purchase to its expense; prefs and `/sync` forms. |
 | `app_notification.dart` | `AppNotification`, `NotificationType`, `NotificationPriority`, `NotificationThresholds`. |
 | `registration_profile.dart` | `RegistrationProfile` (sign-up fields) and validators (`registrationProfileError`, `normalizePhoneNumber`, `isValidBirthDate`). |
