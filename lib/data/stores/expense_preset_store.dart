@@ -43,6 +43,28 @@ class ExpensePresetStore extends ChangeNotifier {
     return preset;
   }
 
+  /// Changes a preset's amount and/or note. False when it is missing or
+  /// the amount is not a positive number.
+  Future<bool> update(
+    String id, {
+    double? amount,
+    String? note,
+    bool clearNote = false,
+  }) async {
+    await ensureLoaded();
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index < 0) return false;
+    if (amount != null && (!amount.isFinite || amount <= 0)) return false;
+    _items[index] = _items[index].edited(
+      amount: amount,
+      note: note?.trim(),
+      clearNote: clearNote || (note != null && note.trim().isEmpty),
+    );
+    await _persist();
+    notifyListeners();
+    return true;
+  }
+
   /// Deletes a preset and logs the delete for sync; false when not found.
   Future<bool> remove(String id) async {
     await ensureLoaded();

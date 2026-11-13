@@ -63,6 +63,25 @@ class ExpensePreset {
   /// Last change for sync, falling back to creation time.
   DateTime get syncUpdatedAt => (updatedAt ?? createdAt).toUtc();
 
+  /// A copy with a new amount and/or note ([clearNote] removes the note),
+  /// stamped now so sync treats it as the newer version.
+  ExpensePreset edited({double? amount, String? note, bool clearNote = false}) {
+    return ExpensePreset(
+      id: id,
+      amount: amount ?? this.amount,
+      category: category,
+      paymentMethod: paymentMethod,
+      createdAt: createdAt,
+      multiplier: multiplier,
+      currencyCode: currencyCode,
+      note: clearNote ? null : (note ?? this.note),
+      recurring: recurring,
+      unit: unit,
+      intervalCount: intervalCount,
+      updatedAt: DateTime.now().toUtc(),
+    );
+  }
+
   /// Amount that the expense will post (typed amount times the multiplier).
   double get total => amount * multiplier;
 

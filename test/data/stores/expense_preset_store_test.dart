@@ -164,4 +164,22 @@ void main() {
     await store.ensureLoaded();
     expect(store.items.map((p) => p.id), ['p1', 'old']);
   });
+
+  test('update changes the amount and note; rejects bad input', () async {
+    final store = ExpensePresetStore.instance;
+    final preset = await store.add(_preset(id: 'edit-me', note: 'قهوة'));
+
+    expect(await store.update(preset.id, amount: 55, note: 'شاي'), isTrue);
+    expect(store.items.single.amount, 55);
+    expect(store.items.single.note, 'شاي');
+    expect(store.items.single.updatedAt, isNotNull);
+    // Everything else about the preset is kept.
+    expect(store.items.single.multiplier, 2);
+    expect(store.items.single.recurring, isTrue);
+
+    expect(await store.update(preset.id, amount: 0), isFalse);
+    expect(await store.update('nope', amount: 5), isFalse);
+    expect(await store.update(preset.id, note: ' '), isTrue);
+    expect(store.items.single.note, isNull);
+  });
 }
