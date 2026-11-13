@@ -1,4 +1,5 @@
-# Builds a release APK for testing and attaches it to the run as an artifact.
+# Builds release APKs (arm64 and universal) for testing and attaches them to
+# the run as artifacts.
 # Runs on every push to main, and on demand from the Actions tab.
 name: Build APK
 
@@ -53,11 +54,34 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      - run: flutter build apk --release
+      # Two APKs: one for 64-bit ARM phones only (smaller), and one that
+      # runs on every device. Neither uses per-ABI version codes, so either
+      # can update the other.
+      - name: Build the arm64 APK
+        run: |
+          flutter build apk --release --target-platform android-arm64
+          mkdir -p dist
+          for apk in build/app/outputs/flutter-apk/Waffr-*.apk; do
+            mv "$apk" "dist/$(basename "$apk" .apk)-arm64.apk"
+          done
+
+      - name: Build the universal APK
+        run: |
+          flutter build apk --release
+          mv build/app/outputs/flutter-apk/Waffr-*.apk dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: waffr-apk-arm64-${{ github.run_number }}
+          path: dist/Waffr-*-arm64.apk
+          if-no-files-found: error
+          retention-days: 30
 
       - uses: actions/upload-artifact@v4
         with:
           name: waffr-apk-${{ github.run_number }}
-          path: build/app/outputs/flutter-apk/Waffr-*.apk
+          path: |
+            dist/Waffr-*.apk
+            !dist/Waffr-*-arm64.apk
           if-no-files-found: error
           retention-days: 30
