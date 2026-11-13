@@ -2,13 +2,14 @@
 
 Sheets for recurring expenses ("obligations"). One library:
 `obligations_sheet.dart` holds the imports and `part` directives; the other
-three files start with `part of 'obligations_sheet.dart'`. Import only
+files start with `part of 'obligations_sheet.dart'`. Import only
 `obligations_sheet.dart`; it also gives access to the shared labels.
 
 | File | What it holds |
 | --- | --- |
 | `obligations_sheet.dart` | `showObligationsSheet`, `showDueObligationsSheet`, `ObligationsSheet` (monthly total, next charge, awaiting banner, one tile per obligation). |
-| `obligation_details_sheet.dart` | `_ObligationDetailsSheet`: edit amount, deduct mode, active / paused, review, delete. |
+| `obligation_details_sheet.dart` | `_ObligationDetailsSheet`: edit amount, open the editor, deduct mode, active / paused, review, delete. |
+| `obligation_edit_sheet.dart` | `showEditObligationSheet`: name, category, repeat interval and the next charge date. |
 | `due_obligations_sheet.dart` | `DueObligationsSheet`: per obligation, deduct one, deduct all missed payments, or postpone (1 day, 3 days, a week, next income). |
 | `obligation_labels.dart` | Public helpers `obligationTitle`, `obligationDate`, `obligationStatus`, `obligationNeedsAttention`, `paymentsLabel`, `obligationsCountLabel`, the `kDeduct*` labels; private `_ObligationColors` and `_text`. |
 
@@ -16,7 +17,7 @@ How it connects:
 
 - All data and changes go through `RecurringExpenseStore` (`itemsFor`,
   `awaitingConfirmation`, `nextUpcoming`, `monthlyTotal`, `confirmDue`,
-  `postpone`, `updateAmount`, `setEnabled`, `setRequiresConfirmation`,
+  `postpone`, `updateAmount`, `updateDetails`, `setEnabled`, `setRequiresConfirmation`,
   `deleteExpense`). The list follows the active currency (`CurrencyStore`);
   the due sheet covers every currency.
 - Opened from the home expenses card, settings, notifications, the shell

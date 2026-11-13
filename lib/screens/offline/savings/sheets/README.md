@@ -8,7 +8,8 @@ themselves stay private.
 | File | Entry point | What it does |
 | --- | --- | --- |
 | `create_goal_sheet.dart` | `showCreateGoalSheet` | New goal: name, target, and percent / fixed / custom funding with a periods preview. |
-| `manage_goals_sheet.dart` | `showManageGoalsSheet` | Reorder goals by drag (priority), delete, or add one (opens the create sheet on top). |
+| `manage_goals_sheet.dart` | `showManageGoalsSheet`, `showEditGoalDialog` | Reorder goals by drag (priority), edit a goal's name and target, delete, or add one (opens the create sheet on top). |
+| `savings_log_sheet.dart` | `showSavingsLogSheet` | Every move in and out of savings; manual ones open the transaction editor or swipe to delete. |
 | `completed_goals_sheet.dart` | `showCompletedGoalsSheet` | Read-only list of completed goals. |
 | `periodic_goals_sheet.dart` | `showPeriodicGoalsSheet` | Percent-of-monthly-income plan: picker, then preview; or the active plan's details with delete. |
 | `manual_save_sheet.dart` | `showManualSaveSheet` | Move an amount from the balance into savings. |

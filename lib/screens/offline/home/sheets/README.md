@@ -8,7 +8,7 @@ actions. All use the glass sheet kit from `widgets/containers/glass_sheet.dart`.
 | --- | --- | --- |
 | `add_expense_sheet.dart` | `showAddExpenseSheet` | One-off or recurring expense form: amount with currency and multiplier, frequency and deduct mode for recurring, category grid, note with smart category suggestion, preset star. |
 | `expense_category_grid.dart` | `ExpenseCategoryGrid` | Part of `add_expense_sheet.dart`. Category tiles (long-press to edit / remove), the custom category dialog, and `_SmartCategoryHint`. |
-| `expense_presets_dialog.dart` | `showExpensePresetsDialog` | Saved-expense (preset) picker opened from the star; returns an `ExpensePresetChoice` (mark, unmark, or a selected preset). |
+| `expense_presets_dialog.dart` | `showExpensePresetsDialog` | Saved-expense (preset) picker opened from the star; returns an `ExpensePresetChoice` (mark, unmark, or a selected preset). A long press on a saved expense edits its amount and note or deletes it. |
 | `add_income_sheet.dart` | `showAddIncomeSheet` | Income form: amount, frequency (monthly or one-off; weekly is hidden), what to do with the leftover balance, optional source. |
 
 How it connects:

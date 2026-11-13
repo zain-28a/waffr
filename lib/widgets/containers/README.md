@@ -6,12 +6,13 @@
 | `floating_glass.dart` | `FloatingGlass` (a `LiquidGlass` pill) and `FloatingGlassHighlight` (tinted selection bubble). |
 | `amount_keypad.dart` | `AmountKeypad` (digits, delete, done and the quick amounts), `QuickAmounts` (the editable list, 10/25/50/100/200/500 by default, kept in prefs), `showQuickAmountsEditor`, and `AmountKeypadScope` / `AmountKeypadController` that let a sheet dock the keypad. |
 | `pinned_period_scroll_view.dart` | `PinnedPeriodScrollView` and `FloatingPeriodSelector` for Reports and Savings. |
-| `glass_sheet.dart` | `showGlassSheet` (frosted `LiquidGlass` sheet that follows Android's predictive back gesture and docks the amount keypad at the bottom of the screen), `GlassSheetBody`, `GlassSheetFixedBody`, `GlassSheetHeader`, `kSheetBarrierColor`. Re-exports the four `sheet_*.dart` files. |
+| `glass_sheet.dart` | `showGlassSheet` (frosted `LiquidGlass` sheet that follows Android's predictive back gesture and docks the amount keypad at the bottom of the screen), `GlassSheetBody`, `GlassSheetFixedBody`, `GlassSheetHeader`, `GlassSheetSurface` (the sheet glass for sheets with their own layout), `kSheetBarrierColor`. Re-exports the four `sheet_*.dart` files. |
 | `sheet_fields.dart` | `SheetFieldLabel`, `SheetInfoButton` (the (i) help), `SheetOptionTile`, `SheetTextField`, `SheetChoiceChips`, `sheetFieldColor()`. |
 | `sheet_amount_field.dart` | `SheetAmountField` (large amount typed on Waffr's own keypad, currency list, ×1-×10 multiplier), `SheetCurrencySelector`, `ThousandsInputFormatter`. |
 | `sheet_transitions.dart` | `SheetExpand` (show/hide a section) and `SheetSwap` (cross-fade on option change). |
 | `sheet_buttons.dart` | `SheetCircleButton` (header close/next), `SheetSaveButton` (wraps `AppPrimaryButton`), `SheetDestructiveButton`. |
-| `app_list_tile.dart` | `AppListTile` (settings-style row card with icon, status chip, chevron) and `AppSectionTitle`. |
+| `app_list_tile.dart` | `AppListTile` (settings-style row with icon, status chip, chevron), `AppListGroup` (several rows as one card with hairlines; rows inside it are flat) and `AppSectionTitle`. |
+| `swipe_actions.dart` | `SwipeActions` / `SwipeAction`: swipe a row toward the start edge to uncover actions (edit, delete) at its end edge, with a haptic click; one row open at a time. |
 | `app_empty_state.dart` | `AppEmptyState`: the one "nothing here yet" block. |
 
 `glass_sheet.dart` was split; import only it and you get every sheet piece.
