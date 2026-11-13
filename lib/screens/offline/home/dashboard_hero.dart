@@ -134,8 +134,7 @@ class _BalanceHero extends StatelessWidget {
                             painter: _RingPainter(
                               ratio: shown,
                               track: ink.withValues(alpha: 0.16),
-                              start: _mint,
-                              end: AppColors.darkGlow,
+                              color: _mint,
                             ),
                             child: Center(
                               child: Text(
@@ -273,9 +272,9 @@ class _BalanceHero extends StatelessWidget {
   }
 }
 
-/// The card body: deep green glass with a teal and a mint glow inside it,
-/// the wallet's stitching, and its smile as a faint watermark. The glows
-/// and the smile slide a little against the lean, which reads as depth.
+/// The card body: deep green with one soft light, the wallet's stitching,
+/// and its smile as a faint watermark. The light and the smile slide a
+/// little against the lean, which reads as depth.
 class _HeroSurfacePainter extends CustomPainter {
   final Offset tilt;
   final MouthShape mouth;
@@ -297,35 +296,43 @@ class _HeroSurfacePainter extends CustomPainter {
             AppColors.heroMiddle,
             AppColors.heroEnd,
           ],
-          stops: [0, 0.55, 1],
+          stops: [0, 0.5, 1],
         ).createShader(rect),
     );
 
-    void glow(Offset at, double radius, Color color, double alpha) {
-      final center = Offset(at.dx * size.width, at.dy * size.height);
-      canvas.drawRect(
-        rect,
-        Paint()
-          ..shader = RadialGradient(
-            colors: [
-              color.withValues(alpha: alpha),
-              color.withValues(alpha: 0),
-            ],
-          ).createShader(Rect.fromCircle(center: center, radius: radius)),
-      );
-    }
-
-    glow(
-      Offset(0.9 - tilt.dx * 0.12, 0.05 - tilt.dy * 0.12),
-      size.width * 0.7,
-      AppColors.darkGlow,
-      0.34,
+    // One soft light near the top corner; it slides against the lean,
+    // which is what reads as depth.
+    final lit = Offset(
+      (0.86 - tilt.dx * 0.12) * size.width,
+      (0.02 - tilt.dy * 0.12) * size.height,
     );
-    glow(
-      Offset(0.05 - tilt.dx * 0.1, 1.05 - tilt.dy * 0.1),
-      size.width * 0.6,
-      const Color(0xFF7BC47F),
-      0.26,
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.13),
+            Colors.white.withValues(alpha: 0),
+          ],
+        ).createShader(Rect.fromCircle(center: lit, radius: size.width * 0.7)),
+    );
+    // A cooler, fainter light in the opposite corner balances it.
+    final cool = Offset(
+      (0.08 - tilt.dx * 0.1) * size.width,
+      (1.0 - tilt.dy * 0.1) * size.height,
+    );
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader =
+            RadialGradient(
+              colors: [
+                AppColors.darkGlow.withValues(alpha: 0.14),
+                AppColors.darkGlow.withValues(alpha: 0),
+              ],
+            ).createShader(
+              Rect.fromCircle(center: cool, radius: size.width * 0.55),
+            ),
     );
 
     // The smile: the logo's mouth, large and faint, toward the left.
@@ -364,8 +371,8 @@ class _HeroSurfacePainter extends CustomPainter {
       oldDelegate.tilt != tilt || oldDelegate.mouth != mouth;
 }
 
-/// Light on the card's glass: a soft sweep that travels with the lean, a
-/// rim that is bright toward the light, and a shade at the far edge.
+/// Light on the card's edge: a rim that is bright toward the light and a
+/// shade at the far edge.
 class _HeroLightPainter extends CustomPainter {
   final Offset tilt;
 
@@ -380,23 +387,6 @@ class _HeroLightPainter extends CustomPainter {
       const Radius.circular(30),
     );
 
-    // Sweep: a diagonal band of light sliding across with the lean.
-    final slide = tilt.dx * 0.9 - tilt.dy * 0.3;
-    canvas.drawRRect(
-      shape,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment(-1.4 + slide, -1),
-          end: Alignment(0.6 + slide, 1),
-          colors: [
-            Colors.white.withValues(alpha: 0),
-            Colors.white.withValues(alpha: 0.11),
-            Colors.white.withValues(alpha: 0),
-          ],
-          stops: const [0.36, 0.5, 0.64],
-        ).createShader(rect),
-    );
-
     // Thickness: shade gathering at the bottom edge.
     canvas.drawRRect(
       shape,
@@ -406,7 +396,7 @@ class _HeroLightPainter extends CustomPainter {
           end: Alignment.bottomCenter,
           colors: [
             Colors.black.withValues(alpha: 0),
-            Colors.black.withValues(alpha: 0.2),
+            Colors.black.withValues(alpha: 0.14),
           ],
           stops: const [0.72, 1],
         ).createShader(rect),
@@ -439,57 +429,38 @@ class _HeroLightPainter extends CustomPainter {
       oldDelegate.tilt != tilt;
 }
 
-/// Progress ring: a faint full track and a gradient arc from the top.
+/// Progress ring: a faint full track and a solid arc from the top.
 class _RingPainter extends CustomPainter {
   final double ratio;
   final Color track;
-  final Color start;
-  final Color end;
+  final Color color;
   final double stroke;
 
   const _RingPainter({
     required this.ratio,
     required this.track,
-    required this.start,
-    required this.end,
+    required this.color,
     this.stroke = 5.5,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = (Offset.zero & size).deflate(stroke / 2);
-    final base = Paint()
+    final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
       ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect, 0, math.pi * 2, false, base..color = track);
+    canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = track);
     final sweep = math.pi * 2 * ratio.clamp(0.0, 1.0);
     if (sweep <= 0.01) return;
-    canvas
-      ..save()
-      ..translate(size.width / 2, size.height / 2)
-      ..rotate(-math.pi / 2)
-      ..translate(-size.width / 2, -size.height / 2)
-      ..drawArc(
-        rect,
-        0,
-        sweep,
-        false,
-        base
-          ..shader = SweepGradient(
-            colors: [start, end, start],
-            stops: const [0, 0.7, 1],
-          ).createShader(rect),
-      )
-      ..restore();
+    canvas.drawArc(rect, -math.pi / 2, sweep, false, paint..color = color);
   }
 
   @override
   bool shouldRepaint(covariant _RingPainter oldDelegate) =>
       oldDelegate.ratio != ratio ||
       oldDelegate.track != track ||
-      oldDelegate.start != start ||
-      oldDelegate.end != end;
+      oldDelegate.color != color;
 }
 
 /// Small translucent button in the hero's corner.

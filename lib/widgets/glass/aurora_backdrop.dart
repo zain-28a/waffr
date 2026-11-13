@@ -1,4 +1,4 @@
-// The page light field: a few large, soft green and teal lights drifting
+// The page light field: a few large, very soft green lights drifting
 // slowly behind the content. It gives the glass chrome something to bend
 // and keeps the pages from reading as a flat tint.
 
@@ -82,7 +82,7 @@ class _AuroraBackdropState extends State<AuroraBackdrop>
           time: _time,
           background: palette.background,
           colors: palette.aurora,
-          strength: widget.intensity * (isDark ? 0.42 : 0.62),
+          strength: widget.intensity * (isDark ? 0.34 : 0.5),
         ),
         size: Size.infinite,
       ),

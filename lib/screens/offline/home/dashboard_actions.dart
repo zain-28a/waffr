@@ -95,19 +95,20 @@ class _QuickAction extends StatelessWidget {
         ? DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
+              // A gentle top-to-bottom shade of the one accent color.
               gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isDark
-                    ? [palette.accent, palette.glow]
-                    : const [AppColors.heroStart, AppColors.heroMiddle],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color.lerp(palette.accent, Colors.white, 0.14)!,
+                  palette.accent,
+                ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: (isDark ? palette.glow : AppColors.heroMiddle)
-                      .withValues(alpha: isDark ? 0.3 : 0.32),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
+                  color: palette.accent.withValues(alpha: isDark ? 0.2 : 0.26),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -200,22 +201,18 @@ class _InsightStrip extends StatelessWidget {
             padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 14, 12),
             child: Row(
               children: [
-                // The teal spark marks everything the analysis says.
                 Container(
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        palette.glow.withValues(alpha: 0.22),
-                        palette.accent.withValues(alpha: 0.14),
-                      ],
-                    ),
+                    color: palette.accent.withValues(alpha: 0.1),
                   ),
-                  child: Icon(AppIcons.sparkles, size: 20, color: palette.glow),
+                  child: Icon(
+                    AppIcons.lightbulb,
+                    size: 20,
+                    color: palette.accent,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

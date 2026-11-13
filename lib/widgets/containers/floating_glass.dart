@@ -41,14 +41,7 @@ class FloatingGlassHighlight extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            accent.withValues(alpha: 0.24),
-            accent.withValues(alpha: 0.14),
-          ],
-        ),
+        color: accent.withValues(alpha: 0.17),
         border: Border.all(color: accent.withValues(alpha: 0.18)),
       ),
     );

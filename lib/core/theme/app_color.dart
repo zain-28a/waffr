@@ -83,29 +83,30 @@ class AppColors {
   /// Dark-theme teal glow.
   static const Color darkGlow = Color(0xFF63D6C6);
 
-  /// Deep green at the lit corner of hero surfaces (balance card).
-  static const Color heroStart = Color(0xFF2F6B3C);
+  /// Green at the lit corner of hero surfaces (balance card).
+  static const Color heroStart = Color(0xFF2C6438);
 
   /// Forest green in the body of hero surfaces.
-  static const Color heroMiddle = Color(0xFF1B4423);
+  static const Color heroMiddle = Color(0xFF1C4624);
 
-  /// Teal-black at the far corner of hero surfaces.
-  static const Color heroEnd = Color(0xFF0E3A3A);
+  /// Deepest green, at the far corner of hero surfaces and in their shadow.
+  static const Color heroEnd = Color(0xFF133B2E);
 
   /// Text and icons on hero surfaces, in both themes.
   static const Color onHero = Color(0xFFF2F7F1);
 
-  /// Soft light-field colors behind pages (mint, teal, lime), light theme.
+  /// Soft light-field colors behind pages: quiet shades of the brand
+  /// green, light theme.
   static const List<Color> lightAurora = [
-    Color(0xFFB4E2BA),
-    Color(0xFF9EDCD3),
-    Color(0xFFDDEFBE),
+    Color(0xFFB8E0BD),
+    Color(0xFFB7DFD3),
+    Color(0xFFD2E8C6),
   ];
 
   /// Light-field colors behind pages, dark theme.
   static const List<Color> darkAurora = [
-    Color(0xFF1F6A35),
-    Color(0xFF0E6660),
-    Color(0xFF3A5A1C),
+    Color(0xFF1E6233),
+    Color(0xFF155A4C),
+    Color(0xFF2A5422),
   ];
 }

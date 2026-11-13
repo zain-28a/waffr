@@ -329,7 +329,6 @@ class _SpendingAreaChartState extends State<_SpendingAreaChart> {
                     yInterval: yInterval,
                     selected: selected,
                     color: widget.color,
-                    glow: colors.glow,
                     grid: colors.textPrimary.withValues(alpha: 0.07),
                     label: colors.textSecondary,
                     surface: colors.surface,
@@ -352,8 +351,8 @@ class _SpendingAreaChartState extends State<_SpendingAreaChart> {
   }
 }
 
-/// Paints the grid, axis labels, the filled area, the glowing line, the
-/// "now" dot and the scrub marker.
+/// Paints the grid, axis labels, the filled area, the line, the "now" dot
+/// and the scrub marker.
 class _AreaChartPainter extends CustomPainter {
   final List<_ChartBucket> buckets;
   final int count;
@@ -362,7 +361,6 @@ class _AreaChartPainter extends CustomPainter {
   final double yInterval;
   final int? selected;
   final Color color;
-  final Color glow;
   final Color grid;
   final Color label;
   final Color surface;
@@ -375,7 +373,6 @@ class _AreaChartPainter extends CustomPainter {
     required this.yInterval,
     required this.selected,
     required this.color,
-    required this.glow,
     required this.grid,
     required this.label,
     required this.surface,
@@ -510,35 +507,19 @@ class _AreaChartPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            color.withValues(alpha: 0.30),
-            color.withValues(alpha: 0.02),
-          ],
+          colors: [color.withValues(alpha: 0.24), color.withValues(alpha: 0)],
         ).createShader(plot),
     );
 
-    // Glow under the line, then the line itself shading into teal.
-    final stroke = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
     canvas.drawPath(
       line,
-      stroke
-        ..strokeWidth = 6
-        ..color = color.withValues(alpha: 0.28)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..strokeWidth = 2.4
+        ..color = color,
     );
-    canvas.drawPath(
-      line,
-      stroke
-        ..maskFilter = null
-        ..strokeWidth = 2.6
-        ..shader = LinearGradient(
-          colors: [color, Color.lerp(color, glow, 0.55)!],
-        ).createShader(plot),
-    );
-    stroke.shader = null;
 
     // Where the line stands now.
     final last = points.last;
@@ -573,7 +554,6 @@ class _AreaChartPainter extends CustomPainter {
       oldDelegate.maxY != maxY ||
       oldDelegate.selected != selected ||
       oldDelegate.color != color ||
-      oldDelegate.glow != glow ||
       oldDelegate.label != label ||
       oldDelegate.surface != surface;
 }

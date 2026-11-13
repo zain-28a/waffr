@@ -18,9 +18,12 @@ import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:flutter/services.dart' show PredictiveBackEvent;
 import 'package:waffr/widgets/glass/liquid_glass.dart';
+import 'package:waffr/widgets/containers/amount_keypad.dart';
 import 'package:waffr/widgets/containers/sheet_buttons.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 
+export 'package:waffr/widgets/containers/amount_keypad.dart'
+    show QuickAmounts, showQuickAmountsEditor;
 export 'package:waffr/widgets/containers/sheet_amount_field.dart';
 export 'package:waffr/widgets/containers/sheet_buttons.dart';
 export 'package:waffr/widgets/containers/sheet_fields.dart';
@@ -175,37 +178,123 @@ class _SheetBackGestureState extends State<_SheetBackGesture>
   Widget build(BuildContext context) => widget.child;
 }
 
-/// Positions the sheet above the keyboard and optionally pins its height.
-class _GlassSheetShell extends StatelessWidget {
+/// Positions the sheet above the keyboard, optionally pins its height, and
+/// docks the amount keypad under it at the bottom of the screen.
+class _GlassSheetShell extends StatefulWidget {
   final Widget child;
   final double? heightFactor;
 
   const _GlassSheetShell({required this.child, this.heightFactor});
 
   @override
+  State<_GlassSheetShell> createState() => _GlassSheetShellState();
+}
+
+class _GlassSheetShellState extends State<_GlassSheetShell> {
+  /// The amount field that owns the keypad, if one is focused.
+  final AmountKeypadController _keypad = AmountKeypadController();
+
+  /// Keeps the sheet's state when the keypad opens and closes around it.
+  final GlobalKey _sheetKey = GlobalKey();
+
+  @override
+  void dispose() {
+    _keypad.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final screenHeight = MediaQuery.sizeOf(context).height;
-
     final maxSheetHeight = (screenHeight - keyboard - 28).clamp(
       220.0,
       screenHeight,
     );
+    final heightFactor = widget.heightFactor;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: keyboard),
-      child: heightFactor == null
-          ? ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxSheetHeight),
-              child: child,
-            )
-          : SizedBox(
-              height: (screenHeight * heightFactor!).clamp(
-                220.0,
-                maxSheetHeight,
-              ),
-              child: child,
-            ),
+    return AmountKeypadScope(
+      controller: _keypad,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: keyboard),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxSheetHeight),
+          child: ListenableBuilder(
+            listenable: _keypad,
+            builder: (context, _) {
+              final binding = _keypad.binding;
+              // Never both: the system keyboard wins while it is up.
+              final docked = binding != null && keyboard == 0;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    // With the keypad docked the sheet no longer touches the
+                    // bottom edge, so it gives up the bottom safe area.
+                    child: MediaQuery.removePadding(
+                      context: context,
+                      removeBottom: docked,
+                      child: KeyedSubtree(
+                        key: _sheetKey,
+                        child: heightFactor == null
+                            ? widget.child
+                            : SizedBox(
+                                height: (screenHeight * heightFactor).clamp(
+                                  220.0,
+                                  maxSheetHeight,
+                                ),
+                                child: widget.child,
+                              ),
+                      ),
+                    ),
+                  ),
+                  AnimatedSize(
+                    duration: AppMotion.sizeOf(context, AppMotion.medium),
+                    curve: AppMotion.enter,
+                    alignment: Alignment.topCenter,
+                    child: docked
+                        ? _KeypadDock(binding: binding)
+                        : const SizedBox(width: double.infinity),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The amount keypad as a panel along the bottom edge, where a keyboard
+/// would be; the sheet rests on top of it.
+class _KeypadDock extends StatelessWidget {
+  final AmountKeypadBinding binding;
+
+  const _KeypadDock({required this.binding});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(
+          palette.textPrimary.withValues(alpha: isDark ? 0.04 : 0.03),
+          palette.surface,
+        ),
+        border: Border(
+          top: BorderSide(color: palette.textSecondary.withValues(alpha: 0.14)),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 10),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+          child: AmountKeypad(binding: binding),
+        ),
+      ),
     );
   }
 }

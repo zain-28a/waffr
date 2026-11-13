@@ -122,8 +122,7 @@ class _GoalCard extends StatelessWidget {
                           painter: _RingPainter(
                             ratio: shown,
                             track: palette.accent.withValues(alpha: 0.12),
-                            start: palette.accent,
-                            end: palette.glow,
+                            color: palette.accent,
                             stroke: 5,
                           ),
                           child: Center(

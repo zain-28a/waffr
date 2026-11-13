@@ -1,10 +1,13 @@
 // Glass sheets follow Android's predictive back gesture: the sheet sinks
 // while the gesture is in progress, returns when it is cancelled and
-// closes when it is committed. The amount keypad edits the field.
+// closes when it is committed. The amount keypad docks under the sheet,
+// edits the field, and offers quick amounts the user can change.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 
 Future<void> _backGesture(String method, [double progress = 0]) {
@@ -27,6 +30,15 @@ Future<void> _backGesture(String method, [double progress = 0]) {
 }
 
 void main() {
+  // Prefs are opened once here, outside any test's fake clock, so later
+  // tests never wait on a future that an earlier test's clock owns.
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    await AppPrefs.instance;
+    await QuickAmounts.instance.ensureLoaded();
+  });
+
   Future<void> open(
     WidgetTester tester, {
     TextEditingController? amount,
@@ -117,5 +129,68 @@ void main() {
     await tester.tap(find.bySemanticsLabel('تم'));
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('تم'), findsNothing);
+  });
+
+  testWidgets('the keypad docks at the bottom, below the sheet', (
+    tester,
+  ) async {
+    final amount = TextEditingController();
+    addTearDown(amount.dispose);
+    await open(tester, amount: amount);
+
+    final screen = tester.getSize(find.byType(MaterialApp));
+    final done = tester.getRect(find.bySemanticsLabel('تم'));
+    final field = tester.getRect(find.byType(SheetAmountField));
+    // The last row of keys sits at the bottom edge, under the field.
+    expect(done.bottom, greaterThan(screen.height - 40));
+    expect(done.top, greaterThan(field.bottom));
+  });
+
+  testWidgets('quick amounts start as banknote values and add up', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.runAsync(() async {
+      await (await AppPrefs.instance).clear();
+      QuickAmounts.instance.resetCache();
+      await QuickAmounts.instance.ensureLoaded();
+    });
+    final amount = TextEditingController();
+    addTearDown(amount.dispose);
+    await open(tester, amount: amount);
+
+    for (final value in ['+10', '+25', '+50', '+100', '+200', '+500']) {
+      expect(find.text(value), findsOneWidget);
+    }
+    await tester.tap(find.text('+200'));
+    await tester.tap(find.text('+50'));
+    await tester.pump();
+    expect(amount.text, '250');
+  });
+
+  test('quick amounts can be edited, are kept, and reset', () async {
+    SharedPreferences.setMockInitialValues({});
+    await (await AppPrefs.instance).clear();
+    final store = QuickAmounts.instance..resetCache();
+    await store.ensureLoaded();
+    expect(store.values, [10, 25, 50, 100, 200, 500]);
+    expect(store.isDefault, isTrue);
+
+    // Full row: nothing is added until one is removed.
+    expect(await store.add(1000), isFalse);
+    await store.remove(25);
+    expect(await store.add(1000), isTrue);
+    expect(await store.add(1000), isFalse, reason: 'duplicate');
+    expect(await store.add(0), isFalse);
+    expect(store.values, [10, 50, 100, 200, 500, 1000]);
+    expect(store.isDefault, isFalse);
+
+    // Survives a restart.
+    store.resetCache();
+    await store.ensureLoaded();
+    expect(store.values, [10, 50, 100, 200, 500, 1000]);
+
+    await store.reset();
+    expect(store.values, QuickAmounts.defaults);
   });
 }
