@@ -195,13 +195,23 @@ class _HomeScreenState extends State<HomeScreen>
               const SizedBox(height: 20),
               // Only once the analysis has something to say; an empty
               // strip would just be a button with no reason to press it.
-              if (_insight case final insight?) ...[
-                _InsightStrip(
-                  text: insight,
-                  onTap: () => openSmartAnalysis(context, InsightScope.reports),
-                ),
-                const SizedBox(height: kCardGap),
-              ],
+              // The slot is always in the list and opens smoothly, so the
+              // cards below keep their state and do not jump.
+              AnimatedSize(
+                duration: AppMotion.sizeOf(context, AppMotion.slow),
+                curve: AppMotion.enter,
+                alignment: Alignment.topCenter,
+                child: _insight == null
+                    ? const SizedBox(width: double.infinity)
+                    : Padding(
+                        padding: const EdgeInsets.only(bottom: kCardGap),
+                        child: _InsightStrip(
+                          text: _insight!,
+                          onTap: () =>
+                              openSmartAnalysis(context, InsightScope.reports),
+                        ),
+                      ),
+              ),
               // expensesByCategory is rolled up in memory from the store.
               _SpendingStrip(
                 totals: _store.expensesByCategory(),
