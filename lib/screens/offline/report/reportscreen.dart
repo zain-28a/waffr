@@ -1,5 +1,5 @@
 // Offline spending report (library root): range chips, a swipeable period
-// chart (fl_chart), total spent, category distribution, and a comparison
+// area chart, total spent, category distribution, and a comparison
 // with the previous period.
 //
 // The library is split into part files: report_data (pure period math),
@@ -9,11 +9,13 @@
 
 import 'package:waffr/core/theme/app_icons.dart';
 
+import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/widgets/motion/pressable.dart';
 import 'package:waffr/widgets/motion/active_listenable_builder.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
@@ -32,6 +34,7 @@ import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/glass/liquid_glass.dart';
 import 'package:waffr/widgets/containers/pinned_period_scroll_view.dart';
 import 'package:waffr/widgets/dialogs/waffr_date_picker.dart';
 import 'package:waffr/screens/offline/report/expense_history_share.dart';
@@ -83,7 +86,10 @@ class _ReportScreenState extends State<ReportScreen>
   /// Reports per (range, page offset), so swiping between periods and
   /// rebuilding for a page change does not rescan the ledger. Cleared when
   /// the ledger or categories change.
-  final Map<(_ReportRange, int), _ReportData> _reports = {};
+  final Map<(_ReportRange, int, String?), _ReportData> _reports = {};
+
+  /// Category the whole report is narrowed to; null shows everything.
+  String? _focus;
   // Expense list snapshot from the store, reused until the next change.
   List<WaffrTransaction>? _expensesCache;
 
@@ -92,10 +98,19 @@ class _ReportScreenState extends State<ReportScreen>
   /// Cached report for one range and page offset; the cache is capped.
   _ReportData _reportFor(_ReportRange range, int offset) {
     if (_reports.length > 48) _reports.clear();
-    return _reports.putIfAbsent((
-      range,
-      offset,
-    ), () => _ReportData.from(_expenses, _periodFor(range, offset)));
+    final focus = _focus;
+    return _reports.putIfAbsent(
+      (range, offset, focus),
+      () =>
+          _ReportData.from(_expenses, _periodFor(range, offset), focus: focus),
+    );
+  }
+
+  /// Narrows the report to [category], or widens it again when the same
+  /// category is tapped twice.
+  void _toggleFocus(String category) {
+    AppHaptics.selection();
+    setState(() => _focus = _focus == category ? null : category);
   }
 
   /// Drops cached reports and the expense snapshot after a store change.
@@ -206,6 +221,8 @@ class _ReportScreenState extends State<ReportScreen>
               // Summary cards for the visible period.
               _SpendingSummary(
                 total: report.total,
+                focus: report.focus,
+                onClearFocus: () => setState(() => _focus = null),
                 onHistory: _openExpenseHistory,
               ),
               const SizedBox(height: kCardGap),
@@ -215,7 +232,7 @@ class _ReportScreenState extends State<ReportScreen>
                 previousLabel: previous.period.label,
               ),
               const SizedBox(height: kCardGap),
-              _ExpenseDistribution(report: report),
+              _ExpenseDistribution(report: report, onCategory: _toggleFocus),
             ]),
           ),
         );

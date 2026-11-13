@@ -1,9 +1,9 @@
 // Report chart (part of reportscreen.dart): the swipeable period card and
-// its fl_chart line chart.
+// its interactive area chart (drawn here, no chart package).
 
 part of 'reportscreen.dart';
 
-/// One PageView page: period label, older/newer arrows, and the line chart
+/// One PageView page: period label, older/newer arrows, and the area chart
 /// (or empty state).
 class _SpendingChartCard extends StatelessWidget {
   final _ReportData report;
@@ -22,9 +22,16 @@ class _SpendingChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
+    final focus = report.focus;
     // Built once so the reveal animation below only moves the clip.
     final chart = RepaintBoundary(
-      child: _SpendingLineChart(buckets: report.chartBuckets),
+      child: _SpendingAreaChart(
+        buckets: report.chartBuckets,
+        lastBucket: report.lastBucket,
+        color: focus == null
+            ? colors.accent
+            : categoryChartColor(context, focus),
+      ),
     );
     return GlassContainer(
       colorType: GlassColorType.surface,
@@ -47,7 +54,7 @@ class _SpendingChartCard extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      'الصرف خلال الفترة',
+                      focus == null ? 'الصرف خلال الفترة' : 'صرف $focus',
                       style: TextStyle(
                         fontFamily: 'Outfit',
                         fontFamilyFallback: const ['Tajawal'],
@@ -104,7 +111,11 @@ class _SpendingChartCard extends StatelessWidget {
                     // The chart is built once and only the clip moves, so
                     // the chart is not rebuilt (and re-tweened) every frame.
                     child: AnimatedRatio(
-                      key: ValueKey((report.period.range, report.period.start)),
+                      key: ValueKey((
+                        report.period.range,
+                        report.period.start,
+                        focus,
+                      )),
                       value: 1,
                       duration: const Duration(milliseconds: 900),
                       builder: (context, shown) =>
@@ -149,202 +160,500 @@ class _PeriodArrow extends StatelessWidget {
   }
 }
 
-/// Maps chart buckets to FlSpot values. Y axis uses a "nice" interval so
-/// labels stay round. Touch shows a tooltip with the bucket label and amount.
-/// The area under the line is a light accent fill. Dots shrink when there are
-/// many buckets.
-class _SpendingLineChart extends StatelessWidget {
+/// Spending over the period as a smooth area chart.
+///
+/// Only the buckets that have started are drawn, so a running period ends
+/// at today instead of trailing off into empty days. Tap a point to read
+/// it; press and hold, then drag, to scrub along the line with a haptic
+/// tick per point. (A plain horizontal drag still pages between periods.)
+class _SpendingAreaChart extends StatefulWidget {
   final List<_ChartBucket> buckets;
 
-  const _SpendingLineChart({required this.buckets});
+  /// Index of the last bucket to draw.
+  final int lastBucket;
+
+  /// Line and fill color: the accent, or the focused category's color.
+  final Color color;
+
+  const _SpendingAreaChart({
+    required this.buckets,
+    required this.lastBucket,
+    required this.color,
+  });
+
+  @override
+  State<_SpendingAreaChart> createState() => _SpendingAreaChartState();
+}
+
+class _SpendingAreaChartState extends State<_SpendingAreaChart> {
+  /// Space kept for the axis labels around the plot.
+  static const double _axisLeft = 40;
+  static const double _axisBottom = 24;
+  static const double _padTop = 34;
+  static const double _padRight = 10;
+
+  /// The point being read, or null.
+  int? _selected;
+
+  /// Hides the tooltip a few seconds after a tap.
+  Timer? _hide;
+
+  int get _count =>
+      math.min(widget.lastBucket + 1, widget.buckets.length).clamp(1, 1 << 20);
+
+  @override
+  void didUpdateWidget(covariant _SpendingAreaChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.buckets, widget.buckets)) {
+      _hide?.cancel();
+      _selected = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _hide?.cancel();
+    super.dispose();
+  }
+
+  /// The drawn point nearest to [x] (in widget coordinates).
+  int _indexAt(double x, double width) {
+    final plot = width - _axisLeft - _padRight;
+    final count = _count;
+    if (count <= 1 || plot <= 0) return 0;
+    final step = plot / (count - 1);
+    return ((x - _axisLeft) / step).round().clamp(0, count - 1);
+  }
+
+  void _select(double x, double width, {required bool sticky}) {
+    final index = _indexAt(x, width);
+    _hide?.cancel();
+    if (!sticky) {
+      _hide = Timer(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _selected = null);
+      });
+    }
+    if (index == _selected) return;
+    AppHaptics.selection();
+    setState(() => _selected = index);
+  }
+
+  void _release() {
+    _hide?.cancel();
+    _hide = Timer(const Duration(milliseconds: 900), () {
+      if (mounted) setState(() => _selected = null);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppPalette.of(context);
+    final buckets = widget.buckets;
+    final count = _count;
+
     // Scale: y rounded up to a whole number of nice intervals.
-    final spots = [
-      for (var index = 0; index < buckets.length; index++)
-        FlSpot(index.toDouble(), buckets[index].amount),
-    ];
-    final peak = buckets.fold<double>(0, (max, item) {
-      return item.amount > max ? item.amount : max;
-    });
+    var peak = 0.0;
+    for (var i = 0; i < count; i++) {
+      peak = math.max(peak, buckets[i].amount);
+    }
     final maxValue = math.max(peak, 1).toDouble();
     final yInterval = _niceInterval(maxValue);
     final maxY = math
         .max(yInterval, (maxValue / yInterval).ceil() * yInterval)
         .toDouble();
-    final maxX = math.max(1, buckets.length - 1).toDouble();
 
-    return LineChart(
-      LineChartData(
-        minX: 0,
-        maxX: maxX,
-        minY: 0,
-        maxY: maxY,
-        clipData: const FlClipData.none(),
-        borderData: FlBorderData(show: false),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: yInterval,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: colors.textPrimary.withValues(alpha: 0.07),
-            strokeWidth: 1,
-          ),
-        ),
-        // Axis labels: money on the left, bucket labels along the bottom.
-        titlesData: FlTitlesData(
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 38,
-              interval: yInterval,
-              getTitlesWidget: (value, meta) {
-                if (value < 0 || value > maxY) {
-                  return const SizedBox.shrink();
-                }
-                // Skip a label that would crowd the top one.
-                if (value != 0 && (value - maxY).abs() < yInterval / 3) {
-                  return const SizedBox.shrink();
-                }
-                return Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Text(
-                    _axisMoney(value),
-                    maxLines: 1,
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontFamilyFallback: const ['Tajawal'],
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: colors.textSecondary,
-                    ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.biggest;
+        final plot = Rect.fromLTRB(
+          _axisLeft,
+          _padTop,
+          size.width - _padRight,
+          size.height - _axisBottom,
+        );
+        final step = count > 1 ? plot.width / (count - 1) : 0.0;
+        Offset pointAt(int i) => Offset(
+          count > 1 ? plot.left + step * i : plot.center.dx,
+          plot.bottom - (buckets[i].amount / maxY) * plot.height,
+        );
+
+        final selected = _selected != null && _selected! < count
+            ? _selected
+            : null;
+
+        return RawGestureDetector(
+          behavior: HitTestBehavior.opaque,
+          gestures: {
+            TapGestureRecognizer:
+                GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                  TapGestureRecognizer.new,
+                  (recognizer) => recognizer.onTapUp = (details) => _select(
+                    details.localPosition.dx,
+                    size.width,
+                    sticky: false,
                   ),
-                );
-              },
-            ),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 24,
-              interval: 1,
-              getTitlesWidget: (value, meta) {
-                final index = value.round();
-                if ((value - index).abs() > 0.05) {
-                  return const SizedBox.shrink();
-                }
-                if (index < 0 || index >= buckets.length) {
-                  return const SizedBox.shrink();
-                }
-                final text = buckets[index].axisLabel;
-                if (text.isEmpty) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    text,
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontFamilyFallback: const ['Tajawal'],
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: colors.textSecondary,
-                    ),
+                ),
+            // A short hold starts scrubbing, so the period pager keeps
+            // plain horizontal drags.
+            LongPressGestureRecognizer:
+                GestureRecognizerFactoryWithHandlers<
+                  LongPressGestureRecognizer
+                >(
+                  () => LongPressGestureRecognizer(
+                    duration: const Duration(milliseconds: 180),
                   ),
-                );
-              },
-            ),
-          ),
-        ),
-        // Touch: vertical guide, enlarged dot, and a label + amount tooltip.
-        lineTouchData: LineTouchData(
-          enabled: true,
-          handleBuiltInTouches: true,
-          getTouchedSpotIndicator: (bar, indexes) {
-            return indexes
-                .map(
-                  (_) => TouchedSpotIndicatorData(
-                    FlLine(
-                      color: colors.accent.withValues(alpha: 0.35),
-                      strokeWidth: 1,
-                    ),
-                    FlDotData(
-                      getDotPainter: (spot, percent, bar, index) {
-                        return FlDotCirclePainter(
-                          radius: 4.5,
-                          color: colors.accent,
-                          strokeWidth: 0,
-                        );
-                      },
-                    ),
-                  ),
-                )
-                .toList();
+                  (recognizer) {
+                    void scrub(Offset at) =>
+                        _select(at.dx, size.width, sticky: true);
+                    recognizer.onLongPressStart = (details) {
+                      scrub(details.localPosition);
+                    };
+                    recognizer.onLongPressMoveUpdate = (details) {
+                      scrub(details.localPosition);
+                    };
+                    recognizer.onLongPressEnd = (_) => _release();
+                    recognizer.onLongPressCancel = _release;
+                  },
+                ),
           },
-          touchTooltipData: LineTouchTooltipData(
-            fitInsideHorizontally: true,
-            fitInsideVertically: true,
-            tooltipRoundedRadius: 12,
-            tooltipPadding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 6,
-            ),
-            getTooltipColor: (_) => colors.accent,
-            getTooltipItems: (touched) {
-              return touched.map((spot) {
-                final index = spot.x.round();
-                if (index < 0 || index >= buckets.length) return null;
-                return LineTooltipItem(
-                  '${buckets[index].label}\n'
-                  '${formatMoney(spot.y)} $currencyLabel',
-                  TextStyle(
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _AreaChartPainter(
+                    buckets: buckets,
+                    count: count,
+                    plot: plot,
+                    maxY: maxY,
+                    yInterval: yInterval,
+                    selected: selected,
+                    color: widget.color,
+                    glow: colors.glow,
+                    grid: colors.textPrimary.withValues(alpha: 0.07),
+                    label: colors.textSecondary,
+                    surface: colors.surface,
+                  ),
+                ),
+              ),
+              if (selected != null)
+                _ChartTooltip(
+                  anchor: pointAt(selected),
+                  bounds: size,
+                  title: buckets[selected].label,
+                  value:
+                      '${formatMoney(buckets[selected].amount)} $currencyLabel',
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Paints the grid, axis labels, the filled area, the glowing line, the
+/// "now" dot and the scrub marker.
+class _AreaChartPainter extends CustomPainter {
+  final List<_ChartBucket> buckets;
+  final int count;
+  final Rect plot;
+  final double maxY;
+  final double yInterval;
+  final int? selected;
+  final Color color;
+  final Color glow;
+  final Color grid;
+  final Color label;
+  final Color surface;
+
+  const _AreaChartPainter({
+    required this.buckets,
+    required this.count,
+    required this.plot,
+    required this.maxY,
+    required this.yInterval,
+    required this.selected,
+    required this.color,
+    required this.glow,
+    required this.grid,
+    required this.label,
+    required this.surface,
+  });
+
+  Offset _point(int i) {
+    final step = count > 1 ? plot.width / (count - 1) : 0.0;
+    return Offset(
+      count > 1 ? plot.left + step * i : plot.center.dx,
+      plot.bottom - (buckets[i].amount / maxY) * plot.height,
+    );
+  }
+
+  /// A smooth line through the points that never dips below a point or
+  /// above one (monotone cubic), so it cannot swing under zero.
+  Path _line(List<Offset> points) {
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    if (points.length < 3) {
+      for (final p in points.skip(1)) {
+        path.lineTo(p.dx, p.dy);
+      }
+      return path;
+    }
+    final n = points.length;
+    final slopes = List<double>.filled(n - 1, 0);
+    for (var i = 0; i < n - 1; i++) {
+      final dx = points[i + 1].dx - points[i].dx;
+      slopes[i] = dx == 0 ? 0 : (points[i + 1].dy - points[i].dy) / dx;
+    }
+    final tangents = List<double>.filled(n, 0);
+    tangents[0] = slopes[0];
+    tangents[n - 1] = slopes[n - 2];
+    for (var i = 1; i < n - 1; i++) {
+      tangents[i] = slopes[i - 1] * slopes[i] <= 0
+          ? 0
+          : 2 * slopes[i - 1] * slopes[i] / (slopes[i - 1] + slopes[i]);
+    }
+    for (var i = 0; i < n - 1; i++) {
+      final dx = (points[i + 1].dx - points[i].dx) / 3;
+      path.cubicTo(
+        points[i].dx + dx,
+        points[i].dy + tangents[i] * dx,
+        points[i + 1].dx - dx,
+        points[i + 1].dy - tangents[i + 1] * dx,
+        points[i + 1].dx,
+        points[i + 1].dy,
+      );
+    }
+    return path;
+  }
+
+  void _text(
+    Canvas canvas,
+    String text,
+    Offset at, {
+    required Alignment anchor,
+    FontWeight weight = FontWeight.w600,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          fontFamily: 'Outfit',
+          fontFamilyFallback: const ['Tajawal'],
+          fontSize: 10,
+          fontWeight: weight,
+          color: label,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    canvas.save();
+    painter.paint(
+      canvas,
+      Offset(
+        at.dx - painter.width * (anchor.x + 1) / 2,
+        at.dy - painter.height * (anchor.y + 1) / 2,
+      ),
+    );
+    canvas.restore();
+    painter.dispose();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (plot.width <= 0 || plot.height <= 0 || count <= 0) return;
+
+    // Horizontal grid lines with money labels on the left.
+    final gridPaint = Paint()
+      ..color = grid
+      ..strokeWidth = 1;
+    for (var value = 0.0; value <= maxY + 0.001; value += yInterval) {
+      final y = plot.bottom - value / maxY * plot.height;
+      canvas.drawLine(Offset(plot.left, y), Offset(plot.right, y), gridPaint);
+      _text(
+        canvas,
+        _axisMoney(value),
+        Offset(plot.left - 8, y),
+        anchor: Alignment.centerRight,
+      );
+    }
+
+    // Bucket labels along the bottom.
+    for (var i = 0; i < count; i++) {
+      final text = buckets[i].axisLabel;
+      if (text.isEmpty) continue;
+      _text(
+        canvas,
+        text,
+        Offset(_point(i).dx, plot.bottom + 8),
+        anchor: i == 0 && count > 1
+            ? Alignment.topLeft
+            : (i == count - 1 && count > 1
+                  ? Alignment.topRight
+                  : Alignment.topCenter),
+        weight: FontWeight.w700,
+      );
+    }
+
+    final points = [for (var i = 0; i < count; i++) _point(i)];
+    final line = _line(points);
+
+    // Area: the color fading out toward the baseline.
+    final area = Path.from(line)
+      ..lineTo(points.last.dx, plot.bottom)
+      ..lineTo(points.first.dx, plot.bottom)
+      ..close();
+    canvas.drawPath(
+      area,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            color.withValues(alpha: 0.30),
+            color.withValues(alpha: 0.02),
+          ],
+        ).createShader(plot),
+    );
+
+    // Glow under the line, then the line itself shading into teal.
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(
+      line,
+      stroke
+        ..strokeWidth = 6
+        ..color = color.withValues(alpha: 0.28)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+    );
+    canvas.drawPath(
+      line,
+      stroke
+        ..maskFilter = null
+        ..strokeWidth = 2.6
+        ..shader = LinearGradient(
+          colors: [color, Color.lerp(color, glow, 0.55)!],
+        ).createShader(plot),
+    );
+    stroke.shader = null;
+
+    // Where the line stands now.
+    final last = points.last;
+    canvas
+      ..drawCircle(last, 7, Paint()..color = color.withValues(alpha: 0.2))
+      ..drawCircle(last, 4, Paint()..color = surface)
+      ..drawCircle(last, 2.6, Paint()..color = color);
+
+    // Scrub marker: a guide line and a ringed dot on the point being read.
+    final index = selected;
+    if (index != null && index < count) {
+      final at = points[index];
+      canvas
+        ..drawLine(
+          Offset(at.dx, plot.top - 6),
+          Offset(at.dx, plot.bottom),
+          Paint()
+            ..color = color.withValues(alpha: 0.35)
+            ..strokeWidth = 1,
+        )
+        ..drawCircle(at, 9, Paint()..color = color.withValues(alpha: 0.22))
+        ..drawCircle(at, 5.5, Paint()..color = surface)
+        ..drawCircle(at, 3.6, Paint()..color = color);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _AreaChartPainter oldDelegate) =>
+      !identical(oldDelegate.buckets, buckets) ||
+      oldDelegate.count != count ||
+      oldDelegate.plot != plot ||
+      oldDelegate.maxY != maxY ||
+      oldDelegate.selected != selected ||
+      oldDelegate.color != color ||
+      oldDelegate.glow != glow ||
+      oldDelegate.label != label ||
+      oldDelegate.surface != surface;
+}
+
+/// The glass label that floats over the point being read.
+class _ChartTooltip extends StatelessWidget {
+  /// The point it names, in the chart's coordinates.
+  final Offset anchor;
+
+  /// The chart's size; the label stays inside it.
+  final Size bounds;
+  final String title;
+  final String value;
+
+  const _ChartTooltip({
+    required this.anchor,
+    required this.bounds,
+    required this.title,
+    required this.value,
+  });
+
+  static const double _width = 124;
+  static const double _height = 46;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppPalette.of(context);
+    final left = (anchor.dx - _width / 2).clamp(0.0, bounds.width - _width);
+    // Above the point when there is room, otherwise below it.
+    final above = anchor.dy - _height - 14;
+    final top = above >= -30 ? above : anchor.dy + 14;
+
+    return AnimatedPositioned(
+      duration: AppMotion.of(context, AppMotion.instant),
+      curve: AppMotion.soft,
+      left: left,
+      top: top,
+      width: _width,
+      height: _height,
+      child: IgnorePointer(
+        child: LiquidGlass(
+          radius: BorderRadius.circular(16),
+          preset: GlassPreset.frosted.withOpacity(0.6),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
                     fontFamily: 'Outfit',
                     fontFamilyFallback: const ['Tajawal'],
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: colors.surface,
+                    fontSize: 11,
+                    height: 1.2,
+                    color: colors.textSecondary,
                   ),
-                );
-              }).toList();
-            },
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 14,
+                    height: 1.2,
+                    fontWeight: FontWeight.w700,
+                    color: colors.textPrimary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        // The spending line with dots and a light fill under it.
-        lineBarsData: [
-          LineChartBarData(
-            spots: spots,
-            isCurved: false,
-            color: colors.accent,
-            barWidth: 2.4,
-            isStrokeCapRound: true,
-            dotData: FlDotData(
-              show: true,
-              getDotPainter: (spot, percent, bar, index) {
-                return FlDotCirclePainter(
-                  radius: buckets.length > 16 ? 2.4 : 3.4,
-                  color: colors.accent,
-                  strokeWidth: 0,
-                );
-              },
-            ),
-            belowBarData: BarAreaData(
-              show: true,
-              color: colors.accent.withValues(alpha: 0.08),
-            ),
-          ),
-        ],
       ),
-      duration: AppMotion.of(context, AppMotion.medium),
-      curve: AppMotion.soft,
     );
   }
 }

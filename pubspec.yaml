@@ -37,7 +37,6 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   intl: ^0.20.3
-  fl_chart: ^0.68.0
   shared_preferences: ^2.2.3
   local_auth: ^3.0.2
   flutter_secure_storage: ^11.2.0
