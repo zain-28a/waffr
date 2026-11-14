@@ -98,7 +98,15 @@ void main() {
     await _backGesture('startBackGesture');
     await _backGesture('updateBackGestureProgress', 0.9);
     await tester.pump();
+    final sunk = tester.getTopLeft(find.text('title')).dy;
     await _backGesture('commitBackGesture');
+    // It sinks on from where the finger left it; it does not rise again.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(
+      tester.getTopLeft(find.text('title')).dy,
+      greaterThanOrEqualTo(sunk),
+    );
     await tester.pumpAndSettle();
     expect(find.text('title'), findsNothing);
   });
