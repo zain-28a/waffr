@@ -6,7 +6,7 @@ other two files start with `part of 'smart_analysis_screen.dart'`.
 
 | File | What it holds |
 | --- | --- |
-| `smart_analysis_screen.dart` | `openSmartAnalysis(context, scope)` (fade + zoom route), `SmartAnalysisScreen`, `smartSparkHeroTag`. Phases: thinking, writing (typed out), done. |
+| `smart_analysis_screen.dart` | `openSmartAnalysis(context, scope)` (the page grows out of the widget `context` belongs to; pass the tapped button's context), `SmartAnalysisScreen`, `smartSparkHeroTag`. Phases: thinking, writing (typed out), done. |
 | `smart_analysis_cards.dart` | `_InsightCard` (expandable detail and action button), `_HealthGauge` and its painter. |
 | `smart_analysis_thinking.dart` | `_ThinkingView` shimmer placeholders, `_TypedText` and its caret. |
 

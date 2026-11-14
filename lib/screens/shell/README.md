@@ -27,7 +27,7 @@ Background work the shell owns while it is mounted:
   and/or sheet. Smart-reminder notification taps open the smart analysis.
 
 Settings and notifications are pushed from the header. They are not tabs;
-each opens from its own button (`originPageRoute`).
+each slides in from the side like any page.
 The bell's long press mutes notifications. Pages call
 `AppShellScope.selectTabOf(context, AppShellTabs.x)` to switch tabs, which
 does nothing outside the shell (for example, in widget tests). Every

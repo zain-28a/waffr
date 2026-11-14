@@ -7,7 +7,7 @@ refresh the app lock and to return to login after signing out.
 
 | File | Main entry point | What it is |
 | --- | --- | --- |
-| `settings_screen.dart` | `SettingsScreen` | Hub: account card, income, currencies, obligations, dark mode, language, app lock, smart analysis, privacy, help, guest reset. |
+| `settings_screen.dart` | `SettingsScreen` | Hub: account card, income, currencies, obligations, dark mode, card motion and touch haptics switches, language, app lock, smart analysis, privacy, help, guest reset. |
 | `account_screen.dart` | `AccountScreen` | Signed-in account: display name, email, change password, sign out, delete account. |
 | `change_password_screen.dart` | `ChangePasswordScreen` | Current / new / confirm password form (`AuthSession.changePassword`). |
 | `ai_permissions_screen.dart` | `AIPermissionsScreen` | Smart analysis shortcut and the `SmartSettings` switches. |

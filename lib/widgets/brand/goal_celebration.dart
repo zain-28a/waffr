@@ -54,7 +54,7 @@ class _GoalCelebrationOverlayState extends State<GoalCelebrationOverlay>
         Future<void>.delayed(const Duration(milliseconds: 1600), _finish);
         return;
       }
-      AppHaptics.success();
+      AppHaptics.celebrate();
       MascotReactions.instance.play(MascotReaction.happy);
       _controller.forward();
     });

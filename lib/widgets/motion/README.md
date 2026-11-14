@@ -5,8 +5,11 @@
 | `motion.dart` | `Reveal`, `staggered()`, `RollingMoney`, `RollingText`, `AnimatedRatio`, `RevealClip`. |
 | `active_listenable_builder.dart` | `ActiveListenableBuilder`: a `ListenableBuilder` that sleeps while its tab is hidden. |
 | `liquid_vessel.dart` | `LiquidVessel`: progress as a small vessel that fills, with a slow wave on the surface (flat with reduced motion or on a hidden tab). Used for savings goals. |
-| `origin_route.dart` | `originPageRoute(context, builder)` / `OriginPageRoute`: a page that grows out of the tapped widget and folds back on close. Back gestures keep the platform transition, because the platform builder stays mounted underneath. |
-| `pressable.dart` | `Pressable`: spring press feedback (the surface sinks under the finger and bounces back) with a selection haptic. Use it for every custom tappable surface. |
+| `origin_route.dart` | `originPageRoute(context, builder, radius:)` / `OriginPageRoute`: a page that grows out of the tapped widget, the way an app opens from its icon, and shrinks back into it on close. The page below stays in place under a light dusk. A caller that already fills the screen gets the plain slide. |
+| `slide_route.dart` | `SlidePageTransitionsBuilder` (the theme's page transition on Android: the new page slides in from the right, the old one eases aside and dims, and leaving plays it backwards) and `SlideOverTransition`. |
+| `route_back_gesture.dart` | `RouteBackGesture`: scrubs a route's own transition with Android's predictive back gesture (pull, then leave or return). Used by the slide and origin routes and by glass sheets. `invertCurve` maps a wanted position back to an animation value. |
+| `tap_haptics.dart` | `TapHaptics`: wraps the app and plays `AppHaptics.tick()` for every tap that lands on something tappable; drags, long presses and taps on empty space stay silent. |
+| `pressable.dart` | `Pressable`: spring press feedback (the surface sinks under the finger and bounces back). Use it for every custom tappable surface. |
 
 `AppMotion` owns durations, curves and the reduced-motion setting.
 `AppMotion.enabled(context)` also checks the enclosing `TickerMode`: repeating
@@ -26,6 +29,11 @@ effects should sleep when their page is retained outside the visible tab.
 
 The shell supplies one `TickerMode` per cached tab. Keep a stable widget/key
 across data updates rather than recreating entrance animations.
+
+Which route to use: a page reached from the header or from a list of
+settings is a plain `MaterialPageRoute` (it slides); a page opened by a
+button or card inside a screen (a history, the smart analysis) uses
+`originPageRoute` with that widget's context.
 
 Regression coverage: `test/motion_lifecycle_test.dart`,
 `test/active_listenable_builder_test.dart`, and `test/app_shell_motion_test.dart`.

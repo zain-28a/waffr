@@ -60,13 +60,14 @@ class MainActivity : FlutterFragmentActivity() {
      * silent on many phones unless a system setting is on, so the app drives
      * the motor directly and offers its own switch in settings.
      */
+    @Suppress("DEPRECATION")
     private fun playHaptic(kind: String) {
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val found: Vibrator? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             (getSystemService(VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
         } else {
-            @Suppress("DEPRECATION")
             getSystemService(VIBRATOR_SERVICE) as? Vibrator
-        } ?: return
+        }
+        val vibrator = found ?: return
         if (!vibrator.hasVibrator()) return
 
         // Length in milliseconds and strength (1..255) where the phone has
@@ -95,10 +96,7 @@ class MainActivity : FlutterFragmentActivity() {
                 }
                 vibrator.vibrate(VibrationEffect.createOneShot(millis, amplitude))
             }
-            else -> {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(millis)
-            }
+            else -> vibrator.vibrate(millis)
         }
     }
 

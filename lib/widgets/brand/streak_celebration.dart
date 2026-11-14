@@ -142,7 +142,7 @@ class _StreakCelebrationOverlayState extends State<StreakCelebrationOverlay>
   void _onTick() {
     if (_ticked || _roll.value < 0.98) return;
     _ticked = true;
-    HapticFeedback.lightImpact();
+    AppHaptics.celebrate();
   }
 
   void _skip() {
