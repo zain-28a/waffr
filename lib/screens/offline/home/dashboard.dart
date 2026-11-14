@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart' show listEquals, mapEquals;
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/origin_route.dart';
 import 'package:waffr/core/insights/smart/insight_engine.dart';
+import 'package:waffr/core/insights/smart/smart_facts.dart';
 import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
@@ -125,10 +126,31 @@ class _HomeScreenState extends State<HomeScreen>
     _insightTimer = Timer(const Duration(milliseconds: 400), _readInsight);
   }
 
-  /// The headline of the reports analysis, in several wordings: each seed
-  /// words the same reading differently, and the bar turns through them.
-  /// The seeds start from the day, so the set stays the same until
-  /// tomorrow or until the data changes.
+  /// What the analysis bar turns through: the headline of the reports
+  /// analysis in several wordings (each seed words the same reading
+  /// differently), with the titles of its findings in between. The seeds
+  /// start from [day], so the set stays the same until tomorrow or until
+  /// the data changes.
+  static List<String> _insightLines(SmartFacts facts, int day) {
+    final reports = [
+      for (var seed = day; seed < day + 12; seed++)
+        InsightEngine(facts, seed: seed).analyze(InsightScope.reports),
+    ];
+    final headlines = {for (final report in reports) report.headline}.toList();
+    // The closing tip is general advice, not a finding.
+    final findings = [
+      for (final insight in reports.first.insights)
+        if (insight.id != 'tip') insight.title,
+    ];
+    final lines = <String>{};
+    for (var i = 0; i < math.max(headlines.length, findings.length); i++) {
+      if (i < headlines.length) lines.add(headlines[i]);
+      if (i < findings.length) lines.add(findings[i]);
+    }
+    return lines.toList();
+  }
+
+  /// Reads the analysis lines for the bar.
   Future<void> _readInsight() async {
     if (!mounted || _insightLoading || !_insightDirty) return;
     _insightDirty = false;
@@ -139,15 +161,7 @@ class _HomeScreenState extends State<HomeScreen>
       final empty = facts.expenses.isEmpty && facts.incomes.isEmpty;
       final now = facts.now;
       final day = now.year * 400 + now.month * 32 + now.day;
-      final lines = empty
-          ? const <String>[]
-          : <String>{
-              for (var seed = day; seed < day + 8; seed++)
-                InsightEngine(
-                  facts,
-                  seed: seed,
-                ).analyze(InsightScope.reports).headline,
-            }.toList();
+      final lines = empty ? const <String>[] : _insightLines(facts, day);
       if (_insights == null || !listEquals(lines, _insights)) {
         setState(() => _insights = lines);
       }

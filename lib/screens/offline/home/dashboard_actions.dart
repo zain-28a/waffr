@@ -180,11 +180,12 @@ class _QuickAction extends StatelessWidget {
 
 /// The way into the smart analysis, above the spending card: a card like
 /// the others with a lightbulb and one line of what the analysis found.
-/// The line turns every few seconds through several wordings of it. Opens
-/// the full analysis, which grows out of the card.
+/// The line turns every few seconds through several wordings of the
+/// headline and the titles of the findings. Opens the full analysis, which
+/// grows out of the card.
 class _InsightBar extends StatefulWidget {
-  /// Wordings of the analysis headline: null before the first read, empty
-  /// with nothing logged yet.
+  /// Headline wordings and finding titles: null before the first read,
+  /// empty with nothing logged yet.
   final List<String>? lines;
 
   const _InsightBar({required this.lines});
@@ -199,6 +200,8 @@ class _InsightBarState extends State<_InsightBar> {
     'لنبدأ معاً: سجّل مصاريفك لأحلّلها لك.',
     'التحليل جاهز حالما تبدأ بالتسجيل.',
     'سجّل أول مصروف لتظهر لك أول ملاحظة.',
+    'كل مصروف تسجّله يجعل التحليل أدق.',
+    'بانتظار مصاريفك لأبدأ التحليل.',
   ];
 
   /// How long each line stays.
