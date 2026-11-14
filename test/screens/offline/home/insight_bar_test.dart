@@ -1,4 +1,4 @@
-// The home's way into the smart analysis: a bar whose line changes every
+// The home's way into the smart analysis: a card whose line changes every
 // few seconds while the tab is on screen.
 
 import 'package:flutter/material.dart';
@@ -20,9 +20,9 @@ void main() {
     );
     await pumpFor(tester);
 
-    const first = 'افتح التحليل الذكي لمصاريفك';
-    const second = 'اكتشف أين يذهب مالك هذا الشهر';
-    // With nothing logged there is no headline; the invitations start.
+    const first = 'لنبدأ معاً: سجّل مصاريفك لأحلّلها لك.';
+    const second = 'التحليل جاهز حالما تبدأ بالتسجيل.';
+    // With nothing logged there is no headline; the starter lines turn.
     expect(find.text(first), findsOneWidget);
     await pumpFor(tester, const Duration(milliseconds: 4600));
     expect(find.text(second), findsOneWidget);

@@ -178,28 +178,27 @@ class _QuickAction extends StatelessWidget {
   }
 }
 
-/// The way into the smart analysis, above the spending card: a glass bar
-/// with an edge in the smart colors, a line that invites the user in (it
-/// changes every few seconds, and starts with the analysis's own headline
-/// when there is one) and the analysis mark. Opens the full analysis, which
-/// grows out of the bar.
+/// The way into the smart analysis, above the spending card: a card like
+/// the others with a lightbulb and one line of what the analysis found.
+/// The line turns every few seconds through several wordings of it. Opens
+/// the full analysis, which grows out of the card.
 class _InsightBar extends StatefulWidget {
-  /// The headline of the analysis; null before there is anything to read.
-  final String? insight;
+  /// Wordings of the analysis headline: null before the first read, empty
+  /// with nothing logged yet.
+  final List<String>? lines;
 
-  const _InsightBar({required this.insight});
+  const _InsightBar({required this.lines});
 
   @override
   State<_InsightBar> createState() => _InsightBarState();
 }
 
 class _InsightBarState extends State<_InsightBar> {
-  /// Invitations shown in turn after the headline.
-  static const List<String> _invites = [
-    'افتح التحليل الذكي لمصاريفك',
-    'اكتشف أين يذهب مالك هذا الشهر',
-    'اقتراحات لتوفّر أكثر من دخلك',
-    'تعرّف على عاداتك في الصرف',
+  /// Shown while nothing is logged yet.
+  static const List<String> _starters = [
+    'لنبدأ معاً: سجّل مصاريفك لأحلّلها لك.',
+    'التحليل جاهز حالما تبدأ بالتسجيل.',
+    'سجّل أول مصروف لتظهر لك أول ملاحظة.',
   ];
 
   /// How long each line stays.
@@ -208,7 +207,14 @@ class _InsightBarState extends State<_InsightBar> {
   Timer? _timer;
   int _index = 0;
 
-  List<String> get _lines => [?widget.insight, ..._invites];
+  /// Shown for the moment before the analysis is first read.
+  static const List<String> _reading = ['إليك أهم ما لاحظته في صرفك.'];
+
+  List<String> get _lines {
+    final lines = widget.lines;
+    if (lines == null) return _reading;
+    return lines.isEmpty ? _starters : lines;
+  }
 
   @override
   void didChangeDependencies() {
@@ -219,10 +225,8 @@ class _InsightBarState extends State<_InsightBar> {
   @override
   void didUpdateWidget(covariant _InsightBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // A new headline is shown first.
-    if (oldWidget.insight != widget.insight && widget.insight != null) {
-      _index = 0;
-    }
+    // A new reading starts from its first wording.
+    if (!listEquals(oldWidget.lines, widget.lines)) _index = 0;
     _sync();
   }
 
@@ -231,7 +235,7 @@ class _InsightBarState extends State<_InsightBar> {
     final visible = TickerMode.valuesOf(context).enabled;
     if (visible && _timer == null) {
       _timer = Timer.periodic(_hold, (_) {
-        if (mounted) setState(() => _index++);
+        if (mounted && _lines.length > 1) setState(() => _index++);
       });
     } else if (!visible) {
       _timer?.cancel();
@@ -250,116 +254,73 @@ class _InsightBarState extends State<_InsightBar> {
     final palette = AppPalette.of(context);
     final lines = _lines;
     final line = lines[_index % lines.length];
-    final colors = smartGlowColors(context);
-    const radius = BorderRadius.all(Radius.circular(24));
 
     return Semantics(
       button: true,
-      label: 'التحليل الذكي',
-      hint: line,
+      label: 'التحليل الذكي: $line',
       child: Pressable(
         onTap: () => openSmartAnalysis(context, InsightScope.reports),
-        depth: 0.03,
+        depth: 0.025,
         child: ExcludeSemantics(
-          child: DecoratedBox(
-            // A faint glow in the smart colors around the bar.
-            decoration: BoxDecoration(
-              borderRadius: radius,
-              boxShadow: [
-                BoxShadow(
-                  color: colors[2].withValues(alpha: 0.22),
-                  blurRadius: 18,
-                  spreadRadius: -4,
-                  offset: const Offset(-6, 4),
-                ),
-                BoxShadow(
-                  color: colors[1].withValues(alpha: 0.18),
-                  blurRadius: 18,
-                  spreadRadius: -4,
-                  offset: const Offset(6, 4),
-                ),
-              ],
-            ),
-            child: CustomPaint(
-              foregroundPainter: _SmartEdgePainter(colors: colors, radius: 24),
-              child: LiquidGlass(
-                radius: radius,
-                preset: GlassPreset.liquid,
-                shadow: false,
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(18, 14, 14, 14),
-                  child: Row(
-                    children: [
-                      // The line on the start side (the right, in Arabic).
-                      Expanded(
-                        child: AnimatedSwitcher(
-                          duration: AppMotion.of(context, AppMotion.slow),
-                          switchInCurve: AppMotion.enter,
-                          switchOutCurve: AppMotion.exit,
-                          layoutBuilder: (current, previous) => Stack(
-                            alignment: AlignmentDirectional.centerStart,
-                            children: [...previous, ?current],
-                          ),
-                          transitionBuilder: (child, animation) =>
-                              FadeTransition(
-                                opacity: animation,
-                                child: SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: const Offset(0, 0.35),
-                                    end: Offset.zero,
-                                  ).animate(animation),
-                                  child: child,
-                                ),
-                              ),
-                          child: Text(
-                            line,
-                            key: ValueKey(line),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: _text(
-                              14.5,
-                              weight: FontWeight.w600,
-                              color: palette.textPrimary,
-                            ).copyWith(height: 1.35),
-                          ),
-                        ),
+          child: GlassContainer(
+            colorType: GlassColorType.surface,
+            borderRadius: 24,
+            padding: const EdgeInsetsDirectional.fromSTEB(18, 12, 12, 12),
+            child: Row(
+              children: [
+                // The line on the start side (the right, in Arabic).
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: AppMotion.of(context, AppMotion.slow),
+                    switchInCurve: AppMotion.enter,
+                    switchOutCurve: AppMotion.exit,
+                    layoutBuilder: (current, previous) => Stack(
+                      alignment: AlignmentDirectional.centerStart,
+                      children: [...previous, ?current],
+                    ),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.35),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
                       ),
-                      const SizedBox(width: 12),
-                      // The analysis mark on the end side (the left).
-                      const SmartSpark(size: 38),
-                    ],
+                    ),
+                    child: Text(
+                      line,
+                      key: ValueKey(line),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: _text(
+                        14,
+                        weight: FontWeight.w600,
+                        color: palette.textPrimary,
+                      ).copyWith(height: 1.4),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                // The lightbulb on the end side (the left).
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: palette.accent.withValues(alpha: 0.12),
+                  ),
+                  child: Icon(
+                    AppIcons.lightbulb,
+                    size: 21,
+                    color: palette.accent,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
-}
-
-/// The bar's edge: a thin outline that runs through the smart colors.
-class _SmartEdgePainter extends CustomPainter {
-  final List<Color> colors;
-  final double radius;
-
-  const _SmartEdgePainter({required this.colors, required this.radius});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(rect.deflate(0.8), Radius.circular(radius)),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6
-        ..shader = SweepGradient(colors: [...colors, colors.first])
-            .createShader(rect),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _SmartEdgePainter oldDelegate) =>
-      oldDelegate.radius != radius || !listEquals(oldDelegate.colors, colors);
 }

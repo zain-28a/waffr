@@ -44,13 +44,11 @@ import 'package:waffr/screens/offline/settings/sheets/currencies_sheet.dart';
 import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/containers/glass.dart';
-import 'package:waffr/widgets/glass/liquid_glass.dart';
 import 'package:waffr/widgets/glass/tilt.dart';
 import 'package:waffr/widgets/motion/active_listenable_builder.dart';
 import 'package:waffr/widgets/motion/liquid_vessel.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/motion/pressable.dart';
-import 'package:waffr/widgets/smart/smart_glow.dart';
 
 part 'dashboard_actions.dart';
 part 'dashboard_flip.dart';
@@ -86,9 +84,9 @@ class _HomeScreenState extends State<HomeScreen>
     RecurringExpenseStore.instance,
   ]);
 
-  /// One line from the smart analysis; null until the first read, and
+  /// Wordings of the analysis headline; null until the first read, empty
   /// with nothing logged yet.
-  String? _insight;
+  List<String>? _insights;
 
   /// Data changed since the insight was last read.
   bool _insightDirty = true;
@@ -127,8 +125,10 @@ class _HomeScreenState extends State<HomeScreen>
     _insightTimer = Timer(const Duration(milliseconds: 400), _readInsight);
   }
 
-  /// The headline of the reports analysis. The wording is seeded by the
-  /// day, so it stays the same until tomorrow or until the data changes.
+  /// The headline of the reports analysis, in several wordings: each seed
+  /// words the same reading differently, and the bar turns through them.
+  /// The seeds start from the day, so the set stays the same until
+  /// tomorrow or until the data changes.
   Future<void> _readInsight() async {
     if (!mounted || _insightLoading || !_insightDirty) return;
     _insightDirty = false;
@@ -138,13 +138,19 @@ class _HomeScreenState extends State<HomeScreen>
       if (!mounted || _insightDirty) return;
       final empty = facts.expenses.isEmpty && facts.incomes.isEmpty;
       final now = facts.now;
-      final line = empty
-          ? null
-          : InsightEngine(
-              facts,
-              seed: now.year * 400 + now.month * 32 + now.day,
-            ).analyze(InsightScope.reports).headline;
-      if (line != _insight) setState(() => _insight = line);
+      final day = now.year * 400 + now.month * 32 + now.day;
+      final lines = empty
+          ? const <String>[]
+          : <String>{
+              for (var seed = day; seed < day + 8; seed++)
+                InsightEngine(
+                  facts,
+                  seed: seed,
+                ).analyze(InsightScope.reports).headline,
+            }.toList();
+      if (_insights == null || !listEquals(lines, _insights)) {
+        setState(() => _insights = lines);
+      }
     } finally {
       _insightLoading = false;
       if (mounted && _insightDirty) _queueInsight();
@@ -216,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               const SizedBox(height: 20),
               // The way into the smart analysis, then where the money went.
-              _InsightBar(insight: _insight),
+              _InsightBar(lines: _insights),
               const SizedBox(height: 14),
               _SpendingCard(
                 totals: _store.expensesByCategory(),
