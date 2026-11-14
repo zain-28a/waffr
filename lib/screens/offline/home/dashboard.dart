@@ -1,16 +1,20 @@
-// Offline home tab (library root): the balance hero, quick actions, one
-// line from the smart analysis, the spending strip, recent expenses,
-// obligations and the savings goals carousel. Each section opens the
-// screen that holds its full details.
+// Offline home tab (library root): the balance hero, quick actions, the
+// way into the smart analysis, the spending donut, the recent expenses
+// beside one savings goal, and the obligations. Each section opens the screen that
+// holds its full details.
 //
 // The sections live in dashboard_* part files of this library.
 
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
+
+import 'package:flutter/foundation.dart' show listEquals, mapEquals;
 
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/origin_route.dart';
 import 'package:waffr/core/insights/smart/insight_engine.dart';
+import 'package:waffr/core/insights/smart/smart_facts.dart';
 import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
@@ -37,15 +41,18 @@ import 'package:waffr/screens/offline/report/reportscreen.dart';
 import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/manual_save_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
+import 'package:waffr/screens/offline/settings/sheets/currencies_sheet.dart';
 import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/glass/tilt.dart';
 import 'package:waffr/widgets/motion/active_listenable_builder.dart';
+import 'package:waffr/widgets/motion/liquid_vessel.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/motion/pressable.dart';
 
 part 'dashboard_actions.dart';
+part 'dashboard_flip.dart';
 part 'dashboard_goals.dart';
 part 'dashboard_hero.dart';
 part 'dashboard_recent.dart';
@@ -78,9 +85,9 @@ class _HomeScreenState extends State<HomeScreen>
     RecurringExpenseStore.instance,
   ]);
 
-  /// One line from the smart analysis; null until the first read, and
+  /// Wordings of the analysis headline; null until the first read, empty
   /// with nothing logged yet.
-  String? _insight;
+  List<String>? _insights;
 
   /// Data changed since the insight was last read.
   bool _insightDirty = true;
@@ -88,6 +95,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   /// Folds a burst of store notifications into one read.
   Timer? _insightTimer;
+
+  /// The savings goal on the goal card; wraps around the active goals.
+  int _goalIndex = 0;
 
   @override
   bool get wantKeepAlive => true;
@@ -116,8 +126,31 @@ class _HomeScreenState extends State<HomeScreen>
     _insightTimer = Timer(const Duration(milliseconds: 400), _readInsight);
   }
 
-  /// The headline of the reports analysis. The wording is seeded by the
-  /// day, so it stays the same until tomorrow or until the data changes.
+  /// What the analysis bar turns through: the headline of the reports
+  /// analysis in several wordings (each seed words the same reading
+  /// differently), with the titles of its findings in between. The seeds
+  /// start from [day], so the set stays the same until tomorrow or until
+  /// the data changes.
+  static List<String> _insightLines(SmartFacts facts, int day) {
+    final reports = [
+      for (var seed = day; seed < day + 12; seed++)
+        InsightEngine(facts, seed: seed).analyze(InsightScope.reports),
+    ];
+    final headlines = {for (final report in reports) report.headline}.toList();
+    // The closing tip is general advice, not a finding.
+    final findings = [
+      for (final insight in reports.first.insights)
+        if (insight.id != 'tip') insight.title,
+    ];
+    final lines = <String>{};
+    for (var i = 0; i < math.max(headlines.length, findings.length); i++) {
+      if (i < headlines.length) lines.add(headlines[i]);
+      if (i < findings.length) lines.add(findings[i]);
+    }
+    return lines.toList();
+  }
+
+  /// Reads the analysis lines for the bar.
   Future<void> _readInsight() async {
     if (!mounted || _insightLoading || !_insightDirty) return;
     _insightDirty = false;
@@ -127,13 +160,11 @@ class _HomeScreenState extends State<HomeScreen>
       if (!mounted || _insightDirty) return;
       final empty = facts.expenses.isEmpty && facts.incomes.isEmpty;
       final now = facts.now;
-      final line = empty
-          ? null
-          : InsightEngine(
-              facts,
-              seed: now.year * 400 + now.month * 32 + now.day,
-            ).analyze(InsightScope.reports).headline;
-      if (line != _insight) setState(() => _insight = line);
+      final day = now.year * 400 + now.month * 32 + now.day;
+      final lines = empty ? const <String>[] : _insightLines(facts, day);
+      if (_insights == null || !listEquals(lines, _insights)) {
+        setState(() => _insights = lines);
+      }
     } finally {
       _insightLoading = false;
       if (mounted && _insightDirty) _queueInsight();
@@ -178,6 +209,7 @@ class _HomeScreenState extends State<HomeScreen>
             .where((item) => obligationNeedsAttention(item, now: now))
             .length;
         final hasObligations = obligations.any((item) => item.enabled);
+        final goals = _store.activeGoals;
 
         return SingleChildScrollView(
           clipBehavior: Clip.none,
@@ -203,40 +235,32 @@ class _HomeScreenState extends State<HomeScreen>
                 onObligations: () => showObligationsSheet(context),
               ),
               const SizedBox(height: 20),
-              // Only once the analysis has something to say; an empty
-              // strip would just be a button with no reason to press it.
-              // The slot is always in the list and opens smoothly, so the
-              // cards below keep their state and do not jump.
-              AnimatedSize(
-                duration: AppMotion.sizeOf(context, AppMotion.slow),
-                curve: AppMotion.enter,
-                alignment: Alignment.topCenter,
-                child: _insight == null
-                    ? const SizedBox(width: double.infinity)
-                    : Padding(
-                        padding: const EdgeInsets.only(bottom: kCardGap),
-                        // The analysis opens out of the strip itself.
-                        child: Builder(
-                          builder: (strip) => _InsightStrip(
-                            text: _insight!,
-                            onTap: () =>
-                                openSmartAnalysis(strip, InsightScope.reports),
-                          ),
-                        ),
-                      ),
-              ),
-              // expensesByCategory is rolled up in memory from the store.
-              _SpendingStrip(
+              // The way into the smart analysis, then where the money went.
+              _InsightBar(lines: _insights),
+              const SizedBox(height: 14),
+              _SpendingCard(
                 totals: _store.expensesByCategory(),
                 totalExpense: _store.totalExpense,
                 onTap: () =>
                     AppShellScope.selectTabOf(context, AppShellTabs.report),
               ),
               const SizedBox(height: kCardGap),
-              _RecentCard(
-                key: _recentCard,
-                expenses: _store.expenses,
-                onAll: _openExpenseLog,
+              // The latest expenses, with one savings goal beside them.
+              _CardPair(
+                wide: _RecentCard(
+                  key: _recentCard,
+                  expenses: _store.expenses,
+                  onAll: _openExpenseLog,
+                ),
+                narrow: _GoalTile(
+                  goals: goals,
+                  index: _goalIndex,
+                  store: _store,
+                  onIndex: (index) => setState(() => _goalIndex = index),
+                  onOpen: () =>
+                      AppShellScope.selectTabOf(context, AppShellTabs.savings),
+                  onCreate: () => showCreateGoalSheet(context),
+                ),
               ),
               if (hasObligations) ...[
                 const SizedBox(height: kCardGap),
@@ -245,14 +269,6 @@ class _HomeScreenState extends State<HomeScreen>
                   onTap: () => showObligationsSheet(context),
                 ),
               ],
-              const SizedBox(height: kCardGap),
-              _GoalsCarousel(
-                goals: _store.activeGoals,
-                store: _store,
-                onOpen: () =>
-                    AppShellScope.selectTabOf(context, AppShellTabs.savings),
-                onCreate: () => showCreateGoalSheet(context),
-              ),
             ]),
           ),
         );

@@ -1,13 +1,17 @@
 // Liquid glass: the one glass material for floating chrome (header, bottom
-// bar, selectors, sheets). It bends what is behind it near its rounded edge,
-// lightly blurs and saturates the middle, and catches light along its rim.
+// bar, selectors, sheets). It bends what is behind it along its rounded
+// edge, blurs and saturates it, and catches light along its rim.
 //
-// Layers, back to front: backdrop blur and saturation, edge refraction
-// (shaders/liquid_glass.frag, Impeller only), a thin surface tint, rim light
-// and sheen, then the child, which is never distorted.
+// Layers, back to front: the lens (shaders/liquid_glass.frag, Impeller
+// only), which displaces the backdrop in a band along the outline; blur and
+// saturation of the bent backdrop; a thin surface tint; rim light and
+// sheen; then the child, which is never distorted.
 //
 // Where the shader filter is unsupported (non-Impeller renderers, web) the
 // same widget still draws blur, tint and light, so glass never disappears.
+// How visible the bend is depends on the surface: clear under light blur
+// and a thin tint (bars, pills), faint under heavy frost and an almost
+// opaque tint (sheets).
 
 import 'dart:ui' as ui;
 
@@ -24,10 +28,13 @@ class GlassPreset {
   /// Backdrop blur sigma.
   final double blur;
 
-  /// Largest sideways shift at the edge.
+  /// How far the backdrop is displaced at the outline: the strength of the
+  /// bend. Up to about two thirds of [thickness] reads as thick glass; more
+  /// folds the backdrop over itself at the rim.
   final double refraction;
 
-  /// Bezel width: how far in from the edge the curve reaches.
+  /// Depth of the lens: how far in from the outline the bend reaches before
+  /// the glass is flat. Capped at half the shorter side.
   final double thickness;
 
   /// Alpha of the surface tint.
@@ -39,9 +46,6 @@ class GlassPreset {
   /// Strength of rim light and sheen, 0..1.
   final double specular;
 
-  /// Red/blue split as a share of the refraction.
-  final double chroma;
-
   /// A preset.
   const GlassPreset({
     required this.blur,
@@ -50,40 +54,36 @@ class GlassPreset {
     required this.opacity,
     required this.saturation,
     required this.specular,
-    required this.chroma,
   });
 
   /// Clarity first: almost no blur, a crisp lens edge.
   static const crystal = GlassPreset(
     blur: 1.5,
-    refraction: 26,
-    thickness: 14,
+    refraction: 18,
+    thickness: 30,
     opacity: 0.04,
     saturation: 1.12,
     specular: 0.6,
-    chroma: 0.035,
   );
 
   /// The signature look: floating bars and pills.
   static const liquid = GlassPreset(
     blur: 4,
-    refraction: 30,
-    thickness: 19,
+    refraction: 20,
+    thickness: 32,
     opacity: 0.14,
     saturation: 1.4,
     specular: 0.85,
-    chroma: 0.07,
   );
 
   /// Readability first: sheets and anything with body text on it.
   static const frosted = GlassPreset(
     blur: 22,
-    refraction: 20,
-    thickness: 14,
+    refraction: 26,
+    thickness: 38,
     opacity: 0.72,
     saturation: 1.5,
     specular: 0.5,
-    chroma: 0.02,
   );
 
   /// A copy with a different surface [opacity].
@@ -94,7 +94,6 @@ class GlassPreset {
     opacity: opacity,
     saturation: saturation,
     specular: specular,
-    chroma: chroma,
   );
 }
 
@@ -516,11 +515,13 @@ class _RenderGlassLens extends RenderProxyBox {
       ..setFloat(5, optical.height * dpr)
       ..setFloat(6, radius * dpr)
       ..setFloat(7, preset.thickness * dpr)
-      ..setFloat(8, preset.refraction * dpr * strength)
-      ..setFloat(9, preset.chroma);
+      ..setFloat(8, preset.refraction * dpr * strength);
+    // The lens bends the sharp backdrop first and the blur softens the
+    // result. The other way round the lens would stretch the blur's
+    // low-resolution image, which shows as steps along the rim.
     filter = ui.ImageFilter.compose(
-      outer: ui.ImageFilter.shader(shader),
-      inner: filter,
+      outer: filter,
+      inner: ui.ImageFilter.shader(shader),
     );
     return filter;
   }

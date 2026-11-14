@@ -34,18 +34,20 @@ class _RecentCard extends StatelessWidget {
     return _SectionCard(
       title: 'آخر المصروفات',
       action: 'عرض الكل',
+      compact: true,
       onTap: onAll,
       child: recent.isEmpty
           ? const _EmptyState(
               icon: AppIcons.receipt,
               message: 'لا يوجد مصروف مسجّل بعد',
+              compact: true,
             )
           : Column(
               children: [
                 for (final (index, expense) in recent.indexed) ...[
                   if (index > 0)
                     Padding(
-                      padding: const EdgeInsetsDirectional.only(start: 56),
+                      padding: const EdgeInsetsDirectional.only(start: 46),
                       child: Divider(height: 1, thickness: 1, color: divider),
                     ),
                   _ExpenseRow(expense: expense, now: now),
@@ -91,11 +93,11 @@ class _ExpenseRow extends StatelessWidget {
     bool recurring,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(
         children: [
-          _CategoryMark(icon: category.icon, color: color),
-          const SizedBox(width: 12),
+          _CategoryMark(icon: category.icon, color: color, size: 36),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,7 +107,7 @@ class _ExpenseRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: _text(
-                    14.5,
+                    13.5,
                     weight: FontWeight.w600,
                     color: palette.textPrimary,
                   ),
@@ -127,7 +129,7 @@ class _ExpenseRow extends StatelessWidget {
                         '${_dayLabel(expense.dateTime, now)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: _text(12, color: palette.textSecondary),
+                        style: _text(11, color: palette.textSecondary),
                       ),
                     ),
                   ],
@@ -135,12 +137,13 @@ class _ExpenseRow extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           _Amount(
             amount: expense.amount,
             symbol: currencyLabel,
             color: palette.textPrimary,
             unitColor: palette.textSecondary,
+            size: 14,
           ),
         ],
       ),
@@ -153,18 +156,25 @@ class _CategoryMark extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const _CategoryMark({required this.icon, required this.color});
+  /// Diameter.
+  final double size;
+
+  const _CategoryMark({
+    required this.icon,
+    required this.color,
+    this.size = 44,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 44,
-      height: 44,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, size: 21, color: color),
+      child: Icon(icon, size: size * 0.48, color: color),
     );
   }
 }
@@ -176,11 +186,15 @@ class _Amount extends StatelessWidget {
   final Color color;
   final Color unitColor;
 
+  /// Size of the number; the currency is a little smaller.
+  final double size;
+
   const _Amount({
     required this.amount,
     required this.symbol,
     required this.color,
     required this.unitColor,
+    this.size = 15.5,
   });
 
   @override
@@ -191,7 +205,7 @@ class _Amount extends StatelessWidget {
           TextSpan(
             text: formatMoney(amount),
             style: _text(
-              15.5,
+              size,
               weight: FontWeight.w700,
               color: color,
               tabular: true,
@@ -199,7 +213,7 @@ class _Amount extends StatelessWidget {
           ),
           TextSpan(
             text: ' $symbol',
-            style: _text(11.5, color: unitColor),
+            style: _text(size - 4, color: unitColor),
           ),
         ],
       ),

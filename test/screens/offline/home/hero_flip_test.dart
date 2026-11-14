@@ -1,9 +1,13 @@
-// The balance card's currency flip: the card leans with a vertical drag,
-// turns over the way it was swiped, and lies flat again on a short drag.
+// The home flip cards: the balance card leans with a vertical drag, turns
+// over the way it was swiped, and lies flat again on a short drag; with one
+// currency it makes a half turn and offers to add one. The goal card turns
+// over to the next goal, or offers a new one when there is no other.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:waffr/data/models/savings_goal.dart';
 import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/screens/offline/home/dashboard.dart';
 
 import '../../../helpers/store_harness.dart';
@@ -31,12 +35,25 @@ double _turn(WidgetTester tester) {
 }
 
 void main() {
-  Future<void> open(WidgetTester tester, {bool reduced = false}) async {
+  Future<void> open(
+    WidgetTester tester, {
+    bool reduced = false,
+    bool second = true,
+    int goals = 0,
+  }) async {
     usePhoneView(tester);
     mockPlatformPlugins();
     await tester.runAsync(() async {
       await setUpStores();
-      await CurrencyStore.instance.addCurrency('USD');
+      if (second) await CurrencyStore.instance.addCurrency('USD');
+      for (var goal = 0; goal < goals; goal++) {
+        await TransactionStore.instance.createGoal(
+          name: 'goal $goal',
+          targetAmount: 900,
+          duration: GoalDurationPreset.month,
+          allocatePercent: 5,
+        );
+      }
     });
     await tester.pumpWidget(
       wrapInApp(const HomeScreen(), reduceMotion: reduced),
@@ -93,7 +110,7 @@ void main() {
       expect(_turn(tester) * sign, greaterThan(0));
 
       // Past edge-on the new face swings in from the other side.
-      await tester.pump(const Duration(milliseconds: 330));
+      await tester.pump(const Duration(milliseconds: 220));
       expect(_turn(tester) * sign, lessThan(0));
 
       await pumpFor(tester, const Duration(seconds: 1));
@@ -112,6 +129,71 @@ void main() {
     await pumpFor(tester, const Duration(milliseconds: 300));
     expect(CurrencyStore.instance.activeCode, 'USD');
     expect(_turn(tester), 0);
+    await unmountApp(tester);
+  });
+
+  testWidgets('with one currency a swipe offers to add another', (
+    tester,
+  ) async {
+    await open(tester, second: false);
+    await tester.fling(card(), const Offset(0, -300), 900);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+    // Half way over: the card leans toward edge-on.
+    expect(_turn(tester), lessThan(0));
+    await pumpFor(tester, const Duration(seconds: 1));
+    expect(find.text('إضافة عملة'), findsOneWidget);
+    expect(_turn(tester), 0);
+    expect(CurrencyStore.instance.activeCode, 'SYP');
+    await unmountApp(tester);
+  });
+
+  Finder goalCard() => find.text('هدف التوفير').first;
+
+  testWidgets('a swipe on the goal card turns to the next goal', (
+    tester,
+  ) async {
+    await open(tester, goals: 2);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    final first = TransactionStore.instance.activeGoals.first.name;
+    final second = TransactionStore.instance.activeGoals.last.name;
+    expect(find.text(first), findsOneWidget);
+    expect(find.text(second), findsNothing);
+
+    await tester.flingFrom(
+      tester.getCenter(goalCard()) + const Offset(0, 100),
+      const Offset(0, -200),
+      900,
+    );
+    await pumpFor(tester, const Duration(seconds: 1));
+    expect(find.text(second), findsOneWidget);
+    expect(find.text(first), findsNothing);
+
+    // And back down to the first.
+    await tester.flingFrom(
+      tester.getCenter(goalCard()) + const Offset(0, 100),
+      const Offset(0, 200),
+      900,
+    );
+    await pumpFor(tester, const Duration(seconds: 1));
+    expect(find.text(first), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await unmountApp(tester);
+  });
+
+  testWidgets('with one goal a swipe offers a new goal', (tester) async {
+    await open(tester, goals: 1);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+    await pumpFor(tester, const Duration(milliseconds: 600));
+    await tester.flingFrom(
+      tester.getCenter(goalCard()) + const Offset(0, 100),
+      const Offset(0, -200),
+      900,
+    );
+    await pumpFor(tester, const Duration(seconds: 1));
+    expect(find.text('إنشاء هدف'), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await unmountApp(tester);
   });
 }

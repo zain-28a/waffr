@@ -31,19 +31,19 @@ class _SectionCard extends StatelessWidget {
   /// A link-style hint at the end of the title row ("show all").
   final String? action;
 
-  /// A figure at the end of the title row, with its small caption.
-  final String? trailing;
-  final String? trailingCaption;
   final Widget child;
   final VoidCallback? onTap;
+
+  /// A narrower card that shares its row with another: a little less
+  /// padding and a smaller title.
+  final bool compact;
 
   const _SectionCard({
     required this.title,
     required this.child,
     this.action,
-    this.trailing,
-    this.trailingCaption,
     this.onTap,
+    this.compact = false,
   });
 
   @override
@@ -53,7 +53,9 @@ class _SectionCard extends StatelessWidget {
     final card = GlassContainer(
       colorType: GlassColorType.surface,
       borderRadius: 28,
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
+      padding: compact
+          ? const EdgeInsets.fromLTRB(15, 15, 15, 9)
+          : const EdgeInsets.fromLTRB(18, 16, 18, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -65,37 +67,16 @@ class _SectionCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: _text(
-                    16.5,
+                    compact ? 15.5 : 16.5,
                     weight: FontWeight.w700,
                     color: palette.textPrimary,
                   ),
                 ),
               ),
-              if (trailing != null)
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: trailing,
-                        style: _text(
-                          15.5,
-                          weight: FontWeight.w700,
-                          color: palette.accent,
-                          tabular: true,
-                        ),
-                      ),
-                      if (trailingCaption != null)
-                        TextSpan(
-                          text: ' $trailingCaption',
-                          style: _text(11.5, color: palette.textSecondary),
-                        ),
-                    ],
-                  ),
-                ),
               if (action != null) _HeaderLink(label: action!),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: compact ? 8 : 10),
           child,
           const SizedBox(height: 6),
         ],
@@ -110,18 +91,40 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-/// "Show all" at the end of a section header. Tappable on its own when
-/// [onTap] is set; otherwise the card around it takes the tap.
+/// Two cards side by side, the same height: the [wide] one on the start
+/// side (the right, in Arabic) takes two thirds of the row.
+class _CardPair extends StatelessWidget {
+  final Widget wide;
+  final Widget narrow;
+
+  const _CardPair({required this.wide, required this.narrow});
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(flex: 2, child: wide),
+          const SizedBox(width: kCardGap),
+          Expanded(child: narrow),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Show all" at the end of a section header; the card around it takes
+/// the tap.
 class _HeaderLink extends StatelessWidget {
   final String label;
-  final VoidCallback? onTap;
 
-  const _HeaderLink({required this.label, this.onTap});
+  const _HeaderLink({required this.label});
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final link = Padding(
+    return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -135,8 +138,6 @@ class _HeaderLink extends StatelessWidget {
         ],
       ),
     );
-    if (onTap == null) return link;
-    return Pressable(onTap: onTap, depth: 0.06, child: link);
   }
 }
 
@@ -145,7 +146,14 @@ class _EmptyState extends StatelessWidget {
   final IconData icon;
   final String message;
 
-  const _EmptyState({required this.icon, required this.message});
+  /// Smaller mark and text, for a card that shares its row.
+  final bool compact;
+
+  const _EmptyState({
+    required this.icon,
+    required this.message,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -155,19 +163,19 @@ class _EmptyState extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: compact ? 38 : 44,
+            height: compact ? 38 : 44,
             decoration: BoxDecoration(
               color: palette.accent.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 21, color: palette.accent),
+            child: Icon(icon, size: compact ? 18 : 21, color: palette.accent),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: compact ? 10 : 12),
           Expanded(
             child: Text(
               message,
-              style: _text(13.5, color: palette.textSecondary),
+              style: _text(compact ? 12.5 : 13.5, color: palette.textSecondary),
             ),
           ),
         ],

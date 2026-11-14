@@ -55,7 +55,16 @@ void main() {
   test('reports without expenses invite logging', () {
     final line = _summary(buildFacts(now: _now))
         .headline(InsightScope.reports, const [], null);
-    expect(line, anyOf(startsWith('لنبدأ معاً'), startsWith('التحليل جاهز')));
+    expect(
+      line,
+      anyOf(
+        startsWith('لنبدأ معاً'),
+        startsWith('التحليل جاهز'),
+        startsWith('سجّل أول مصروف'),
+        startsWith('كل مصروف تسجّله'),
+        startsWith('بانتظار مصاريفك'),
+      ),
+    );
   });
 
   test('warning and positive counts choose the headline family', () {
@@ -68,6 +77,10 @@ void main() {
       'لاحظت أموراً تستحق التوقف عندها.',
       'وضعك جيد، لكن انتبه لهذه النقاط.',
       'إليك ما يحتاج إلى متابعة أدق.',
+      'عدة أمور تستحق نظرة أقرب.',
+      'بعض المؤشرات تطلب انتباهك.',
+      'راجع هذه النقاط لتضبط صرفك.',
+      'هناك ما يمكن تحسينه، وإليك التفاصيل.',
     ];
     for (var seed = 0; seed < 8; seed++) {
       expect(

@@ -178,68 +178,146 @@ class _QuickAction extends StatelessWidget {
   }
 }
 
-/// One line from the smart analysis; opens the full report.
-class _InsightStrip extends StatelessWidget {
-  final String text;
-  final VoidCallback onTap;
+/// The way into the smart analysis, above the spending card: a card like
+/// the others with a lightbulb and one line of what the analysis found.
+/// The line turns every few seconds through several wordings of the
+/// headline and the titles of the findings. Opens the full analysis, which
+/// grows out of the card.
+class _InsightBar extends StatefulWidget {
+  /// Headline wordings and finding titles: null before the first read,
+  /// empty with nothing logged yet.
+  final List<String>? lines;
 
-  const _InsightStrip({required this.text, required this.onTap});
+  const _InsightBar({required this.lines});
+
+  @override
+  State<_InsightBar> createState() => _InsightBarState();
+}
+
+class _InsightBarState extends State<_InsightBar> {
+  /// Shown while nothing is logged yet.
+  static const List<String> _starters = [
+    'لنبدأ معاً: سجّل مصاريفك لأحلّلها لك.',
+    'التحليل جاهز حالما تبدأ بالتسجيل.',
+    'سجّل أول مصروف لتظهر لك أول ملاحظة.',
+    'كل مصروف تسجّله يجعل التحليل أدق.',
+    'بانتظار مصاريفك لأبدأ التحليل.',
+  ];
+
+  /// How long each line stays.
+  static const Duration _hold = Duration(milliseconds: 4200);
+
+  Timer? _timer;
+  int _index = 0;
+
+  /// Shown for the moment before the analysis is first read.
+  static const List<String> _reading = ['إليك أهم ما لاحظته في صرفك.'];
+
+  List<String> get _lines {
+    final lines = widget.lines;
+    if (lines == null) return _reading;
+    return lines.isEmpty ? _starters : lines;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(covariant _InsightBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A new reading starts from its first wording.
+    if (!listEquals(oldWidget.lines, widget.lines)) _index = 0;
+    _sync();
+  }
+
+  /// Turns the lines only while the tab is on screen.
+  void _sync() {
+    final visible = TickerMode.valuesOf(context).enabled;
+    if (visible && _timer == null) {
+      _timer = Timer.periodic(_hold, (_) {
+        if (mounted && _lines.length > 1) setState(() => _index++);
+      });
+    } else if (!visible) {
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final lines = _lines;
+    final line = lines[_index % lines.length];
+
     return Semantics(
       button: true,
-      label: 'التحليل الذكي: $text',
+      label: 'التحليل الذكي: $line',
       child: Pressable(
-        onTap: onTap,
+        onTap: () => openSmartAnalysis(context, InsightScope.reports),
         depth: 0.025,
         child: ExcludeSemantics(
           child: GlassContainer(
             colorType: GlassColorType.surface,
-            borderRadius: 22,
-            padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 14, 12),
+            borderRadius: 24,
+            padding: const EdgeInsetsDirectional.fromSTEB(18, 12, 12, 12),
             child: Row(
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: palette.accent.withValues(alpha: 0.1),
-                  ),
-                  child: Icon(
-                    AppIcons.lightbulb,
-                    size: 20,
-                    color: palette.accent,
-                  ),
-                ),
-                const SizedBox(width: 12),
+                // The line on the start side (the right, in Arabic).
                 Expanded(
                   child: AnimatedSwitcher(
-                    duration: AppMotion.of(context, AppMotion.medium),
+                    duration: AppMotion.of(context, AppMotion.slow),
+                    switchInCurve: AppMotion.enter,
+                    switchOutCurve: AppMotion.exit,
                     layoutBuilder: (current, previous) => Stack(
                       alignment: AlignmentDirectional.centerStart,
                       children: [...previous, ?current],
                     ),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.35),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    ),
                     child: Text(
-                      text,
-                      key: ValueKey(text),
+                      line,
+                      key: ValueKey(line),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: _text(
-                        13.5,
+                        14,
                         weight: FontWeight.w600,
                         color: palette.textPrimary,
-                      ).copyWith(height: 1.45),
+                      ).copyWith(height: 1.4),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Icon(
-                  AppIcons.chevronForward,
-                  size: 18,
-                  color: palette.textSecondary,
+                const SizedBox(width: 12),
+                // The lightbulb on the end side (the left).
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: palette.accent.withValues(alpha: 0.12),
+                  ),
+                  child: Icon(
+                    AppIcons.lightbulb,
+                    size: 21,
+                    color: palette.accent,
+                  ),
                 ),
               ],
             ),

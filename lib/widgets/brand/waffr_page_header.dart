@@ -166,22 +166,20 @@ class _HeaderChrome extends StatelessWidget {
   /// icons must stay readable over anything that scrolls beneath.
   static const GlassPreset _resting = GlassPreset(
     blur: 12,
-    refraction: 18,
-    thickness: 14,
+    refraction: 34,
+    thickness: 48,
     opacity: 0.26,
     saturation: 1.4,
     specular: 0.8,
-    chroma: 0.05,
   );
 
   static const GlassPreset _raised = GlassPreset(
     blur: 14,
-    refraction: 18,
-    thickness: 14,
+    refraction: 34,
+    thickness: 48,
     opacity: 0.4,
     saturation: 1.4,
     specular: 0.8,
-    chroma: 0.05,
   );
 
   @override
