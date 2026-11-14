@@ -2,9 +2,11 @@
 // Widgets use these names instead of raw `Curves` and `Duration`s, so the
 // feel of the app is tuned in one place.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 
 /// Duration and curve tokens, plus reduced-motion helpers.
 ///
@@ -144,17 +146,84 @@ extension AppMotionPaging on PageController {
 }
 
 /// Haptic cues, named by intent so screens don't pick raw feedback types.
+///
+/// On Android the cues drive the vibrator through the app's own channel:
+/// the platform's view haptics stay silent on many phones unless a system
+/// setting is on. Elsewhere they use the platform's feedback. The user can
+/// turn them off in settings ([enabled]).
 class AppHaptics {
   AppHaptics._();
 
-  /// Moving between options: tabs, segments, pickers.
-  static void selection() => HapticFeedback.selectionClick();
+  static const MethodChannel _channel = MethodChannel('waffr/haptics');
+  static const String _prefKey = 'haptics_enabled';
+
+  /// Whether cues play at all; mirrors the stored setting.
+  static final ValueNotifier<bool> enabled = ValueNotifier<bool>(true);
+
+  static bool _loaded = false;
+
+  /// False once the channel turned out to be missing (tests, desktop).
+  static bool _native = true;
+
+  /// When the last cue played, so a tap that also triggers a named cue
+  /// does not buzz twice.
+  static DateTime _last = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// Reads the stored setting once.
+  static Future<void> ensureLoaded() async {
+    if (_loaded) return;
+    _loaded = true;
+    final prefs = await AppPrefs.instance;
+    enabled.value = prefs.getBool(_prefKey) ?? true;
+  }
+
+  /// Turns the cues on or off and remembers it.
+  static Future<void> setEnabled(bool value) async {
+    _loaded = true;
+    enabled.value = value;
+    final prefs = await AppPrefs.instance;
+    await prefs.setBool(_prefKey, value);
+    if (value) selection();
+  }
+
+  /// The lightest cue: a plain tap, a key, a step while scrubbing. Skipped
+  /// when another cue has only just played.
+  static void tick() =>
+      _play('tick', HapticFeedback.selectionClick, light: true);
+
+  /// Moving between options: tabs, segments, pickers, switches.
+  static void selection() =>
+      _play('tick', HapticFeedback.selectionClick, light: true);
 
   /// A save or other completed action.
-  static void success() => HapticFeedback.lightImpact();
+  static void success() => _play('click', HapticFeedback.lightImpact);
 
   /// A blocked action or a destructive one.
-  static void warning() => HapticFeedback.mediumImpact();
+  static void warning() => _play('heavy', HapticFeedback.mediumImpact);
+
+  /// A moment worth marking: a goal reached, a streak kept.
+  static void celebrate() => _play('double', HapticFeedback.heavyImpact);
+
+  static void _play(
+    String kind,
+    Future<void> Function() fallback, {
+    bool light = false,
+  }) {
+    if (!enabled.value) return;
+    final now = DateTime.now();
+    if (light && now.difference(_last).inMilliseconds.abs() < 45) return;
+    _last = now;
+    final android =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android && _native;
+    if (!android) {
+      fallback();
+      return;
+    }
+    _channel.invokeMethod<void>('play', kind).catchError((Object _) {
+      _native = false;
+      fallback();
+    });
+  }
 }
 
 /// Wraps a page transition so reduced motion shows the new page in place.

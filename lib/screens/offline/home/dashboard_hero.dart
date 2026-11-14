@@ -1,13 +1,14 @@
 // Home balance hero (part of dashboard.dart): the balance on a dimensional
 // card. The card leans toward a finger and with the phone's motion, its
-// lights shift with the lean, and it flips over when the currency changes.
+// lights shift with the lean, and it turns over in the direction of the
+// swipe when the currency changes.
 
 part of 'dashboard.dart';
 
 /// Current balance, how much of the period's money is left, and spend vs
-/// max. A vertical swipe cycles currency when more than one is enabled, and
-/// the whole card flips over to the next currency. Corner chips open the
-/// income history and the shopping list.
+/// max. A vertical swipe cycles currency when more than one is enabled: the
+/// card leans with the finger and turns over the way it was swiped. Corner
+/// chips open the income history and the shopping list.
 class _BalanceHero extends StatefulWidget {
   // Values for the active currency, taken from TransactionStore.
   final double balance;
@@ -16,10 +17,9 @@ class _BalanceHero extends StatefulWidget {
   final double ratio;
   // Corner chip callbacks.
   final VoidCallback onShoppingList;
-  final VoidCallback onIncomeLog;
+  final void Function(BuildContext origin) onIncomeLog;
 
   const _BalanceHero({
-    super.key,
     required this.balance,
     required this.spent,
     required this.maxBalance,
@@ -32,153 +32,225 @@ class _BalanceHero extends StatefulWidget {
   State<_BalanceHero> createState() => _BalanceHeroState();
 }
 
-class _BalanceHeroState extends State<_BalanceHero> {
-  static const BorderRadius _radius = BorderRadius.all(Radius.circular(30));
-
+class _BalanceHeroState extends State<_BalanceHero>
+    with SingleTickerProviderStateMixin {
   /// Mint used for the bar and highlights on the dark card surface.
   static const Color _mint = Color(0xFF9FD8A6);
 
-  /// The currency on the card's face, and which way the last flip turned.
-  String _code = CurrencyStore.instance.activeCode;
-  bool _forward = true;
+  /// How far a drag may lean the card before it is let go, in quarter turns.
+  static const double _maxLean = 0.42;
 
-  /// Notes a currency change so the flip turns the way the list moved.
-  void _trackCurrency(List<String> codes, String active) {
-    if (active == _code) return;
-    final from = codes.indexOf(_code);
-    final to = codes.indexOf(active);
-    final count = codes.length;
-    _forward = from < 0 || to < 0 || count < 2
-        ? true
-        : (to - from + count) % count <= count / 2;
+  /// The lean past which letting go turns the card over.
+  static const double _commitLean = 0.2;
+
+  /// The whole turn, from one face flat to the next face flat. It runs a
+  /// touch past flat at the end and settles back.
+  static const Curve _flipCurve = Cubic(0.45, 0, 0.2, 1.07);
+
+  final CurrencyStore _currencies = CurrencyStore.instance;
+
+  /// The card's turn about its horizontal axis, in quarter turns. A drag
+  /// moves it directly: down is positive (the top edge comes forward), up
+  /// is negative. During a flip it runs on to two quarter turns, the first
+  /// showing the old face and the second the new one.
+  late final AnimationController _turn = AnimationController.unbounded(
+    vsync: this,
+  )..addListener(_onTurn);
+
+  /// The currency on the card's face.
+  late String _code = _currencies.activeCode;
+
+  /// The face being turned away, while a flip runs.
+  Widget? _outgoing;
+
+  /// The face as last built, kept so it can be the outgoing one.
+  Widget? _lastFace;
+
+  /// Which way the flip turns: 1 for a downward swipe, -1 for an upward one.
+  int _direction = -1;
+
+  /// True once the flip has passed edge-on and shows the new face.
+  bool _pastEdge = false;
+  bool _dragging = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currencies.addListener(_onCurrency);
+  }
+
+  @override
+  void dispose() {
+    _currencies.removeListener(_onCurrency);
+    _turn.dispose();
+    super.dispose();
+  }
+
+  /// A new active currency: turn the card over to it, the way the swipe
+  /// that asked for it was going.
+  void _onCurrency() {
+    final active = _currencies.activeCode;
+    if (!mounted || active == _code) return;
     _code = active;
+    final last = _lastFace;
+    if (last == null || AppMotion.reduced(context)) {
+      _turn.stop();
+      _turn.value = 0;
+      setState(() => _outgoing = null);
+      return;
+    }
+    // A flip already under way starts over from the face it was showing.
+    if (_outgoing != null) _turn.value = 0;
+    final from = _turn.value * _direction > 0 ? _turn.value : 0.0;
+    final target = 2.0 * _direction;
+    setState(() {
+      _outgoing = last;
+      _pastEdge = false;
+      _dragging = false;
+    });
+    _turn.value = from;
+    _turn
+        .animateTo(
+          target,
+          duration: Duration(
+            milliseconds: (640 * (1 - from.abs() / 2)).round(),
+          ),
+          curve: _flipCurve,
+        )
+        .whenComplete(() {
+          if (!mounted || _turn.isAnimating) return;
+          _turn.value = 0;
+          setState(() => _outgoing = null);
+        });
+  }
+
+  /// A tick as the card passes edge-on, where one face gives way to the
+  /// other.
+  void _onTurn() {
+    if (_outgoing == null) return;
+    final past = _turn.value.abs() >= 1;
+    if (past == _pastEdge) return;
+    _pastEdge = past;
+    if (past) AppHaptics.tick();
+    setState(() {});
+  }
+
+  void _dragStart(DragStartDetails details) {
+    if (_outgoing != null) return;
+    _dragging = true;
+    _turn.stop();
+  }
+
+  void _dragUpdate(DragUpdateDetails details) {
+    if (!_dragging) return;
+    final height = context.size?.height ?? 200;
+    final lean = _turn.value + details.delta.dy / height * 0.9;
+    _turn.value = lean.clamp(-_maxLean, _maxLean);
+  }
+
+  void _dragEnd(DragEndDetails details) {
+    if (!_dragging) return;
+    _dragging = false;
+    final velocity = details.primaryVelocity ?? 0;
+    final lean = _turn.value;
+    // A flick decides on its own; a slow drag has to lean far enough.
+    final direction = velocity.abs() > 180
+        ? velocity.sign.toInt()
+        : (lean.abs() > _commitLean ? lean.sign.toInt() : 0);
+    if (direction == 0 || AppMotion.reduced(context)) {
+      _settle();
+      if (direction == 0) return;
+    }
+    _direction = direction;
+    AppHaptics.selection();
+    final change = direction < 0
+        ? _currencies.selectNext()
+        : _currencies.selectPrevious();
+    final before = _code;
+    change.whenComplete(() {
+      // Nothing to turn to after all: lay the card flat again.
+      if (mounted && _code == before && _outgoing == null) _settle();
+    });
+  }
+
+  void _settle() {
+    _turn.springTo(
+      0,
+      spring: AppSprings.spatial,
+      reduced: AppMotion.reduced(context),
+    );
+  }
+
+  Widget _face(List<String> codes, String active) {
+    final index = codes.indexOf(active);
+    // Everything on one face belongs to one currency.
+    return KeyedSubtree(
+      key: ValueKey(active),
+      child: _HeroFace(
+        balance: widget.balance,
+        spent: widget.spent,
+        maxBalance: widget.maxBalance,
+        ratio: widget.ratio,
+        symbol: currencyLabel,
+        dots: codes.length > 1 ? codes.length : 0,
+        activeDot: index < 0 ? 0 : index,
+        mint: _mint,
+        onShoppingList: widget.onShoppingList,
+        onIncomeLog: widget.onIncomeLog,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currencies = CurrencyStore.instance;
-    final codes = currencies.enabledCodes;
-    final active = currencies.activeCode;
-    final activeIndex = codes.indexOf(active);
+    final codes = _currencies.enabledCodes;
     final many = codes.length > 1;
-    _trackCurrency(codes, active);
+    final face = _face(codes, _currencies.activeCode);
+    // Until the store's change reaches this state, the face on show is
+    // still the old currency's; only that one may become the outgoing face.
+    if (_currencies.activeCode == _code) _lastFace = face;
 
-    // One face of the card: everything on it belongs to one currency.
-    final face = KeyedSubtree(
-      key: ValueKey(active),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: _radius,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.heroEnd.withValues(alpha: isDark ? 0.6 : 0.4),
-              blurRadius: 34,
-              spreadRadius: -6,
-              offset: const Offset(0, 18),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: _radius,
-          child: _HeroFace(
-            balance: widget.balance,
-            spent: widget.spent,
-            maxBalance: widget.maxBalance,
-            ratio: widget.ratio,
-            symbol: currencyLabel,
-            dots: many ? codes.length : 0,
-            activeDot: activeIndex < 0 ? 0 : activeIndex,
-            mint: _mint,
-            onShoppingList: widget.onShoppingList,
-            onIncomeLog: widget.onIncomeLog,
-          ),
-        ),
-      ),
-    );
+    final outgoing = _outgoing;
+    final shown = outgoing != null && !_pastEdge ? outgoing : face;
 
     return RepaintBoundary(
-      // An empty drag-update handler claims the vertical gesture so the
-      // swipe switches currency instead of scrolling the page.
+      // The vertical drag belongs to the card: it turns the card over
+      // instead of scrolling the page.
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onVerticalDragUpdate: many ? (_) {} : null,
-        onVerticalDragEnd: many
-            ? (details) {
-                final velocity = details.primaryVelocity ?? 0;
-                if (velocity < -180) {
-                  AppHaptics.selection();
-                  currencies.selectNext();
-                } else if (velocity > 180) {
-                  AppHaptics.selection();
-                  currencies.selectPrevious();
-                }
+        onVerticalDragStart: many ? _dragStart : null,
+        onVerticalDragUpdate: many ? _dragUpdate : null,
+        onVerticalDragEnd: many ? _dragEnd : null,
+        onVerticalDragCancel: many
+            ? () {
+                if (!_dragging) return;
+                _dragging = false;
+                _settle();
               }
             : null,
-        child: AnimatedSwitcher(
-          duration: AppMotion.of(context, const Duration(milliseconds: 560)),
-          switchInCurve: Curves.linear,
-          switchOutCurve: Curves.linear,
-          layoutBuilder: (current, previous) => Stack(
-            alignment: Alignment.center,
-            children: [...previous, ?current],
-          ),
-          transitionBuilder: (child, animation) => _CardFlip(
-            animation: animation,
-            incoming: child.key == ValueKey(active),
-            forward: _forward,
-            child: child,
-          ),
-          child: face,
+        child: AnimatedBuilder(
+          animation: _turn,
+          child: shown,
+          builder: (context, child) {
+            final turn = _turn.value;
+            // Past edge-on the new face swings in from the other side.
+            final quarter = outgoing != null && _pastEdge
+                ? turn - 2 * _direction
+                : turn;
+            // The transform stays in the tree at rest too, so the face
+            // keeps its state when a drag begins.
+            return Transform(
+              alignment: Alignment.center,
+              transform: quarter == 0
+                  ? Matrix4.identity()
+                  : (Matrix4.identity()
+                      ..setEntry(3, 2, 0.0008)
+                      ..rotateX(quarter * math.pi / 2)),
+              child: child,
+            );
+          },
         ),
       ),
-    );
-  }
-}
-
-/// Turns the whole card over its horizontal axis. The outgoing face swings
-/// away during the first half, the incoming one swings in during the
-/// second, so the card reads as one object with two sides.
-class _CardFlip extends StatelessWidget {
-  final Animation<double> animation;
-
-  /// True for the face arriving, false for the one leaving.
-  final bool incoming;
-
-  /// Which way the card turns.
-  final bool forward;
-  final Widget child;
-
-  const _CardFlip({
-    required this.animation,
-    required this.incoming,
-    required this.forward,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: animation,
-      child: child,
-      builder: (context, child) {
-        // The switcher runs 0..1 for the incoming face and 1..0 for the
-        // outgoing one; each face owns half of that range.
-        final t = animation.value;
-        final visible = incoming ? t >= 0.5 : t > 0.5;
-        if (!visible) return Visibility.maintain(visible: false, child: child!);
-        final half = AppMotion.standard.transform(
-          ((1 - t) * 2).clamp(0.0, 1.0),
-        );
-        final turn = (incoming == forward ? -1 : 1) * half * math.pi / 2;
-        return Transform(
-          alignment: Alignment.center,
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.0008)
-            ..rotateX(turn),
-          child: child,
-        );
-      },
     );
   }
 }
@@ -198,7 +270,7 @@ class _HeroFace extends StatelessWidget {
   final int activeDot;
   final Color mint;
   final VoidCallback onShoppingList;
-  final VoidCallback onIncomeLog;
+  final void Function(BuildContext origin) onIncomeLog;
 
   const _HeroFace({
     required this.balance,
@@ -345,7 +417,7 @@ class _HeroFace extends StatelessWidget {
               _HeroChip(
                 icon: AppIcons.list,
                 label: 'قائمة المشتريات',
-                onPressed: onShoppingList,
+                onPressed: (_) => onShoppingList(),
               ),
             ],
           ),
@@ -353,19 +425,40 @@ class _HeroFace extends StatelessWidget {
       ],
     );
 
+    const radius = BorderRadius.all(Radius.circular(30));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // The lean turns the whole card: its shadow, its rounded edge and its
+    // lights move as one object, so no edge is left behind.
     return TiltBuilder(
       child: content,
       builder: (context, tilt, child) => Transform(
         alignment: Alignment.center,
-        // A slight perspective lean: the pressed side sinks away.
         transform: Matrix4.identity()
           ..setEntry(3, 2, 0.0011)
           ..rotateX(-tilt.dy * 0.075)
           ..rotateY(tilt.dx * 0.075),
-        child: CustomPaint(
-          painter: _HeroSurfacePainter(tilt: tilt),
-          foregroundPainter: _HeroLightPainter(tilt: tilt),
-          child: child,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.heroEnd.withValues(alpha: isDark ? 0.6 : 0.4),
+                blurRadius: 34,
+                spreadRadius: -6,
+                // The shadow falls a little away from the raised side.
+                offset: Offset(-tilt.dx * 5, 18 - tilt.dy * 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: radius,
+            child: CustomPaint(
+              painter: _HeroSurfacePainter(tilt: tilt),
+              foregroundPainter: _HeroLightPainter(tilt: tilt),
+              child: child,
+            ),
+          ),
         ),
       ),
     );
@@ -558,7 +651,9 @@ class _HeroLightPainter extends CustomPainter {
 class _HeroChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  final VoidCallback onPressed;
+
+  /// Called with the chip's own context, so a page can open out of it.
+  final void Function(BuildContext chip) onPressed;
 
   const _HeroChip({
     required this.icon,
@@ -572,7 +667,7 @@ class _HeroChip extends StatelessWidget {
       button: true,
       label: label,
       child: Pressable(
-        onTap: onPressed,
+        onTap: () => onPressed(context),
         depth: 0.08,
         child: Container(
           width: 40,

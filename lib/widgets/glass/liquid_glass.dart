@@ -56,8 +56,8 @@ class GlassPreset {
   /// Clarity first: almost no blur, a crisp lens edge.
   static const crystal = GlassPreset(
     blur: 1.5,
-    refraction: 18,
-    thickness: 12,
+    refraction: 26,
+    thickness: 14,
     opacity: 0.04,
     saturation: 1.12,
     specular: 0.6,
@@ -67,19 +67,19 @@ class GlassPreset {
   /// The signature look: floating bars and pills.
   static const liquid = GlassPreset(
     blur: 4,
-    refraction: 20,
-    thickness: 16,
+    refraction: 30,
+    thickness: 19,
     opacity: 0.14,
     saturation: 1.4,
     specular: 0.85,
-    chroma: 0.06,
+    chroma: 0.07,
   );
 
   /// Readability first: sheets and anything with body text on it.
   static const frosted = GlassPreset(
     blur: 22,
-    refraction: 14,
-    thickness: 12,
+    refraction: 20,
+    thickness: 14,
     opacity: 0.72,
     saturation: 1.5,
     specular: 0.5,

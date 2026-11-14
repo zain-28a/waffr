@@ -31,6 +31,7 @@ import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/widgets/motion/origin_route.dart';
 import 'package:waffr/widgets/smart/smart_glow.dart';
 
 part 'smart_analysis_cards.dart';
@@ -40,28 +41,12 @@ part 'smart_analysis_thinking.dart';
 /// this screen's headline.
 String smartSparkHeroTag(InsightScope scope) => 'smart-spark-${scope.name}';
 
-/// Opens the analysis with a fade and gentle zoom from the button.
+/// Opens the analysis out of the widget [context] belongs to (the button
+/// that was tapped). A caller that is a whole page gets the plain page
+/// transition instead.
 Future<void> openSmartAnalysis(BuildContext context, InsightScope scope) {
   return Navigator.of(context).push(
-    PageRouteBuilder<void>(
-      transitionDuration: AppMotion.of(context, AppMotion.emphasized),
-      reverseTransitionDuration: AppMotion.of(context, AppMotion.medium),
-      pageBuilder: (_, _, _) => SmartAnalysisScreen(scope: scope),
-      transitionsBuilder: (context, animation, _, child) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: AppMotion.enter,
-          reverseCurve: AppMotion.exit,
-        );
-        return FadeTransition(
-          opacity: curved,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.94, end: 1).animate(curved),
-            child: child,
-          ),
-        );
-      },
-    ),
+    originPageRoute<void>(context, (_) => SmartAnalysisScreen(scope: scope)),
   );
 }
 

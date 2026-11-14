@@ -51,12 +51,14 @@ class _AIPermissionsScreenState extends State<AIPermissionsScreen> {
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
               children: [
                 // Shortcut to the full smart analysis.
-                AppListTile(
-                  icon: AppIcons.sparkles,
-                  leading: const SmartSpark(size: 32),
-                  title: 'افتح التحليل الشامل',
-                  subtitle: 'ملاحظات واقتراحات عن مصاريفك وتوفيرك وعاداتك',
-                  onTap: () => openSmartAnalysis(context, InsightScope.profile),
+                Builder(
+                  builder: (tile) => AppListTile(
+                    icon: AppIcons.sparkles,
+                    leading: const SmartSpark(size: 32),
+                    title: 'افتح التحليل الشامل',
+                    subtitle: 'ملاحظات واقتراحات عن مصاريفك وتوفيرك وعاداتك',
+                    onTap: () => openSmartAnalysis(tile, InsightScope.profile),
+                  ),
                 ),
                 const SizedBox(height: 22),
                 const AppSectionTitle(title: 'الميزات'),

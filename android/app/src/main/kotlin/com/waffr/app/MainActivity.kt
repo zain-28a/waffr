@@ -3,6 +3,10 @@ package com.waffr.app
 import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -14,6 +18,21 @@ class SharedPdfProvider : FileProvider()
 class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "waffr/haptics",
+        ).setMethodCallHandler { call, result ->
+            if (call.method != "play") {
+                result.notImplemented()
+                return@setMethodCallHandler
+            }
+            try {
+                playHaptic(call.arguments as? String ?: "click")
+                result.success(null)
+            } catch (error: Exception) {
+                result.error("haptic_failed", error.message, null)
+            }
+        }
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             "waffr/share_pdf",
@@ -32,6 +51,53 @@ class MainActivity : FlutterFragmentActivity() {
                 result.success(null)
             } catch (error: Exception) {
                 result.error("share_failed", error.message, null)
+            }
+        }
+    }
+
+    /**
+     * Plays a short touch effect on the vibrator itself. View haptics are
+     * silent on many phones unless a system setting is on, so the app drives
+     * the motor directly and offers its own switch in settings.
+     */
+    private fun playHaptic(kind: String) {
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            (getSystemService(VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(VIBRATOR_SERVICE) as? Vibrator
+        } ?: return
+        if (!vibrator.hasVibrator()) return
+
+        // Length in milliseconds and strength (1..255) where the phone has
+        // no ready-made effect.
+        val (millis, strength) = when (kind) {
+            "tick" -> 8L to 70
+            "click" -> 14L to 140
+            "heavy" -> 24L to 255
+            else -> 14L to 140
+        }
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                val effect = when (kind) {
+                    "tick" -> VibrationEffect.EFFECT_TICK
+                    "heavy" -> VibrationEffect.EFFECT_HEAVY_CLICK
+                    "double" -> VibrationEffect.EFFECT_DOUBLE_CLICK
+                    else -> VibrationEffect.EFFECT_CLICK
+                }
+                vibrator.vibrate(VibrationEffect.createPredefined(effect))
+            }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
+                val amplitude = if (vibrator.hasAmplitudeControl()) {
+                    strength
+                } else {
+                    VibrationEffect.DEFAULT_AMPLITUDE
+                }
+                vibrator.vibrate(VibrationEffect.createOneShot(millis, amplitude))
+            }
+            else -> {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(millis)
             }
         }
     }
