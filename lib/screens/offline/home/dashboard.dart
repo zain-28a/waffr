@@ -1,12 +1,15 @@
-// Offline home tab (library root): the balance hero, quick actions, one
-// line from the smart analysis, the spending strip, recent expenses,
-// obligations and the savings goals carousel. Each section opens the
-// screen that holds its full details.
+// Offline home tab (library root): the balance hero, quick actions, the
+// spending donut beside the smart analysis, the recent expenses beside one
+// savings goal, and the obligations. Each section opens the screen that
+// holds its full details.
 //
 // The sections live in dashboard_* part files of this library.
 
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
+
+import 'package:flutter/foundation.dart' show listEquals, mapEquals;
 
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/origin_route.dart';
@@ -37,6 +40,7 @@ import 'package:waffr/screens/offline/report/reportscreen.dart';
 import 'package:waffr/screens/offline/savings/sheets/create_goal_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/manual_save_sheet.dart';
 import 'package:waffr/screens/offline/savings/sheets/shopping_list_sheet.dart';
+import 'package:waffr/screens/offline/settings/sheets/currencies_sheet.dart';
 import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/containers/glass.dart';
@@ -44,8 +48,10 @@ import 'package:waffr/widgets/glass/tilt.dart';
 import 'package:waffr/widgets/motion/active_listenable_builder.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/motion/pressable.dart';
+import 'package:waffr/widgets/smart/smart_glow.dart';
 
 part 'dashboard_actions.dart';
+part 'dashboard_flip.dart';
 part 'dashboard_goals.dart';
 part 'dashboard_hero.dart';
 part 'dashboard_recent.dart';
@@ -88,6 +94,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   /// Folds a burst of store notifications into one read.
   Timer? _insightTimer;
+
+  /// The savings goal on the goal card; wraps around the active goals.
+  int _goalIndex = 0;
 
   @override
   bool get wantKeepAlive => true;
@@ -178,6 +187,7 @@ class _HomeScreenState extends State<HomeScreen>
             .where((item) => obligationNeedsAttention(item, now: now))
             .length;
         final hasObligations = obligations.any((item) => item.enabled);
+        final goals = _store.activeGoals;
 
         return SingleChildScrollView(
           clipBehavior: Clip.none,
@@ -203,40 +213,33 @@ class _HomeScreenState extends State<HomeScreen>
                 onObligations: () => showObligationsSheet(context),
               ),
               const SizedBox(height: 20),
-              // Only once the analysis has something to say; an empty
-              // strip would just be a button with no reason to press it.
-              // The slot is always in the list and opens smoothly, so the
-              // cards below keep their state and do not jump.
-              AnimatedSize(
-                duration: AppMotion.sizeOf(context, AppMotion.slow),
-                curve: AppMotion.enter,
-                alignment: Alignment.topCenter,
-                child: _insight == null
-                    ? const SizedBox(width: double.infinity)
-                    : Padding(
-                        padding: const EdgeInsets.only(bottom: kCardGap),
-                        // The analysis opens out of the strip itself.
-                        child: Builder(
-                          builder: (strip) => _InsightStrip(
-                            text: _insight!,
-                            onTap: () =>
-                                openSmartAnalysis(strip, InsightScope.reports),
-                          ),
-                        ),
-                      ),
-              ),
-              // expensesByCategory is rolled up in memory from the store.
-              _SpendingStrip(
-                totals: _store.expensesByCategory(),
-                totalExpense: _store.totalExpense,
-                onTap: () =>
-                    AppShellScope.selectTabOf(context, AppShellTabs.report),
+              // Where the money went, with the smart analysis beside it.
+              _CardPair(
+                wide: _SpendingCard(
+                  totals: _store.expensesByCategory(),
+                  totalExpense: _store.totalExpense,
+                  onTap: () =>
+                      AppShellScope.selectTabOf(context, AppShellTabs.report),
+                ),
+                narrow: _InsightTile(text: _insight),
               ),
               const SizedBox(height: kCardGap),
-              _RecentCard(
-                key: _recentCard,
-                expenses: _store.expenses,
-                onAll: _openExpenseLog,
+              // The latest expenses, with one savings goal beside them.
+              _CardPair(
+                wide: _RecentCard(
+                  key: _recentCard,
+                  expenses: _store.expenses,
+                  onAll: _openExpenseLog,
+                ),
+                narrow: _GoalTile(
+                  goals: goals,
+                  index: _goalIndex,
+                  store: _store,
+                  onIndex: (index) => setState(() => _goalIndex = index),
+                  onOpen: () =>
+                      AppShellScope.selectTabOf(context, AppShellTabs.savings),
+                  onCreate: () => showCreateGoalSheet(context),
+                ),
               ),
               if (hasObligations) ...[
                 const SizedBox(height: kCardGap),
@@ -245,14 +248,6 @@ class _HomeScreenState extends State<HomeScreen>
                   onTap: () => showObligationsSheet(context),
                 ),
               ],
-              const SizedBox(height: kCardGap),
-              _GoalsCarousel(
-                goals: _store.activeGoals,
-                store: _store,
-                onOpen: () =>
-                    AppShellScope.selectTabOf(context, AppShellTabs.savings),
-                onCreate: () => showCreateGoalSheet(context),
-              ),
             ]),
           ),
         );

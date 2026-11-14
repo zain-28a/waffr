@@ -6,10 +6,10 @@
 part of 'dashboard.dart';
 
 /// Current balance, how much of the period's money is left, and spend vs
-/// max. A vertical swipe cycles currency when more than one is enabled: the
-/// card leans with the finger and turns over the way it was swiped. Corner
-/// chips open the income history and the shopping list.
-class _BalanceHero extends StatefulWidget {
+/// max. A vertical swipe turns the card over, the way it was swiped, to the
+/// next currency; with only one currency it makes a half turn and offers to
+/// add another. Corner chips open the income history and the shopping list.
+class _BalanceHero extends StatelessWidget {
   // Values for the active currency, taken from TransactionStore.
   final double balance;
   final double spent;
@@ -28,227 +28,40 @@ class _BalanceHero extends StatefulWidget {
     required this.onIncomeLog,
   });
 
-  @override
-  State<_BalanceHero> createState() => _BalanceHeroState();
-}
-
-class _BalanceHeroState extends State<_BalanceHero>
-    with SingleTickerProviderStateMixin {
   /// Mint used for the bar and highlights on the dark card surface.
   static const Color _mint = Color(0xFF9FD8A6);
 
-  /// How far a drag may lean the card before it is let go, in quarter turns.
-  static const double _maxLean = 0.42;
-
-  /// The lean past which letting go turns the card over.
-  static const double _commitLean = 0.2;
-
-  /// The whole turn, from one face flat to the next face flat. It runs a
-  /// touch past flat at the end and settles back.
-  static const Curve _flipCurve = Cubic(0.45, 0, 0.2, 1.07);
-
-  final CurrencyStore _currencies = CurrencyStore.instance;
-
-  /// The card's turn about its horizontal axis, in quarter turns. A drag
-  /// moves it directly: down is positive (the top edge comes forward), up
-  /// is negative. During a flip it runs on to two quarter turns, the first
-  /// showing the old face and the second the new one.
-  late final AnimationController _turn = AnimationController.unbounded(
-    vsync: this,
-  )..addListener(_onTurn);
-
-  /// The currency on the card's face.
-  late String _code = _currencies.activeCode;
-
-  /// The face being turned away, while a flip runs.
-  Widget? _outgoing;
-
-  /// The face as last built, kept so it can be the outgoing one.
-  Widget? _lastFace;
-
-  /// Which way the flip turns: 1 for a downward swipe, -1 for an upward one.
-  int _direction = -1;
-
-  /// True once the flip has passed edge-on and shows the new face.
-  bool _pastEdge = false;
-  bool _dragging = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _currencies.addListener(_onCurrency);
-  }
-
-  @override
-  void dispose() {
-    _currencies.removeListener(_onCurrency);
-    _turn.dispose();
-    super.dispose();
-  }
-
-  /// A new active currency: turn the card over to it, the way the swipe
-  /// that asked for it was going.
-  void _onCurrency() {
-    final active = _currencies.activeCode;
-    if (!mounted || active == _code) return;
-    _code = active;
-    final last = _lastFace;
-    if (last == null || AppMotion.reduced(context)) {
-      _turn.stop();
-      _turn.value = 0;
-      setState(() => _outgoing = null);
-      return;
-    }
-    // A flip already under way starts over from the face it was showing.
-    if (_outgoing != null) _turn.value = 0;
-    final from = _turn.value * _direction > 0 ? _turn.value : 0.0;
-    final target = 2.0 * _direction;
-    setState(() {
-      _outgoing = last;
-      _pastEdge = false;
-      _dragging = false;
-    });
-    _turn.value = from;
-    _turn
-        .animateTo(
-          target,
-          duration: Duration(
-            milliseconds: (640 * (1 - from.abs() / 2)).round(),
-          ),
-          curve: _flipCurve,
-        )
-        .whenComplete(() {
-          if (!mounted || _turn.isAnimating) return;
-          _turn.value = 0;
-          setState(() => _outgoing = null);
-        });
-  }
-
-  /// A tick as the card passes edge-on, where one face gives way to the
-  /// other.
-  void _onTurn() {
-    if (_outgoing == null) return;
-    final past = _turn.value.abs() >= 1;
-    if (past == _pastEdge) return;
-    _pastEdge = past;
-    if (past) AppHaptics.tick();
-    setState(() {});
-  }
-
-  void _dragStart(DragStartDetails details) {
-    if (_outgoing != null) return;
-    _dragging = true;
-    _turn.stop();
-  }
-
-  void _dragUpdate(DragUpdateDetails details) {
-    if (!_dragging) return;
-    final height = context.size?.height ?? 200;
-    final lean = _turn.value + details.delta.dy / height * 0.9;
-    _turn.value = lean.clamp(-_maxLean, _maxLean);
-  }
-
-  void _dragEnd(DragEndDetails details) {
-    if (!_dragging) return;
-    _dragging = false;
-    final velocity = details.primaryVelocity ?? 0;
-    final lean = _turn.value;
-    // A flick decides on its own; a slow drag has to lean far enough.
-    final direction = velocity.abs() > 180
-        ? velocity.sign.toInt()
-        : (lean.abs() > _commitLean ? lean.sign.toInt() : 0);
-    if (direction == 0 || AppMotion.reduced(context)) {
-      _settle();
-      if (direction == 0) return;
-    }
-    _direction = direction;
-    AppHaptics.selection();
-    final change = direction < 0
-        ? _currencies.selectNext()
-        : _currencies.selectPrevious();
-    final before = _code;
-    change.whenComplete(() {
-      // Nothing to turn to after all: lay the card flat again.
-      if (mounted && _code == before && _outgoing == null) _settle();
-    });
-  }
-
-  void _settle() {
-    _turn.springTo(
-      0,
-      spring: AppSprings.spatial,
-      reduced: AppMotion.reduced(context),
-    );
-  }
-
-  Widget _face(List<String> codes, String active) {
-    final index = codes.indexOf(active);
-    // Everything on one face belongs to one currency.
-    return KeyedSubtree(
-      key: ValueKey(active),
-      child: _HeroFace(
-        balance: widget.balance,
-        spent: widget.spent,
-        maxBalance: widget.maxBalance,
-        ratio: widget.ratio,
-        symbol: currencyLabel,
-        dots: codes.length > 1 ? codes.length : 0,
-        activeDot: index < 0 ? 0 : index,
-        mint: _mint,
-        onShoppingList: widget.onShoppingList,
-        onIncomeLog: widget.onIncomeLog,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final codes = _currencies.enabledCodes;
-    final many = codes.length > 1;
-    final face = _face(codes, _currencies.activeCode);
-    // Until the store's change reaches this state, the face on show is
-    // still the old currency's; only that one may become the outgoing face.
-    if (_currencies.activeCode == _code) _lastFace = face;
-
-    final outgoing = _outgoing;
-    final shown = outgoing != null && !_pastEdge ? outgoing : face;
+    final currencies = CurrencyStore.instance;
+    final codes = currencies.enabledCodes;
+    final active = currencies.activeCode;
+    final index = codes.indexOf(active);
 
     return RepaintBoundary(
-      // The vertical drag belongs to the card: it turns the card over
-      // instead of scrolling the page.
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onVerticalDragStart: many ? _dragStart : null,
-        onVerticalDragUpdate: many ? _dragUpdate : null,
-        onVerticalDragEnd: many ? _dragEnd : null,
-        onVerticalDragCancel: many
-            ? () {
-                if (!_dragging) return;
-                _dragging = false;
-                _settle();
-              }
-            : null,
-        child: AnimatedBuilder(
-          animation: _turn,
-          child: shown,
-          builder: (context, child) {
-            final turn = _turn.value;
-            // Past edge-on the new face swings in from the other side.
-            final quarter = outgoing != null && _pastEdge
-                ? turn - 2 * _direction
-                : turn;
-            // The transform stays in the tree at rest too, so the face
-            // keeps its state when a drag begins.
-            return Transform(
-              alignment: Alignment.center,
-              transform: quarter == 0
-                  ? Matrix4.identity()
-                  : (Matrix4.identity()
-                      ..setEntry(3, 2, 0.0008)
-                      ..rotateX(quarter * math.pi / 2)),
-              child: child,
-            );
-          },
+      child: _SwipeFlip(
+        face: active,
+        canTurn: codes.length > 1,
+        onTurn: (direction) => direction < 0
+            ? currencies.selectNext()
+            : currencies.selectPrevious(),
+        // With one currency the half turn offers to add another.
+        onEmpty: () => showAddCurrencySheet(context),
+        // Everything on one face belongs to one currency.
+        child: KeyedSubtree(
+          key: ValueKey(active),
+          child: _HeroFace(
+            balance: balance,
+            spent: spent,
+            maxBalance: maxBalance,
+            ratio: ratio,
+            symbol: currencyLabel,
+            dots: codes.length > 1 ? codes.length : 0,
+            activeDot: index < 0 ? 0 : index,
+            mint: _mint,
+            onShoppingList: onShoppingList,
+            onIncomeLog: onIncomeLog,
+          ),
         ),
       ),
     );

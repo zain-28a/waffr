@@ -178,68 +178,58 @@ class _QuickAction extends StatelessWidget {
   }
 }
 
-/// One line from the smart analysis; opens the full report.
-class _InsightStrip extends StatelessWidget {
-  final String text;
-  final VoidCallback onTap;
+/// The smart analysis beside the spending card: its mark, its name and
+/// one line from it. Opens the full analysis, which grows out of the tile.
+class _InsightTile extends StatelessWidget {
+  /// The headline of the analysis; null before there is anything to read.
+  final String? text;
 
-  const _InsightStrip({required this.text, required this.onTap});
+  const _InsightTile({required this.text});
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final line = text ?? 'ملاحظات واقتراحات عن مصاريفك';
     return Semantics(
       button: true,
-      label: 'التحليل الذكي: $text',
+      label: 'التحليل الذكي: $line',
       child: Pressable(
-        onTap: onTap,
-        depth: 0.025,
+        onTap: () => openSmartAnalysis(context, InsightScope.reports),
+        depth: 0.035,
         child: ExcludeSemantics(
           child: GlassContainer(
             colorType: GlassColorType.surface,
-            borderRadius: 22,
-            padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 14, 12),
-            child: Row(
+            borderRadius: 28,
+            padding: const EdgeInsets.fromLTRB(10, 14, 10, 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: palette.accent.withValues(alpha: 0.1),
-                  ),
-                  child: Icon(
-                    AppIcons.lightbulb,
-                    size: 20,
-                    color: palette.accent,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: AppMotion.of(context, AppMotion.medium),
-                    layoutBuilder: (current, previous) => Stack(
-                      alignment: AlignmentDirectional.centerStart,
-                      children: [...previous, ?current],
-                    ),
-                    child: Text(
-                      text,
-                      key: ValueKey(text),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: _text(
-                        13.5,
-                        weight: FontWeight.w600,
-                        color: palette.textPrimary,
-                      ).copyWith(height: 1.45),
-                    ),
+                const SmartSpark(size: 36),
+                const SizedBox(height: 10),
+                Text(
+                  'التحليل الذكي',
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  style: _text(
+                    13.5,
+                    weight: FontWeight.w700,
+                    color: palette.textPrimary,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Icon(
-                  AppIcons.chevronForward,
-                  size: 18,
-                  color: palette.textSecondary,
+                const SizedBox(height: 6),
+                AnimatedSwitcher(
+                  duration: AppMotion.of(context, AppMotion.medium),
+                  child: Text(
+                    line,
+                    key: ValueKey(line),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: _text(
+                      11.5,
+                      color: palette.textSecondary,
+                    ).copyWith(height: 1.4),
+                  ),
                 ),
               ],
             ),
