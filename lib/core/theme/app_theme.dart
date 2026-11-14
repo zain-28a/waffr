@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_motion.dart';
+import 'package:waffr/widgets/motion/slide_route.dart';
 
 /// Central theme: Outfit (mixed-case Latin) with Tajawal fallback for Arabic.
 class AppTheme {
@@ -142,12 +143,12 @@ class AppTheme {
     );
   }
 
-  // iOS and macOS slide with the edge swipe-back gesture; Android follows
-  // the predictive back gesture and zooms for button and code navigation.
+  // iOS and macOS slide with the edge swipe-back gesture; on Android a page
+  // slides in from the right and follows the predictive back gesture out.
   static const PageTransitionsTheme _pageTransitions = PageTransitionsTheme(
     builders: {
       TargetPlatform.android: ReducedMotionPageTransitionsBuilder(
-        PredictiveBackFullscreenPageTransitionsBuilder(),
+        SlidePageTransitionsBuilder(),
       ),
       TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
       TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),

@@ -13,6 +13,7 @@ layout overflow. Sheets and dialogs are opened through their public
 | File | Covers |
 | --- | --- |
 | `dashboard_test.dart` | Smoke tests for the home tab (HomeScreen) and its add-expense / add-income sheets: light and dark, empty and populated, RTL on a phone-sized view. |
+| `hero_flip_test.dart` | The balance card's currency flip: it leans with a vertical drag, turns over in the direction of the swipe, lies flat again after a short drag, and switches without a flip under reduced motion. |
 
 Subfolders:
 

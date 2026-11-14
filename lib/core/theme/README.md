@@ -28,7 +28,14 @@ Conventions:
   false when the enclosing `TickerMode` is off (a hidden tab or the app lock).
 - Page pagers step with `nextPageFor` / `previousPageFor` so reduced motion
   jumps instead of sliding.
-- Haptics go through `AppHaptics` (selection / success / warning).
+- Haptics go through `AppHaptics` (tick / selection / success / warning /
+  celebrate). On Android they drive the vibrator through the
+  `waffr/haptics` channel in `MainActivity`, because view haptics stay
+  silent on many phones; elsewhere they use the platform's feedback.
+  `AppHaptics.enabled` mirrors the switch in settings. Plain taps already
+  get a tick from `TapHaptics`; call a named cue only for more than a tap.
+- Android pages use `SlidePageTransitionsBuilder` (slide in from the right,
+  predictive back pulls the page aside).
 - Icons come from `AppIcons`, never Material `Icons`. Icons that point in
   the reading direction (back, chevrons, lists) mirror in RTL.
 - The palette also carries `aurora` (the page light-field colors); hero

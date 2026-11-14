@@ -8,7 +8,7 @@ cards stay solid so money is always read on a plain surface.
 | --- | --- |
 | `liquid_glass.dart` | `LiquidGlass` (the one glass surface), `GlassPreset` (`crystal`, `liquid`, `frosted`), `LiquidGlassScope` (pause refraction under a fading subtree), `LiquidGlassShader` (loads the lens program once). |
 | `aurora_backdrop.dart` | `AuroraBackdrop` (slow soft green lights behind a page, redrawn about fifteen times a second) and `AuroraPage` (a page body on that backdrop). |
-| `tilt.dart` | `TiltBuilder` (a spring-smoothed lean from touch and the accelerometer) and `TiltSettings` (the "follow the phone" switch, kept in prefs). |
+| `tilt.dart` | `TiltBuilder` (a spring-smoothed lean from touch and the accelerometer) and `TiltSettings` (the "follow the phone" switch, kept in prefs). Apply the lean as the outermost transform of the surface, outside its clip and shadow, so the whole object turns and no edge is left behind. |
 
 How the glass is built, back to front: backdrop blur and saturation, edge
 refraction, a thin surface tint, rim light and sheen, then the child, which

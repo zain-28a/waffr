@@ -10,7 +10,6 @@ import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/widgets/brand/waffr_logo.dart';
@@ -142,7 +141,7 @@ class _StreakCelebrationOverlayState extends State<StreakCelebrationOverlay>
   void _onTick() {
     if (_ticked || _roll.value < 0.98) return;
     _ticked = true;
-    HapticFeedback.lightImpact();
+    AppHaptics.celebrate();
   }
 
   void _skip() {

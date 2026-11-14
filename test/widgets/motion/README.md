@@ -16,6 +16,9 @@ layout overflow. Sheets and dialogs are opened through their public
 | `motion_lifecycle_test.dart` | Motion widget lifecycles: reveals, rolling money and text, glows and the streak number cancel timers and honor reduced motion and text scaling. |
 | `motion_test.dart` | Motion basics: reduced-motion page transitions and reveals that keep their child alive after the entrance. |
 | `motion_widgets_test.dart` | Smoke tests for the shared motion widgets at rest and mid-animation. |
+| `origin_route_test.dart` | OriginPageRoute: the page grows out of the tapped widget, shrinks back into it on pop and on the back gesture, leaves the page below in place, and jumps with reduced motion. |
+| `slide_route_test.dart` | The page transition: a page slides in from the right, leaves the same way and follows the predictive back gesture. |
+| `tap_haptics_test.dart` | TapHaptics and AppHaptics: one light cue per tap on something tappable, silence elsewhere, and the on/off setting. |
 
 Run them with:
 

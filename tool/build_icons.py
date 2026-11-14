@@ -141,6 +141,7 @@ ICONS = [
     # Device and system
     ("phone", "smartphone", False),
     ("rotate3d", "rotate3d", False),
+    ("vibrate", "vibrate", False),
     ("sun", "sun", False),
     ("moon", "moon", False),
     ("language", "languages", False),

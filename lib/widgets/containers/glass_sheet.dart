@@ -16,11 +16,11 @@ import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
-import 'package:flutter/services.dart' show PredictiveBackEvent;
 import 'package:waffr/widgets/glass/liquid_glass.dart';
 import 'package:waffr/widgets/containers/amount_keypad.dart';
 import 'package:waffr/widgets/containers/sheet_buttons.dart';
 import 'package:waffr/widgets/motion/motion.dart';
+import 'package:waffr/widgets/motion/route_back_gesture.dart';
 
 export 'package:waffr/widgets/containers/amount_keypad.dart'
     show QuickAmounts, showQuickAmountsEditor;
@@ -100,54 +100,13 @@ Future<T?> showGlassSheet<T>({
 /// Lets the sheet answer Android's predictive back gesture: while the
 /// finger drags from the edge the sheet sinks with it, then either leaves
 /// (released) or returns (cancelled). Button presses pop as usual.
-class _SheetBackGesture extends StatefulWidget {
+class _SheetBackGesture extends StatelessWidget {
   final Widget child;
 
   const _SheetBackGesture({required this.child});
 
-  @override
-  State<_SheetBackGesture> createState() => _SheetBackGestureState();
-}
-
-class _SheetBackGestureState extends State<_SheetBackGesture>
-    with WidgetsBindingObserver {
   /// How far the sheet sinks at the end of the drag, as a share of itself.
   static const double _sink = 0.28;
-
-  ModalRoute<Object?>? _route;
-  bool _dragging = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _route = ModalRoute.of(context);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  bool handleStartBackGesture(PredictiveBackEvent backEvent) {
-    final route = _route;
-    if (route == null ||
-        backEvent.isButtonEvent ||
-        !route.isCurrent ||
-        route.popDisposition != RoutePopDisposition.pop) {
-      return false;
-    }
-    _dragging = true;
-    route.handleStartBackGesture(progress: _valueFor(backEvent.progress));
-    return true;
-  }
 
   /// The route value that leaves the sheet sunk by `progress * _sink` of its
   /// height, undoing [_sheetCurve] (ease-out cubic).
@@ -157,29 +116,8 @@ class _SheetBackGestureState extends State<_SheetBackGesture>
   }
 
   @override
-  void handleUpdateBackGestureProgress(PredictiveBackEvent backEvent) {
-    if (!_dragging) return;
-    _route?.handleUpdateBackGestureProgress(
-      progress: _valueFor(backEvent.progress),
-    );
-  }
-
-  @override
-  void handleCancelBackGesture() {
-    if (!_dragging) return;
-    _dragging = false;
-    _route?.handleCancelBackGesture();
-  }
-
-  @override
-  void handleCommitBackGesture() {
-    if (!_dragging) return;
-    _dragging = false;
-    _route?.handleCommitBackGesture();
-  }
-
-  @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) =>
+      RouteBackGesture(valueFor: _valueFor, child: child);
 }
 
 /// Positions the sheet above the keyboard, optionally pins its height, and

@@ -2,7 +2,6 @@
 // navigation bar, and the background work that runs while the app is open
 // (due periods, reminders, home-widget and notification taps).
 
-import 'package:waffr/widgets/motion/origin_route.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 
 import 'dart:async';
@@ -309,16 +308,11 @@ class _AppShellState extends State<AppShell>
     setState(() => _streakIncrease = increase);
   }
 
-  /// The header buttons; pages they open grow out of them.
-  final GlobalKey _settingsButton = GlobalKey();
-  final GlobalKey _bellButton = GlobalKey();
-
+  /// Settings and notifications are pages of their own: they slide in from
+  /// the side like any other page.
   void _openNotifications() {
     Navigator.of(context).push(
-      originPageRoute<void>(
-        _bellButton.currentContext ?? context,
-        (_) => const NotificationsScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
     );
   }
 
@@ -340,9 +334,8 @@ class _AppShellState extends State<AppShell>
   /// changed there.
   Future<void> _openSettings() async {
     await Navigator.of(context).push(
-      originPageRoute<void>(
-        _settingsButton.currentContext ?? context,
-        (_) => SettingsScreen(
+      MaterialPageRoute<void>(
+        builder: (_) => SettingsScreen(
           themeNotifier: widget.themeNotifier,
           onThemeChanged: widget.onThemeChanged,
           appFlowController: widget.appFlowController,
@@ -529,14 +522,12 @@ class _AppShellState extends State<AppShell>
                 leading: Row(
                   children: [
                     GlassIconButton(
-                      key: _settingsButton,
                       icon: AppIcons.settings,
                       label: 'الإعدادات',
                       onPressed: _openSettings,
                     ),
                     const SizedBox(width: 8),
                     _NotificationsButton(
-                      key: _bellButton,
                       onPressed: _openNotifications,
                       onLongPress: _toggleNotificationsMuted,
                     ),
@@ -854,7 +845,6 @@ class _NotificationsButton extends StatelessWidget {
   final VoidCallback onLongPress;
 
   const _NotificationsButton({
-    super.key,
     required this.onPressed,
     required this.onLongPress,
   });

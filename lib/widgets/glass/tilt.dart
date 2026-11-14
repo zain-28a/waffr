@@ -151,11 +151,13 @@ class _TiltBuilderState extends State<TiltBuilder>
     // Gravity along the screen's x and y, about -1..1.
     final pose = Offset(-event.x / 9.81, event.y / 9.81);
     final baseline = _baseline ?? pose;
-    // The baseline creeps after the pose, so a held angle settles flat.
-    _baseline = baseline + (pose - baseline) * 0.02;
-    final lean = (pose - baseline) * 3.2;
+    // The baseline creeps slowly after the pose: a held angle settles flat
+    // over a few seconds without the card swinging back on its own.
+    _baseline = baseline + (pose - baseline) * 0.006;
+    final lean = (pose - baseline) * 2.6;
     final target = Offset(lean.dx.clamp(-1.0, 1.0), lean.dy.clamp(-1.0, 1.0));
-    final next = _sensor.value + (target - _sensor.value) * 0.18;
+    // Eased, so hand tremor does not reach the card.
+    final next = _sensor.value + (target - _sensor.value) * 0.12;
     // Ignore sensor noise so a still phone does not repaint the card.
     if ((next - _sensor.value).distanceSquared > 0.000004) {
       _sensor.value = next;
@@ -163,7 +165,7 @@ class _TiltBuilderState extends State<TiltBuilder>
   }
 
   void _lean(Offset local, Size size) {
-    if (size.isEmpty) return;
+    if (!mounted || size.isEmpty) return;
     final reduced = AppMotion.reduced(context);
     if (reduced) return;
     _x.springTo(
@@ -178,6 +180,7 @@ class _TiltBuilderState extends State<TiltBuilder>
 
   void _release() {
     _touching = false;
+    if (!mounted) return;
     final reduced = AppMotion.reduced(context);
     _x.springTo(0, spring: AppSprings.spatialSlow, reduced: reduced);
     _y.springTo(0, spring: AppSprings.spatialSlow, reduced: reduced);
@@ -196,12 +199,16 @@ class _TiltBuilderState extends State<TiltBuilder>
   @override
   Widget build(BuildContext context) {
     return Listener(
+      // A surface can leave the tree with a finger still on it (a card
+      // turning over), so every handler checks it is still mounted.
       onPointerDown: (event) {
+        if (!mounted) return;
         _touching = true;
         _lean(event.localPosition, context.size ?? Size.zero);
       },
       onPointerMove: (event) {
-        if (_touching) _lean(event.localPosition, context.size ?? Size.zero);
+        if (!mounted || !_touching) return;
+        _lean(event.localPosition, context.size ?? Size.zero);
       },
       onPointerUp: (_) => _release(),
       onPointerCancel: (_) => _release(),

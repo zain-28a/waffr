@@ -10,10 +10,11 @@ class _SpendingSummary extends StatelessWidget {
   /// The category the report is narrowed to, shown as a removable chip.
   final String? focus;
   final VoidCallback onClearFocus;
-  final VoidCallback onHistory;
+
+  /// Called with the history button's context; the page opens out of it.
+  final void Function(BuildContext button) onHistory;
 
   const _SpendingSummary({
-    super.key,
     required this.total,
     required this.focus,
     required this.onClearFocus,
@@ -96,29 +97,31 @@ class _SpendingSummary extends StatelessWidget {
         const SizedBox(width: 12),
         // Shortcut button into the expense history screen.
         Flexible(
-          child: GlassButton(
-            onTap: onHistory,
-            colorType: GlassColorType.surface,
-            borderRadius: 22,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(AppIcons.receipt, size: 18, color: colors.accent),
-                  const SizedBox(width: 7),
-                  Text(
-                    'سجل المصروفات',
-                    style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontFamilyFallback: const ['Tajawal'],
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: colors.textPrimary,
+          child: Builder(
+            builder: (button) => GlassButton(
+              onTap: () => onHistory(button),
+              colorType: GlassColorType.surface,
+              borderRadius: 22,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(AppIcons.receipt, size: 18, color: colors.accent),
+                    const SizedBox(width: 7),
+                    Text(
+                      'سجل المصروفات',
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
+                        fontFamilyFallback: const ['Tajawal'],
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: colors.textPrimary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

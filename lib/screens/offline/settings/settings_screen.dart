@@ -4,6 +4,7 @@
 import 'package:waffr/widgets/glass/tilt.dart';
 import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:waffr/widgets/motion/motion.dart';
@@ -449,7 +450,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // Version label.
                       Center(
                         child: Text(
-                          'waffr 2.14.9',
+                          'waffr 2.14.10',
                           style: TextStyle(
                             color: palette.textSecondary.withValues(alpha: 0.6),
                             fontSize: 12,
@@ -519,7 +520,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ];
   }
 
-  /// Dark mode switch, the card motion switch and the language note.
+  /// Dark mode switch, the card motion and haptics switches and the
+  /// language note.
   List<Widget> _appearanceSection(bool isDark) {
     return [
       const AppSectionTitle(title: 'المظهر'),
@@ -555,6 +557,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () => TiltSettings.instance.setEnabled(!on),
               );
             },
+          ),
+          // Touch haptics are the app's own, so they get their own switch.
+          ValueListenableBuilder<bool>(
+            valueListenable: AppHaptics.enabled,
+            builder: (context, on, _) => AppListTile(
+              icon: AppIcons.vibrate,
+              title: 'الاهتزاز عند اللمس',
+              subtitle: on ? 'اهتزاز خفيف مع اللمس والحركة' : 'متوقف',
+              trailing: Switch(value: on, onChanged: AppHaptics.setEnabled),
+              onTap: () => AppHaptics.setEnabled(!on),
+            ),
           ),
           AppListTile(
             icon: AppIcons.language,

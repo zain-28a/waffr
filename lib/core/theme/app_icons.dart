@@ -396,6 +396,9 @@ abstract final class AppIcons {
   /// Lucide `rotate3d`.
   static const IconData rotate3d = IconData(0xe2ea, fontFamily: _family);
 
+  /// Lucide `vibrate`.
+  static const IconData vibrate = IconData(0xe223, fontFamily: _family);
+
   /// Lucide `sun`.
   static const IconData sun = IconData(0xe178, fontFamily: _family);
 

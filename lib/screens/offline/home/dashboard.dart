@@ -140,15 +140,16 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  /// The cards the history pages grow out of.
-  final GlobalKey _heroCard = GlobalKey();
+  /// The card the expense history grows out of.
   final GlobalKey _recentCard = GlobalKey();
 
-  void _openIncomeLog() {
+  /// Opens the income history out of the chip that was tapped.
+  void _openIncomeLog(BuildContext chip) {
     Navigator.of(context).push(
       originPageRoute<void>(
-        _heroCard.currentContext ?? context,
+        chip,
         (_) => const TransactionHistoryScreen.incomes(),
+        radius: 14,
       ),
     );
   }
@@ -158,6 +159,7 @@ class _HomeScreenState extends State<HomeScreen>
       originPageRoute<void>(
         _recentCard.currentContext ?? context,
         (_) => const TransactionHistoryScreen.expenses(),
+        radius: 28,
       ),
     );
   }
@@ -185,7 +187,6 @@ class _HomeScreenState extends State<HomeScreen>
             children: staggered([
               // The balance on its dimensional glass card.
               _BalanceHero(
-                key: _heroCard,
                 balance: _store.balance,
                 spent: _store.cycleSpent,
                 maxBalance: _store.maxBalance,
@@ -214,10 +215,13 @@ class _HomeScreenState extends State<HomeScreen>
                     ? const SizedBox(width: double.infinity)
                     : Padding(
                         padding: const EdgeInsets.only(bottom: kCardGap),
-                        child: _InsightStrip(
-                          text: _insight!,
-                          onTap: () =>
-                              openSmartAnalysis(context, InsightScope.reports),
+                        // The analysis opens out of the strip itself.
+                        child: Builder(
+                          builder: (strip) => _InsightStrip(
+                            text: _insight!,
+                            onTap: () =>
+                                openSmartAnalysis(strip, InsightScope.reports),
+                          ),
                         ),
                       ),
               ),

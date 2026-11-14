@@ -162,17 +162,14 @@ class _ReportScreenState extends State<ReportScreen>
   }
 
   /// Pushes the expense history screen.
-  void _openExpenseHistory() {
+  void _openExpenseHistory(BuildContext button) {
     Navigator.of(context).push(
       originPageRoute<void>(
-        _summary.currentContext ?? context,
+        button,
         (_) => const TransactionHistoryScreen.expenses(),
       ),
     );
   }
-
-  /// The total row; the history page grows out of it.
-  final GlobalKey _summary = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +224,6 @@ class _ReportScreenState extends State<ReportScreen>
               const SizedBox(height: kCardGap),
               // Summary cards for the visible period.
               _SpendingSummary(
-                key: _summary,
                 total: report.total,
                 focus: report.focus,
                 onClearFocus: () => setState(() => _focus = null),
