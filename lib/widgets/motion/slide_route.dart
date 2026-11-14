@@ -1,8 +1,12 @@
 // The app's page transition: the new page slides in from the right edge
 // over the old one, which eases a little to the left and dims. Leaving
-// plays the same move backwards, and the back gesture drags the page along.
+// plays the same move backwards. The back gesture is a sideways slide too:
+// the page travels with the finger, toward the right for a swipe from the
+// left edge and toward the left for one from the right edge, and leaves
+// that way when the finger lets go.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SwipeEdge;
 import 'package:waffr/widgets/motion/route_back_gesture.dart';
 
 /// Slide-over transition for every [MaterialPageRoute].
@@ -13,14 +17,22 @@ class SlidePageTransitionsBuilder extends PageTransitionsBuilder {
   /// The page's travel; the same curve backwards when it leaves.
   static const Curve curve = Curves.easeOutCubic;
 
-  /// How far the back gesture pulls the page aside, as a share of its width.
-  static const double _pull = 0.34;
+  /// How far the back gesture carries the page at full progress, as a
+  /// share of its width: close to the finger's own travel.
+  static const double _pull = 0.72;
+
+  /// Which way pages travel: 1 toward the right edge, the usual way; -1
+  /// while a back gesture from the right edge carries the page left. Only
+  /// one gesture runs at a time, so one value serves every page.
+  static final ValueNotifier<double> side = ValueNotifier<double>(1);
+
+  // Brisk: the page is most of the way across in the first hundred
+  // milliseconds and does not linger at the end.
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 280);
 
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 420);
-
-  @override
-  Duration get reverseTransitionDuration => const Duration(milliseconds: 340);
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 230);
 
   /// The animation value that leaves the page pulled aside by the gesture.
   static double valueForGesture(double progress) =>
@@ -37,6 +49,8 @@ class SlidePageTransitionsBuilder extends PageTransitionsBuilder {
     return RouteBackGesture(
       route: route,
       valueFor: valueForGesture,
+      onStart: (edge) => side.value = edge == SwipeEdge.right ? -1 : 1,
+      onEnd: () => side.value = 1,
       child: SlideOverTransition(
         animation: animation,
         secondaryAnimation: secondaryAnimation,
@@ -47,7 +61,8 @@ class SlidePageTransitionsBuilder extends PageTransitionsBuilder {
 }
 
 /// Moves [child] in from the right with [animation], and aside to the left
-/// under a dim with [secondaryAnimation] when another page covers it.
+/// under a dim with [secondaryAnimation] when another page covers it. Both
+/// mirror while [SlidePageTransitionsBuilder.side] is -1.
 class SlideOverTransition extends StatelessWidget {
   /// This page arriving (0..1).
   final Animation<double> animation;
@@ -73,7 +88,11 @@ class SlideOverTransition extends StatelessWidget {
   Widget build(BuildContext context) {
     final secondary = secondaryAnimation ?? kAlwaysDismissedAnimation;
     return AnimatedBuilder(
-      animation: Listenable.merge([animation, secondary]),
+      animation: Listenable.merge([
+        animation,
+        secondary,
+        SlidePageTransitionsBuilder.side,
+      ]),
       child: child,
       builder: (context, child) {
         const curve = SlidePageTransitionsBuilder.curve;
@@ -113,8 +132,10 @@ class SlideOverTransition extends StatelessWidget {
             child: page,
           );
         }
+        // The covered page waits on the side the top page did not take.
+        final side = SlidePageTransitionsBuilder.side.value;
         return FractionalTranslation(
-          translation: Offset((1 - arrived) - _aside * covered, 0),
+          translation: Offset(side * ((1 - arrived) - _aside * covered), 0),
           child: page,
         );
       },

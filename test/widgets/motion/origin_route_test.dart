@@ -98,7 +98,7 @@ void main() {
     Navigator.of(tester.element(find.text('page'))).pop();
     await tester.pump();
     // Just before the end the page is a small box over the origin.
-    await tester.pump(const Duration(milliseconds: 385));
+    await tester.pump(const Duration(milliseconds: 245));
     final late = tester.getRect(find.byType(ClipRRect).last);
     expect(late.width, lessThan(origin.width * 2));
     expect(late.overlaps(origin), isTrue);
@@ -127,7 +127,15 @@ void main() {
     await _backGesture('startBackGesture');
     await _backGesture('updateBackGestureProgress', 0.9);
     await tester.pump();
+    final held = tester.getSize(find.byType(ClipRRect).last).width;
     await _backGesture('commitBackGesture');
+    // It shrinks on from where the finger left it; it does not grow back.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(
+      tester.getSize(find.byType(ClipRRect).last).width,
+      lessThanOrEqualTo(held),
+    );
     await tester.pumpAndSettle();
     expect(find.text('page'), findsNothing);
     expect(tester.takeException(), isNull);

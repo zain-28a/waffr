@@ -1,9 +1,10 @@
 // Lets a route follow Android's predictive back gesture with its own
 // transition: while the finger drags from the edge the route's animation is
-// scrubbed, then the route either leaves (released) or returns (cancelled).
+// scrubbed, then the route either leaves from where it was let go
+// (released) or returns (cancelled).
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show PredictiveBackEvent;
+import 'package:flutter/services.dart' show PredictiveBackEvent, SwipeEdge;
 
 /// Finds the animation value at which [curve] reaches [output]; for the
 /// rising curves used by route transitions.
@@ -32,6 +33,14 @@ class RouteBackGesture extends StatefulWidget {
   /// Route animation value for a gesture progress.
   final double Function(double progress) valueFor;
 
+  /// Called when a gesture takes hold of the route, with the screen edge
+  /// the finger came from.
+  final ValueChanged<SwipeEdge>? onStart;
+
+  /// Called once the route has come to rest after that gesture: gone, or
+  /// back in place.
+  final VoidCallback? onEnd;
+
   /// The route's content.
   final Widget child;
 
@@ -40,6 +49,8 @@ class RouteBackGesture extends StatefulWidget {
     super.key,
     this.route,
     required this.valueFor,
+    this.onStart,
+    this.onEnd,
     required this.child,
   });
 
@@ -51,6 +62,12 @@ class _RouteBackGestureState extends State<RouteBackGesture>
     with WidgetsBindingObserver {
   ModalRoute<Object?>? _route;
   bool _dragging = false;
+
+  /// The animation being watched until the route rests after a gesture.
+  Animation<double>? _settling;
+
+  /// The navigator still to be told the gesture is over, after a commit.
+  NavigatorState? _owedStop;
 
   @override
   void initState() {
@@ -73,7 +90,33 @@ class _RouteBackGestureState extends State<RouteBackGesture>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _finish();
     super.dispose();
+  }
+
+  /// Waits for the route to stop moving, then reports the gesture over.
+  void _watchSettle() {
+    final animation = _route?.animation;
+    if (animation == null || animation.isCompleted || animation.isDismissed) {
+      _finish(force: true);
+      return;
+    }
+    if (_settling != null) return;
+    _settling = animation..addStatusListener(_onStatus);
+  }
+
+  void _onStatus(AnimationStatus status) {
+    if (status.isCompleted || status.isDismissed) _finish();
+  }
+
+  void _finish({bool force = false}) {
+    final settling = _settling;
+    if (settling == null && !force) return;
+    settling?.removeStatusListener(_onStatus);
+    _settling = null;
+    _owedStop?.didStopUserGesture();
+    _owedStop = null;
+    widget.onEnd?.call();
   }
 
   @override
@@ -88,6 +131,7 @@ class _RouteBackGestureState extends State<RouteBackGesture>
       return false;
     }
     _dragging = true;
+    widget.onStart?.call(backEvent.swipeEdge);
     route.handleStartBackGesture(progress: _value(backEvent.progress));
     return true;
   }
@@ -108,13 +152,26 @@ class _RouteBackGestureState extends State<RouteBackGesture>
     if (!_dragging) return;
     _dragging = false;
     _route?.handleCancelBackGesture();
+    _watchSettle();
   }
 
   @override
   void handleCommitBackGesture() {
     if (!_dragging) return;
     _dragging = false;
-    _route?.handleCommitBackGesture();
+    final route = _route;
+    final navigator = route?.navigator;
+    if (route == null || navigator == null || !route.isCurrent) {
+      route?.handleCancelBackGesture();
+      _watchSettle();
+      return;
+    }
+    // Pop from where the finger left the route. The route's own commit
+    // would first snap it fully open and play the whole exit again, which
+    // reads as a jump back under the finger.
+    _owedStop = navigator;
+    navigator.pop();
+    _watchSettle();
   }
 
   @override
