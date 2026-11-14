@@ -98,7 +98,7 @@ void main() {
     Navigator.of(tester.element(find.text('page'))).pop();
     await tester.pump();
     // Just before the end the page is a small box over the origin.
-    await tester.pump(const Duration(milliseconds: 385));
+    await tester.pump(const Duration(milliseconds: 245));
     final late = tester.getRect(find.byType(ClipRRect).last);
     expect(late.width, lessThan(origin.width * 2));
     expect(late.overlaps(origin), isTrue);

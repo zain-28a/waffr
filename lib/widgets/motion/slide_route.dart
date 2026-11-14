@@ -26,11 +26,13 @@ class SlidePageTransitionsBuilder extends PageTransitionsBuilder {
   /// one gesture runs at a time, so one value serves every page.
   static final ValueNotifier<double> side = ValueNotifier<double>(1);
 
+  // Brisk: the page is most of the way across in the first hundred
+  // milliseconds and does not linger at the end.
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 420);
+  Duration get transitionDuration => const Duration(milliseconds: 280);
 
   @override
-  Duration get reverseTransitionDuration => const Duration(milliseconds: 340);
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 230);
 
   /// The animation value that leaves the page pulled aside by the gesture.
   static double valueForGesture(double progress) =>

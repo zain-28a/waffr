@@ -82,7 +82,7 @@ void main() {
 
     Navigator.of(tester.element(find.text('B'))).pop();
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 240));
+    await tester.pump(const Duration(milliseconds: 120));
     expect(tester.getCenter(find.text('B')).dx, greaterThan(width / 2 + 20));
     await tester.pumpAndSettle();
     expect(find.text('B'), findsNothing);
@@ -171,7 +171,7 @@ void main() {
     // And the usual way out is to the right again.
     Navigator.of(tester.element(find.text('B'))).pop();
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 240));
+    await tester.pump(const Duration(milliseconds: 120));
     expect(tester.getCenter(find.text('B')).dx, greaterThan(rest + 20));
     await tester.pumpAndSettle();
   });

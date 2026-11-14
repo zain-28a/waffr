@@ -49,17 +49,18 @@ class OriginPageRoute<T> extends MaterialPageRoute<T> {
     this.radius = 22,
   });
 
-  /// The page's growth; the same curve backwards when it closes.
-  static const Curve curve = Cubic(0.2, 0, 0, 1);
+  /// The page's growth; the same curve backwards when it closes. It has no
+  /// long tail, so the page lands instead of drifting into place.
+  static const Curve curve = Curves.fastOutSlowIn;
 
   /// How far the back gesture shrinks the page toward its origin.
   static const double _pull = 0.16;
 
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 480);
+  Duration get transitionDuration => const Duration(milliseconds: 320);
 
   @override
-  Duration get reverseTransitionDuration => const Duration(milliseconds: 400);
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 260);
 
   /// The page underneath stays where it is; this page grows over it.
   @override
@@ -125,7 +126,7 @@ class _OriginTransition extends StatelessWidget {
             final scale = (rect.width / size.width).clamp(0.01, 1.0);
             // The page shows through as soon as the widget starts to grow,
             // and fades back into the widget at the very end of closing.
-            final shown = (t / 0.22).clamp(0.0, 1.0);
+            final shown = (t / 0.14).clamp(0.0, 1.0);
             return Stack(
               children: [
                 // The page below sinks into a light dusk.
