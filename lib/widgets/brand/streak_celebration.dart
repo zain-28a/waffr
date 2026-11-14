@@ -10,7 +10,6 @@ import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/widgets/brand/waffr_logo.dart';
