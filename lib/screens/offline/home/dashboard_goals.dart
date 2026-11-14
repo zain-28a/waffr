@@ -59,8 +59,8 @@ class _GoalTile extends StatelessWidget {
   }
 }
 
-/// One goal: its ring, name, and saved amount out of the target, with dots
-/// for the other goals.
+/// One goal: a vessel that fills as it is saved for, its name, and the
+/// saved amount out of the target, with dots for the other goals.
 class _GoalFace extends StatelessWidget {
   final SavingsGoal goal;
   final double saved;
@@ -113,28 +113,25 @@ class _GoalFace extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const SizedBox(height: 10),
-                      AnimatedRatio(
-                        value: ratio,
-                        builder: (context, shown) => SizedBox.square(
-                          dimension: 72,
-                          child: CustomPaint(
-                            painter: _RingPainter(
-                              ratio: shown,
-                              track: palette.accent.withValues(alpha: 0.12),
-                              color: palette.accent,
-                              stroke: 6,
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${(shown * 100).round()}%',
-                                style: _text(
-                                  14.5,
-                                  weight: FontWeight.w700,
-                                  color: palette.textPrimary,
-                                  tabular: true,
-                                ),
-                              ),
-                            ),
+                      // The same vessel as on the savings tab: it fills as
+                      // the goal is saved for.
+                      LiquidVessel(
+                        ratio: ratio,
+                        size: 74,
+                        radius: 22,
+                        color: palette.accent,
+                        track: palette.textPrimary.withValues(alpha: 0.07),
+                        child: Text(
+                          '${(ratio * 100).round()}%',
+                          style: _text(
+                            14.5,
+                            weight: FontWeight.w700,
+                            // Dark on an empty vessel, light once the liquid
+                            // is behind it.
+                            color: ratio > 0.5
+                                ? palette.onAccent
+                                : palette.textPrimary,
+                            tabular: true,
                           ),
                         ),
                       ),
@@ -315,38 +312,4 @@ class _DashedBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
       oldDelegate.color != color || oldDelegate.radius != radius;
-}
-
-/// Progress ring: a faint full track and a solid arc from the top.
-class _RingPainter extends CustomPainter {
-  final double ratio;
-  final Color track;
-  final Color color;
-  final double stroke;
-
-  const _RingPainter({
-    required this.ratio,
-    required this.track,
-    required this.color,
-    this.stroke = 5.5,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = (Offset.zero & size).deflate(stroke / 2);
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect, 0, math.pi * 2, false, paint..color = track);
-    final sweep = math.pi * 2 * ratio.clamp(0.0, 1.0);
-    if (sweep <= 0.01) return;
-    canvas.drawArc(rect, -math.pi / 2, sweep, false, paint..color = color);
-  }
-
-  @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
-      oldDelegate.ratio != ratio ||
-      oldDelegate.track != track ||
-      oldDelegate.color != color;
 }

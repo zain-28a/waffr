@@ -14,7 +14,7 @@ screen. Import only `dashboard.dart`.
 | `dashboard_actions.dart` | `_QuickActions` (expense, income, save, obligations) and `_InsightTile` (the smart analysis beside the spending card: its mark, name and one line). |
 | `dashboard_spending.dart` | `_SpendingCard`: a donut of category shares (`_Donut`, the largest slice a little thicker, the total in the middle; it sweeps in once and glides on changes) with the largest four categories listed beside it. |
 | `dashboard_recent.dart` | `_RecentCard` (last four expenses, compact) and `_ObligationsCard` (up to two, hidden when there are none). |
-| `dashboard_goals.dart` | `_GoalTile`: one active goal at a time with a progress ring and page dots; a swipe turns to the next goal, and with no other goal opens a new one. `_NewGoalCard` while there is none. |
+| `dashboard_goals.dart` | `_GoalTile`: one active goal at a time in a `LiquidVessel` that fills as it is saved for, with page dots; a swipe turns to the next goal, and with no other goal opens a new one. `_NewGoalCard` while there is none. |
 | `dashboard_sections.dart` | Shared chrome: `_SectionCard` (with a `compact` mode), `_CardPair` (two cards in a row, two thirds and one third, the same height), `_HeaderLink`, `_EmptyState`, the `_text` style helper. |
 | `sheets/` | Add-expense and add-income sheets; see `sheets/README.md`. |
 
