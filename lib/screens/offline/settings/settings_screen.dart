@@ -450,7 +450,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // Version label.
                       Center(
                         child: Text(
-                          'waffr 2.14.11',
+                          'waffr 2.15.12',
                           style: TextStyle(
                             color: palette.textSecondary.withValues(alpha: 0.6),
                             fontSize: 12,
