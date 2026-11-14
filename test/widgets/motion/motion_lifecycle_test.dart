@@ -1,7 +1,10 @@
 // Motion widget lifecycles: reveals, rolling money and text, glows and the
 // streak number cancel timers and honor reduced motion and text scaling.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/smart/smart_glow.dart';
@@ -93,6 +96,35 @@ void main() {
     expect(find.byType(RollingText), findsNothing);
     expect(find.text('30'), findsOneWidget);
     expect(tester.binding.transientCallbackCount, 0);
+  });
+
+  testWidgets('money ends its roll exactly where the plain text sits', (
+    tester,
+  ) async {
+    // The app's font with proportional digits and no line height: the case
+    // that used to jump when the roll handed over to the plain text. The
+    // test font's glyphs are all one width, so it would hide the jump.
+    await tester.runAsync(() async {
+      final font = File('fonts/Outfit-Variable.ttf').readAsBytesSync();
+      await (FontLoader(
+        'Outfit',
+      )..addFont(Future.value(ByteData.sublistView(font)))).load();
+    });
+    const style = TextStyle(fontFamily: 'Outfit', fontSize: 30);
+    Widget money(num value) => _view(RollingMoney(value: value, style: style));
+    await tester.pumpWidget(money(100));
+    final start = tester.getSize(find.byType(RollingMoney));
+    await tester.pumpWidget(money(1248));
+    expect(tester.getSize(find.byType(RollingMoney)), start);
+
+    await tester.pump(const Duration(milliseconds: 649));
+    expect(find.byType(RollingText), findsOneWidget);
+    final last = tester.getSize(find.byType(RollingMoney));
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(find.byType(RollingText), findsNothing);
+    final rest = tester.getSize(find.byType(RollingMoney));
+    expect(last.width, closeTo(rest.width, 0.01));
+    expect(last.height, closeTo(rest.height, 0.01));
   });
 
   testWidgets('rolling separators follow accessibility text scaling', (

@@ -18,8 +18,13 @@ effects should sleep when their page is retained outside the visible tab.
 - `Reveal` plays once, cancels its stagger timer on disposal, and settles
   immediately if reduced motion is enabled during its entrance.
 - `RollingMoney` preserves the visually dominant number when retargeted.
-  `RollingText` caches glyph measurements across frames; style and text-scale
-  changes invalidate them. Separators use the same scale as digits.
+  `RollingText` places every character on the pen position a plain `Text`
+  of the same string would use (the old string's layout at the start, the
+  new one's at the end), measured with the merged default text style, so
+  the roll starts and ends exactly on the plain text with no jump in width,
+  height or spacing. Layouts are cached per string; style and text-scale
+  changes invalidate them. The streak count (`RollingNumber`) uses the same
+  odometer.
 - `AnimatedRatio` animates a bounded ratio and uses its final value directly
   with reduced motion. `RevealClip` only changes the chart's clipping rectangle.
 - `ActiveListenableBuilder` is for store-driven content on retained tabs. It

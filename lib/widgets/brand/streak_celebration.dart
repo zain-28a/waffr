@@ -6,13 +6,13 @@
 // the fade. When it ends the widget calls [onFinished] and is removed, so it
 // never stays over the home screen.
 
-import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/widgets/brand/waffr_logo.dart';
+import 'package:waffr/widgets/motion/motion.dart';
 
 /// The streak celebration shown over the app on open.
 class StreakCelebrationOverlay extends StatefulWidget {
@@ -323,103 +323,12 @@ class RollingNumber extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final oldText = '$from';
-    final newText = '$to';
-    final width = math.max(oldText.length, newText.length);
-    final oldDigits = oldText.padLeft(width);
-    final newDigits = newText.padLeft(width);
-    final painter = TextPainter(
-      text: TextSpan(text: '0', style: style),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final height = painter.height;
-    final digitWidth = painter.width;
-    painter.dispose();
-
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < width; i++)
-            _RollingDigit(
-              from: oldDigits[i],
-              to: newDigits[i],
-              progress: progress,
-              style: style,
-              height: height,
-              width: digitWidth,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// One digit column of [RollingNumber].
-class _RollingDigit extends StatelessWidget {
-  final String from;
-  final String to;
-  final double progress;
-  final TextStyle style;
-  final double height;
-  final double width;
-
-  const _RollingDigit({
-    required this.from,
-    required this.to,
-    required this.progress,
-    required this.style,
-    required this.height,
-    required this.width,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // A digit that only appears (9 -> 10) grows in from nothing.
-    final appearing = from.trim().isEmpty;
-    final slotWidth = appearing ? width * progress : width;
-
-    if (from == to) {
-      return SizedBox(
-        width: slotWidth,
-        height: height,
-        child: Center(child: Text(to, style: style)),
-      );
-    }
-
-    Widget face(String digit, double offset) {
-      final tilt = offset.clamp(-1.0, 1.0) * 0.9;
-      return Transform.translate(
-        offset: Offset(0, offset * height),
-        child: Transform(
-          alignment: Alignment.center,
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.002)
-            ..rotateX(tilt),
-          child: Opacity(
-            opacity: (1 - offset.abs()).clamp(0.0, 1.0),
-            child: Center(child: Text(digit, style: style)),
-          ),
-        ),
-      );
-    }
-
-    return ClipRect(
-      child: SizedBox(
-        width: slotWidth,
-        height: height,
-        child: OverflowBox(
-          maxWidth: width,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (!appearing) face(from, -progress),
-              face(to, 1 - progress),
-            ],
-          ),
-        ),
-      ),
+    // The same odometer as the money figures, so it settles the same way.
+    return RollingText(
+      from: '$from',
+      to: '$to',
+      progress: progress,
+      style: style,
     );
   }
 }

@@ -183,6 +183,11 @@ class _RollingMoneyState extends State<RollingMoney>
 /// Odometer text: each character that changes rolls up from the old value
 /// to the new one with a slight tilt. [progress] runs 0..1. Strings are
 /// right-aligned so units line up with units.
+///
+/// Every character sits where a plain [Text] of the same string would draw
+/// it: the old string's layout at 0, the new one's at 1, and in between the
+/// two. So the roll ends exactly on the plain text that replaces it, with
+/// no jump in width, height or spacing, whatever the font's digit widths.
 class RollingText extends StatefulWidget {
   /// Text before the change.
   final String from;
@@ -209,37 +214,62 @@ class RollingText extends StatefulWidget {
   State<RollingText> createState() => _RollingTextState();
 }
 
+/// Where each character of a laid-out string starts, plus its end: the
+/// pen positions a plain [Text] uses.
+class _Carets {
+  final List<double> x;
+  final double height;
+
+  const _Carets(this.x, this.height);
+
+  double get width => x.last;
+}
+
 /// State of [RollingText].
 class _RollingTextState extends State<RollingText> {
   final TextPainter _painter = TextPainter(textDirection: TextDirection.ltr);
-  final Map<String, double> _glyphWidths = {};
-  TextStyle? _measuredStyle;
-  TextScaler? _measuredScaler;
-  double _height = 0;
-  double _digitWidth = 0;
 
-  // Text layout is independent of animation progress. Measure it only when
-  // the style or accessibility scale changes, and reuse separator widths.
-  void _measure() {
-    final scaler = MediaQuery.textScalerOf(context);
-    if (_measuredStyle == widget.style && _measuredScaler == scaler) return;
-    _measuredStyle = widget.style;
-    _measuredScaler = scaler;
-    _glyphWidths.clear();
-    _painter
-      ..textScaler = scaler
-      ..text = TextSpan(text: '0', style: widget.style)
-      ..layout();
-    _height = _painter.height;
-    _digitWidth = _painter.width;
-  }
+  // Layout is independent of animation progress: it is measured again only
+  // when a string, the style or the text scale changes.
+  TextStyle? _style;
+  TextScaler? _scaler;
+  TextHeightBehavior? _heightBehavior;
+  final Map<String, _Carets> _layouts = {};
 
-  double _glyphWidth(String char) => _glyphWidths.putIfAbsent(char, () {
+  /// The style a [Text] with [RollingText.style] would end up with.
+  TextStyle _effectiveStyle() =>
+      DefaultTextStyle.of(context).style.merge(widget.style);
+
+  _Carets _carets(String text) => _layouts.putIfAbsent(text, () {
     _painter
-      ..text = TextSpan(text: char, style: widget.style)
+      ..text = TextSpan(text: text, style: _style)
+      ..textScaler = _scaler!
+      ..textHeightBehavior = _heightBehavior
       ..layout();
-    return _painter.width;
+    // The end is the painted width, as a Text sizes itself: the caret
+    // after the last glyph can stop short of it (letter spacing).
+    return _Carets([
+      for (var k = 0; k < text.length; k++)
+        _painter.getOffsetForCaret(TextPosition(offset: k), Rect.zero).dx,
+      _painter.width,
+    ], _painter.height);
   });
+
+  void _measure() {
+    final style = _effectiveStyle();
+    final scaler = MediaQuery.textScalerOf(context);
+    final heightBehavior = DefaultTextStyle.of(context).textHeightBehavior;
+    if (style != _style ||
+        scaler != _scaler ||
+        heightBehavior != _heightBehavior) {
+      _style = style;
+      _scaler = scaler;
+      _heightBehavior = heightBehavior;
+      _layouts.clear();
+    }
+    // Only the two strings on screen are kept.
+    _layouts.removeWhere((text, _) => text != widget.from && text != widget.to);
+  }
 
   @override
   void dispose() {
@@ -250,41 +280,67 @@ class _RollingTextState extends State<RollingText> {
   @override
   Widget build(BuildContext context) {
     _measure();
-    final width = math.max(widget.from.length, widget.to.length);
-    final oldChars = widget.from.padLeft(width);
-    final newChars = widget.to.padLeft(width);
+    final style = _style!;
+    final from = _carets(widget.from);
+    final to = _carets(widget.to);
+    final t = widget.progress.clamp(0.0, 1.0);
+    double lerp(double a, double b) => a + (b - a) * t;
+
+    final count = math.max(widget.from.length, widget.to.length);
+    final fromPad = count - widget.from.length;
+    final toPad = count - widget.to.length;
+    final height = math.max(from.height, to.height);
+
+    // Position i of the right-aligned strings: its character, where it
+    // starts and how wide it is in each string. A padding position has no
+    // character and no width, at the start.
+    (String, double, double) slot(String text, _Carets carets, int pad, int i) {
+      if (i < pad) return (' ', 0, 0);
+      final k = i - pad;
+      return (text[k], carets.x[k], carets.x[k + 1] - carets.x[k]);
+    }
 
     return Directionality(
       textDirection: TextDirection.ltr,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < width; i++)
-            _RollingChar(
-              from: oldChars[i],
-              to: newChars[i],
-              progress: widget.progress,
-              style: widget.style,
-              height: _height,
-              width: _isDigit(newChars[i]) || _isDigit(oldChars[i])
-                  ? _digitWidth
-                  : _glyphWidth(
-                      newChars[i].trim().isEmpty ? oldChars[i] : newChars[i],
-                    ),
-            ),
-        ],
+      child: SizedBox(
+        width: lerp(from.width, to.width),
+        height: height,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            for (var i = 0; i < count; i++)
+              () {
+                final (oldChar, oldX, oldWidth) = slot(
+                  widget.from,
+                  from,
+                  fromPad,
+                  i,
+                );
+                final (newChar, newX, newWidth) = slot(widget.to, to, toPad, i);
+                return Positioned(
+                  left: lerp(oldX, newX),
+                  top: 0,
+                  width: lerp(oldWidth, newWidth),
+                  height: height,
+                  child: _RollingChar(
+                    from: oldChar,
+                    to: newChar,
+                    progress: t,
+                    style: style,
+                    height: height,
+                    faceWidth: math.max(oldWidth, newWidth),
+                  ),
+                );
+              }(),
+          ],
+        ),
       ),
     );
-  }
-
-  static bool _isDigit(String c) {
-    final unit = c.codeUnitAt(0);
-    return unit >= 0x30 && unit <= 0x39;
   }
 }
 
 /// One character position of [RollingText]: the old glyph rolls out, the
-/// new one rolls in.
+/// new one rolls in. The slot's width comes from its parent.
 class _RollingChar extends StatelessWidget {
   final String from;
   final String to;
@@ -292,8 +348,8 @@ class _RollingChar extends StatelessWidget {
   final TextStyle style;
   final double height;
 
-  /// Fixed slot width, measured once with the current text scale.
-  final double width;
+  /// Room for the wider of the two glyphs.
+  final double faceWidth;
 
   const _RollingChar({
     required this.from,
@@ -301,7 +357,7 @@ class _RollingChar extends StatelessWidget {
     required this.progress,
     required this.style,
     required this.height,
-    required this.width,
+    required this.faceWidth,
   });
 
   @override
@@ -309,11 +365,14 @@ class _RollingChar extends StatelessWidget {
     final appearing = from.trim().isEmpty;
     final leaving = to.trim().isEmpty;
 
+    // Glyphs sit at the start of their slot, which is the pen position a
+    // plain Text draws them at.
     if (from == to) {
-      return SizedBox(
-        width: width,
-        height: height,
-        child: Center(child: Text(to, style: style)),
+      return OverflowBox(
+        alignment: Alignment.topLeft,
+        minWidth: 0,
+        maxWidth: faceWidth,
+        child: Text(to, style: style, maxLines: 1, softWrap: false),
       );
     }
 
@@ -328,33 +387,26 @@ class _RollingChar extends StatelessWidget {
             ..rotateX(tilt),
           child: Opacity(
             opacity: (1 - offset.abs()).clamp(0.0, 1.0),
-            child: Center(child: Text(char, style: style)),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Text(char, style: style, maxLines: 1, softWrap: false),
+            ),
           ),
         ),
       );
     }
 
-    final slot = width;
-    final slotWidth = appearing
-        ? slot * progress
-        : leaving
-        ? slot * (1 - progress)
-        : slot;
-
     return ClipRect(
-      child: SizedBox(
-        width: slotWidth,
-        height: height,
-        child: OverflowBox(
-          maxWidth: slot,
-          minWidth: slot,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (!appearing) face(from, -progress),
-              if (!leaving) face(to, 1 - progress),
-            ],
-          ),
+      child: OverflowBox(
+        alignment: Alignment.topLeft,
+        minWidth: faceWidth,
+        maxWidth: faceWidth,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (!appearing) face(from, -progress),
+            if (!leaving) face(to, 1 - progress),
+          ],
         ),
       ),
     );
