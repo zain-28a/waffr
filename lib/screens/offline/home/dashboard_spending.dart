@@ -1,5 +1,6 @@
 // Home spending card (part of dashboard.dart): where the money went, as a
-// donut with the total in its middle and the categories listed beside it.
+// donut with the total in its middle and the categories listed beside it,
+// across the full width of the screen.
 
 part of 'dashboard.dart';
 
@@ -17,7 +18,7 @@ class _SpendingCard extends StatelessWidget {
   });
 
   /// Categories named beside the donut; the donut shows them all.
-  static const int _listed = 4;
+  static const int _listed = 5;
 
   @override
   Widget build(BuildContext context) {
@@ -25,13 +26,11 @@ class _SpendingCard extends StatelessWidget {
 
     return _SectionCard(
       title: 'توزيع المصروفات',
-      compact: true,
       onTap: onTap,
       child: !has
           ? const _EmptyState(
               icon: AppIcons.chartPie,
               message: 'ستظهر النسب بعد تسجيل أول مصروف',
-              compact: true,
             )
           : Padding(
               padding: const EdgeInsets.only(top: 2, bottom: 6),
@@ -53,7 +52,7 @@ class _SpendingCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 22),
                   _Donut(totals: totals, total: totalExpense),
                 ],
               ),
@@ -78,7 +77,7 @@ class _Share extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3.5),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           Container(
@@ -92,7 +91,7 @@ class _Share extends StatelessWidget {
               name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: _text(12.5, color: palette.textSecondary),
+              style: _text(13, color: palette.textSecondary),
             ),
           ),
           const SizedBox(width: 4),
@@ -121,7 +120,7 @@ class _Donut extends StatefulWidget {
   const _Donut({required this.totals, required this.total});
 
   /// Outer size, with room for the thicker slice.
-  static const double size = 94;
+  static const double size = 120;
 
   @override
   State<_Donut> createState() => _DonutState();
@@ -237,7 +236,7 @@ class _DonutState extends State<_Donut> with TickerProviderStateMixin {
           ),
           // The total in the middle, rolling to its new value.
           SizedBox(
-            width: 52,
+            width: 66,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -246,7 +245,7 @@ class _DonutState extends State<_Donut> with TickerProviderStateMixin {
                   child: RollingMoney(
                     value: widget.total,
                     style: _text(
-                      14,
+                      17,
                       weight: FontWeight.w700,
                       color: palette.textPrimary,
                       tabular: true,
@@ -256,7 +255,7 @@ class _DonutState extends State<_Donut> with TickerProviderStateMixin {
                 Text(
                   currencyLabel,
                   maxLines: 1,
-                  style: _text(10, color: palette.textSecondary),
+                  style: _text(11, color: palette.textSecondary),
                 ),
               ],
             ),
@@ -278,8 +277,8 @@ class _DonutPainter extends CustomPainter {
   const _DonutPainter({required this.slices, required this.sweep});
 
   /// Ring thickness; the largest slice reaches a little further out.
-  static const double _thin = 12;
-  static const double _thick = 16;
+  static const double _thin = 15;
+  static const double _thick = 20;
 
   @override
   void paint(Canvas canvas, Size size) {

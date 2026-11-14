@@ -1,6 +1,6 @@
 // Offline home tab (library root): the balance hero, quick actions, the
-// spending donut beside the smart analysis, the recent expenses beside one
-// savings goal, and the obligations. Each section opens the screen that
+// way into the smart analysis, the spending donut, the recent expenses
+// beside one savings goal, and the obligations. Each section opens the screen that
 // holds its full details.
 //
 // The sections live in dashboard_* part files of this library.
@@ -44,6 +44,7 @@ import 'package:waffr/screens/offline/settings/sheets/currencies_sheet.dart';
 import 'package:waffr/screens/offline/smart/smart_analysis_screen.dart';
 import 'package:waffr/screens/shell/app_shell_scope.dart';
 import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/glass/liquid_glass.dart';
 import 'package:waffr/widgets/glass/tilt.dart';
 import 'package:waffr/widgets/motion/active_listenable_builder.dart';
 import 'package:waffr/widgets/motion/liquid_vessel.dart';
@@ -214,15 +215,14 @@ class _HomeScreenState extends State<HomeScreen>
                 onObligations: () => showObligationsSheet(context),
               ),
               const SizedBox(height: 20),
-              // Where the money went, with the smart analysis beside it.
-              _CardPair(
-                wide: _SpendingCard(
-                  totals: _store.expensesByCategory(),
-                  totalExpense: _store.totalExpense,
-                  onTap: () =>
-                      AppShellScope.selectTabOf(context, AppShellTabs.report),
-                ),
-                narrow: _InsightTile(text: _insight),
+              // The way into the smart analysis, then where the money went.
+              _InsightBar(insight: _insight),
+              const SizedBox(height: 14),
+              _SpendingCard(
+                totals: _store.expensesByCategory(),
+                totalExpense: _store.totalExpense,
+                onTap: () =>
+                    AppShellScope.selectTabOf(context, AppShellTabs.report),
               ),
               const SizedBox(height: kCardGap),
               // The latest expenses, with one savings goal beside them.
