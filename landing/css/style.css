@@ -375,7 +375,7 @@ em { font-style: normal; font-weight: 700; color: var(--green); }
     align-items: center;
     text-align: center;
 }
-.end-full { min-height: min(110vh, 1100px); justify-content: center; padding: 80px 24px; }
+.end-full { padding: 56px 24px 48px; }
 .end-card { margin-top: 44px; padding: 70px 24px 60px; }
 
 .end-logo {
@@ -390,12 +390,12 @@ em { font-style: normal; font-weight: 700; color: var(--green); }
 .end-full h2, .end-card h2 { margin-top: 28px; font-size: clamp(34px, 5.4vw, 52px); font-weight: 800; line-height: 1.3; }
 .end-card h2 { font-size: clamp(28px, 4vw, 36px); margin-top: 18px; }
 
-.end-full hr, .end-card hr { width: min(430px, 60%); height: 2px; border: 0; margin: 40px 0 30px; background: color-mix(in srgb, var(--mint) 55%, transparent); }
+.end-full hr, .end-card hr { width: min(360px, 60%); height: 2px; border: 0; margin: 24px 0 18px; background: color-mix(in srgb, var(--mint) 55%, transparent); }
 .end-card hr { width: min(310px, 60%); margin: 30px 0 20px; }
 
 .team { font-weight: 700; font-size: 24px; color: var(--mint); line-height: 1.6; }
 .date { color: rgba(242, 247, 241, 0.75); font-size: 16px; }
-.end-full .yg { margin-top: clamp(80px, 14vw, 180px); width: 180px; }
+.end-full .yg { margin-top: 36px; width: 150px; }
 .end-card .yg { margin-top: 26px; width: 140px; }
 
 .cover-brand .brand-logo { width: 74px; height: 76px; }
