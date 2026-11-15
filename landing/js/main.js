@@ -160,6 +160,11 @@
     $$('[data-stagger]').forEach((group) => {
         [...group.children].forEach((c, i) => c.style.setProperty('--i', i % 6));
     });
+    // Reel blocks: each line settles in on its own, like the competitor lists
+    $$('.block').forEach((b) => [...b.children].forEach((c, i) => {
+        c.setAttribute('data-reveal', '');
+        c.style.setProperty('--i', i % 8);
+    }));
     $$('.compare tbody').forEach((tb) => [...tb.rows].forEach((tr, i) => tr.style.setProperty('--i', i)));
 
     const counted = new WeakSet();
