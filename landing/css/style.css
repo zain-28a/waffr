@@ -177,7 +177,7 @@ em { font-style: normal; font-weight: 700; color: var(--green); }
     visibility: hidden;
 }
 .brand.is-placed, .no-js .brand { visibility: visible; }
-.no-js .brand { transform: translate(16px, 16px) scale(0.8); }
+.no-js .brand { left: auto; right: 16px; top: 16px; }
 
 .brand-logo {
     width: 66px;

@@ -1,7 +1,7 @@
 /* =========================================================
    Waffr landing page: scroll motion
-   - Brand (logo + slogan, liquid glass): flies from its place on the
-     cover to the top-left corner and stays there.
+   - Brand (logo + slogan, liquid glass): stays at its place on the
+     cover (top right) and holds at the top edge while the page scrolls.
    - Ambient lights: move with scroll and blend their colors section by
      section (data-tone on each section).
    - Cover card eases back slightly as you leave it.
@@ -25,7 +25,7 @@
     let vw = window.innerWidth;
     let vh = window.innerHeight;
 
-    /* ---------- Brand flight ---------- */
+    /* ---------- Brand ---------- */
 
     const brand = $('.brand');
     const slot = $('.brand-slot');
@@ -36,16 +36,13 @@
     }
 
     function placeBrand() {
+        // Stays where the cover has it (right side); once it reaches the top
+        // edge it holds there while the page scrolls under the glass.
         const margin = vw < 600 ? 12 : 20;
-        const endScale = vw < 600 ? 0.8 : 0.76;
         const r = slot.getBoundingClientRect();
-        const p = clamp(window.scrollY / (vh * 0.42));
-        const e = reduceMotion ? (p > 0.5 ? 1 : 0) : easeInOut(p);
-        const x = lerp(r.left, margin, e);
-        const y = lerp(Math.max(r.top, margin), margin, e) + Math.sin(e * Math.PI) * 18;
-        const s = lerp(1, endScale, e);
-        brand.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) scale(${s.toFixed(4)})`;
-        brand.classList.toggle('is-docked', e > 0.98);
+        const y = Math.max(r.top, margin);
+        brand.style.transform = `translate(${r.left.toFixed(2)}px, ${y.toFixed(2)}px)`;
+        brand.classList.toggle('is-docked', r.top <= margin);
         brand.classList.add('is-placed');
     }
 
