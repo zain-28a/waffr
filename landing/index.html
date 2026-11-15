@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="ar" dir="rtl" class="no-js">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>وفّر · كل ليرة بتفرق</title>
+    <meta name="description" content="تحليل المنافسين والمحتوى التسويقي لتطبيق وفّر لإدارة المصروفات الشخصية: Money Manager وTadbir ووفّر، وأفكار Reels وPosts.">
+    <meta name="theme-color" content="#EEF1ED" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0F1010" media="(prefers-color-scheme: dark)">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="preload" href="fonts/Tajawal-ExtraBold.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="fonts/Tajawal-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <a class="skip" href="#main">تخطَّ إلى المحتوى</a>
+
+    <!-- Icons (Lucide-style outline) + liquid-glass filters (js/glass.js adds them here) -->
+    <svg class="svg-defs" aria-hidden="true" focusable="false">
+        <defs></defs>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+        <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+        <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+        <symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+        <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0L14.06 8.5a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96L15.5 14.06a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/></symbol>
+        <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.43a5 5 0 0 1 7 0"/><path d="M5 12.86a10 10 0 0 1 5.17-2.69"/><path d="M19 12.86a10 10 0 0 0-2-1.52"/><path d="M2 8.82a15 15 0 0 1 4.18-2.64"/><path d="M22 8.82a15 15 0 0 0-11.29-3.76"/><path d="m2 2 20 20"/></symbol>
+        <symbol id="i-languages" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></symbol>
+        <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1"/></symbol>
+        <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+        <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol>
+        <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></symbol>
+        <symbol id="i-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></symbol>
+        <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></symbol>
+        <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
+        <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+        <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+        <symbol id="i-play" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m10 8 6 4-6 4z"/></symbol>
+    </svg>
+
+    <!-- Ambient light fields (moved and recolored by js/main.js) -->
+    <div class="ambient" aria-hidden="true">
+        <div class="light"><i></i></div>
+        <div class="light"><i></i></div>
+        <div class="light"><i></i></div>
+        <div class="light" style="--o:.55"><i></i></div>
+        <div class="sweep"></div>
+    </div>
+
+    <!-- Brand: logo + slogan in liquid glass; docks to the top-left corner on scroll -->
+    <button class="brand glass" type="button" aria-label="وفّر · كل ليرة بتفرق، العودة إلى الأعلى">
+        <span class="brand-logo" aria-hidden="true"></span>
+        <span class="brand-sep" aria-hidden="true"></span>
+        <span class="brand-slogan">كل ليرة بتفرق</span>
+    </button>
+
+    <main id="main">
+
+        <!-- ================= Cover ================= -->
+        <header class="hero wrap" data-tone="green">
+            <div class="hero-top"><div class="brand-slot" aria-hidden="true"></div></div>
+
+            <div class="hero-stage">
+                <div class="hero-card green">
+                    <span class="hero-watermark" aria-hidden="true"></span>
+                    <p class="eyebrow fade" style="--i:0"><span class="en">WAFFR</span> · محتوى تسويقي | دراسة تنافسية</p>
+                    <h1 class="hero-title">
+                        <span class="line"><span>المحتوى التسويقي</span></span>
+                        <span class="line"><span>وتحليل المنافسين</span></span>
+                        <span class="line"><span>لتطبيق <span class="mint">وفّر</span></span></span>
+                    </h1>
+                    <p class="hero-apps fade" style="--i:1">Money Manager | Tadbir | Waffr</p>
+                    <p class="hero-sub fade" style="--i:2">أفكار <span class="en">Reels</span> و<span class="en">Posts</span> تعرّف بالتطبيق وتعرض ميزاته من خلال مواقف يومية قريبة من الجمهور، ومقارنة بين تطبيق عالمي وتطبيق عربي وفرص التميّز في السوق العربي.</p>
+                    <p class="hero-date fade" style="--i:3">تقرير تحليلي · نوفمبر 2026</p>
+                </div>
+            </div>
+
+            <nav class="tiles" aria-label="أقسام الصفحة">
+                <a class="tile" href="#reels">
+                    <span class="tile-num" data-count="01">01</span>
+                    <span class="tile-text"><b><span class="en">Reels</span></b><span>تسع أفكار إبداعية لصناعة المحتوى</span></span>
+                </a>
+                <a class="tile" href="#posts">
+                    <span class="tile-num" data-count="02">02</span>
+                    <span class="tile-text"><b><span class="en">Posts</span></b><span>تصاميم وكاروسيل من أربع شرائح</span></span>
+                </a>
+                <a class="tile" href="#competitors">
+                    <span class="tile-num" data-count="03">03</span>
+                    <span class="tile-text"><b>تحليل المنافسين</b><span>سوق إدارة المصروفات الشخصية</span></span>
+                </a>
+            </nav>
+
+            <div class="hero-foot">
+                <span class="yg" role="img" aria-label="Youth Guide · دليل الشباب"></span>
+                <span class="scroll-cue"><svg class="icon"><use href="#i-arrow-down"/></svg>مرّر للأسفل</span>
+            </div>
+        </header>
+
+        <!-- ================= Part 1: Campaign ================= -->
+        <section class="section" id="reels" data-tone="sage">
+            <div class="wrap">
+                <div class="part" data-reveal>
+                    <span class="part-label">Part 01</span>
+                    <h2 class="part-title">محتوى تسويقي لتطبيق وفّر</h2>
+                </div>
+                <p class="lead" data-reveal>أفكار <span class="en">Reels</span> و<span class="en">Posts</span> تعرّف بالتطبيق وتعرض ميزاته من خلال مواقف يومية قريبة من الجمهور.</p>
+            </div>
+        </section>
+
+        <section class="section tight" data-tone="lime">
+            <div class="wrap">
+                <div class="head"><span class="no en">Reels / 01</span><h2>تسع أفكار إبداعية لصناعة المحتوى</h2></div>
+
+                <div class="reels">
+
+                    <!-- 1.1 -->
+                    <article class="card reel" data-reveal>
+                        <div class="reel-head">
+                            <div class="reel-num"><small>Reels</small><b data-count="1.1">1.1</b></div>
+                        </div>
+                        <p class="reel-label">المنحى</p>
+                        <dl class="meta">
+                            <div><dt>الفئة المستهدفة</dt><dd>الأطفال واليافعون.</dd></div>
+                            <div><dt>النمط</dt><dd>اجتماعي توعوي</dd></div>
+                            <div><dt>المعلومات الموجهة لإنتاج المحتوى</dt><dd>تسليط الضوء على أهمية بناء الوعي المالي لدى الأطفال منذ الصغر وتعليمهم كيفية إدارة مصروفهم.</dd></div>
+                        </dl>
+                        <div class="hook"><span class="hook-tag"><svg class="icon"><use href="#i-play"/></svg>الهوك</span><p><strong>POV حياتي كأخ كبير</strong></p></div>
+                        <details class="direction">
+                            <summary>الإخراج<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                            <div class="direction-body"><p>ريل بأسلوب <span class="en">POV</span>، يصوّر موقفاً بين أخ وأخيه الصغير، حيث يناقش الأول طريقة إنفاق الثاني لمصروفه ويحاول توجيهه نحو التوفير والتخطيط لمشترياته عن طريق تطبيق وفّر الذي يبني وعياً وتحمّلاً للمسؤولية وعادات مالية سليمة منذ الصغر.</p></div>
+                        </details>
+                        <div class="moral"><h4>المغزى</h4><p>تعزيز ثقافة التوفير والوعي المالي عند الأطفال واليافعين منذ الصغر وتعلّم الموازنة بين الإنفاق والتوفير والتمييز بين الرغبات والحاجات، مع إبراز دور الأهل والإخوة في ترسيخ هذه الثقافة.</p></div>
+                    </article>
+
+                    <!-- 1.2 -->
+                    <article class="card reel" data-reveal style="--i:1">
+                        <div class="reel-head">
+                            <div class="reel-num"><small>Reels</small><b data-count="1.2">1.2</b></div>
+                            <h3 class="reel-title">لعبة الامبوستر</h3>
+                        </div>
+                        <p class="reel-label">المنحى</p>
+                        <dl class="meta">
+                            <div><dt>الفئة المستهدفة</dt><dd>الطلاب والشباب.</dd></div>
+                            <div><dt>النمط</dt><dd>ريل كوميدي يعتمد على لعبة "الامبوستر" وجلسة أصدقاء (ثلاثة أشخاص أو أكثر) وحركات ضحك وتلميحات.</dd></div>
+                        </dl>
+                        <div class="hook">
+                            <span class="hook-tag"><svg class="icon"><use href="#i-play"/></svg>الهوك</span>
+                            <p>المشهد: جلسة شباب يلعبون لعبة "الامبوستر"، والدور يدور بينهم لتمرير كلمات مفتاحية عن التطبيق:</p>
+                            <ol>
+                                <li><b class="say">الأول:</b> أخضر</li>
+                                <li><b class="say">الثاني:</b> محفظة</li>
+                                <li><b class="say">الثالث (الامبوستر):</b> قلم (أو دفتر، كشيء قريب وعبثي بالموقف).</li>
+                                <li><b class="say">الرابع:</b> تحليل ذكي!</li>
+                                <li><b class="say">الخامس:</b> تحليل بياني!</li>
+                                <li><b class="say">الامبوستر:</b> ورقة</li>
+                            </ol>
+                            <p>لحظة كشف الامبوستر: الجميع يضحك وبقلولو واضح إنك ما بتعرف شي وضايع باللعبة، <strong>إنت الامبوستر!</strong></p>
+                        </div>
+                        <details class="direction">
+                            <summary>الإخراج<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                            <div class="direction-body">
+                                <p>بيئة التصوير: جلسة أصدقاء عفوية وضحك.</p>
+                                <p>الحوار وتلميحات الأصدقاء:</p>
+                                <ul class="dialog">
+                                    <li><b>الأول والثاني</b> (بيبلشوا يلمحوله بطريقة مضحكة): "يا زلمة فكر شوي! تطبيق بيعطيك تحليل ذكي، وبيعملك خطط توفير، وبتحدد عليه أهداف مصروفك!"</li>
+                                    <li class="alt"><b>الثالث</b> (الامبوستر بعد ما استوعب وفهم): "ليكون قصدكم ع تطبيق وفر؟!"</li>
+                                </ul>
+                            </div>
+                        </details>
+                        <div class="moral"><h4>المغزى</h4><p>توصيل رسالة بأن تطبيق "وفر" بميزاته (مثل التحليل الذكي وخطط التوفير وتحديد الأهداف) هو الأساس لكل طالب وشاب.</p></div>
+                    </article>
+
+                    <!-- 1.3 -->
+                    <article class="card reel" data-reveal>
+                        <div class="reel-head">
+                            <div class="reel-num"><small>Reels</small><b data-count="1.3">1.3</b></div>
+                            <h3 class="reel-title">تريند الشارع</h3>
+                        </div>
+                        <p class="reel-label">المنحى</p>
+                        <dl class="meta">
+                            <div><dt>الفئة المستهدفة</dt><dd>الشباب والطلاب (لكل من يبحث عن طريقة سهلة لإدارة مصاريفه).</dd></div>
+                            <div><dt>النمط</dt><dd>ريل تفاعلي سريع (تريند الشارع) يعتمد على المفاجأة وكسر التوقعات.</dd></div>
+                        </dl>
+                        <div class="hook">
+                            <span class="hook-tag"><svg class="icon"><use href="#i-play"/></svg>الهوك</span>
+                            <p>المذيع يوقف المارة في الشارع: <strong>كلمة ببالك بس قول تطبيق؟</strong></p>
+                            <p>إجابات سريعة متتالية: (الأول: ألعاب ... الثاني: ترفيهي ... الثالث: مالية).</p>
+                            <p>المذيع بصدمة: مالية؟! كيف يعني تطبيقات مالية؟!</p>
+                        </div>
+                        <details class="direction">
+                            <summary>الإخراج<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                            <div class="direction-body">
+                                <p>بيئة التصوير: شارع مزدحم قليلاً بضوء شمس يمنح طاقة إيجابية وواقعية.</p>
+                                <p>الحوار المختصر:</p>
+                                <ul class="dialog">
+                                    <li><b>الشخص الثالث:</b> (يرفع الهاتف ليعرض التطبيق وفر)</li>
+                                    <li class="alt"><b>المذيع:</b> "شو بيعمل هاد كمان؟"</li>
+                                    <li><b>الشخص الثالث:</b> "بيسهل عليك؛ بيسجل مصاريفك اليومية وبحدد أهداف الادخار (ذكر بعض ميزات وفر)..."</li>
+                                    <li class="alt"><b>المذيع:</b> والأحلى من هيك؟</li>
+                                    <li><b>مع بعض:</b> إنو كل هالميزات بدون نت.. ومجانية تماماً .. حمّل وفر وخلي مصاريفك تحت سيطرتك.</li>
+                                </ul>
+                            </div>
+                        </details>
+                        <div class="moral"><h4>المغزى</h4><p>توصيل رسالة بأن إدارة الأموال وتتبع المصاريف والادخار أمر سهل، مجاني، وبدون إنترنت من خلال تطبيق وفر.</p></div>
+                    </article>
+
+                    <!-- 1.4 -->
+                    <article class="card reel" data-reveal style="--i:1">
+                        <div class="reel-head">
+                            <div class="reel-num"><small>Reels</small><b data-count="1.4">1.4</b></div>
+                            <h3 class="reel-title">قصة تجربة شخصية مع وفّر</h3>
+                        </div>
+                        <p class="reel-label">المنحى</p>
+                        <dl class="meta">
+                            <div><dt>الفئة المستهدفة</dt><dd>الطلاب والشباب والموظفين.</dd></div>
+                            <div><dt>النمط</dt><dd>ريل قصصي (<span class="en">Storytelling</span>) بيعتمد على تجربة شخصية لشخص استخدم تطبيق وفّر واستفاد منو بطريقة قريبة من حياة الناس.</dd></div>
+                        </dl>
+                        <div class="hook">
+                            <span class="hook-tag"><svg class="icon"><use href="#i-play"/></svg>الهوك</span>
+                            <p>الريل بيبدأ بفويس أوفر:</p>
+                            <p><strong>«هاي سارة.. سارة كانت مفكرة حالها بتصرف طبيعي وما بتبذر، بس كل ما يخلص الشهر بتلاقي حالها ما معها شي وما بتعرف وين راحت مصرياتها!»</strong></p>
+                        </div>
+                        <details class="direction">
+                            <summary>الإخراج<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                            <div class="direction-body"><p>بتبلش بلقطات لسارة وهي عم تشتري قهوة وتطلب أكل وتصرف على شغلات صغيرة، لحتى تكتشف تطبيق وفّر وتصير تسجل مصاريفها أول بأول. بعدها منشوفها عم تتصفح تحليل مصاريفها وتكتشف وين عم تروح مصرياتها، وبتحدد هدف وبتبلش تجمعله. بكون في زوم عالموبايل ومنشوف انو صارت تفتح وفر بكل مرة بتشتري مع فويس أوفر بوضح كلشي صار معا.</p></div>
+                        </details>
+                        <div class="moral"><h4>المغزى</h4><p>إيصال فكرة إنو المشكلة أحياناً مو بقلة المصاري، بل بعدم معرفة وين عم تروح، وكيف تطبيق وفّر بيساعد الشخص ينظم مصاريفه ويوفر ليحقق أهدافه.</p></div>
+                    </article>
+
+                    <!-- 1.5 -->
+                    <article class="card reel" data-reveal>
+                        <div class="reel-head">
+                            <div class="reel-num"><small>Reels</small><b data-count="1.5">1.5</b></div>
+                            <h3 class="reel-title">رفيقك الذكي</h3>
+                        </div>
+                        <p class="reel-label">المنحى</p>
+                        <dl class="meta">
+                            <div><dt>الفئة المستهدفة</dt><dd>الشباب بشكل أساسي.</dd></div>
+                            <div><dt>النمط</dt><dd>كوميدي، اجتماعي وواقعي.</dd></div>
+                            <div><dt>الفكرة</dt><dd>تقديم ميزات "وفّر" على شكل صفات يمتلكها رفيق مثالي متواجد في كل الأوقات ويساعدنا في تنظيم حياتنا المالية.</dd></div>
+                        </dl>
+                        <div class="hook">
+                            <span class="hook-tag"><svg class="icon"><use href="#i-play"/></svg>الهوك</span>
+                            <p><strong>«يا ريت عندي رفيق هيك!»</strong></p>
+                            <p>يقول الشخص هذه العبارة وتظهر بخط كبير مع بداية أول موقف، لتثير فضول المشاهد حول طبيعة هذا الصديق.</p>
+                        </div>
+                        <details class="direction">
+                            <summary>الإخراج<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                            <div class="direction-body">
+                                <p>يبدأ الريل بشخص يعيش مواقف يومية مختلفة، وفي كل موقف يتمنى وجود رفيق يمتلك مهارة تساعده:</p>
+                                <ul class="dialog">
+                                    <li><b>أثناء شراء أغراض كثيرة:</b> «يا ريت عندي رفيق شاطر بالحسابات!»</li>
+                                    <li><b>في السوق بعد نسيان الأغراض التي يحتاجها:</b> «يا ريت عندي رفيق ذاكرته قوية!»</li>
+                                    <li><b>بداية الشهر أثناء حساب مصروفه:</b> «يا ريت عندي رفيق أمّن مصرياتي عندو ويساعدني ادّخرا!»</li>
+                                </ul>
+                                <p>تتوالى المواقف بأسلوب كوميدي، مع إبراز كل صفة يحتاجها هذا الصديق المنقذ.</p>
+                                <p>في النهاية، يظهر تطبيق «وفّر» مع العبارة: <span class="say">«ليش لتدوّر على رفيق خارق، وكل هالصفات موجودة بـ"وفّر"؟»</span></p>
+                                <p>ثم يظهر شعار التطبيق والعبارة: <span class="say">«وفّر... رفيقك الذكي... لأن كل ليرة بتفرق!»</span></p>
+                            </div>
+                        </details>
+                        <div class="moral"><h4>المغزى</h4><p>تقديم «وفّر» كرفيق مالي ذكي يرافق المستخدم في مختلف تفاصيل حياته، ويساعده على تنظيم مصروفه وتذكّر احتياجاته والادخار، أي تقديم ميزات "وفر" بطريقة مميزة.</p></div>
+                    </article>
+
+                    <!-- 1.6 -->
+                    <article class="card reel" data-reveal style="--i:1">
+                        <div class="reel-head">
+                            <div class="reel-num"><small>Reels</small><b data-count="1.6">1.6</b></div>
+                            <h3 class="reel-title">لك مو توفّر، نزّل وفّر!</h3>
+                        </div>
+                        <p class="reel-label">المنحى</p>
+                        <dl class="meta">
+                            <div><dt>الفئة المستهدفة</dt><dd>الشباب والموظفين بشكل أساسي.</dd></div>
+                            <div><dt>النمط</dt><dd>كوميدي ساخر، يعتمد على التلاعب اللفظي.</dd></div>
+                            <div><dt>المعلومات الموجهة لإنتاج المحتوى</dt><dd>إبراز مشكلات مالية يومية، مع تقديم وفّر كحل لها.</dd></div>
+                        </dl>
+                        <div class="hook"><span class="hook-tag"><svg class="icon"><use href="#i-play"/></svg>الهوك</span><p>رد الشخص الثاني بتكرار كلمة <strong>وفّر</strong> تجذب المشاهد ليكمل المقطع ويفهم القصة.</p></div>
+                        <details class="direction">
+                            <summary>الإخراج<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                            <div class="direction-body">
+                                <p>يظهر شخصان في جلسة تشبه البودكاست، الأول يشتكي من مشكلاته المالية، والثاني يؤدي دور أخصائي نفسي يستمع إليه، ويرد على كل مشكلة بكلمة واحدة: «وفّر».</p>
+                                <p>الحوار المقترح:</p>
+                                <ul class="dialog">
+                                    <li><b>الأول:</b> «توظفت براتب منيح، بس ما عم يكفيني لنص الشهر!»</li>
+                                    <li class="alt"><b>الثاني:</b> «وفّر».</li>
+                                    <li><b>الأول:</b> «حتى لما بحاول وفّر، ما بعرف وين عم تروح المصاري»</li>
+                                    <li class="alt"><b>الثاني:</b> «وفّر».</li>
+                                    <li><b>الأول:</b> «وكنت ناوي اشتري سيارة، بس معم اعرف جمّع حقها»</li>
+                                    <li class="alt"><b>الثاني:</b> «وفّر».</li>
+                                    <li><b>الأول (بانزعاج):</b> «شو كل مشكلة بحياتي حلها إني وفّر؟ طيب كيف بدي وفّر أصلاً؟!»</li>
+                                    <li class="alt"><b>الثاني (بهدوء):</b> «لك مو توفّر، نزّل وفّر!»</li>
+                                </ul>
+                                <p>ثم يظهر شعار التطبيق مع العبارة <span class="say">(وفّر... لأن كل ليرة بتفرق)</span></p>
+                            </div>
+                        </details>
+                        <div class="moral"><h4>المغزى</h4><p>التوفير فعل... لكنه يحتاج لأدوات تساعدنا عليه، و"وفّر" يقدم تطبيق متكامل يجعلك تتبع مصروفاتك، تحدد أهدافك، تدّخر، وتوفّر.</p></div>
+                    </article>
+
+                    <!-- 1.7 -->
+                    <article class="card reel" data-reveal>
+                        <div class="reel-head">
+                            <div class="reel-num"><small>Reels</small><b data-count="1.7">1.7</b></div>
+                            <h3 class="reel-title">أخطر جملة بأول الشهر</h3>
+                        </div>
+                        <p class="reel-label">المنحى</p>
+                        <dl class="meta">
+                            <div><dt>الفئة المستهدفة</dt><dd>من 25 سنة وما فوق</dd></div>
+                            <div><dt>النمط</dt><dd>اجتماعي كوميدي</dd></div>
+                            <div><dt>الفكرة</dt><dd>تحويل الوضع المالي السيء وظروف الموظف الاقتصادية لمشهد كوميدي يلامس الحالة ويجذب المشاهد، ويكون (وفّر) الحل في نهاية الريل.</dd></div>
+                        </dl>
+                        <div class="hook">
+                            <span class="hook-tag"><svg class="icon"><use href="#i-play"/></svg>الهوك</span>
+                            <p>أول ثانيتين من الريل: ينظر بطل الريل للكاميرا ويقول بسخرية <strong>(أخطر جملة بتنقال بأول الشهر وبكل بيت سوري)</strong> ثم يلتفت لزوجته ويبدأ الريل....</p>
+                        </div>
+                        <details class="direction">
+                            <summary>الإخراج<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                            <div class="direction-body">
+                                <p>يبدأ الريل بموظف يستعد للخروج من المنزل وينادي زوجته (إذا شفتيني راجع ومعي غراض ذكريني سجلن مشان ما نتبهدل آخر الشهر)</p>
+                                <ul class="dialog">
+                                    <li class="alt"><b>الزوجة:</b> (واللّه بدي ذكرك أنت وذكر حالي وذكر ولادك شو بدو يوسع الدفتر ليوسع كلو فايت ببعضو)</li>
+                                </ul>
+                                <p>مشهد سريع يوضح الانتقال لآخر الشهر (جدال كوميدي بين الزوج والزوجة أمام الورقة والقلم)</p>
+                                <ul class="dialog">
+                                    <li><b>الزوج:</b> (ما عرفنا نخلص من مصاريفك للمونة والمكياج وغيرو)</li>
+                                    <li class="alt">(يحرم علي إذا جبت غرض كل هالشهر)</li>
+                                    <li>(لكن وين راحوا المصاري مين صرفن وع شو)</li>
+                                    <li class="alt"><b>الابن:</b> (يا بابا يا ماما خلص وفروها علينا بوفر وبلا ما توصل للطلاق ونتشرد)</li>
+                                    <li><b>بصوت واحد:</b> (وفّر ؟؟!)</li>
+                                </ul>
+                                <p>يبين المشهد واجهة تطبيق وفر التي تظهر بها أماكن الصرف والنسب وغيرها: (أي وفر تطبيق بحل كل مشاكل بيتنا من تسجيل مصاريف وكل ليرة وين بتروح وبتجي وعلى شو نصرفت وآخر الشهر بيحسبلك شو صرفت وشو باقي معك بدون ما تضيع وتقتلوا بعض مين صرف ووين يعني بريح بالكن وبخفض نسب التفكك الأسري)</p>
+                            </div>
+                        </details>
+                        <div class="moral"><h4>المغزى</h4><p>ملامسة الواقع اليومي للأسر السورية بطريقة لطيفة بعيدة عن تذكرتهم بالوضع السيء وإدخال المزيد من الهم والاكتئاب، فكرة ولمحة سريعة عن أكثر من ميزة من تطبيق وفّر.</p></div>
+                    </article>
+
+                    <!-- 1.8 -->
+                    <article class="card reel" data-reveal style="--i:1">
+                        <div class="reel-head">
+                            <div class="reel-num"><small>Reels</small><b data-count="1.8">1.8</b></div>
+                            <h3 class="reel-title">الدفتر والقلم</h3>
+                        </div>
+                        <p class="reel-label">المنحى</p>
+                        <dl class="meta">
+                            <div><dt>الفئة المستهدفة</dt><dd>مختلف الفئات العمرية وخاصة +35</dd></div>
+                            <div><dt>النمط</dt><dd>اجتماعي توعوي بطابع كوميدي</dd></div>
+                            <div><dt>المعلومات الموجهة لإنتاج المحتوى</dt><dd>توضيح أهمية تسجيل المصروفات وتتبعها بسهولة مع مرور الوقت في مكان واحد</dd></div>
+                        </dl>
+                        <div class="hook"><span class="hook-tag"><svg class="icon"><use href="#i-play"/></svg>الهوك</span><p><strong>لسا بتستخدم الدفتر والقلم لتعرف شو صرفت؟</strong></p><p>(جملة على الشاشة قبل بداية المشهد التمثيلي)</p></div>
+                        <details class="direction">
+                            <summary>الإخراج<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                            <div class="direction-body"><p>مشهد تمثيلي يجمع ثلاثة أصدقاء حيث ينشغل أحدهم بتسجيل مصاريفه يدوياً على دفتر باستعمال الآلة الحاسبة (عالموبايل) بينما يناقشه صديقه ويطرح عليه حلولاً غير عملية (حمل الورقة معه أينما ذهب والتسجيل بالورقة والقلم بعد كل عملية صرف ..)، إلى أن يتدخل الصديق الثالث ويقترح استخدام تطبيق وفر الذي يسهل تسجيل وتتبع المصاريف.</p></div>
+                        </details>
+                        <div class="moral"><h4>المغزى</h4><p>توضيح سهولة إدارة المصاريف وتسجيلها وتنظيمها ومتابعتها بطريقة سلسة واضحة منظمة بدلاً من الطرق التقليدية المشتتة.</p></div>
+                    </article>
+
+                    <!-- 1.9 -->
+                    <article class="card reel" data-reveal>
+                        <div class="reel-head">
+                            <div class="reel-num"><small>Reels</small><b data-count="1.9">1.9</b></div>
+                            <h3 class="reel-title">اعترافات مالية</h3>
+                        </div>
+                        <p class="reel-label">المنحى</p>
+                        <dl class="meta">
+                            <div><dt>الفئة المستهدفة</dt><dd>مختلف شرائح المجتمع.</dd></div>
+                            <div><dt>النمط</dt><dd>اجتماعي واقعي، كوميدي.</dd></div>
+                            <div><dt>الفكرة</dt><dd>إبراز المشكلات المالية اليومية التي تواجهنا كمجتمع بمختلف فئاته (طالبة جامعية، رب أسرة، موظفة، طالب ثانوي)</dd></div>
+                        </dl>
+                        <div class="hook">
+                            <span class="hook-tag"><svg class="icon"><use href="#i-play"/></svg>الهوك</span>
+                            <p><strong>«شي حابب تعترف فيه اليوم؟»</strong></p>
+                            <p>يظهر السؤال في منتصف الشاشة المقسمة إلى أربعة مربعات، تمهيداً لبدء الاعترافات من كل شخص على حدى.</p>
+                        </div>
+                        <details class="direction">
+                            <summary>الإخراج<svg class="icon"><use href="#i-chevron"/></svg></summary>
+                            <div class="direction-body">
+                                <p>يبدأ الريل بشاشة مقسمة إلى أربعة مربعات، يظهر في كل منها شخص من فئة مختلفة بلون خلفية مميز، ويتوسطها السؤال: «شي حابب تعترف فيه اليوم؟».</p>
+                                <p>تتوالى اعترافات الشخصيات الأربعة بمواقف مالية يومية تحصل معنا، بجملة قصيرة وكافية تحمل طابعاً كوميدياً وعفوياً بلهجة عامية:</p>
+                                <ul class="dialog">
+                                    <li>«أنا بكتير أحيان بشتري شغلة وبنسى أسأل عالسعر!»</li>
+                                    <li class="alt">«كنت ناوي جمّع حق لابتوب هالشهر... بس كأنه خلص الشهر!»</li>
+                                    <li>«قلت لحالي لازم خفف صرف عالقهوة... بس هاد تاني فنجان اليوم!»</li>
+                                    <li class="alt">«الشي الوحيد اللي بتذكر إني دفعتو هالشهر هوي قسط المعهد... والباقي مبعرف وين طار!»</li>
+                                </ul>
+                                <p>أخيراً تظهر الشخصيات معاً مع تأثير ضبابي تدريجي، وتظهر العبارة: <span class="say">«ناس مختلفة، ظروف مختلفة، ومشاكل بتتشابه... وحلولها كلها بـ"وفّر"».</span></p>
+                                <p>الـ<span class="en">CTA</span> في النهاية: (وأنت شو في شي حابب تعترف فيه؟)</p>
+                                <p>ثم يظهر شعار التطبيق مع العبارة: <span class="say">«لأن كل ليرة بتفرق».</span></p>
+                            </div>
+                        </details>
+                        <div class="moral"><h4>المغزى</h4><p>تختلف ظروفنا واحتياجاتنا المالية، لكن مشكلاتنا اليومية تتشابه، و«وفّر» تطبيق يجمع حلولها.</p></div>
+                    </article>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Posts -->
+        <section class="section" id="posts" data-tone="teal">
+            <div class="wrap">
+                <div class="head"><span class="no en">Posts / 02</span><h2>تصاميم بهوية وفّر</h2></div>
+                <p class="lead" data-reveal>التصاميم المعروضة في هذا القسم تحاكي أحدث مظهر وهوية بصرية لتطبيق وفّر، من حيث الألوان والأشكال واللمسات التصميمية المتوافقة مع واجهة التطبيق الحالية.</p>
+                <div style="height: clamp(28px, 4vw, 48px)"></div>
+                <div class="posts" data-stagger>
+                    <figure class="post" data-reveal>
+                        <span class="post-no">2.1</span>
+                        <button type="button" aria-label="تكبير التصميم 2.1"><img src="assets/posts/2-1.jpg" width="900" height="811" loading="lazy" alt="منشور: رجل أمام لوح مليء بالفواتير والخيوط الحمراء. القضية تسكرت.. أنت الجاني وأنت الضحية. الأدلة مع وفر!"></button>
+                        <figcaption>القضية تسكرت .. أنت الجاني وأنت الضحية. الأدلة مع وفر!</figcaption>
+                    </figure>
+                    <figure class="post" data-reveal>
+                        <span class="post-no">2.2</span>
+                        <button type="button" aria-label="تكبير التصميم 2.2"><img src="assets/posts/2-2.jpg" width="817" height="1280" loading="lazy" alt="منشور: متاهة وعدسة مكبرة. مو كل طريق عشوائي بيوصلك! أختر الطريق الأسهل وابدأ رحلتك مع وفّر"></button>
+                        <figcaption>مو كل طريق عشوائي بيوصلك! اختر الطريق الأسهل وابدأ رحلتك مع وفّر.</figcaption>
+                    </figure>
+                    <figure class="post" data-reveal>
+                        <span class="post-no">2.3</span>
+                        <button type="button" aria-label="تكبير التصميم 2.3"><img src="assets/posts/2-3.jpg" width="877" height="1400" loading="lazy" alt="منشور: شعار المحفظة المبتسمة. مو مهم قديش معك... المهم قديش بيضل معك! وفر، لأن كل ليرة بتفرق!"></button>
+                        <figcaption>مو مهم قديش معك... المهم قديش بيضل معك!</figcaption>
+                    </figure>
+                    <figure class="post" data-reveal>
+                        <span class="post-no">2.4</span>
+                        <button type="button" aria-label="تكبير التصميم 2.4"><img src="assets/posts/2-4.jpg" width="900" height="1355" loading="lazy" alt="منشور: يدان تحملان هاتفاً. أحلامك إلها ثمن... وصولك إلها إله خطة. استخدم وفر وخلي حلمك أقرب!"></button>
+                        <figcaption>أحلامك إلها ثمن... وصولك إلها إله خطة.</figcaption>
+                    </figure>
+                    <figure class="post" data-reveal>
+                        <span class="post-no">2.5</span>
+                        <button type="button" aria-label="تكبير التصميم 2.5"><img src="assets/posts/2-5.jpg" width="900" height="1178" loading="lazy" alt="منشور: محفظتك بدون وفر (عابسة) ومحفظتك مع وفر (مبتسمة). خلي محفظتك مبتسمة!"></button>
+                        <figcaption>محفظتك بدون وفر، محفظتك مع وفر... خلي محفظتك مبتسمة!</figcaption>
+                    </figure>
+                    <figure class="post" data-reveal>
+                        <span class="post-no">2.6</span>
+                        <button type="button" aria-label="تكبير التصميم 2.6"><img src="assets/posts/2-6.jpg" width="900" height="1362" loading="lazy" alt="منشور: هاتف يعرض تطبيق وفر. مصاريفك مسيطرة عليك؟ حمّل وفّر واستعيد السيطرة"></button>
+                        <figcaption>مصاريفك مسيطرة عليك؟ حمّل وفّر واستعيد السيطرة.</figcaption>
+                    </figure>
+                </div>
+            </div>
+        </section>
+
+        <!-- Carousel 2.7 -->
+        <section class="carousel" aria-labelledby="carousel-title" data-tone="mint">
+            <div class="carousel-sticky">
+                <div class="wrap">
+                    <div class="head"><span class="no">2.7</span><h2 id="carousel-title">كاروسيل</h2></div>
+                </div>
+                <div class="carousel-track">
+                    <figure class="slide"><button type="button" aria-label="تكبير الشريحة 1 من 4"><img src="assets/posts/2-7-1.jpg" width="900" height="1259" loading="lazy" alt="شريحة 1 من 4: مصروفك عم يطير وما عم تعرف وين؟!"></button><figcaption><b>1/4</b>مصروفك عم يطير وما عم تعرف وين؟!</figcaption></figure>
+                    <figure class="slide"><button type="button" aria-label="تكبير الشريحة 2 من 4"><img src="assets/posts/2-7-2.jpg" width="900" height="1250" loading="lazy" alt="شريحة 2 من 4: بدك توفر شي لآخر الشهر وما عم تقدر؟!"></button><figcaption><b>2/4</b>بدك توفر شي لآخر الشهر وما عم تقدر؟!</figcaption></figure>
+                    <figure class="slide"><button type="button" aria-label="تكبير الشريحة 3 من 4"><img src="assets/posts/2-7-3.jpg" width="900" height="1264" loading="lazy" alt="شريحة 3 من 4: وفّر وقتك، ومصاريفك، وخلي بالك مرتاح مع كل ليرة بتصرفها."></button><figcaption><b>3/4</b>وفّر وقتك، ومصاريفك، وخلي بالك مرتاح مع كل ليرة بتصرفها.</figcaption></figure>
+                    <figure class="slide"><button type="button" aria-label="تكبير الشريحة 4 من 4"><img src="assets/posts/2-7-4.jpg" width="900" height="1251" loading="lazy" alt="شريحة 4 من 4: حمّل وفّر... وبلّش تغيّر حياتك للأفضل."></button><figcaption><b>4/4</b>حمّل وفّر... وبلّش تغيّر حياتك للأفضل.</figcaption></figure>
+                </div>
+                <div class="carousel-bar" aria-hidden="true"><div class="track"><div class="fill"></div></div><span>1/4</span></div>
+            </div>
+        </section>
+
+        <!-- ================= Part 2: Competitors ================= -->
+        <section class="section" id="competitors" data-tone="sage">
+            <div class="wrap">
+                <div class="part" data-reveal>
+                    <span class="part-label">Part 02</span>
+                    <h2 class="part-title">تحليل المنافسين</h2>
+                </div>
+
+                <div class="intro-grid">
+                    <div>
+                        <div class="head"><span class="no">01</span><h2>مقدمة</h2></div>
+                        <p class="lead" data-reveal>يبدأ كل منتج ناجح بفهم السوق الذي يدخله. وتحليل المنافسين يُظهر ما يقدّمه الآخرون، وأين تبقى حاجات المستخدمين دون إجابة.</p>
+                        <p class="lead" data-reveal>تهدف هذه الدراسة إلى مقارنة تطبيقين، أحدهما عالمي والآخر عربي، بتطبيق وفّر، لتحديد الفرص التي تمنحه <b>ميزة تنافسية</b> في السوق العربي.</p>
+                    </div>
+                    <div class="versus" data-stagger>
+                        <div class="app" data-reveal><small>المنافس العالمي</small><b>Money Manager</b></div>
+                        <span class="vs" data-reveal>VS</span>
+                        <div class="app" data-reveal><small>المنافس العربي</small><b>Tadbir</b></div>
+                        <div class="waffr green" data-reveal="zoom">
+                            <span class="mark" aria-hidden="true"></span>
+                            <span><small>WAFFR</small><b>وفّر</b></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section tight" data-tone="teal">
+            <div class="wrap">
+                <div class="rivals">
+                    <!-- 02 Money Manager -->
+                    <article class="card" data-reveal="right">
+                        <div class="rival-top">
+                            <div><small>المنافس العالمي</small><h3>Money Manager</h3></div>
+                            <span class="rival-no">02</span>
+                        </div>
+                        <div class="about"><h4>نبذة</h4><p>تطبيق عالمي لإدارة الأموال الشخصية، يساعد المستخدمين على تسجيل المصروفات والدخل وتنظيم الحسابات ومتابعة الميزانية.</p></div>
+                        <h4>نقاط القوة</h4>
+                        <ul class="list plus">
+                            <li><svg class="icon"><use href="#i-check"/></svg>انتشار واسع وخبرة طويلة في السوق.</li>
+                            <li><svg class="icon"><use href="#i-check"/></svg>إدارة عدة حسابات مالية.</li>
+                            <li><svg class="icon"><use href="#i-check"/></svg>تقارير ورسوم بيانية للمصروفات.</li>
+                            <li><svg class="icon"><use href="#i-check"/></svg>تنظيم الميزانيات والفئات.</li>
+                            <li><svg class="icon"><use href="#i-check"/></svg>تعدد العملات.</li>
+                            <li><svg class="icon"><use href="#i-check"/></svg>إرفاق صور الفواتير وتسجيل العمليات المتكررة.</li>
+                        </ul>
+                        <h4>نقاط الضعف ومقارنتها مع تطبيق وفّر</h4>
+                        <ul class="list minus">
+                            <li><svg class="icon"><use href="#i-minus"/></svg><span>يعتمد أساساً على <b>إدخال المستخدم للبيانات</b>.</span></li>
+                            <li><svg class="icon"><use href="#i-minus"/></svg><span>يمكن لوفّر التميّز بالتحليل باستخدام <b>الذكاء الاصطناعي</b>.</span></li>
+                            <li><svg class="icon"><use href="#i-minus"/></svg>كثرة الخيارات قد تجعل التجربة أقل بساطة لبعض المستخدمين.</li>
+                        </ul>
+                    </article>
+
+                    <!-- 03 Tadbir -->
+                    <article class="card" data-reveal="left" style="--i:1">
+                        <div class="rival-top">
+                            <div><small>المنافس العربي</small><h3>Tadbir</h3></div>
+                            <span class="rival-no">03</span>
+                        </div>
+                        <div class="about"><h4>نبذة</h4><p>تطبيق لإدارة الأموال يستهدف المستخدم العربي، مع تركيز على مصر والمنطقة العربية، ويقدّم أدوات لتنظيم المصروفات والميزانية.</p></div>
+                        <h4>نقاط القوة</h4>
+                        <ul class="list plus">
+                            <li><svg class="icon"><use href="#i-check"/></svg>العمل دون إنترنت والاهتمام بالخصوصية.</li>
+                            <li><svg class="icon"><use href="#i-check"/></svg>الإدخال الصوتي للمصروفات.</li>
+                            <li><svg class="icon"><use href="#i-check"/></svg>تحديد أهداف للتوفير ومتابعة التقدّم.</li>
+                            <li><svg class="icon"><use href="#i-check"/></svg>اختصارات للعمليات المتكررة.</li>
+                            <li><svg class="icon"><use href="#i-check"/></svg>تعدد العملات، والتقارير والميزانيات.</li>
+                            <li><svg class="icon"><use href="#i-check"/></svg>واجهة عربية قابلة للتخصيص.</li>
+                        </ul>
+                        <h4>نقاط الضعف ومقارنتها مع تطبيق وفّر</h4>
+                        <ul class="list minus">
+                            <li><svg class="icon"><use href="#i-minus"/></svg><span><b>الإدخال الصوتي</b> ميزة غير متوفرة في وفّر حالياً.</span></li>
+                            <li><svg class="icon"><use href="#i-minus"/></svg>لا تظهر ميزة التحليل بالذكاء الاصطناعي ضمن ميزاته الرسمية المنشورة.</li>
+                            <li><svg class="icon"><use href="#i-minus"/></svg>يتيح وفّر فرصة للوصول إلى شرائح لغوية أوسع من خلال تعدد اللغات.</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- 04 Waffr -->
+        <section class="section tight" data-tone="green">
+            <div class="wrap">
+                <div class="waffr-card green" data-reveal="zoom">
+                    <div>
+                        <span class="no">04</span>
+                        <h2>وفّر - <span class="en">Waffr</span></h2>
+                        <p>الميزات الأساسية التي يدخل بها وفّر إلى سوق إدارة المصروفات الشخصية.</p>
+                    </div>
+                    <ul class="features" data-stagger>
+                        <li class="feature star" data-reveal><svg class="icon"><use href="#i-sparkles"/></svg><b>تحليل المصروفات بالذكاء الاصطناعي.</b></li>
+                        <li class="feature" data-reveal><svg class="icon"><use href="#i-wifi-off"/></svg>العمل دون إنترنت.</li>
+                        <li class="feature" data-reveal><svg class="icon"><use href="#i-languages"/></svg>دعم عدة عملات ولغات.</li>
+                        <li class="feature" data-reveal><svg class="icon"><use href="#i-tag"/></svg>فئات مصروفات قابلة للتخصيص.</li>
+                        <li class="feature" data-reveal><svg class="icon"><use href="#i-flame"/></svg><span>ميزة <b class="en">Streak</b> لتشجيع الاستمرارية.</span></li>
+                        <li class="feature" data-reveal><svg class="icon"><use href="#i-globe"/></svg>مناسب لمستخدمين من مختلف البلدان العربية.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 05 Comparison -->
+        <section class="section" data-tone="mint">
+            <div class="wrap">
+                <div class="head"><span class="no">05</span><h2>المقارنة المباشرة</h2></div>
+                <div class="card table-card">
+                    <table class="compare">
+                        <thead>
+                            <tr><th scope="col">الميزة</th><th scope="col">Money Manager</th><th scope="col">Tadbir</th><th scope="col" class="w">وفّر</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><th scope="row">العمل دون إنترنت</th><td><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td><td><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td><td class="w"><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td></tr>
+                            <tr><th scope="row">تحليل ذكي</th><td><span class="no-mark" aria-label="غير ظاهرة">-</span></td><td><span class="no-mark" aria-label="غير ظاهرة">-</span></td><td class="w"><span class="ok win" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td></tr>
+                            <tr><th scope="row">الإدخال الصوتي</th><td><span class="no-mark" aria-label="غير ظاهرة">-</span></td><td><span class="ok win" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td><td class="w"><span class="no-mark" aria-label="غير ظاهرة">-</span></td></tr>
+                            <tr><th scope="row">أهداف التوفير</th><td><span class="txt">أدوات ميزانية</span></td><td><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td><td class="w"><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td></tr>
+                            <tr><th scope="row">تعدد العملات</th><td><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td><td><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td><td class="w"><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td></tr>
+                            <tr><th scope="row">تعدد اللغات</th><td><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td><td><span class="txt">لغتان</span></td><td class="w"><span class="no-mark" aria-label="غير ظاهرة">-</span></td></tr>
+                            <tr><th scope="row">فئات مخصصة</th><td><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td><td><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td><td class="w"><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td></tr>
+                            <tr><th scope="row" class="en">Streak</th><td><span class="no-mark" aria-label="غير ظاهرة">-</span></td><td><span class="no-mark" aria-label="غير ظاهرة">-</span></td><td class="w"><span class="ok win" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td></tr>
+                            <tr><th scope="row">التقارير المالية</th><td><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td><td><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td><td class="w"><span class="ok" aria-label="متوفرة"><svg class="icon"><use href="#i-check"/></svg></span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="note" data-reveal>الشرطة (-) تعني أن الميزة غير ظاهرة ضمن الميزات الرسمية المنشورة، وليس بالضرورة أنها غير موجودة.</p>
+            </div>
+        </section>
+
+        <!-- 06 Edge -->
+        <section class="section tight" data-tone="mint">
+            <div class="wrap">
+                <div class="head"><span class="no">06</span><h2>أين يستطيع وفّر التميّز؟</h2></div>
+                <ul class="edge" data-stagger>
+                    <li data-reveal><svg class="icon"><use href="#i-sparkles"/></svg><b>الذكاء الاصطناعي</b><span>تحليل المصروفات وفهم عادات الإنفاق</span></li>
+                    <li data-reveal><svg class="icon"><use href="#i-languages"/></svg><b>تعدد اللغات والعملات</b><span>الوصول إلى شرائح أوسع</span></li>
+                    <li data-reveal><svg class="icon"><use href="#i-globe"/></svg><b>السوق العربي</b><span>استهداف مستخدمين من بلدان عربية مختلفة</span></li>
+                    <li data-reveal><svg class="icon"><use href="#i-flame"/></svg><b class="en">Streak</b><span>تشجيع المستخدم على الاستمرار</span></li>
+                    <li data-reveal><svg class="icon"><use href="#i-tag"/></svg><b>الفئات المخصصة</b><span>مرونة تنظيم المصروفات</span></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 07 Opportunities -->
+        <section class="section" data-tone="sage">
+            <div class="wrap">
+                <div class="head"><span class="no">07</span><h2>فرص التطوير</h2></div>
+                <p class="lead" data-reveal>يمكن لوفّر الاستفادة من تجارب المنافسين عبر دراسة إضافة:</p>
+                <ul class="opps" data-stagger>
+                    <li data-reveal><svg class="icon"><use href="#i-mic"/></svg><span><b>الإدخال الصوتي</b> لتسجيل المصروفات.</span></li>
+                    <li data-reveal><svg class="icon"><use href="#i-repeat"/></svg>اختصارات للعمليات المتكررة.</li>
+                    <li data-reveal><svg class="icon"><use href="#i-receipt"/></svg>إرفاق صور الفواتير.</li>
+                    <li data-reveal><svg class="icon"><use href="#i-layers"/></svg>إدارة حسابات مالية متعددة.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Closing -->
+        <section class="closing" data-tone="green">
+            <div class="wrap">
+                <div class="end-card green" data-reveal="zoom">
+                    <span class="end-logo" aria-hidden="true"></span>
+                    <h2>كل ليرة بتفرق</h2>
+                    <hr>
+                    <p class="team">team zain</p>
+                    <p class="date">15 نوفمبر 2026</p>
+                    <span class="yg" role="img" aria-label="Youth Guide · دليل الشباب"></span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer wrap">وفّر · دراسة تنافسية ومحتوى تسويقي · team zain</footer>
+
+    <dialog class="lightbox" aria-label="عرض التصميم">
+        <button class="lightbox-close" type="button" aria-label="إغلاق"><svg class="icon"><use href="#i-x"/></svg></button>
+        <img src="" alt="">
+    </dialog>
+
+    <script src="js/glass.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
