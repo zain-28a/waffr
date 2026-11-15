@@ -4,8 +4,9 @@
      cover to the top-left corner and stays there.
    - Ambient lights: move with scroll and blend their colors section by
      section (data-tone on each section).
-   - Hero card tilts back slightly as you leave it.
-   - Reveal on view, figures that count up, carousel that slides sideways.
+   - Cover card eases back slightly as you leave it.
+   - Reveal on view, rules that draw in, figures that count up,
+     posts that tilt toward the pointer and open full size.
    ========================================================= */
 (() => {
     const root = document.documentElement;
@@ -20,8 +21,6 @@
     const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const isDark = () => root.dataset.theme === 'dark' || (root.dataset.theme !== 'light' && darkQuery.matches);
 
     let vw = window.innerWidth;
     let vh = window.innerHeight;
@@ -80,7 +79,6 @@
     ];
 
     const lightEls = $$('.ambient .light');
-    const ambient = $('.ambient');
     const toned = $$('[data-tone]');
 
     const hexToRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
@@ -102,7 +100,7 @@
     }
 
     function updateAmbient() {
-        const set = TONES[isDark() ? 'dark' : 'light'];
+        const set = TONES.light;
         const { a, b, t } = currentTone();
         const u = window.scrollY / vh;  // screens scrolled
         const base = Math.max(vw, vh);
@@ -118,53 +116,22 @@
             el.style.setProperty('--c', `rgb(${c.join(',')})`);
         });
 
-        if (!reduceMotion) ambient.style.setProperty('--sweep-x', `${(Math.sin(u * 0.85) * 55).toFixed(2)}%`);
     }
 
-    /* ---------- Hero ---------- */
+    /* ---------- Cover card: eases back as you leave the cover ---------- */
 
-    const hero = $('.hero');
-    const heroCard = $('.hero-card');
+    const hero = $('.cover');
+    const heroCard = $('[data-parallax]');
 
     function updateHero() {
         if (reduceMotion) return;
         const h = clamp(window.scrollY / (hero.offsetHeight * 0.9));
         if (h >= 1 && heroCard.dataset.done) return;
         heroCard.dataset.done = h >= 1 ? '1' : '';
-        heroCard.style.transform = `translateY(${(h * 50).toFixed(1)}px) rotateX(${(h * 9).toFixed(2)}deg) scale(${(1 - h * 0.06).toFixed(4)})`;
+        heroCard.style.transform = `perspective(1400px) translateY(${(h * 40).toFixed(1)}px) rotateX(${(h * 7).toFixed(2)}deg) scale(${(1 - h * 0.05).toFixed(4)})`;
         heroCard.style.setProperty('--wm-y', `${(-h * 70).toFixed(1)}px`);
-        heroCard.style.setProperty('--lx', `${(82 - h * 30).toFixed(1)}%`);
-        heroCard.style.setProperty('--ly', `${(6 + h * 30).toFixed(1)}%`);
-    }
-
-    /* ---------- Carousel (2.7) ---------- */
-
-    const carousel = $('.carousel');
-    const track = $('.carousel-track');
-    const sticky = $('.carousel-sticky');
-    const slides = $$('.slide', track);
-    const counter = $('.carousel-bar span');
-    const bar = $('.carousel-bar');
-
-    function updateCarousel() {
-        const r = carousel.getBoundingClientRect();
-        if (r.bottom < -vh || r.top > vh * 2) return;
-        const total = carousel.offsetHeight - vh;
-        const p = clamp(-r.top / total);
-        const dist = track.scrollWidth - sticky.clientWidth;
-        const x = dist > 0 ? p * dist : dist / 2;  // RTL: the track overflows to the left
-        track.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0)`;
-        bar.style.setProperty('--cp', p.toFixed(4));
-        const n = Math.min(slides.length, Math.floor(p * slides.length) + 1);
-        counter.textContent = `${n}/${slides.length}`;
-
-        if (reduceMotion) return;
-        const cx = vw / 2;
-        slides.forEach((s) => {
-            const b = s.getBoundingClientRect();
-            const d = clamp(Math.abs(b.left + b.width / 2 - cx) / vw);
-            s.style.transform = `scale(${(1 - d * 0.12).toFixed(3)}) translateY(${(d * 24).toFixed(1)}px)`;
-        });
+        heroCard.style.setProperty('--lx', `${(76 - h * 30).toFixed(1)}%`);
+        heroCard.style.setProperty('--ly', `${(12 + h * 30).toFixed(1)}%`);
     }
 
     /* ---------- Scroll / resize loop ---------- */
@@ -175,7 +142,6 @@
         placeBrand();
         updateAmbient();
         updateHero();
-        updateCarousel();
     }
     function queue() {
         if (!queued) {
@@ -191,14 +157,13 @@
         sizeSlot();
         queue();
     });
-    darkQuery.addEventListener('change', queue);
 
     /* ---------- Reveal on view ---------- */
 
     $$('[data-stagger]').forEach((group) => {
         [...group.children].forEach((c, i) => c.style.setProperty('--i', i % 6));
     });
-    $$('.compare tbody tr').forEach((tr, i) => tr.style.setProperty('--i', i));
+    $$('.compare tbody').forEach((tb) => [...tb.rows].forEach((tr, i) => tr.style.setProperty('--i', i)));
 
     const counted = new WeakSet();
     function countUp(el) {
@@ -233,21 +198,21 @@
         });
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
 
-    $$('[data-reveal], .head, .table-card, [data-count]').forEach((el) => io.observe(el));
+    $$('[data-reveal], [data-count]').forEach((el) => io.observe(el));
 
     /* ---------- Posts: gentle tilt + lightbox ---------- */
 
     const lightbox = $('.lightbox');
     const lightImg = $('img', lightbox);
 
-    $$('.post button, .slide button').forEach((btn) => {
+    $$('.post button').forEach((btn) => {
         btn.addEventListener('click', () => {
             const img = $('img', btn);
             lightImg.src = img.currentSrc || img.src;
             lightImg.alt = img.alt;
             lightbox.showModal();
         });
-        if (reduceMotion || !btn.closest('.post')) return;
+        if (reduceMotion) return;
         btn.addEventListener('pointermove', (e) => {
             const r = btn.getBoundingClientRect();
             const px = (e.clientX - r.left) / r.width - 0.5;
