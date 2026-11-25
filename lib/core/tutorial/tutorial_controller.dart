@@ -32,9 +32,6 @@ enum TutorialTarget {
   /// The spending distribution card (donut).
   spendingCard,
 
-  /// The home slot of the bottom bar.
-  homeTab,
-
   /// The reports slot of the bottom bar.
   reportsTab,
 

@@ -786,7 +786,6 @@ class _BottomNavBar extends StatelessWidget {
   /// Marks the tabs the tutorial points at.
   Widget _tabTarget(int index, Widget child) {
     final target = switch (index) {
-      0 => TutorialTarget.homeTab,
       1 => TutorialTarget.reportsTab,
       2 => TutorialTarget.savingsTab,
       _ => null,

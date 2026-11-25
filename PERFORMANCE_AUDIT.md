@@ -74,3 +74,35 @@ the scaled RTL dark selector; static analysis is clean. The JavaScript web
 release build (`--no-wasm-dry-run`) succeeds. Chromium confirms both controls
 remain at the same vertical position after scrolling, stay clickable, and
 switch periods without runtime errors.
+
+## Product overhaul (November 2026)
+
+Measured with `flutter test` micro-benchmarks on a generated ledger (JIT on
+a desktop CPU, so absolute numbers are lower than on a phone; the ratios
+are what matter). No device profiling was possible in the cloud session.
+
+| Path | Before | After | Change |
+| --- | --- | --- | --- |
+| Home insight bar, per ledger change (3,000 expenses) | 12 full analyses, ~340 ms on the UI isolate | 1 analysis plus 11 reworded headlines, ~7 ms | `_insightLines` runs the engine once; only the headline (which depends on the findings alone) is reworded per seed. |
+| One reports analysis (10,000 expenses) | ~96 ms | ~15 ms | `SmartFacts` sorts the expenses once and answers every span with a binary search over running totals; the 30-day, weekday and history figures are computed once per run. |
+| Overall-view analysis (5,000 expenses) | ~104 ms | ~10 ms | Same cause: it runs the report and savings rules too. |
+| Large-expense alert, per evaluation | Sorted the whole ledger on every store change | Only expenses not seen before and dated in the last 3 days are judged | Fewer alerts on old synced rows as well. |
+| Home widget refresh | Sorted every expense and income to find the four newest | Merges the first four of each (both lists are newest first) | |
+
+Other changes with a performance side:
+
+- Settings pages no longer stagger their rows in (`Reveal` per row).
+- The tutorial overlay dims with one even-odd path (no blur, no
+  `saveLayer`) and only ticks while the tutorial is on screen.
+- Android widgets refresh themselves every six hours from saved data only
+  (no app wake-up); the app pushes new data only when the ledger changes,
+  debounced by 800 ms.
+
+Left as is on purpose: the liquid-glass header, bottom bar and period
+picker (by request), and a per-currency cache of `expensesFor` (it would
+save little and every ledger mutation would have to drop it before reading).
+
+Validation: `flutter analyze` clean; the whole suite passes, including a
+test that checks the indexed spans against a plain scan of a random ledger.
+Physical-device profiling (DevTools, profile mode) is still open: see
+DEVICE_TEST_PLAN.md.

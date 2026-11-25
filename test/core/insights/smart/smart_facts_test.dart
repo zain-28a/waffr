@@ -2,6 +2,8 @@
 // like for like, recent pace, projection, runway, days to income, savings
 // history, logging habits and the effective monthly income; plus GoalFact.
 
+import 'dart:math' as math;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';
 import 'package:waffr/data/models/transaction.dart';
@@ -280,5 +282,39 @@ void main() {
       );
       expect(zero.ratio, 0);
     });
+  });
+
+  test('indexed spans match a plain scan of the ledger', () {
+    // spentBetween / expensesBetween use a sorted index with running
+    // totals; they must agree with filtering every expense.
+    final random = math.Random(7);
+    final expenses = [
+      for (var i = 0; i < 400; i++)
+        expenseAt(
+          (1 + random.nextInt(90)).toDouble(),
+          now.subtract(Duration(minutes: random.nextInt(200 * 24 * 60))),
+        ),
+    ];
+    final facts = buildFacts(now: now, expenses: expenses);
+    for (var i = 0; i < 200; i++) {
+      final a = now.subtract(Duration(hours: random.nextInt(220 * 24)));
+      final b = a.add(Duration(hours: random.nextInt(60 * 24)));
+      final plain = expenses.where(
+        (e) => !e.dateTime.isBefore(a) && e.dateTime.isBefore(b),
+      );
+      expect(
+        facts.spentBetween(a, b),
+        closeTo(plain.fold(0.0, (sum, e) => sum + e.amount), 1e-6),
+      );
+      expect(
+        facts.expensesBetween(a, b).map((e) => e.id).toSet(),
+        plain.map((e) => e.id).toSet(),
+      );
+    }
+    expect(facts.spentBetween(now, now), 0);
+    expect(
+      facts.expensesBetween(now, now.subtract(const Duration(days: 1))),
+      isEmpty,
+    );
   });
 }

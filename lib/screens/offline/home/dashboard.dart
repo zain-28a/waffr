@@ -14,6 +14,8 @@ import 'package:flutter/foundation.dart' show listEquals, mapEquals;
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/origin_route.dart';
 import 'package:waffr/core/insights/smart/insight_engine.dart';
+import 'package:waffr/core/insights/smart/insight_phrasing.dart';
+import 'package:waffr/core/insights/smart/insight_summary.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';
 import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
@@ -162,19 +164,27 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   /// What the analysis bar turns through: the headline of the reports
-  /// analysis in several wordings (each seed words the same reading
-  /// differently), with the titles of its findings in between. The seeds
-  /// start from [day], so the set stays the same until tomorrow or until
-  /// the data changes.
+  /// analysis in several wordings, with the titles of its findings in
+  /// between. The analysis runs once; only the headline is reworded per
+  /// seed (it depends on the findings alone), so a ledger change costs one
+  /// run instead of twelve. Seeds start from [day], so the set stays the
+  /// same until tomorrow or until the data changes.
   static List<String> _insightLines(SmartFacts facts, int day) {
-    final reports = [
-      for (var seed = day; seed < day + 12; seed++)
-        InsightEngine(facts, seed: seed).analyze(InsightScope.reports),
-    ];
-    final headlines = {for (final report in reports) report.headline}.toList();
+    final report = InsightEngine(
+      facts,
+      seed: day,
+    ).analyze(InsightScope.reports);
+    final headlines = {
+      report.headline,
+      for (var seed = day + 1; seed < day + 12; seed++)
+        InsightSummary(
+          facts,
+          InsightPhrasing(facts.currencySymbol, math.Random(seed)),
+        ).headline(InsightScope.reports, report.insights, null),
+    }.toList();
     // The closing tip is general advice, not a finding.
     final findings = [
-      for (final insight in reports.first.insights)
+      for (final insight in report.insights)
         if (insight.id != 'tip') insight.title,
     ];
     final lines = <String>{};

@@ -152,7 +152,9 @@ class HomeWidgetSync {
     final monthIncome = store.incomes
         .where((item) => !item.dateTime.isBefore(monthStart))
         .fold(0.0, (sum, item) => sum + item.amount);
-    final recent = [...store.expenses, ...store.incomes]
+    // Both lists come newest first, so the four newest records are among
+    // the first four of each; no need to sort the whole ledger.
+    final recent = [...store.expenses.take(4), ...store.incomes.take(4)]
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return buildHomeWidgetData(
       now: now,
