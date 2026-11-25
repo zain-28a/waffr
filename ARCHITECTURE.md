@@ -42,7 +42,6 @@ import path keeps working. Import the root file only:
 | `data/services/notification_service.dart` | `notification_rules.dart`, `notification_snapshot.dart` |
 | `screens/offline/report/reportscreen.dart` | `report_{data,chart,summary}.dart`, `transaction_history_{screen,dialogs,rows}.dart` |
 | `screens/offline/home/dashboard.dart` | `dashboard_{balance_card,distribution,savings_goals,expenses,sections}.dart` |
-| `screens/offline/settings/privacy_security_screen.dart` | `privacy_detail_pages.dart`, `privacy_widgets.dart` |
 | `screens/online/online_screen.dart` | `online_{exchange_rates,news,cards}.dart` |
 | `screens/offline/savings/savings_screen.dart` | `savings_{period_card,goals_panel,total_card}.dart` |
 | `screens/offline/smart/smart_analysis_screen.dart` | `smart_analysis_{thinking,cards}.dart` |

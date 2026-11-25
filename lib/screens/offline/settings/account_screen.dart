@@ -4,7 +4,6 @@
 import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/data/services/backup_service.dart';
 import 'package:waffr/core/sync/auth_session.dart';
@@ -144,7 +143,7 @@ class _AccountScreenState extends State<AccountScreen> {
       body: AuroraPage(
         child: ListView(
           padding: const EdgeInsets.all(20),
-          children: staggered([
+          children: [
             // Avatar, name field and save button.
             Center(
               child: ProfileAvatar(accent: accent, radius: 42, signedIn: true),
@@ -246,7 +245,7 @@ class _AccountScreenState extends State<AccountScreen> {
               busy: _busy,
               onTap: _deleteAccount,
             ),
-          ]),
+          ],
         ),
       ),
     );

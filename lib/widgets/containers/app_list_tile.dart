@@ -1,11 +1,28 @@
 // Settings-style rows shared by Settings, Account and Privacy screens: an
-// icon box, title, optional subtitle or status, and a chevron. A row is its
+// icon mark, title, optional subtitle or status, and a chevron. A row is its
 // own card, or a flat member of an AppListGroup (one card per section).
 // Section titles above groups of rows use AppSectionTitle.
+//
+// Cards use the same surface as the dashboard cards (GlassContainer on the
+// surface tint, 28px corners, sheen, rim and soft shadow), and the icon sits
+// in a round tinted mark like the category marks on the home screen.
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/widgets/containers/glass.dart';
+
+/// Corner radius of a settings card; the dashboard cards use the same.
+const double _cardRadius = 28;
+
+/// Wraps [child] in the dashboard's card surface. Ink from rows inside is
+/// painted on the transparent [Material] and clipped by the card.
+Widget _card(Widget child) => GlassContainer(
+  colorType: GlassColorType.surface,
+  borderRadius: _cardRadius,
+  padding: EdgeInsets.zero,
+  child: Material(type: MaterialType.transparency, child: child),
+);
 
 TextStyle _tileText(Color color, double size, FontWeight weight) => TextStyle(
   fontFamily: 'Outfit',
@@ -70,7 +87,6 @@ class AppListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final accent = palette.accent;
-    final surface = palette.surface;
     final textPrimary = palette.textPrimary;
     final textSecondary = palette.textSecondary;
     final danger = AppColors.destructiveOf(context);
@@ -95,69 +111,64 @@ class AppListTile extends StatelessWidget {
 
     // Inside an AppListGroup the group is the card; the row is flat.
     final grouped = _ListGroupScope.of(context);
-    final radius = BorderRadius.circular(grouped ? 0 : 20);
-    return Material(
-      color: grouped ? Colors.transparent : surface,
-      borderRadius: radius,
-      child: InkWell(
-        borderRadius: radius,
-        onTap: busy ? null : onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: grouped ? 12 : 15,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 43,
-                height: 43,
-                decoration: BoxDecoration(
-                  color: tint.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Center(
-                  child: leading ?? Icon(icon, color: tint, size: 22),
-                ),
+    final row = InkWell(
+      onTap: busy ? null : onTap,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: grouped ? 12 : 14,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: tint.withValues(alpha: 0.13),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: _tileText(
-                        destructive ? danger : textPrimary,
-                        15,
-                        FontWeight.w600,
-                      ),
+              child: Center(
+                child: leading ?? Icon(icon, color: tint, size: 20),
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: _tileText(
+                      destructive ? danger : textPrimary,
+                      15,
+                      FontWeight.w600,
                     ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle!,
-                        style: _tileText(textSecondary, 12, FontWeight.w400),
-                      ),
-                    ],
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle!,
+                      style: _tileText(textSecondary, 12, FontWeight.w400),
+                    ),
                   ],
-                ),
+                ],
               ),
-              if (status != null) ...[
-                const SizedBox(width: 8),
-                _StatusChip(
-                  label: status!,
-                  on: statusOn,
-                  accent: accent,
-                  muted: textSecondary,
-                ),
-              ],
-              if (end != null) ...[const SizedBox(width: 8), end],
+            ),
+            if (status != null) ...[
+              const SizedBox(width: 8),
+              _StatusChip(
+                label: status!,
+                on: statusOn,
+                accent: accent,
+                muted: textSecondary,
+              ),
             ],
-          ),
+            if (end != null) ...[const SizedBox(width: 8), end],
+          ],
         ),
       ),
     );
+    return grouped ? row : _card(row);
   }
 }
 
@@ -234,18 +245,15 @@ class AppListGroup extends StatelessWidget {
     final palette = AppPalette.of(context);
     final line = palette.textSecondary.withValues(alpha: 0.12);
     return _ListGroupScope(
-      child: Material(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(22),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
+      child: _card(
+        Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final (index, child) in children.indexed) ...[
               if (index > 0)
-                // Starts after the icon box, like a contacts list.
+                // Starts after the icon mark, like the recent-expenses list.
                 Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 73),
+                  padding: const EdgeInsetsDirectional.only(start: 69),
                   child: Divider(height: 1, thickness: 1, color: line),
                 ),
               child,

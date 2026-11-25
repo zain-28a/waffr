@@ -7,8 +7,8 @@ import 'package:waffr/core/theme/app_icons.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
+import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/data/stores/expense_preset_store.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
@@ -25,6 +25,7 @@ import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/login/login_screen.dart';
+import 'package:waffr/screens/offline/settings/about_screen.dart';
 import 'package:waffr/screens/offline/settings/account_screen.dart';
 import 'package:waffr/screens/offline/settings/ai_permissions_screen.dart';
 import 'package:waffr/screens/offline/settings/help_screen.dart';
@@ -347,8 +348,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// The About text is not written yet, so the tile does nothing.
-  void _showAbout() {}
+  /// Opens the About page.
+  void _showAbout() {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const AboutScreen()));
+  }
 
   /// Clears prefs, session, and in-memory stores, then returns to first route.
   Future<void> _resetApp() async {
@@ -437,7 +441,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onNotification: _onScroll,
                   child: ListView(
                     padding: const EdgeInsets.all(20),
-                    children: staggered([
+                    children: [
                       ..._accountSection(palette),
                       const SizedBox(height: 25),
                       ..._appearanceSection(isDark),
@@ -458,7 +462,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                    ]),
+                    ],
                   ),
                 ),
               ),
@@ -666,12 +670,10 @@ class _ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GlassContainer(
+      colorType: GlassColorType.surface,
+      borderRadius: 28,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(25),
-      ),
       child: Row(
         children: [
           ProfileAvatar(accent: palette.accent, radius: 27, signedIn: signedIn),
