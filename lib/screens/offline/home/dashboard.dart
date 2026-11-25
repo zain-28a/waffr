@@ -17,6 +17,7 @@ import 'package:waffr/core/insights/smart/insight_engine.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';
 import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_icons.dart';
@@ -28,6 +29,7 @@ import 'package:waffr/data/models/calendar_period.dart';
 import 'package:waffr/data/models/expense_categories.dart';
 import 'package:waffr/data/models/recurring_expense.dart';
 import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/models/spending_breakdown.dart';
 import 'package:waffr/data/models/transaction.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
@@ -99,6 +101,11 @@ class _HomeScreenState extends State<HomeScreen>
   /// The savings goal on the goal card; wraps around the active goals.
   int _goalIndex = 0;
 
+  /// The span the spending card shows; remembered on this device.
+  SpendingPeriod _spendingPeriod = SpendingPeriod.cycle;
+
+  static const String _spendingPeriodKey = 'home_spending_period';
+
   @override
   bool get wantKeepAlive => true;
 
@@ -111,7 +118,34 @@ class _HomeScreenState extends State<HomeScreen>
     RecurringExpenseStore.instance.ensureLoaded();
     _listenables.addListener(_queueInsight);
     _queueInsight();
+    _loadSpendingPeriod();
   }
+
+  Future<void> _loadSpendingPeriod() async {
+    final prefs = await AppPrefs.instance;
+    final saved = SpendingPeriod.parse(prefs.getString(_spendingPeriodKey));
+    if (mounted && saved != _spendingPeriod) {
+      setState(() => _spendingPeriod = saved);
+    }
+  }
+
+  Future<void> _setSpendingPeriod(SpendingPeriod period) async {
+    setState(() => _spendingPeriod = period);
+    final prefs = await AppPrefs.instance;
+    await prefs.setString(_spendingPeriodKey, period.name);
+  }
+
+  /// First moment of [period] for the active currency, or null for all
+  /// time (and for a balance period that has not started yet).
+  DateTime? _spendingStart(SpendingPeriod period, DateTime now) =>
+      switch (period) {
+        SpendingPeriod.week => CalendarPeriod.weekStart(now),
+        SpendingPeriod.month => CalendarPeriod.monthStart(now),
+        SpendingPeriod.cycle => _store.cycleStartFor(
+          CurrencyStore.instance.activeCode,
+        ),
+        SpendingPeriod.all => null,
+      };
 
   @override
   void dispose() {
@@ -239,8 +273,12 @@ class _HomeScreenState extends State<HomeScreen>
               _InsightBar(lines: _insights),
               const SizedBox(height: 14),
               _SpendingCard(
-                totals: _store.expensesByCategory(),
-                totalExpense: _store.totalExpense,
+                breakdown: _store.spendingBreakdown(
+                  since: _spendingStart(_spendingPeriod, now),
+                ),
+                period: _spendingPeriod,
+                onPeriod: _setSpendingPeriod,
+                hasHistory: _store.expenses.isNotEmpty,
                 onTap: () =>
                     AppShellScope.selectTabOf(context, AppShellTabs.report),
               ),

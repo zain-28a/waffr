@@ -1,19 +1,29 @@
-// Home spending card (part of dashboard.dart): where the money went, as a
-// donut with the total in its middle and the categories listed beside it,
-// across the full width of the screen.
+// Home spending card (part of dashboard.dart): where the money went in the
+// chosen period (week, month, balance period or all time), as a donut whose
+// middle shows the largest category's icon and share, with the categories
+// listed beside it, across the full width of the screen.
 
 part of 'dashboard.dart';
 
-/// Category shares of this period's spending. Opens the reports tab.
+/// Category shares of the chosen period's spending. Opens the reports tab.
 class _SpendingCard extends StatelessWidget {
-  // Per-category totals, largest first.
-  final List<({String category, double amount})> totals;
-  final double totalExpense;
+  final SpendingBreakdown breakdown;
+
+  /// The period shown, and a callback to switch it.
+  final SpendingPeriod period;
+  final ValueChanged<SpendingPeriod> onPeriod;
+
+  /// True when some expense exists in another period, so an empty period
+  /// reads "nothing in this period" rather than "log your first expense".
+  final bool hasHistory;
+
   final VoidCallback onTap;
 
   const _SpendingCard({
-    required this.totals,
-    required this.totalExpense,
+    required this.breakdown,
+    required this.period,
+    required this.onPeriod,
+    required this.hasHistory,
     required this.onTap,
   });
 
@@ -22,41 +32,133 @@ class _SpendingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final has = totalExpense > 0 && totals.isNotEmpty;
+    final top = breakdown.top;
 
     return _SectionCard(
       title: 'توزيع المصروفات',
       onTap: onTap,
-      child: !has
-          ? const _EmptyState(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (hasHistory) ...[
+            _PeriodChips(selected: period, onSelected: onPeriod),
+            const SizedBox(height: 10),
+          ],
+          if (top == null)
+            _EmptyState(
               icon: AppIcons.chartPie,
-              message: 'ستظهر النسب بعد تسجيل أول مصروف',
+              message: hasHistory
+                  ? 'لا مصروفات مسجّلة في هذه المدة'
+                  : 'ستظهر النسب بعد تسجيل أول مصروف',
             )
-          : Padding(
+          else
+            Padding(
               padding: const EdgeInsets.only(top: 2, bottom: 6),
               child: Row(
                 children: [
                   // On the start side (the right, in Arabic): the largest
-                  // categories, one under another.
+                  // categories, one under another; the first is the one in
+                  // the middle of the donut.
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        for (final item in totals.take(_listed))
+                        for (final item in breakdown.items.take(_listed))
                           _Share(
                             color: categoryChartColor(context, item.category),
                             name: item.category,
-                            percent: (item.amount / totalExpense * 100).round(),
+                            percent: (item.share * 100).round(),
+                            highlighted: identical(item, top),
                           ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 22),
-                  _Donut(totals: totals, total: totalExpense),
+                  _Donut(breakdown: breakdown),
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The period switch at the top of the spending card: four equal segments.
+/// Taps here change the period without opening the reports tab.
+class _PeriodChips extends StatelessWidget {
+  final SpendingPeriod selected;
+  final ValueChanged<SpendingPeriod> onSelected;
+
+  const _PeriodChips({required this.selected, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final track = palette.textSecondary.withValues(alpha: 0.09);
+    return Container(
+      height: 32,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: track,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          for (final period in SpendingPeriod.values)
+            Expanded(
+              child: Semantics(
+                button: true,
+                selected: period == selected,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    if (period == selected) return;
+                    AppHaptics.selection();
+                    onSelected(period);
+                  },
+                  child: AnimatedContainer(
+                    duration: AppMotion.of(context, AppMotion.fast),
+                    curve: AppMotion.enter,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: period == selected
+                          ? palette.surface
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(13),
+                      boxShadow: period == selected
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 6,
+                                offset: const Offset(0, 1),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        period.label,
+                        maxLines: 1,
+                        style: _text(
+                          12.5,
+                          weight: period == selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: period == selected
+                              ? palette.textPrimary
+                              : palette.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -67,10 +169,14 @@ class _Share extends StatelessWidget {
   final String name;
   final int percent;
 
+  /// The largest category, shown in the donut's middle: its name is bold.
+  final bool highlighted;
+
   const _Share({
     required this.color,
     required this.name,
     required this.percent,
+    this.highlighted = false,
   });
 
   @override
@@ -91,12 +197,18 @@ class _Share extends StatelessWidget {
               name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: _text(13, color: palette.textSecondary),
+              style: _text(
+                13,
+                weight: highlighted ? FontWeight.w700 : FontWeight.w400,
+                color: highlighted
+                    ? palette.textPrimary
+                    : palette.textSecondary,
+              ),
             ),
           ),
           const SizedBox(width: 4),
           Text(
-            '$percent%',
+            '\u2066$percent%\u2069',
             style: _text(
               13,
               weight: FontWeight.w700,
@@ -112,12 +224,12 @@ class _Share extends StatelessWidget {
 
 /// The spending donut. It draws itself in once; after that, a change in
 /// the numbers glides each slice to its new size. The largest category's
-/// slice is a little thicker. The middle holds the period's total.
+/// slice is a little thicker, and the middle shows that category's icon in
+/// its color with its share of the period.
 class _Donut extends StatefulWidget {
-  final List<({String category, double amount})> totals;
-  final double total;
+  final SpendingBreakdown breakdown;
 
-  const _Donut({required this.totals, required this.total});
+  const _Donut({required this.breakdown});
 
   /// Outer size, with room for the thicker slice.
   static const double size = 120;
@@ -142,15 +254,11 @@ class _DonutState extends State<_Donut> with TickerProviderStateMixin {
 
   /// Each category's share of the ring before and after the change.
   Map<String, double> _from = const {};
-  late Map<String, double> _to = _shares(widget.totals);
+  late Map<String, double> _to = _shares(widget.breakdown);
 
-  static Map<String, double> _shares(
-    List<({String category, double amount})> totals,
-  ) {
-    final sum = totals.fold<double>(0, (total, item) => total + item.amount);
-    if (sum <= 0) return const {};
-    return {for (final item in totals) item.category: item.amount / sum};
-  }
+  static Map<String, double> _shares(SpendingBreakdown breakdown) => {
+    for (final item in breakdown.items) item.category: item.share,
+  };
 
   @override
   void initState() {
@@ -170,7 +278,7 @@ class _DonutState extends State<_Donut> with TickerProviderStateMixin {
   @override
   void didUpdateWidget(covariant _Donut oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final next = _shares(widget.totals);
+    final next = _shares(widget.breakdown);
     if (mapEquals(next, _to)) return;
     _from = _current();
     _to = next;
@@ -200,7 +308,9 @@ class _DonutState extends State<_Donut> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final largest = widget.totals.first.category;
+    final top = widget.breakdown.top!;
+    final topColor = categoryChartColor(context, top.category);
+    final percent = (top.share * 100).round();
 
     return SizedBox.square(
       dimension: _Donut.size,
@@ -214,7 +324,7 @@ class _DonutState extends State<_Donut> with TickerProviderStateMixin {
               // Largest first, as the list beside it; slices that are
               // leaving shrink away at the end.
               final order = [
-                for (final item in widget.totals) item.category,
+                for (final item in widget.breakdown.items) item.category,
                 for (final category in shares.keys)
                   if (!_to.containsKey(category)) category,
               ];
@@ -226,7 +336,7 @@ class _DonutState extends State<_Donut> with TickerProviderStateMixin {
                       (
                         share: shares[category] ?? 0,
                         color: categoryChartColor(context, category),
-                        bold: category == largest,
+                        bold: category == top.category,
                       ),
                   ],
                   sweep: AppMotion.enter.transform(_sweep.value),
@@ -234,30 +344,45 @@ class _DonutState extends State<_Donut> with TickerProviderStateMixin {
               );
             },
           ),
-          // The total in the middle, rolling to its new value.
-          SizedBox(
-            width: 66,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: RollingMoney(
-                    value: widget.total,
-                    style: _text(
-                      17,
-                      weight: FontWeight.w700,
-                      color: palette.textPrimary,
-                      tabular: true,
+          // The largest category: its icon on a tint of its color, and its
+          // share of the period under it.
+          Semantics(
+            label: 'أكبر تصنيف ${top.category} بنسبة $percent%',
+            excludeSemantics: true,
+            child: SizedBox(
+              width: 66,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: topColor.withValues(alpha: 0.16),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      categoryFor(top.category).icon,
+                      size: 18,
+                      color: topColor,
                     ),
                   ),
-                ),
-                Text(
-                  currencyLabel,
-                  maxLines: 1,
-                  style: _text(11, color: palette.textSecondary),
-                ),
-              ],
+                  const SizedBox(height: 3),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '\u2066$percent%\u2069',
+                      maxLines: 1,
+                      style: _text(
+                        16,
+                        weight: FontWeight.w700,
+                        color: palette.textPrimary,
+                        tabular: true,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
