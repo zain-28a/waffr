@@ -67,7 +67,7 @@ void main() {
         final warning = service.notifications.firstWhere(
           (n) => n.type == NotificationType.balanceWarning,
         );
-        expect(warning.title, 'بقي ربع رصيدك');
+        expect(warning.title, 'بقي ربع رصيد الفترة');
         expect(warning.message, contains('200 ل.س'));
         expect(warning.message, contains('1,000 ل.س'));
         expect(warning.metadata['percent'], '25');
@@ -75,7 +75,7 @@ void main() {
         final spending = service.notifications.firstWhere(
           (n) => n.type == NotificationType.highSpending,
         );
-        expect(spending.title, contains('50%'));
+        expect(spending.title, contains('نصف'));
 
         await service.evaluate();
         expect(service.notifications, hasLength(2), reason: 'no repeats');
@@ -143,9 +143,9 @@ void main() {
       expect(service.notifications, isEmpty);
     });
 
-    test('an expense twice the earlier average is flagged', () async {
+    test('an expense twice its category average is flagged', () async {
       await store.addIncome(amount: 10000);
-      for (var i = 0; i < 4; i++) {
+      for (var i = 0; i < 5; i++) {
         await spend(10);
       }
       await service.evaluate();
@@ -155,35 +155,59 @@ void main() {
       final large = service.notifications.single;
       expect(large.type, NotificationType.largeExpense);
       expect(large.message, contains('100 ل.س'));
-      expect(large.message, contains('الطعام'));
+      expect(large.title, contains('الطعام'));
+      expect(large.message, contains('10 ل.س'), reason: 'the average');
+    });
+
+    test('a large expense needs five earlier ones in its category', () async {
+      await store.addIncome(amount: 10000);
+      for (var i = 0; i < 4; i++) {
+        await spend(10);
+      }
+      await service.evaluate();
+      await spend(100);
+      await service.evaluate();
+      expect(
+        service.notifications.where(
+          (n) => n.type == NotificationType.largeExpense,
+        ),
+        isEmpty,
+      );
     });
 
     test(
       'rows that arrive together are each judged against earlier ones',
       () async {
         await store.addIncome(amount: 10000);
-        final start = DateTime.now().subtract(const Duration(days: 30));
-        Future<String> spendOn(int day, double amount) async {
+        final now = DateTime.now();
+        Future<String> spendOn(
+          int daysAgo,
+          double amount, {
+          String? category,
+        }) async {
           final added = await store.addExpense(
             amount: amount,
-            category: 'طعام',
+            category: category ?? 'طعام',
             paymentMethod: 'نقداً',
-            occurredAt: start.add(Duration(days: day)),
+            occurredAt: now.subtract(Duration(days: daysAgo, hours: 1)),
           );
           return added!.id;
         }
 
-        for (var day = 0; day < 4; day++) {
+        for (var day = 30; day > 25; day--) {
           await spendOn(day, 10);
         }
         await service.evaluate();
 
-        // Averages before each new row: 10, 10, 10, 110 / 7, 125 / 8.
-        await spendOn(4, 10);
-        await spendOn(5, 10);
-        final big = await spendOn(6, 50);
-        await spendOn(7, 15);
-        final bigger = await spendOn(8, 40);
+        // Recent rows arriving together, each against the same category's
+        // earlier rows: 50 (average 10), 15, then 40 (average 85 / 7).
+        final big = await spendOn(2, 50);
+        await spendOn(1, 15);
+        final bigger = await spendOn(0, 40);
+        // An old row arriving late is not judged at all.
+        await spendOn(100, 500);
+        // Another category with no history is not judged either.
+        await spendOn(0, 900, category: 'تسوق');
         await service.evaluate();
 
         expect(
@@ -194,6 +218,75 @@ void main() {
         );
       },
     );
+
+    test('a goal a week from its deadline is flagged once', () async {
+      await service.seedIfNeeded();
+      final now = DateTime.now();
+      await prefs.setStringList(TransactionStore.savingsGoalsKey, [
+        SavingsGoal(
+          id: 'g1',
+          name: 'هاتف',
+          targetAmount: 1000,
+          duration: GoalDurationPreset.month,
+          createdAt: now.subtract(const Duration(days: 26)),
+        ).encode(),
+      ]);
+      store.resetCache();
+      await store.ensureLoaded();
+      await service.evaluate();
+      await service.evaluate();
+
+      final alerts = service.notifications
+          .where((n) => n.eventKey == 'goalDeadline:g1')
+          .toList();
+      expect(alerts, hasLength(1));
+      expect(alerts.single.title, contains('«هاتف»'));
+      expect(alerts.single.message, contains('1,000 ل.س'));
+    });
+
+    test('the spending pace rule: a fifth gone, a quarter ahead', () {
+      final start = DateTime(2026, 10, 1);
+      final end = DateTime(2026, 11, 1);
+      bool ahead(int day, double spentShare) => isSpendingAhead(
+        start: start,
+        end: end,
+        now: DateTime(2026, 10, day, 12),
+        spentShare: spentShare,
+      );
+      expect(ahead(10, 0.60), isTrue, reason: '30% gone, 60% spent');
+      expect(ahead(10, 0.50), isFalse, reason: 'only 20 points ahead');
+      expect(ahead(4, 0.90), isFalse, reason: 'too early to tell');
+      expect(ahead(28, 1.00), isFalse, reason: 'the period is nearly over');
+    });
+
+    test('the end of a balance period is summed up once', () async {
+      final now = DateTime.now();
+      await prefs.setStringList(TransactionStore.transactionsKey, [
+        incomeAt(1000, now.subtract(const Duration(days: 10))).encode(),
+        expenseAt(700, now.subtract(const Duration(days: 9))).encode(),
+        expenseAt(
+          300,
+          now.subtract(const Duration(days: 8)),
+          category: 'مواصلات',
+        ).encode(),
+      ]);
+      store.resetCache();
+      await store.ensureLoaded();
+      await service.evaluate(); // baseline with the old period
+
+      // The balance is empty; a new income starts a new period.
+      await store.addIncome(amount: 500);
+      await service.evaluate();
+      await service.evaluate();
+
+      final summaries = service.notifications
+          .where((n) => n.eventKey.startsWith('cycleSummary:'))
+          .toList();
+      expect(summaries, hasLength(1));
+      expect(summaries.single.message, contains('1,000 ل.س'));
+      expect(summaries.single.message, contains('الطعام'));
+      expect(summaries.single.message, contains('\u206670%\u2069'));
+    });
 
     test('a period leftover moved to savings is announced', () async {
       await service.seedIfNeeded();

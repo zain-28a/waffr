@@ -6,10 +6,11 @@ device, home widgets, the streak, smart switches and the online feed.
 | File | Contents |
 | --- | --- |
 | `notification_service.dart` | `NotificationService.instance` (`ChangeNotifier`): the in-app feed, mute, and the alert engine. `ensureLoaded`, `listen`, `seedIfNeeded`, `evaluate`, `add`, `markRead`, `applyRemoteSync`. Re-exports `notification_time_group.dart`. |
-| `notification_rules.dart` | `part of` the service: the private `_NotificationRules` extension, one `_evaluate*` rule per alert kind (balance, forecast, spending, goals, transfers, periods, large expenses). |
+| `notification_rules.dart` | `part of` the service: the private `_NotificationRules` extension, one `_evaluate*` rule per alert kind (balance, forecast, spending, spending pace, goals, goal deadlines, transfers, periods, period summary, large expenses against the category's 90-day average), and the logging-nudge sync. |
 | `notification_snapshot.dart` | `part of` the service: `_NotificationSnapshot`, the last-seen ratios and ids alerts compare against. |
 | `notification_time_group.dart` | `NotificationTimeGroup.from(items)`: today / yesterday / this week / per-month sections for the list. |
-| `system_notifications.dart` | `SystemNotifications.instance`: OS notifications (`flutter_local_notifications`) mirroring new alerts, the evening streak reminder and comeback reminders built by `ReminderDigest`. |
+| `system_notifications.dart` | `SystemNotifications.instance`: OS notifications (`flutter_local_notifications`) mirroring new alerts, and the scheduled reminders (evening streak, logging nudge three days after the last expense, comeback reminders and the weekly digest built by `ReminderDigest`), all planned together through `NotificationPolicy`. Android only. |
+| `notification_policy.dart` | `NotificationPolicy`: no device banners 22:00-08:00, one non-urgent banner a day (`NotificationType.isUrgent` bypasses it), one scheduled reminder a day by rank. Pure, so tested without the plugin. |
 | `usage_streak_service.dart` | `UsageStreakService.instance`: the daily streak in prefs (`recordToday`, `takeIncrease`, `applyRemote`, `markSynced`); rules from `core/usage/streak_math.dart`. |
 | `home_widget_sync.dart` | `HomeWidgetSync.instance.start()` / `refresh()`: formats balance, bills and streak text for the native Android/iOS home widgets. |
 | `backup_service.dart` | `BackupService.instance`: guest choice (`authChoiceKey`), display name, wiping data on account switch or delete, restore listeners read by `main.dart`. |
