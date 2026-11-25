@@ -47,7 +47,7 @@ class _QuickActions extends StatelessWidget {
           child: _QuickAction(
             label: 'توفير',
             hint: 'توفير مبلغ',
-            icon: AppIcons.piggyBank,
+            icon: AppIcons.savings,
             onTap: onSave,
           ),
         ),

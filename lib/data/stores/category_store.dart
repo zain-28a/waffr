@@ -356,7 +356,7 @@ class CategoryStore extends ChangeNotifier {
           CustomCategoryEntry(
             id: CustomCategoryEntry.legacyId(raw.trim()),
             label: raw.trim(),
-            iconIndex: raw.hashCode.abs() % customCategoryIconChoices.length,
+            iconIndex: raw.hashCode.abs() % legacyCustomIconCount,
             updatedAt: syncNow(),
           ),
     ];

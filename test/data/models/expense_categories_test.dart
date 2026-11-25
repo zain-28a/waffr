@@ -53,6 +53,46 @@ void main() {
     expect(clamped.color, customCategoryColors.first);
   });
 
+  test('saved icon slots keep their meaning as the picker grows', () {
+    // Saved categories store an index, so the first slots never move.
+    // Slot 11 (a duplicate cart) shows a basket and slot 32 (the piggy bank)
+    // the Waffr wallet that replaced it; both keep their meaning.
+    expect(customCategoryIconChoices[0], AppIcons.food);
+    expect(customCategoryIconChoices[11], AppIcons.shoppingBasket);
+    expect(customCategoryIconChoices[32], AppIcons.savings);
+    expect(customCategoryIconChoices[38], AppIcons.celebration);
+    expect(customCategoryIconChoices.length, greaterThan(100));
+    expect(
+      customCategoryIconChoices.toSet(),
+      hasLength(customCategoryIconChoices.length),
+      reason: 'no icon is offered twice',
+    );
+  });
+
+  test('every picker slot sits in exactly one group', () {
+    final slots = [
+      for (final group in customCategoryIconGroups) ...group.slots,
+    ];
+    expect(slots.toSet(), hasLength(slots.length));
+    expect(slots.toSet(), {
+      for (var i = 0; i < customCategoryIconChoices.length; i++) i,
+    });
+  });
+
+  test('hashed icons and colors ignore the grown palettes', () {
+    // A label with no saved slots keeps the icon and color it always had.
+    final hash = 'إيجار'.hashCode.abs();
+    final named = customCategoryNamed('إيجار');
+    expect(named.icon, customCategoryIconChoices[hash % legacyCustomIconCount]);
+    expect(named.color, customCategoryColors[hash % legacyCustomColorCount]);
+  });
+
+  test('صحة no longer borrows the brand green or the health heart', () {
+    final health = categoryFor('صحة');
+    expect(health.icon, AppIcons.stethoscope);
+    expect(health.color, isNot(const Color(0xFF4E8841)));
+  });
+
   test('palette index helpers', () {
     expect(clampCustomIconIndex(-5), 0);
     expect(clampCustomIconIndex(3), 3);

@@ -331,21 +331,49 @@ class _CustomCategoryNameDialogState extends State<_CustomCategoryNameDialog> {
               ),
               const SizedBox(height: 8),
               Expanded(
-                child: GridView.builder(
-                  itemCount: customCategoryIconChoices.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                  ),
-                  itemBuilder: (context, i) {
-                    return _IconChoice(
-                      icon: customCategoryIconChoices[i],
-                      selected: i == _iconIndex,
-                      accent: accent,
-                      onTap: () => setState(() => _iconIndex = i),
-                    );
-                  },
+                // Grouped by theme; each group is a header and a lazy grid,
+                // so the long list only builds the rows on screen.
+                child: CustomScrollView(
+                  slivers: [
+                    for (final group in customCategoryIconGroups) ...[
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.only(
+                            start: 2,
+                            top: 6,
+                            bottom: 6,
+                          ),
+                          child: Text(
+                            group.title,
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: palette.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SliverGrid.builder(
+                        itemCount: group.slots.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 5,
+                              mainAxisSpacing: 8,
+                              crossAxisSpacing: 8,
+                            ),
+                        itemBuilder: (context, i) {
+                          final slot = group.slots[i];
+                          return _IconChoice(
+                            icon: customCategoryIconChoices[slot],
+                            selected: slot == _iconIndex,
+                            accent: accent,
+                            onTap: () => setState(() => _iconIndex = slot),
+                          );
+                        },
+                      ),
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(height: 8),

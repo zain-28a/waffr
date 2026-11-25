@@ -28,7 +28,7 @@ extension InsightScopeLabel on InsightScope {
   /// Icon shown beside [label].
   IconData get icon => switch (this) {
     InsightScope.reports => AppIcons.reports,
-    InsightScope.savings => AppIcons.piggyBank,
+    InsightScope.savings => AppIcons.savings,
     InsightScope.profile => AppIcons.user,
   };
 }

@@ -16,9 +16,6 @@ abstract final class AppIcons {
   /// Lucide `chartNoAxesColumn`.
   static const IconData reports = IconData(0xe068, fontFamily: _family);
 
-  /// Lucide `piggyBank`.
-  static const IconData savings = IconData(0xe13a, fontFamily: _family);
-
   /// Lucide `globe`.
   static const IconData online = IconData(0xe0e8, fontFamily: _family);
 
@@ -222,9 +219,6 @@ abstract final class AppIcons {
 
   /// Lucide `receiptText`.
   static const IconData receipt = IconData(0xe5ac, fontFamily: _family);
-
-  /// Lucide `piggyBank`.
-  static const IconData piggyBank = IconData(0xe13a, fontFamily: _family);
 
   /// Lucide `circleDollarSign`.
   static const IconData exchange = IconData(0xe47d, fontFamily: _family);
@@ -500,4 +494,253 @@ abstract final class AppIcons {
 
   /// Lucide `scissors`.
   static const IconData scissors = IconData(0xe14e, fontFamily: _family);
+
+  /// Lucide `pizza`.
+  static const IconData pizza = IconData(0xe354, fontFamily: _family);
+
+  /// Lucide `croissant`.
+  static const IconData croissant = IconData(0xe2ae, fontFamily: _family);
+
+  /// Lucide `sandwich`.
+  static const IconData sandwich = IconData(0xe3a9, fontFamily: _family);
+
+  /// Lucide `drumstick`.
+  static const IconData drumstick = IconData(0xe25b, fontFamily: _family);
+
+  /// Lucide `beef`.
+  static const IconData beef = IconData(0xe3a5, fontFamily: _family);
+
+  /// Lucide `soup`.
+  static const IconData soup = IconData(0xe3aa, fontFamily: _family);
+
+  /// Lucide `salad`.
+  static const IconData salad = IconData(0xe3a8, fontFamily: _family);
+
+  /// Lucide `apple`.
+  static const IconData apple = IconData(0xe34e, fontFamily: _family);
+
+  /// Lucide `milk`.
+  static const IconData milk = IconData(0xe399, fontFamily: _family);
+
+  /// Lucide `egg`.
+  static const IconData egg = IconData(0xe25d, fontFamily: _family);
+
+  /// Lucide `cookie`.
+  static const IconData cookie = IconData(0xe26b, fontFamily: _family);
+
+  /// Lucide `iceCreamCone`.
+  static const IconData iceCream = IconData(0xe353, fontFamily: _family);
+
+  /// Lucide `cupSoda`.
+  static const IconData soda = IconData(0xe2d1, fontFamily: _family);
+
+  /// Lucide `cookingPot`.
+  static const IconData cookingPot = IconData(0xe584, fontFamily: _family);
+
+  /// Lucide `utensilsCrossed`.
+  static const IconData restaurant = IconData(0xe2f7, fontFamily: _family);
+
+  /// Lucide `motorbike`.
+  static const IconData motorbike = IconData(0xe698, fontFamily: _family);
+
+  /// Lucide `trainFront`.
+  static const IconData train = IconData(0xe506, fontFamily: _family);
+
+  /// Lucide `tramFront`.
+  static const IconData tram = IconData(0xe2a9, fontFamily: _family);
+
+  /// Lucide `ship`.
+  static const IconData ship = IconData(0xe3ba, fontFamily: _family);
+
+  /// Lucide `truck`.
+  static const IconData truck = IconData(0xe194, fontFamily: _family);
+
+  /// Lucide `circleParking`.
+  static const IconData parking = IconData(0xe3c9, fontFamily: _family);
+
+  /// Lucide `luggage`.
+  static const IconData luggage = IconData(0xe2ca, fontFamily: _family);
+
+  /// Lucide `hotel`.
+  static const IconData hotel = IconData(0xe3e2, fontFamily: _family);
+
+  /// Lucide `tentTree`.
+  static const IconData tent = IconData(0xe53b, fontFamily: _family);
+
+  /// Lucide `palmtree`.
+  static const IconData palmTree = IconData(0xe281, fontFamily: _family);
+
+  /// Lucide `mapPin`.
+  static const IconData mapPin = IconData(0xe111, fontFamily: _family);
+
+  /// Lucide `ticket`.
+  static const IconData ticket = IconData(0xe20f, fontFamily: _family);
+
+  /// Lucide `umbrella`.
+  static const IconData umbrella = IconData(0xe199, fontFamily: _family);
+
+  /// Lucide `building2`.
+  static const IconData building = IconData(0xe290, fontFamily: _family);
+
+  /// Lucide `sofa`.
+  static const IconData sofa = IconData(0xe2c4, fontFamily: _family);
+
+  /// Lucide `bed`.
+  static const IconData bed = IconData(0xe2c1, fontFamily: _family);
+
+  /// Lucide `lamp`.
+  static const IconData lamp = IconData(0xe2d8, fontFamily: _family);
+
+  /// Lucide `washingMachine`.
+  static const IconData washingMachine = IconData(0xe590, fontFamily: _family);
+
+  /// Lucide `refrigerator`.
+  static const IconData fridge = IconData(0xe37b, fontFamily: _family);
+
+  /// Lucide `hammer`.
+  static const IconData hammer = IconData(0xe0ec, fontFamily: _family);
+
+  /// Lucide `paintRoller`.
+  static const IconData paintRoller = IconData(0xe59e, fontFamily: _family);
+
+  /// Lucide `plug`.
+  static const IconData plug = IconData(0xe37f, fontFamily: _family);
+
+  /// Lucide `zap`.
+  static const IconData electricity = IconData(0xe1b4, fontFamily: _family);
+
+  /// Lucide `router`.
+  static const IconData router = IconData(0xe3bf, fontFamily: _family);
+
+  /// Lucide `sprout`.
+  static const IconData sprout = IconData(0xe1eb, fontFamily: _family);
+
+  /// Lucide `flower2`.
+  static const IconData flower = IconData(0xe2d4, fontFamily: _family);
+
+  /// Lucide `footprints`.
+  static const IconData footprints = IconData(0xe3b9, fontFamily: _family);
+
+  /// Lucide `watch`.
+  static const IconData watch = IconData(0xe1ad, fontFamily: _family);
+
+  /// Lucide `gem`.
+  static const IconData gem = IconData(0xe242, fontFamily: _family);
+
+  /// Lucide `glasses`.
+  static const IconData glasses = IconData(0xe20d, fontFamily: _family);
+
+  /// Lucide `sprayCan`.
+  static const IconData perfume = IconData(0xe495, fontFamily: _family);
+
+  /// Lucide `bath`.
+  static const IconData bath = IconData(0xe2ab, fontFamily: _family);
+
+  /// Lucide `brush`.
+  static const IconData brush = IconData(0xe1d3, fontFamily: _family);
+
+  /// Lucide `stethoscope`.
+  static const IconData stethoscope = IconData(0xe2f1, fontFamily: _family);
+
+  /// Lucide `syringe`.
+  static const IconData syringe = IconData(0xe2f2, fontFamily: _family);
+
+  /// Lucide `heartPulse`.
+  static const IconData heartPulse = IconData(0xe36e, fontFamily: _family);
+
+  /// Lucide `bandage`.
+  static const IconData bandage = IconData(0xe61d, fontFamily: _family);
+
+  /// Lucide `waves`.
+  static const IconData swimming = IconData(0xe283, fontFamily: _family);
+
+  /// Lucide `school`.
+  static const IconData school = IconData(0xe3e3, fontFamily: _family);
+
+  /// Lucide `backpack`.
+  static const IconData backpack = IconData(0xe2c8, fontFamily: _family);
+
+  /// Lucide `libraryBig`.
+  static const IconData library = IconData(0xe54e, fontFamily: _family);
+
+  /// Lucide `laptop`.
+  static const IconData laptop = IconData(0xe1cd, fontFamily: _family);
+
+  /// Lucide `monitor`.
+  static const IconData monitor = IconData(0xe11d, fontFamily: _family);
+
+  /// Lucide `printer`.
+  static const IconData printer = IconData(0xe141, fontFamily: _family);
+
+  /// Lucide `hardHat`.
+  static const IconData hardHat = IconData(0xe0ee, fontFamily: _family);
+
+  /// Lucide `users`.
+  static const IconData family = IconData(0xe1a4, fontFamily: _family);
+
+  /// Lucide `cake`.
+  static const IconData cake = IconData(0xe344, fontFamily: _family);
+
+  /// Lucide `heartHandshake`.
+  static const IconData charity = IconData(0xe2d7, fontFamily: _family);
+
+  /// Lucide `handHeart`.
+  static const IconData handHeart = IconData(0xe5b9, fontFamily: _family);
+
+  /// Lucide `handCoins`.
+  static const IconData handCoins = IconData(0xe5b8, fontFamily: _family);
+
+  /// Lucide `mosque`.
+  static const IconData mosque = IconData(0xe725, fontFamily: _family);
+
+  /// Lucide `cat`.
+  static const IconData cat = IconData(0xe38c, fontFamily: _family);
+
+  /// Lucide `dog`.
+  static const IconData dog = IconData(0xe38d, fontFamily: _family);
+
+  /// Lucide `fish`.
+  static const IconData fish = IconData(0xe3a6, fontFamily: _family);
+
+  /// Lucide `bone`.
+  static const IconData bone = IconData(0xe358, fontFamily: _family);
+
+  /// Lucide `music`.
+  static const IconData music = IconData(0xe122, fontFamily: _family);
+
+  /// Lucide `headphones`.
+  static const IconData headphones = IconData(0xe0f1, fontFamily: _family);
+
+  /// Lucide `camera`.
+  static const IconData camera = IconData(0xe064, fontFamily: _family);
+
+  /// Lucide `popcorn`.
+  static const IconData popcorn = IconData(0xe4be, fontFamily: _family);
+
+  /// Lucide `puzzle`.
+  static const IconData puzzle = IconData(0xe29c, fontFamily: _family);
+
+  /// Lucide `dices`.
+  static const IconData dice = IconData(0xe2c5, fontFamily: _family);
+
+  /// Lucide `landmark`.
+  static const IconData bank = IconData(0xe23a, fontFamily: _family);
+
+  /// Lucide `coins`.
+  static const IconData coins = IconData(0xe097, fontFamily: _family);
+
+  /// Lucide `percent`.
+  static const IconData percent = IconData(0xe132, fontFamily: _family);
+
+  /// Lucide `scale`.
+  static const IconData scale = IconData(0xe212, fontFamily: _family);
+
+  /// Lucide `shieldPlus`.
+  static const IconData insurance = IconData(0xe519, fontFamily: _family);
+
+  /// Lucide `cloud`.
+  static const IconData cloud = IconData(0xe088, fontFamily: _family);
+
+  /// Waffr icon drawn in `tool/icons/waffr_wallet.svg`.
+  static const IconData savings = IconData(0xf600, fontFamily: _family);
 }

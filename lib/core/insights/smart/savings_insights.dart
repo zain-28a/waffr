@@ -183,7 +183,7 @@ class SavingsInsights {
       return SmartInsight(
         id: 'savings-rate',
         tone: InsightTone.positive,
-        icon: AppIcons.piggyBank,
+        icon: AppIcons.savings,
         title: _p.pick([
           'نسبة توفير ممتازة',
           'توفّر ${_p.percent(rate)} من دخلك',
@@ -199,7 +199,7 @@ class SavingsInsights {
       return SmartInsight(
         id: 'savings-rate',
         tone: InsightTone.tip,
-        icon: AppIcons.piggyBank,
+        icon: AppIcons.savings,
         title: _p.pick([
           'التوفير منخفض هذا الشهر',
           'ابدأ بنسبة ${_p.percent(0.05)} فقط',
@@ -215,7 +215,7 @@ class SavingsInsights {
     return SmartInsight(
       id: 'savings-rate',
       tone: InsightTone.info,
-      icon: AppIcons.piggyBank,
+      icon: AppIcons.savings,
       title: _p.pick(['نسبة توفيرك', 'أنت في منتصف الطريق']),
       body: _p.say(InsightTone.info, [
         'وفّرت ${_p.percent(rate)} من دخلك خلال آخر 30 يوماً، والوصول إلى ${_p.percent(0.2)} يعني ${_p.money(income * 0.2)} شهرياً.',
