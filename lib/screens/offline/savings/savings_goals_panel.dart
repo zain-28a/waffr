@@ -13,6 +13,7 @@ class _ActiveGoalsPanel extends StatefulWidget {
   final VoidCallback onCreate;
 
   const _ActiveGoalsPanel({
+    super.key,
     required this.goals,
     required this.store,
     required this.onManage,
@@ -71,7 +72,10 @@ class _ActiveGoalsPanelState extends State<_ActiveGoalsPanel> {
             const SizedBox(height: 12),
             SizedBox(
               height: 48,
-              child: _CreateGoalCard(onCreate: widget.onCreate),
+              child: KeyedSubtree(
+                key: TutorialTargets.of(TutorialTarget.createGoal),
+                child: _CreateGoalCard(onCreate: widget.onCreate),
+              ),
             ),
           ],
         ),

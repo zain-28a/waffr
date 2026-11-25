@@ -24,6 +24,7 @@ import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/sync/auth_session.dart';
 import 'package:waffr/core/sync/sync_service.dart';
 import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/login/login_screen.dart';
@@ -390,6 +391,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await AuthSession.instance.clearDataOwner();
 
     // Drop every singleton's in-memory copy so nothing stale survives.
+    TutorialController.instance.reset();
     TransactionStore.instance.resetCache();
     CurrencyStore.instance.resetCache();
     NotificationService.instance.resetCache();
@@ -434,6 +436,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// Opens the help screen.
   void _openHelp() {
+    TutorialController.instance.emit('help-opened');
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const HelpScreen()));
   }
@@ -650,11 +653,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       const AppSectionTitle(title: 'الدعم'),
       AppListGroup(
         children: [
-          AppListTile(
-            icon: AppIcons.help,
-            title: 'المساعدة',
-            subtitle: 'الأسئلة الشائعة والدعم',
-            onTap: _openHelp,
+          KeyedSubtree(
+            key: TutorialTargets.of(TutorialTarget.helpTile),
+            child: AppListTile(
+              icon: AppIcons.help,
+              title: 'المساعدة',
+              subtitle: 'الأسئلة الشائعة والدعم',
+              onTap: _openHelp,
+            ),
           ),
           AppListTile(
             icon: AppIcons.info,

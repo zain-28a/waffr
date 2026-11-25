@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffr/widgets/containers/amount_keypad.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
 import 'package:waffr/core/security/data_key.dart';
 import 'package:waffr/core/sync/sync_dirty.dart';
 import 'package:waffr/core/sync/sync_tombstones.dart';
@@ -41,6 +42,7 @@ Future<SharedPreferences> setUpStores() async {
 /// Drops every store's memory so the next `ensureLoaded` reads prefs again,
 /// and restores the static switches tests may have changed.
 void resetStoreCaches() {
+  TutorialController.instance.reset();
   TransactionStore.instance.resetCache();
   CurrencyStore.instance.resetCache();
   CategoryStore.instance.resetCache();

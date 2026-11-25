@@ -1,6 +1,7 @@
 // Wipes every piece of Waffr data on this device: prefs, the session,
 // and each store's memory.
 
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
 import 'package:waffr/data/stores/expense_preset_store.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/services/notification_service.dart';
@@ -28,6 +29,7 @@ class LocalDataReset {
     await AuthSession.instance.clearSession();
     await AuthSession.instance.clearDataOwner();
 
+    TutorialController.instance.reset();
     TransactionStore.instance.resetCache();
     CurrencyStore.instance.resetCache();
     NotificationService.instance.resetCache();

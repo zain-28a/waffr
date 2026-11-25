@@ -7,6 +7,8 @@ import 'package:waffr/core/theme/app_icons.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
+import 'package:waffr/widgets/tutorial/tutorial_layer.dart';
 import 'package:flutter/services.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
@@ -34,11 +36,14 @@ part 'expense_category_grid.dart';
 /// Opens the add-expense sheet. A one-off expense is saved to
 /// [TransactionStore]; a recurring one becomes an obligation in
 /// [RecurringExpenseStore].
-Future<void> showAddExpenseSheet(BuildContext context) {
-  return showGlassSheet<void>(
+Future<void> showAddExpenseSheet(BuildContext context) async {
+  final tutorial = TutorialController.instance;
+  tutorial.emit('sheet-open:expense');
+  await showGlassSheet<void>(
     context: context,
     builder: (context) => const _AddExpenseSheet(),
   );
+  tutorial.emit('sheet-closed:expense');
 }
 
 /// Form for a new expense; see [showAddExpenseSheet].
@@ -238,6 +243,15 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   Future<void> _save() async {
     if (!_check().isValid || _saving) return;
 
+    // During the tutorial the sheet is a demo: nothing is recorded.
+    final tutorial = TutorialController.instance;
+    if (tutorial.isDemo(TutorialDemo.expense)) {
+      AppHaptics.success();
+      tutorial.emit('demo-saved:expense');
+      Navigator.of(context).maybePop();
+      return;
+    }
+
     setState(() => _saving = true);
 
     final note = _noteController.text.trim();
@@ -325,6 +339,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
           onNext: check.isValid ? _save : null,
         ),
         const SizedBox(height: 10),
+        const TutorialSheetHint(steps: {'expense-demo'}),
         SheetAmountField(
           autofocus: true,
           label: 'المبلغ',

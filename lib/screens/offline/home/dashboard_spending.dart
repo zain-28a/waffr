@@ -20,6 +20,7 @@ class _SpendingCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _SpendingCard({
+    super.key,
     required this.breakdown,
     required this.period,
     required this.onPeriod,

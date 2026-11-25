@@ -27,20 +27,26 @@ class _QuickActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: _QuickAction(
-            label: 'مصروف',
-            hint: 'إضافة مصروف',
-            icon: AppIcons.arrowUpRight,
-            primary: true,
-            onTap: onExpense,
+          child: KeyedSubtree(
+            key: TutorialTargets.of(TutorialTarget.addExpense),
+            child: _QuickAction(
+              label: 'مصروف',
+              hint: 'إضافة مصروف',
+              icon: AppIcons.arrowUpRight,
+              primary: true,
+              onTap: onExpense,
+            ),
           ),
         ),
         Expanded(
-          child: _QuickAction(
-            label: 'دخل',
-            hint: 'إضافة دخل',
-            icon: AppIcons.arrowDownLeft,
-            onTap: onIncome,
+          child: KeyedSubtree(
+            key: TutorialTargets.of(TutorialTarget.addIncome),
+            child: _QuickAction(
+              label: 'دخل',
+              hint: 'إضافة دخل',
+              icon: AppIcons.arrowDownLeft,
+              onTap: onIncome,
+            ),
           ),
         ),
         Expanded(

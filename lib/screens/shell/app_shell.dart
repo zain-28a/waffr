@@ -37,6 +37,7 @@ import 'package:waffr/widgets/brand/goal_celebration.dart';
 import 'package:waffr/widgets/brand/streak_celebration.dart';
 import 'package:waffr/widgets/brand/waffr_mood_logo.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
 import 'package:waffr/widgets/button/glass_button.dart';
 import 'package:waffr/widgets/containers/floating_glass.dart';
 import 'package:waffr/widgets/glass/aurora_backdrop.dart';
@@ -155,6 +156,10 @@ class _AppShellState extends State<AppShell>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final tutorial = TutorialController.instance;
+    tutorial.selectTab = _onTabTapped;
+    _tabIndex.addListener(_reportTab);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeStartTutorial());
     TransactionStore.instance.addListener(_watchGoals);
     TransactionStore.instance.ensureLoaded().then((_) => _watchGoals());
     _startDueTimer();
@@ -308,6 +313,20 @@ class _AppShellState extends State<AppShell>
     }
   }
 
+  /// Tells the tutorial which tab is showing (taps and swipes alike).
+  void _reportTab() {
+    TutorialController.instance.emit('tab:${_tabIndex.value}');
+  }
+
+  /// Starts (or resumes) the first-run tutorial once the home screen has
+  /// settled and no celebration is playing; the celebrations call this
+  /// again when they end.
+  Future<void> _maybeStartTutorial() async {
+    await Future<void>.delayed(const Duration(milliseconds: 1200));
+    if (!mounted || _streakIncrease != null || _goalReached != null) return;
+    await TutorialController.instance.maybeStart();
+  }
+
   /// Shows the streak overlay after a short delay so the home screen can
   /// settle on screen first.
   Future<void> _showStreakIncrease(StreakIncrease? increase) async {
@@ -342,6 +361,7 @@ class _AppShellState extends State<AppShell>
   /// Pushes settings, then reloads [ProfileIdentity] in case the account
   /// changed there.
   Future<void> _openSettings() async {
+    TutorialController.instance.emit('settings-opened');
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SettingsScreen(
@@ -452,6 +472,9 @@ class _AppShellState extends State<AppShell>
 
   @override
   void dispose() {
+    final tutorial = TutorialController.instance;
+    if (tutorial.selectTab == _onTabTapped) tutorial.selectTab = null;
+    _tabIndex.removeListener(_reportTab);
     TransactionStore.instance.removeListener(_watchGoals);
     _dueTimer?.cancel();
     _widgetTaps?.cancel();
@@ -531,6 +554,7 @@ class _AppShellState extends State<AppShell>
                 leading: Row(
                   children: [
                     GlassIconButton(
+                      key: TutorialTargets.of(TutorialTarget.settingsButton),
                       icon: AppIcons.settings,
                       label: 'الإعدادات',
                       onPressed: _openSettings,
@@ -579,6 +603,7 @@ class _AppShellState extends State<AppShell>
                   goalName: name,
                   onFinished: () {
                     if (mounted) setState(() => _goalReached = null);
+                    _maybeStartTutorial();
                   },
                 ),
               ),
@@ -591,6 +616,7 @@ class _AppShellState extends State<AppShell>
                   to: increase.to,
                   onFinished: () {
                     if (mounted) setState(() => _streakIncrease = null);
+                    _maybeStartTutorial();
                   },
                 ),
               ),
@@ -742,7 +768,10 @@ class _BottomNavBar extends StatelessWidget {
                         top: 0,
                         bottom: 0,
                         width: widths[i],
-                        child: _tab(context, i, page, accent, textPrimary),
+                        child: _tabTarget(
+                          i,
+                          _tab(context, i, page, accent, textPrimary),
+                        ),
                       ),
                   ],
                 );
@@ -752,6 +781,18 @@ class _BottomNavBar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Marks the tabs the tutorial points at.
+  Widget _tabTarget(int index, Widget child) {
+    final target = switch (index) {
+      0 => TutorialTarget.homeTab,
+      1 => TutorialTarget.reportsTab,
+      2 => TutorialTarget.savingsTab,
+      _ => null,
+    };
+    if (target == null) return child;
+    return KeyedSubtree(key: TutorialTargets.of(target), child: child);
   }
 
   /// Highlight bubble for the fractional pager [page]: it blends the two

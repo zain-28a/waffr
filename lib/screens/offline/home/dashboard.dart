@@ -23,6 +23,7 @@ import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
 import 'package:waffr/core/utils/calendar_days.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/data/models/calendar_period.dart';
@@ -253,6 +254,7 @@ class _HomeScreenState extends State<HomeScreen>
             children: staggered([
               // The balance on its dimensional glass card.
               _BalanceHero(
+                key: TutorialTargets.of(TutorialTarget.balance),
                 balance: _store.balance,
                 spent: _store.cycleSpent,
                 maxBalance: _store.maxBalance,
@@ -273,6 +275,7 @@ class _HomeScreenState extends State<HomeScreen>
               _InsightBar(lines: _insights),
               const SizedBox(height: 14),
               _SpendingCard(
+                key: TutorialTargets.of(TutorialTarget.spendingCard),
                 breakdown: _store.spendingBreakdown(
                   since: _spendingStart(_spendingPeriod, now),
                 ),

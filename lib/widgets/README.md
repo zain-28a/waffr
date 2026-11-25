@@ -8,6 +8,7 @@ and `edit_amount_dialog.dart` read a store (`CurrencyStore`).
 | --- | --- |
 | [`containers/`](containers/README.md) | `GlassContainer` card, `FloatingGlass` chrome, `PinnedPeriodScrollView`, `AppListTile`, `AppEmptyState`, and the sheet toolkit `glass_sheet.dart` (re-exports `sheet_fields`, `sheet_amount_field`, `sheet_transitions`, `sheet_buttons`). |
 | [`button/`](button/README.md) | `AppPrimaryButton` (the one primary action, also behind `SheetSaveButton`), `GlassButton` / `GlassIconButton`. |
+| [`tutorial/`](tutorial/README.md) | `TutorialLayer` (the first-run tutorial's spotlight overlay) and `TutorialSheetHint`. |
 | [`dialogs/`](dialogs/README.md) | `EditAmountDialog`, `showEditDeleteMenu`, `showWaffrDatePicker` / `showWaffrDateRangePicker`. |
 | [`sheets/`](sheets/README.md) | `showMonthlyIncomeRequiredSheet`. |
 | [`brand/`](brand/README.md) | `WaffrLogo` / `WaffrSplash`, `WaffrMoodLogo` and its `MouthShape`s, `WaffrPageHeader` / `WaffrBackHeader`, `ProfileAvatar`, `StreakCelebrationOverlay`. |

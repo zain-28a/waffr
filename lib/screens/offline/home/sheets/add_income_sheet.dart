@@ -2,6 +2,8 @@
 // balance, and an optional source. Offers to review waiting obligations after.
 
 import 'package:flutter/material.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
+import 'package:waffr/widgets/tutorial/tutorial_layer.dart';
 import 'package:waffr/widgets/brand/waffr_mood_logo.dart';
 import 'package:waffr/data/models/transaction.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
@@ -15,11 +17,14 @@ import 'package:waffr/core/theme/app_motion.dart';
 
 /// Opens the add-income sheet. Saves through [TransactionStore.addIncome],
 /// then may offer the due-obligations sheet if bills await confirmation.
-Future<void> showAddIncomeSheet(BuildContext context) {
-  return showGlassSheet<void>(
+Future<void> showAddIncomeSheet(BuildContext context) async {
+  final tutorial = TutorialController.instance;
+  tutorial.emit('sheet-open:income');
+  await showGlassSheet<void>(
     context: context,
     builder: (context) => const _AddIncomeSheet(),
   );
+  tutorial.emit('sheet-closed:income');
 }
 
 /// Form for a new income; see [showAddIncomeSheet].
@@ -96,6 +101,15 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
   Future<void> _save() async {
     if (!_isValid || _saving) return;
 
+    // During the tutorial the sheet is a demo: nothing is recorded.
+    final tutorial = TutorialController.instance;
+    if (tutorial.isDemo(TutorialDemo.income)) {
+      AppHaptics.success();
+      tutorial.emit('demo-saved:income');
+      Navigator.of(context).maybePop();
+      return;
+    }
+
     setState(() => _saving = true);
 
     final source = _sourceController.text.trim();
@@ -148,6 +162,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
           onNext: _isValid ? _save : null,
         ),
         const SizedBox(height: 18),
+        const TutorialSheetHint(steps: {'income-demo'}),
         // Amount with currency and the max-amount hint.
         SheetAmountField(
           autofocus: true,

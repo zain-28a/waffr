@@ -2,6 +2,8 @@
 // funding, previewing how many periods the target will take.
 
 import 'package:flutter/material.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
+import 'package:waffr/widgets/tutorial/tutorial_layer.dart';
 import 'package:flutter/services.dart';
 import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/models/savings_goal.dart';
@@ -15,11 +17,14 @@ import 'package:waffr/core/theme/app_palette.dart';
 
 /// Opens the create-goal sheet. Opened from the savings screen and from the
 /// manage-goals sheet.
-Future<void> showCreateGoalSheet(BuildContext context) {
-  return showGlassSheet<void>(
+Future<void> showCreateGoalSheet(BuildContext context) async {
+  final tutorial = TutorialController.instance;
+  tutorial.emit('sheet-open:goal');
+  await showGlassSheet<void>(
     context: context,
     builder: (context) => const _CreateGoalSheet(),
   );
+  tutorial.emit('sheet-closed:goal');
 }
 
 /// Form sheet: name, target, and contribution method for a new goal.
@@ -217,6 +222,15 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
       return;
     }
 
+    // During the tutorial the sheet is a demo: no goal is created.
+    final tutorial = TutorialController.instance;
+    if (tutorial.isDemo(TutorialDemo.goal)) {
+      AppHaptics.success();
+      tutorial.emit('demo-saved:goal');
+      Navigator.of(context).maybePop();
+      return;
+    }
+
     setState(() {
       _saving = true;
     });
@@ -284,6 +298,8 @@ class _CreateGoalSheetState extends State<_CreateGoalSheet> {
           subtitle: 'حدّد هدفك واختر طريقة التوفير.',
           onNext: _isValid && !_saving ? _save : null,
         ),
+        const SizedBox(height: 10),
+        const TutorialSheetHint(steps: {'goal-demo'}),
 
         const SizedBox(height: 18),
 

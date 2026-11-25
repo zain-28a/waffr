@@ -5,6 +5,7 @@ Shared code that is not a screen, not a widget, and not a stored record.
 | Folder | What it holds |
 | --- | --- |
 | [`theme/`](theme/README.md) | `AppColors` tokens, `AppPalette` (light or dark tokens for the current brightness), `AppTheme` (fonts and `ThemeData`), `AppMotion` / `AppHaptics`. |
+| [`tutorial/`](tutorial/README.md) | The first-run interactive tutorial: steps, target keys, demo mode and the controller. |
 | [`prefs/`](prefs/README.md) | `AppPrefs`, the one cached `SharedPreferences` handle. Warmed in `main`. |
 | [`utils/`](utils/README.md) | Money and date formatting, typed DD/MM/YYYY input, snack bars and dialogs. |
 | [`l10n/`](l10n/README.md) | `WaffrMaterialLocalizations`: Arabic Material strings with 0-9 digits and Levantine month names. |

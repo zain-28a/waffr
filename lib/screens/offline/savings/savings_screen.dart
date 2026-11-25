@@ -28,6 +28,7 @@ import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/widgets/containers/pinned_period_scroll_view.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/widgets/smart/smart_analysis_button.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
 
 part 'savings_goals_panel.dart';
 part 'savings_period_card.dart';
@@ -179,6 +180,7 @@ class _SavingsScreenState extends State<SavingsScreen>
 
               // Active goals with manage / create entry points.
               _ActiveGoalsPanel(
+                key: TutorialTargets.of(TutorialTarget.goalsPanel),
                 goals: goals,
                 store: _store,
                 onManage: () => showManageGoalsSheet(context),
@@ -206,7 +208,9 @@ class _SavingsScreenState extends State<SavingsScreen>
               const SizedBox(height: kCardGap),
 
               // Shopping list preview; opens the full list sheet.
-              const ShoppingListPreviewCard(),
+              ShoppingListPreviewCard(
+                key: TutorialTargets.of(TutorialTarget.shoppingList),
+              ),
 
               const SizedBox(height: 12),
             ]),
