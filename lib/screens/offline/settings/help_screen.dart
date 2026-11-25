@@ -1,324 +1,424 @@
-// In-app FAQ grouped by topic (balance, expenses, reports, savings, shopping,
-// notifications, account, security). Opened from settings.
+// The help center: a way back into the interactive tutorial, a search box,
+// and the questions of help_content.dart grouped by topic, each opening in
+// place. Pushed from settings.
 
-import 'package:waffr/widgets/glass/aurora_backdrop.dart';
-import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:waffr/widgets/motion/motion.dart';
-import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/core/theme/app_icons.dart';
+import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
+import 'package:waffr/screens/offline/settings/help_content.dart';
+import 'package:waffr/widgets/brand/waffr_page_header.dart';
+import 'package:waffr/widgets/containers/glass.dart';
+import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 
-/// Expandable help sections with Arabic Q&A copy. The copy is a const list
-/// of records inside [build]; edit it there.
-class HelpScreen extends StatelessWidget {
+/// Text folded for search: no diacritics or tatweel, and the common letter
+/// variants made equal (أ إ آ → ا, ة → ه, ى → ي), so "الإشعارات" finds
+/// "الاشعارات".
+String foldArabic(String text) => text
+    .toLowerCase()
+    .replaceAll(RegExp('[ً-ْـ]'), '')
+    .replaceAll(RegExp('[أإآ]'), 'ا')
+    .replaceAll('ة', 'ه')
+    .replaceAll('ى', 'ي');
+
+/// The entries of [sections] whose question or answer contains every word
+/// of [query], with the title of their topic.
+List<({String topic, HelpEntry entry})> searchHelp(
+  String query,
+  List<HelpSection> sections,
+) {
+  final words = foldArabic(query)
+      .split(RegExp(r'\s+'))
+      .where((word) => word.isNotEmpty)
+      .toList();
+  if (words.isEmpty) return const [];
+  return [
+    for (final section in sections)
+      for (final entry in section.items)
+        if (words.every(
+          foldArabic('${entry.question} ${entry.answer}').contains,
+        ))
+          (topic: section.title, entry: entry),
+  ];
+}
+
+/// The help center page.
+class HelpScreen extends StatefulWidget {
   /// Creates a [HelpScreen].
   const HelpScreen({super.key});
 
   @override
+  State<HelpScreen> createState() => _HelpScreenState();
+}
+
+class _HelpScreenState extends State<HelpScreen> {
+  final TextEditingController _search = TextEditingController();
+  final ValueNotifier<bool> _headerElevated = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _search.dispose();
+    _headerElevated.dispose();
+    super.dispose();
+  }
+
+  /// Back to the home tab, then the tutorial from its first step.
+  void _startTutorial() {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    TutorialController.instance.restart();
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    if (notification.depth != 0) return false;
+    final elevated = notification.metrics.pixels > 6;
+    if (_headerElevated.value != elevated) _headerElevated.value = elevated;
+    return false;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // FAQ content: one record per topic, each with its question/answer pairs.
-    const sections =
-        <({String title, List<({String question, String answer})> items})>[
-          (
-            title: 'الرصيد والدخل',
-            items: [
-              (
-                question: 'كيف أضيف دخلاً إلى الرصيد؟',
-                answer: 'من الشاشة الرئيسية اضغط «إضافة دخل»، ثم أدخل المبلغ. اختر «نوع الدخل»: «شهري» أو «مرة واحدة». إذا كان لديك رصيد حالياً يمكنك إبقاؤه أو نقله إلى التوفير. مصدر الدخل اختياري. ثم اضغط «حفظ الدخل». يُسجَّل الوقت حسب ساعة جهازك مباشرة، حتى لو لم يكن هناك اتصال.',
-              ),
-              (
-                question: 'ماذا يعني «نوع الدخل» و«نقل الرصيد للتوفير»؟',
-                answer: '«شهري» يربط هذا الدخل بالشهر الحالي. عند انتهاء الشهر ينقل وفّر ما تبقى منه، بعد المصروفات والتوفير الدوري، إلى التوفير. لا يُضاف دخل جديد تلقائياً. «مرة واحدة» لا يجري هذا النقل، ويناسب الدخل غير المنتظم. «نقل الرصيد للتوفير» ينقل رصيدك الحالي كله إلى التوفير قبل إضافة الدخل الجديد.',
-              ),
-              (
-                question: 'كيف أحدد الدخل الشهري أو أغيّره أو أزيله؟',
-                answer: 'من الإعدادات اضغط «الدخل الشهري». الخيار ظاهر حتى قبل أن تضبطه. أدخل المبلغ ثم «حفظ» لتحديده أو تغييره، أو «إزالة الدخل» لإلغائه بالكامل. الإزالة لا تحذف الدخل المسجّل سابقاً في السجل، لكنها توقف الخطط الدورية التي تعتمد على نسبة من الدخل إلى أن تعيد تحديده.',
-              ),
-              (
-                question: 'كيف يُحسب الرصيد الحالي؟',
-                answer: 'الرصيد الحالي هو مجموع الدخل المسجّل ناقص مجموع المصروفات وناقص المبلغ الموجود حالياً في التوفير. توفير مبلغ يقلّل الرصيد المتاح، وسحبه يعيده إليه.',
-              ),
-              (
-                question: 'كيف أتراجع عن دخل سجّلته؟',
-                answer: 'من بطاقة الرصيد في الشاشة الرئيسية اضغط أيقونة المدفوعات لفتح سجل الدخل. بجانب العملية اضغط أيقونة التراجع، ثم أكّد. يُحذف الدخل من السجل ويُخصم مبلغه من الرصيد، وينعكس ذلك على التقارير والمزامنة.',
-              ),
-            ],
-          ),
-          (
-            title: 'المصروفات',
-            items: [
-              (
-                question: 'كيف أسجّل مصروفاً؟',
-                answer: 'من الشاشة الرئيسية اضغط «إضافة مصروف»، وأدخل المبلغ، ثم اختر التصنيف. يمكنك إضافة ملاحظة. لا يُحفظ المصروف إذا كان أكبر من الرصيد المتاح. الوقت المسجّل هو وقت جهازك لحظة الحفظ.',
-              ),
-              (
-                question: 'كيف أستخدم المضاعف بجانب المبلغ؟',
-                answer: 'بجانب المبلغ، في الجهة المقابلة لـ «ل.س» وبنفس حجمه، يوجد مضاعف يبدأ من ×1. اضغطه واختر قيمة مثل ×2 أو ×3. المبلغ المحفوظ هو ما كتبته مضروباً في هذه القيمة. عند ×1 يبقى المبلغ كما أدخلته.',
-              ),
-              (
-                question: 'كيف أضيف تصنيفاً خاصاً؟',
-                answer: 'داخل نافذة المصروف، في شبكة التصنيفات، اضغط «مخصص» ثم اختر اسماً وأيقونة. لتعديل تصنيف أضفته أو حذفه، اضغط عليه مطوّلاً.',
-              ),
-              (
-                question: 'ما هي الالتزامات؟',
-                answer: 'الالتزامات هي المصروفات التي تتكرر بانتظام، مثل الإيجار والاشتراكات والفواتير. لإضافة التزام اضغط «إضافة مصروف» واختر «مصروف متكرر»، ثم حدّد كل كم يوماً أو أسبوعاً أو شهراً يتكرر. تظهر التزاماتك في الشاشة الرئيسية داخل بطاقة «آخر المصروفات»: اسحب البطاقة جانباً لتنتقل إليها، واضغطها لفتح قسم الالتزامات.',
-              ),
-              (
-                question: 'ما الفرق بين الخصم التلقائي والخصم بعد تأكيدي؟',
-                answer: '«تلقائي»: يُخصم المبلغ من رصيدك في موعده دون أن نسألك، ويناسب من لديه راتب ثابت. إذا لم يكفِ الرصيد لا يُخصم، ويصلك تنبيه، ثم يُخصم عندما يتوفر الرصيد. «بعد تأكيدي»: عند حلول الموعد يصلك تنبيه، وتختار بنفسك خصم المبلغ أو تأجيله. يناسب من يكون دخله غير منتظم، مثل العمل الحر.',
-              ),
-              (
-                question: 'كيف أؤجّل التزاماً، وماذا يحدث إذا تراكم؟',
-                answer: 'في قائمة «التزامات بانتظار تأكيدك» اختر «تأجيل» ثم حدّد متى نذكّرك: بعد يوم أو 3 أيام أو أسبوع، أو عند إضافة دخل جديد. إذا حلّ موعد جديد قبل أن تخصم الدفعة السابقة، تتراكم الدفعات، ويمكنك خصم دفعة واحدة أو خصمها كلها. عند إضافة دخل جديد يعرض وفّر عليك مراجعة الالتزامات التي لم تُخصم بعد.',
-              ),
-              (
-                question: 'كيف أعدّل التزاماً أو أوقفه؟',
-                answer: 'افتح قسم الالتزامات من الشاشة الرئيسية أو من الإعدادات، ثم اضغط على الالتزام. يمكنك تغيير المبلغ أو طريقة الخصم، أو إيقافه مؤقتاً، أو حذفه. المصروفات التي خُصمت سابقاً تبقى في السجل.',
-              ),
-              (
-                question: 'كيف أتراجع عن مصروف؟',
-                answer: 'من شاشة التقارير اضغط «سجل المصروفات». بجانب المصروف اضغط أيقونة التراجع ثم أكّد. يُحذف من السجل ويعود مبلغه إلى الرصيد. إذا كان ناتجاً عن شراء من قائمة المشتريات، يعود ذلك العنصر غير مُشترى.',
-              ),
-              (
-                question: 'أين أرى آخر مصروفاتي؟',
-                answer: 'الشاشة الرئيسية تعرض آخر ثلاثة مصروفات. لعرض السجل كاملاً افتح التقارير ثم «سجل المصروفات».',
-              ),
-            ],
-          ),
-          (
-            title: 'التقارير',
-            items: [
-              (
-                question: 'كيف أقرأ التقارير؟',
-                answer: 'افتح التقارير من رمز الرسم البياني في الشريط السفلي. اختر «اليوم» أو أسبوعاً أو شهراً أو 3 أشهر أو 6 أشهر أو سنة، واستخدم السهمين للتنقل بين الفترات. يعرض التقرير مجموع الصرف، وتوزيعه حسب التصنيف، ومقارنته بالفترة السابقة.',
-              ),
-              (
-                question: 'ماذا يعرض تقرير اليوم؟',
-                answer: 'تقرير «اليوم» يخص اليوم الحالي من منتصف الليل حتى نهايته، ويقسّم الرسم حسب الساعات. الساعة التي لا فيها مصروف تبقى فارغة على الرسم دون أن تعطّل العرض. عند لمس نقطة تظهر الساعة والمبلغ.',
-              ),
-            ],
-          ),
-          (
-            title: 'التوفير والأهداف',
-            items: [
-              (
-                question: 'كيف أوفّر مبلغاً أو أسحبه؟',
-                answer: 'من شاشة التوفير اضغط «توفير مبلغ» لنقل مبلغ من الرصيد إلى التوفير، أو «سحب إلى الرصيد» لإعادته. لا يمكنك توفير أكثر من رصيدك المتاح، ولا سحب أكثر من المبلغ الموفَّر.',
-              ),
-              (
-                question: 'كيف أنشئ هدف توفير؟',
-                answer: 'من شاشة التوفير اضغط «إنشاء هدف». أدخل الاسم والمبلغ المستهدف، ثم اختر طريقة التوفير: نسبة من الدخل، أو مبلغاً ثابتاً كل شهر، أو مبلغاً مخصصاً توفّره بنفسك. مبلغ التوفير الشهري يقبل الأرقام الكبيرة مثل بقية مبالغ وفّر. راجع المعاينة ثم احفظ.',
-              ),
-              (
-                question: 'لماذا لا أستطيع إنشاء خطة دورية؟',
-                answer: 'الخطة الدورية تُحسب من الدخل الشهري. إذا لم تحدده بعد، يوضح وفّر ذلك ويمنع إنشاء الخطة. حدّد «الدخل الشهري» من الإعدادات أولاً. النسبة من الدخل والمبلغ الثابت في هدف التوفير يحتاجان الدخل الشهري أيضاً، أما «مبلغ مخصص» فيبقى متاحاً بدونه.',
-              ),
-              (
-                question: 'كيف تعمل الخطة الدورية؟',
-                answer: 'من شاشة التوفير اضغط «خطط التوفير». اختر نسبة التوفير والمدة، راجع المبلغ الدوري والمستهدف، ثم أكّد. عند اكتمال كل فترة ينقل وفّر مبلغ الخطة من الرصيد المتاح إلى التوفير، بحد ما يتوفر في الرصيد. إذا أزلت الدخل الشهري تتوقف الخطط المعتمدة على النسبة إلى أن تعيد تحديده.',
-              ),
-              (
-                question: 'كيف يُحسب تقدّم الهدف، وكيف أحذفه؟',
-                answer: 'التقدّم هو ما دخل إلى التوفير لهذا الهدف بعد إنشائه، بعد طرح ما سُحب. عند بلوغ المبلغ المستهدف يكتمل الهدف. الأهداف المكتملة في «الأهداف المحققة». من «إدارة الأهداف» يمكنك ترتيب الأهداف أو حذف هدف. حذف الهدف لا يسحب المال الموفَّر.',
-              ),
-            ],
-          ),
-          (
-            title: 'التسوق',
-            items: [
-              (
-                question: 'كيف أستخدم قائمة المشتريات؟',
-                answer: 'من بطاقة الرصيد اضغط أيقونة القائمة، أو افتحها من شاشة التوفير. أضف ما تريد شراءه. عند تسجيل الشراء يُطلب السعر ويُنشأ مصروف عادي بالمبلغ والوقت الحالي على جهازك، ويظهر في السجل والرصيد. التراجع عن ذلك المصروف يعيد العنصر إلى القائمة.',
-              ),
-            ],
-          ),
-          (
-            title: 'الإشعارات والوقت',
-            items: [
-              (
-                question: 'كيف تعمل الإشعارات؟',
-                answer: 'رمز الجرس أعلى الشاشة يعرض تنبيهات وفّر عن الرصيد والإنفاق والتوفير والأهداف والالتزامات. تنبيه الالتزام المستحق يفتح قائمة التأكيد مباشرة. يمكنك فتح تنبيه لتمييزه كمقروء، أو تعيين الكل كمقروء، أو مسح السجل. اضغط مطولاً على الجرس لكتم الإشعارات أو تفعيلها. عند كتم الإشعارات لا تُضاف تنبيهات جديدة.',
-              ),
-              (
-                question: 'هل يعتمد وقت العمليات على الإنترنت؟',
-                answer: 'لا. وقت المصروف والدخل والتوفير والشراء والموعد المتكرر هو وقت جهازك لحظة حدوثه. إذا سجّلت مصروفاً الساعة 6 مساءً دون اتصال، يبقى 6 مساءً حتى لو اتصل الجهاز لاحقاً. المزامنة لا تستبدل هذا الوقت بوقت وصول العملية إلى الخادم.',
-              ),
-            ],
-          ),
-          (
-            title: 'الحساب والمظهر',
-            items: [
-              (
-                question: 'كيف أسجّل الدخول أو أستخدم التطبيق دون حساب؟',
-                answer: 'يمكنك استخدام وفّر على الجهاز دون حساب. من الإعدادات اضغط بطاقة الحساب لتسجيل الدخول أو إنشاء حساب. بعد تسجيل الدخول تُزامَن بياناتك عند توفر الاتصال. تسجيل الخروج يعيدك إلى شاشة الدخول وتبقى بياناتك على الجهاز، ويمكنك المتابعة كضيف.',
-              ),
-              (
-                question: 'كيف أغيّر المظهر؟',
-                answer: 'من الإعدادات استخدم «الوضع الداكن». العربية هي اللغة الوحيدة في هذه النسخة.',
-              ),
-            ],
-          ),
-          (
-            title: 'الحماية والبيانات',
-            items: [
-              (
-                question: 'كيف يعمل قفل التطبيق؟',
-                answer: 'من الإعدادات فعّل «قفل التطبيق» ثم أكّد بهوية جهازك. وفّر لا ينشئ رمزاً خاصاً، بل يستخدم قفل الشاشة أو البصمة أو الوجه المعدّ على الجهاز. عند مغادرة التطبيق تُطلب المصادقة من جديد عبر «فتح القفل».',
-              ),
-              (
-                question: 'ماذا لو لم تعمل البصمة؟',
-                answer: 'تأكد من إعداد قفل الشاشة على جهازك. قد تسمح نافذة النظام برمز الجهاز أو نمطه. إذا ألغيت المحاولة ابقَ في شاشة القفل واضغط «فتح القفل» مرة أخرى. الأجهزة التي لا تدعم مصادقة الجهاز لا يمكن تفعيل القفل عليها.',
-              ),
-              (
-                question: 'ماذا يحدث عند إعادة ضبط التطبيق؟',
-                answer: 'بعد تأكيد حذف البيانات يمسح وفّر ما على هذا الجهاز: الملف، والدخل والمصروفات والتوفير والأهداف والالتزامات وقائمة المشتريات والإشعارات والمظهر وقفل التطبيق. لا يمكن التراجع. عند تسجيل الدخول قد تُستعاد النسخة المتزامنة مع الحساب، أما البيانات التي لم تُزامَن فتُحذف من الجهاز.',
-              ),
-            ],
-          ),
-        ];
-
-    // Page: title, then each section heading followed by its questions.
     final palette = AppPalette.of(context);
-    final bg = palette.background;
-    final surface = palette.surface;
-    final textPrimary = palette.textPrimary;
-    final textSecondary = palette.textSecondary;
-    final accent = palette.accent;
-
     return Scaffold(
-      backgroundColor: bg,
-      appBar: WaffrBackHeader(title: 'المساعدة'),
+      backgroundColor: palette.background,
+      appBar: WaffrBackHeader(title: 'المساعدة', elevated: _headerElevated),
       body: AuroraPage(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: staggered([
-            Text(
-              'دليل وفّر',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: textPrimary,
-                fontFamily: 'Outfit',
-                fontFamilyFallback: ['Tajawal'],
-              ),
-            ),
-            const SizedBox(height: 5),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: _onScroll,
+          child: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _search,
+            builder: (context, value, _) {
+              final query = value.text.trim();
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                children: [
+                  _TutorialCard(onStart: _startTutorial),
+                  const SizedBox(height: 16),
+                  _SearchField(controller: _search),
+                  const SizedBox(height: 20),
+                  if (query.isEmpty)
+                    for (final section in helpSections) ...[
+                      _SectionTitle(title: section.title, icon: section.icon),
+                      _EntryGroup(entries: section.items),
+                      const SizedBox(height: 22),
+                    ]
+                  else
+                    ..._results(context, query),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
 
-            const SizedBox(height: 22),
-            for (final section in sections) ...[
-              Text(
-                section.title,
-                style: TextStyle(
-                  fontFamily: 'Outfit',
-                  fontFamilyFallback: ['Tajawal'],
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: accent,
+  List<Widget> _results(BuildContext context, String query) {
+    final palette = AppPalette.of(context);
+    final found = searchHelp(query, helpSections);
+    if (found.isEmpty) {
+      return [
+        const SizedBox(height: 24),
+        Icon(AppIcons.searchOff, size: 36, color: palette.textSecondary),
+        const SizedBox(height: 10),
+        Text(
+          'لا توجد أسئلة تطابق «$query»',
+          textAlign: TextAlign.center,
+          style: _style(14, FontWeight.w700, palette.textPrimary),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'جرّب كلمة أقصر أو مختلفة، مثل «رصيد» أو «هدف».',
+          textAlign: TextAlign.center,
+          style: _style(12.5, FontWeight.w500, palette.textSecondary),
+        ),
+      ];
+    }
+    return [
+      Padding(
+        padding: const EdgeInsetsDirectional.only(start: 5, bottom: 10),
+        child: Text(
+          found.length == 1 ? 'نتيجة واحدة' : 'النتائج: ${found.length}',
+          style: _style(13, FontWeight.w700, palette.textSecondary),
+        ),
+      ),
+      _EntryGroup(
+        entries: [for (final item in found) item.entry],
+        topics: [for (final item in found) item.topic],
+        // A single result opens straight away.
+        initiallyOpen: found.length == 1,
+      ),
+    ];
+  }
+}
+
+TextStyle _style(double size, FontWeight weight, Color color) => TextStyle(
+  fontFamily: 'Outfit',
+  fontFamilyFallback: const ['Tajawal'],
+  fontSize: size,
+  fontWeight: weight,
+  color: color,
+);
+
+/// The card that starts the interactive tutorial again.
+class _TutorialCard extends StatelessWidget {
+  final VoidCallback onStart;
+
+  const _TutorialCard({required this.onStart});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return GlassContainer(
+      colorType: GlassColorType.surface,
+      borderRadius: 28,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: palette.accent.withValues(alpha: 0.13),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(AppIcons.sparkles, color: palette.accent, size: 22),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'الدليل التفاعلي',
+                      style: _style(16, FontWeight.w800, palette.textPrimary),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'جولة قصيرة تجرّب فيها أهم ميزات وفّر بنفسك، دون أن يُسجَّل شيء.',
+                      style: _style(
+                        12.5,
+                        FontWeight.w500,
+                        palette.textSecondary,
+                      ).copyWith(height: 1.45),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              for (var index = 0; index < section.items.length; index++) ...[
-                if (index > 0) const SizedBox(height: 12),
-                _FAQItem(
-                  question: section.items[index].question,
-                  answer: section.items[index].answer,
-                  accent: accent,
-                  surface: surface,
-                  textPrimary: textPrimary,
-                  textSecondary: textSecondary,
-                ),
-              ],
-              const SizedBox(height: 22),
             ],
-          ]),
+          ),
+          const SizedBox(height: 12),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: palette.accent,
+              shape: const StadiumBorder(),
+              minimumSize: const Size.fromHeight(44),
+            ),
+            onPressed: onStart,
+            child: Text(
+              'ابدأ الدليل',
+              style: _style(14.5, FontWeight.w700, palette.background),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The search box above the questions.
+class _SearchField extends StatelessWidget {
+  final TextEditingController controller;
+
+  const _SearchField({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return TextField(
+      controller: controller,
+      textInputAction: TextInputAction.search,
+      style: _style(14.5, FontWeight.w500, palette.textPrimary),
+      decoration: InputDecoration(
+        hintText: 'ابحث في الأسئلة',
+        hintStyle: _style(14, FontWeight.w500, palette.textSecondary),
+        prefixIcon: Icon(AppIcons.search, color: palette.textSecondary),
+        suffixIcon: controller.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: 'مسح البحث',
+                icon: Icon(AppIcons.close, color: palette.textSecondary),
+                onPressed: controller.clear,
+              ),
+        filled: true,
+        fillColor: palette.surface,
+        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(22),
+          borderSide: BorderSide.none,
         ),
       ),
     );
   }
 }
 
-/// One expandable FAQ question/answer pair.
-class _FAQItem extends StatefulWidget {
-  final String question;
-  final String answer;
-  final Color accent;
-  final Color surface;
-  final Color textPrimary;
-  final Color textSecondary;
+/// A topic heading with its icon.
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  final IconData icon;
 
-  const _FAQItem({
-    required this.question,
-    required this.answer,
-    required this.accent,
-    required this.surface,
-    required this.textPrimary,
-    required this.textSecondary,
-  });
-
-  @override
-  State<_FAQItem> createState() => _FAQItemState();
-}
-
-/// State of [_FAQItem]. Tracks whether it is open, for the arrow icon.
-class _FAQItemState extends State<_FAQItem> {
-  bool _isExpanded = false;
+  const _SectionTitle({required this.title, required this.icon});
 
   @override
   Widget build(BuildContext context) {
-    // Material (not a decorated box) so the tile paints on its own surface.
-    return Material(
-      color: widget.surface,
-      borderRadius: BorderRadius.circular(20),
-      clipBehavior: Clip.antiAlias,
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          dividerColor: Colors.transparent,
-          splashFactory: NoSplash.splashFactory,
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          hoverColor: Colors.transparent,
-        ),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          childrenPadding: const EdgeInsets.only(
-            right: 16,
-            left: 16,
-            bottom: 16,
-          ),
-          trailing: Icon(
-            _isExpanded ? AppIcons.chevronUp : AppIcons.chevronDown,
-            color: widget.accent,
-          ),
-          onExpansionChanged: (expanded) {
-            setState(() {
-              _isExpanded = expanded;
-            });
-          },
-          title: Text(
-            widget.question,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: widget.textPrimary,
-              fontFamily: 'Outfit',
-              fontFamilyFallback: ['Tajawal'],
-            ),
-          ),
+    final palette = AppPalette.of(context);
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 5, bottom: 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: palette.accent),
+          const SizedBox(width: 8),
+          Text(title, style: _style(15, FontWeight.w800, palette.textPrimary)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Questions as one card with hairlines between them, like a settings group.
+class _EntryGroup extends StatelessWidget {
+  final List<HelpEntry> entries;
+
+  /// Topic of each entry, shown above its question (search results).
+  final List<String>? topics;
+
+  final bool initiallyOpen;
+
+  const _EntryGroup({
+    required this.entries,
+    this.topics,
+    this.initiallyOpen = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final line = AppPalette.of(context).textSecondary.withValues(alpha: 0.12);
+    return GlassContainer(
+      colorType: GlassColorType.surface,
+      borderRadius: 28,
+      padding: EdgeInsets.zero,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
           children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                widget.answer,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.6,
-                  color: widget.textSecondary,
-                  fontFamily: 'Outfit',
-                  fontFamilyFallback: ['Tajawal'],
+            for (final (index, entry) in entries.indexed) ...[
+              if (index > 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Divider(height: 1, thickness: 1, color: line),
                 ),
+              _Entry(
+                key: ValueKey(entry.question),
+                entry: entry,
+                topic: topics?[index],
+                initiallyOpen: initiallyOpen,
               ),
-            ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One question that opens in place to show its answer.
+class _Entry extends StatefulWidget {
+  final HelpEntry entry;
+  final String? topic;
+  final bool initiallyOpen;
+
+  const _Entry({
+    super.key,
+    required this.entry,
+    required this.topic,
+    required this.initiallyOpen,
+  });
+
+  @override
+  State<_Entry> createState() => _EntryState();
+}
+
+class _EntryState extends State<_Entry> {
+  late bool _open = widget.initiallyOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return Semantics(
+      button: true,
+      expanded: _open,
+      child: InkWell(
+        onTap: () => setState(() => _open = !_open),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+          child: AnimatedSize(
+            duration: AppMotion.sizeOf(context, AppMotion.medium),
+            curve: AppMotion.enter,
+            alignment: Alignment.topCenter,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (widget.topic != null) ...[
+                  Text(
+                    widget.topic!,
+                    style: _style(11.5, FontWeight.w700, palette.accent),
+                  ),
+                  const SizedBox(height: 3),
+                ],
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.entry.question,
+                        style: _style(
+                          14.5,
+                          FontWeight.w700,
+                          palette.textPrimary,
+                        ).copyWith(height: 1.4),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    AnimatedRotation(
+                      turns: _open ? 0.5 : 0,
+                      duration: AppMotion.of(context, AppMotion.medium),
+                      child: Icon(
+                        AppIcons.chevronDown,
+                        size: 20,
+                        color: palette.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                if (_open) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.entry.answer,
+                    style: _style(
+                      13.5,
+                      FontWeight.w400,
+                      palette.textSecondary,
+                    ).copyWith(height: 1.65),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

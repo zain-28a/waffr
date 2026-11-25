@@ -73,6 +73,9 @@ abstract final class AppIcons {
   /// Lucide `gripHorizontal`.
   static const IconData dragHandle = IconData(0xe0ea, fontFamily: _family);
 
+  /// Lucide `search`.
+  static const IconData search = IconData(0xe151, fontFamily: _family);
+
   /// Lucide `searchX`.
   static const IconData searchOff = IconData(0xe4ad, fontFamily: _family);
 

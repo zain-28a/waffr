@@ -48,6 +48,7 @@ ICONS = [
     ("more", "ellipsis", False),
     ("moreVertical", "ellipsisVertical", False),
     ("dragHandle", "gripHorizontal", False),
+    ("search", "search", False),
     ("searchOff", "searchX", False),
     ("tune", "slidersHorizontal", False),
     # Actions
