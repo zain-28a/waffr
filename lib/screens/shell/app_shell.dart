@@ -248,6 +248,15 @@ class _AppShellState extends State<AppShell>
           showObligationsSheet(context);
         case 'profile':
           _onTabTapped(4);
+        case 'reports':
+          _onTabTapped(1);
+        case 'expenses':
+          _onTabTapped(0);
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const TransactionHistoryScreen.expenses(),
+            ),
+          );
         default:
           _onTabTapped(0);
       }

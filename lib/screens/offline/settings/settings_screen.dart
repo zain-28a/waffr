@@ -5,6 +5,7 @@ import 'package:waffr/widgets/glass/tilt.dart';
 import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:waffr/core/theme/app_motion.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
@@ -12,6 +13,7 @@ import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/data/stores/expense_preset_store.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/services/home_widget_sync.dart';
 import 'package:waffr/data/services/notification_service.dart';
 import 'package:waffr/data/services/profile_identity.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
@@ -118,6 +120,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Whether the home-screen widgets show dots instead of amounts.
+  bool _hideWidgetAmounts = false;
+
+  /// Home-screen widgets exist only on Android for now.
+  static bool get _widgetsSupported =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  Future<void> _setHideWidgetAmounts(bool hide) async {
+    setState(() => _hideWidgetAmounts = hide);
+    await HomeWidgetSync.instance.setHideAmounts(hide);
+  }
+
   /// Pulls prefs, auth session, and configured income into state.
   Future<void> _loadSettings() async {
     final prefs = await AppPrefs.instance;
@@ -131,6 +145,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     setState(() {
       _appLock = prefs.getBool('app_lock') ?? false;
+      _hideWidgetAmounts =
+          prefs.getBool(HomeWidgetSync.hideAmountsKey) ?? false;
 
       _loggedIn = loggedIn;
 
@@ -573,6 +589,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => AppHaptics.setEnabled(!on),
             ),
           ),
+          if (_widgetsSupported)
+            AppListTile(
+              icon: AppIcons.eyeOff,
+              title: 'إخفاء المبالغ في الأدوات',
+              subtitle: _hideWidgetAmounts
+                  ? 'تظهر نقاط بدل المبالغ على الشاشة الرئيسية'
+                  : 'تظهر المبالغ في أدوات الشاشة الرئيسية',
+              trailing: Switch(
+                value: _hideWidgetAmounts,
+                onChanged: _setHideWidgetAmounts,
+              ),
+              onTap: () => _setHideWidgetAmounts(!_hideWidgetAmounts),
+            ),
           AppListTile(
             icon: AppIcons.language,
             title: 'اللغة',

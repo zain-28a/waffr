@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Balance, large: the balance card, the period income and spending, and quick add. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:layoutDirection="rtl"
+    android:orientation="vertical"
+    android:paddingStart="18dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="18dp"
+    android:paddingBottom="16dp">
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+    <FrameLayout
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:background="@drawable/widget_icon_tile">
+        <ImageView
+            android:layout_width="17dp"
+            android:layout_height="17dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_wallet" />
+    </FrameLayout>
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:fontFamily="@font/tajawal_bold"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:text="@string/widget_balance_title"
+        android:textColor="@color/widget_text_primary"
+        android:textSize="13.5sp"
+        android:layout_marginStart="9dp" />
+</LinearLayout>
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="14dp"
+    android:orientation="vertical" />
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="bottom"
+    android:orientation="horizontal">
+    <TextView
+        android:id="@+id/balance_amount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:fontFamily="@font/outfit_bold"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="@color/widget_accent"
+        android:textSize="34sp" />
+    <TextView
+        android:id="@+id/balance_currency"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:fontFamily="@font/tajawal_medium"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_secondary"
+        android:textSize="13sp"
+        android:layout_marginStart="6dp" />
+</LinearLayout>
+<ProgressBar
+    android:id="@+id/balance_progress"
+    style="@android:style/Widget.ProgressBar.Horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="8dp"
+    android:layout_marginTop="8dp"
+    android:max="100"
+    android:maxHeight="8dp"
+    android:minHeight="8dp"
+    android:mirrorForRtl="true"
+    android:progressDrawable="@drawable/widget_progress_accent" />
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal" android:layout_marginTop="7dp">
+    <TextView
+        android:id="@+id/balance_caption"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:fontFamily="@font/tajawal_medium"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_secondary"
+        android:textSize="12.5sp" />
+    <TextView
+        android:id="@+id/balance_percent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:fontFamily="@font/tajawal_bold"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:textColor="@color/widget_text_secondary"
+        android:textSize="12sp"
+        android:layout_marginStart="8dp" />
+</LinearLayout>
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="1dp"
+    android:layout_marginTop="10dp"
+    android:layout_marginBottom="10dp"
+    android:background="@color/widget_rim"
+    android:orientation="horizontal" />
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/tajawal_medium"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="@string/widget_cycle_income"
+            android:textColor="@color/widget_text_secondary"
+            android:textSize="12sp" />
+        <TextView
+            android:id="@+id/cycle_income"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/outfit_bold"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="17sp"
+            android:layout_marginTop="3dp" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/tajawal_medium"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="@string/widget_cycle_spent"
+            android:textColor="@color/widget_text_secondary"
+            android:textSize="12sp" />
+        <TextView
+            android:id="@+id/cycle_spent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/outfit_bold"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="17sp"
+            android:layout_marginTop="3dp" />
+    </LinearLayout>
+</LinearLayout>
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:orientation="vertical" />
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+    <LinearLayout
+        android:id="@+id/balance_add_expense"
+        android:layout_width="0dp"
+        android:layout_height="42dp"
+        android:layout_weight="1"
+        android:background="@drawable/widget_pill"
+        android:gravity="center"
+        android:orientation="horizontal">
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_expense" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/tajawal_bold"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="@string/widget_expense_short"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="13.5sp"
+            android:layout_marginStart="7dp" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="10dp"
+        android:layout_height="1dp"
+        android:orientation="horizontal" />
+    <LinearLayout
+        android:id="@+id/balance_add_income"
+        android:layout_width="0dp"
+        android:layout_height="42dp"
+        android:layout_weight="1"
+        android:background="@drawable/widget_pill"
+        android:gravity="center"
+        android:orientation="horizontal">
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_income" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/tajawal_bold"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="@string/widget_income_short"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="13.5sp"
+            android:layout_marginStart="7dp" />
+    </LinearLayout>
+</LinearLayout>
+</LinearLayout>
