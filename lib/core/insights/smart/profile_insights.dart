@@ -3,6 +3,7 @@
 
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:waffr/core/insights/smart/arabic_text.dart';
+import 'package:waffr/core/insights/smart/cashflow_insights.dart';
 import 'package:waffr/core/insights/smart/insight_phrasing.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
@@ -42,6 +43,8 @@ class ProfileInsights {
       ?_streak(),
       ?_usageDuration(),
       ?_loggingHabit(),
+      ?_loggingImproved(),
+      ...CashflowInsights(facts, _p).forProfile(),
       ...reports.take(2),
       ...savings.take(2),
     ];
@@ -121,6 +124,8 @@ class ProfileInsights {
     final good = parts.score >= 65;
     return SmartInsight(
       id: 'health-score',
+      // A weighted reading of several parts, not a recorded number.
+      kind: InsightKind.estimate,
       tone: good
           ? InsightTone.positive
           : (parts.score >= 45 ? InsightTone.info : InsightTone.warning),
@@ -144,53 +149,56 @@ class ProfileInsights {
     );
   }
 
-  // A playful money personality from saving rate, plans and top category.
+  // A money personality, named only from measured habits: a month of
+  // history and fifteen expenses first, then the saving rate over the
+  // months saved, plans, the share of fun spending and logging regularity.
   SmartInsight? _persona() {
-    if (!facts.hasExpenses) return null;
+    if (facts.historyDays < 30 || facts.expenses.length < 15) return null;
     final income = facts.effectiveMonthlyIncome;
     final rate = income == null || income <= 0
         ? null
-        : (facts.savedLast90 / 3) / income;
-    final top = largestCategory(
-      facts.categoryTotals(
-        facts.today.subtract(const Duration(days: 60)),
-        facts.today.add(const Duration(days: 1)),
-      ),
+        : facts.averageMonthlySaving / income;
+    final recent = facts.categoryTotals(
+      facts.today.subtract(const Duration(days: 59)),
+      facts.today.add(const Duration(days: 1)),
     );
+    final recentTotal = recent.values.fold(0.0, (sum, v) => sum + v);
+    final top = largestCategory(recent);
+    final topShare = top == null || recentTotal <= 0
+        ? 0.0
+        : top.value / recentTotal;
 
     final String name;
     final String body;
     if (rate != null && rate >= 0.2) {
-      name = _p.pick(['المدّخر المنضبط', 'صاحب الخطة']);
-      body = _p.pick([
-        'توفّر جزءاً ثابتاً من دخلك وتتحكم في صرفك، وأنت من القلة الذين يبنون ثروتهم بهدوء.',
-        'التوفير عندك عادة لا استثناء، وهذا أساس كل استقرار مالي.',
-      ]);
-    } else if (facts.goals.isNotEmpty && facts.obligations.isNotEmpty) {
-      name = _p.pick(['المخطّط', 'المنظّم']);
-      body = _p.pick([
-        'لديك أهداف والتزامات واضحة، والخطوة التالية رفع نسبة التوفير تدريجياً.',
-        'تعرف التزاماتك وتخطّط لأهدافك، وهذا يضعك في موقع قوي.',
-      ]);
-    } else if (top != null && (top.key == 'ترفيه' || top.key == 'طعام')) {
+      name = 'المدّخر المنضبط';
+      body =
+          'توفّر في المتوسط ${_p.percent(rate)} من دخلك شهرياً، أي فوق نسبة ${_p.percent(0.2)} الشائعة. التوفير عندك عادة لا استثناء.';
+    } else if (rate != null &&
+        rate >= 0.05 &&
+        facts.goals.isNotEmpty &&
+        facts.obligations.isNotEmpty) {
+      name = 'المخطّط';
+      body =
+          'لديك ${Ar.activeGoals.of(facts.goals.length)} والتزامات مسجّلة، وتوفّر ${_p.percent(rate)} من دخلك. الخطوة التالية رفع هذه النسبة تدريجياً.';
+    } else if (rate != null && rate >= 0.05) {
+      name = 'المتوازن';
+      body =
+          'توفّر ${_p.percent(rate)} من دخلك في المتوسط وتصرف الباقي بانتظام. هدف توفير واضح يمنح هذا التوازن وجهة.';
+    } else if (top != null &&
+        topShare >= 0.35 &&
+        (top.key == 'ترفيه' || top.key == 'طعام')) {
       final category = Ar.category(top.key);
-      name = _p.pick(['محبّ التجارب', 'الاجتماعي']);
-      body = _p.pick([
-        'يذهب معظم صرفك إلى $category. الاستمتاع مهم، وتحديد سقف شهري له يحميه من استنزاف الميزانية.',
-        'تحب الاستمتاع، و$category أكبر بنودك. ميزانية واضحة له تجعلك تستمتع دون قلق.',
-      ]);
+      name = 'محبّ التجارب';
+      body =
+          '$category يأخذ ${_p.percent(topShare)} من صرفك في آخر شهرين. الاستمتاع مهم، وتحديد مبلغ شهري له يحميه من استنزاف الميزانية.';
     } else if (facts.activeDaysLast30 >= 15) {
-      name = _p.pick(['المتابع الدقيق', 'العين الساهرة']);
-      body = _p.pick([
-        'تسجّل مصاريفك بانتظام، وهذه أهم خطوة، فحوّل هذه المعرفة الآن إلى أهداف.',
-        'بياناتك دقيقة ومنتظمة، وهذا ما يجعل كل تحليل هنا موثوقاً.',
-      ]);
+      name = 'المتابع الدقيق';
+      body =
+          'سجّلت مصروفات في ${_p.days(facts.activeDaysLast30)} من آخر 30 يوماً، وهذا ما يجعل الأرقام هنا موثوقة. حوّل هذه المتابعة الآن إلى هدف توفير.';
     } else {
-      name = _p.pick(['في بداية الطريق', 'المستكشف']);
-      body = _p.pick([
-        'ما زلت تبني عاداتك المالية، والتسجيل اليومي لأسبوعين سيكشف لك الكثير.',
-        'كل يوم تسجّل فيه مصاريفك يقرّبك من صورة أوضح عن وضعك.',
-      ]);
+      name = 'في بداية الطريق';
+      body = 'عاداتك المالية ما زالت تتشكّل. التسجيل اليومي وتحويل مبلغ صغير إلى التوفير مع كل دخل يكشفان لك الكثير خلال شهر.';
     }
     return SmartInsight(
       id: 'persona',
@@ -213,7 +221,7 @@ class ProfileInsights {
         tone: InsightTone.positive,
         icon: AppIcons.flame,
         title: _p.pick(['سلسلة من $run!', 'التزام رائع']),
-        body: _p.say(InsightTone.positive, [
+        body: _p.pick([
           'تفتح وفّر منذ $run، والاستمرار هو سرّ النتائج.',
           'أكملت $run من المتابعة، فلا تكسر السلسلة!',
         ]),
@@ -225,7 +233,7 @@ class ProfileInsights {
       tone: InsightTone.tip,
       icon: AppIcons.flame,
       title: _p.pick(['ابنِ سلسلتك', 'سلسلتك الحالية: ${_p.days(count)}']),
-      body: _p.say(InsightTone.tip, [
+      body: _p.pick([
         'سلسلتك الحالية ${_p.days(count)}. افتح التطبيق يومياً ولو لدقيقة لتصل إلى أسبوع كامل.',
         'تُبنى العادات بالتكرار، وهدفك القادم ${Ar.consecutiveDays.of(7)}.',
       ]),
@@ -252,6 +260,29 @@ class ProfileInsights {
     );
   }
 
+  // Logging on five days more in the last 30 than in the 30 before.
+  SmartInsight? _loggingImproved() {
+    if (facts.historyDays < 60) return null;
+    final now = facts.activeDaysLast30;
+    final before = {
+      for (final e in facts.expensesBetween(
+        facts.today.subtract(const Duration(days: 60)),
+        facts.today.subtract(const Duration(days: 30)),
+      ))
+        DateTime(e.dateTime.year, e.dateTime.month, e.dateTime.day),
+    }.length;
+    if (now - before < 5) return null;
+    return SmartInsight(
+      id: 'logging-improved',
+      tone: InsightTone.positive,
+      icon: AppIcons.calendarCheck,
+      title: 'تسجيلك أكثر انتظاماً',
+      body:
+          'سجّلت مصروفات في ${_p.days(now)} من آخر 30 يوماً، مقابل ${_p.days(before)} في الثلاثين التي قبلها.',
+      priority: 34,
+    );
+  }
+
   // A nudge after three idle days, or praise for logging on 20 of the last
   // 30 days.
   SmartInsight? _loggingHabit() {
@@ -266,7 +297,7 @@ class ProfileInsights {
         tone: InsightTone.tip,
         icon: AppIcons.calendarEdit,
         title: _p.pick(['آخر مصروف قبل ${_p.days(idle)}', 'هل نسيت التسجيل؟']),
-        body: _p.say(InsightTone.tip, [
+        body: _p.pick([
           'لم تسجّل أي مصروف منذ ${_p.days(idle)}، والتحليل أدق حين تكون البيانات كاملة.',
           'سجّل ما صرفته في الأيام الماضية ولو تقريبياً، ليبقى رصيدك واقعياً.',
         ]),

@@ -9,6 +9,7 @@ import 'package:waffr/core/insights/smart/insight_phrasing.dart';
 import 'package:waffr/core/insights/smart/profile_insights.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/data/models/transaction.dart';
 
 import '../../../helpers/ledger_builders.dart';
 
@@ -91,13 +92,16 @@ void main() {
   });
 
   test(
-    'the list starts with the score and adds two report and savings cards',
+    'the list starts with the score, then the persona once there is history',
     () {
       final cards = _rules(
         buildFacts(
           now: _now,
           balance: 100,
-          expenses: [expenseAt(10, DateTime(2026, 10, 20))],
+          expenses: [
+            for (var d = 0; d < 40; d += 2)
+              expenseAt(10, _now.subtract(Duration(days: d))),
+          ],
         ),
       ).all();
       expect(cards.first.id, 'health-score');
@@ -106,37 +110,46 @@ void main() {
   );
 
   group('persona', () {
+    // Forty days of expenses, every other day: enough history for a persona.
+    List<WaffrTransaction> history({String category = 'طعام'}) => [
+      for (var d = 0; d < 40; d += 2)
+        expenseAt(10, _now.subtract(Duration(days: d)), category: category),
+    ];
+
     test('a 20% saver is the disciplined saver', () {
       final persona = _run(
         buildFacts(
           now: _now,
           monthlyIncome: 1000,
-          expenses: [expenseAt(10, DateTime(2026, 10, 1))],
-          transfers: [transferAt(900, DateTime(2026, 9, 1))],
+          expenses: history(),
+          transfers: [transferAt(600, DateTime(2026, 9, 1))],
         ),
       )['persona']!;
-      expect(
-        persona.title,
-        anyOf(contains('المدّخر المنضبط'), contains('صاحب الخطة')),
-      );
+      expect(persona.title, contains('المدّخر المنضبط'));
+      expect(persona.body, contains('%'));
     });
 
-    test('food or fun as the top category is the social one', () {
+    test('food or fun as the top category is the experience lover', () {
       final persona = _run(
         buildFacts(
           now: _now,
-          expenses: [expenseAt(10, DateTime(2026, 10, 1), category: 'ترفيه')],
+          expenses: history(category: 'ترفيه'),
         ),
       )['persona']!;
-      expect(
-        persona.title,
-        anyOf(contains('محبّ التجارب'), contains('الاجتماعي')),
-      );
+      expect(persona.title, contains('محبّ التجارب'));
       expect(persona.body, contains('الترفيه'));
     });
 
-    test('no expenses means no persona', () {
+    test('no persona without a month of history and fifteen expenses', () {
       expect(_run(buildFacts(now: _now)).containsKey('persona'), isFalse);
+      final short = buildFacts(
+        now: _now,
+        expenses: [
+          for (var d = 0; d < 20; d++)
+            expenseAt(10, _now.subtract(Duration(days: d))),
+        ],
+      );
+      expect(_run(short).containsKey('persona'), isFalse);
     });
   });
 

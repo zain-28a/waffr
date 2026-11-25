@@ -6,8 +6,13 @@ so they need no stores; `smart_facts_loader_test.dart` reads the real
 stores through `setUpStores()`.
 
 - `smart_facts_test.dart`: every derived figure.
-- `report_insights_test.dart`, `savings_insights_test.dart`,
-  `profile_insights_test.dart`: which cards each rule writes.
+- `report_insights_test.dart`, `report_patterns_test.dart` (patterns and
+  income rules), `savings_insights_test.dart`, `savings_habits_test.dart`,
+  `profile_insights_test.dart`: which cards each rule writes, and when the
+  data is too thin for it.
+- `insight_quality_test.dart`: the whole engine over hundreds of random
+  ledgers (finished text, unique ids, wide rule coverage) and the
+  thin-data guards.
 - `insight_engine_test.dart`: whole reports, ranking and seeds.
 - `insight_summary_test.dart`, `insight_phrasing_test.dart`: headline,
   summary, tip and wording helpers.

@@ -63,17 +63,55 @@ void main() {
     expect(cards.keys.where((k) => k.contains('done')), isEmpty);
   });
 
-  test('a goal funded at a good pace is on track', () {
-    final cards = _run(
+  test('a goal funded at a good pace is on track, faster is ahead', () {
+    // About five months left of a six-month plan; 160 a month finishes the
+    // remaining 800 just in time.
+    final onTrack = _run(
+      buildFacts(
+        now: _now,
+        goals: [_goal('g', saved: 200)],
+        transfers: [transferAt(160, DateTime(2026, 10, 10), goalId: 'g')],
+      ),
+    );
+    final card = onTrack['goal-ontrack-g']!;
+    expect(card.tone, InsightTone.positive);
+    expect(card.kind, InsightKind.estimate);
+    expect(card.detail, contains('الاكتمال المتوقع'));
+    expect(onTrack.containsKey('goal-stalled-g'), isFalse);
+
+    final ahead = _run(
       buildFacts(
         now: _now,
         goals: [_goal('g', saved: 200)],
         transfers: [transferAt(600, DateTime(2026, 10, 10), goalId: 'g')],
       ),
     );
-    expect(cards['goal-ontrack-g']!.tone, InsightTone.positive);
-    expect(cards.containsKey('goal-stalled-g'), isFalse);
+    expect(ahead.containsKey('goal-ahead-g'), isTrue);
+    expect(ahead.containsKey('goal-ontrack-g'), isFalse);
   });
+
+  test(
+    'a new empty goal asks for a first payment, a close one counts days',
+    () {
+      final fresh = _run(
+        buildFacts(
+          now: _now,
+          goals: [_goal('n', created: DateTime(2026, 10, 15))],
+        ),
+      );
+      expect(fresh['goal-new-n']!.action, InsightAction.manualSave);
+
+      final close = _run(
+        buildFacts(
+          now: _now,
+          goals: [_goal('c', created: DateTime(2026, 9, 26), months: 1)],
+        ),
+      );
+      final card = close['goal-deadline-c']!;
+      expect(card.tone, InsightTone.warning);
+      expect(card.title, contains('6 أيام'));
+    },
+  );
 
   test('an old goal without recent saving is stalled', () {
     final cards = _run(
@@ -87,10 +125,12 @@ void main() {
   });
 
   test('saving rate against the 20% rule', () {
+    // A month of history, so the rate is judged at all.
     SmartInsight rate(double saved) => _run(
       buildFacts(
         now: _now,
         monthlyIncome: 1000,
+        expenses: [expenseAt(10, DateTime(2026, 9, 1))],
         transfers: [transferAt(saved, DateTime(2026, 10, 15))],
       ),
     )['savings-rate']!;
@@ -100,6 +140,13 @@ void main() {
     expect(rate(20).action, InsightAction.manualSave);
     expect(rate(100).tone, InsightTone.info);
     expect(_run(buildFacts(now: _now)).containsKey('savings-rate'), isFalse);
+    // Under a month of history: too early to call the rate low.
+    final early = buildFacts(
+      now: _now,
+      monthlyIncome: 1000,
+      expenses: [expenseAt(10, DateTime(2026, 10, 10))],
+    );
+    expect(_run(early).containsKey('savings-rate'), isFalse);
   });
 
   group('suggestedMonthlySaving', () {
@@ -131,6 +178,8 @@ void main() {
                 expenseAt(spentPerMonth, DateTime(2026, 7, 1)),
               ],
             ],
+            // Two weeks of history at least, even with nothing spent.
+            incomes: [incomeAt(1, DateTime(2026, 7, 1))],
           ),
         ).suggestedMonthlySaving();
 
@@ -143,12 +192,25 @@ void main() {
     );
 
     test('the suggestion card points to a goal when there is none', () {
-      final cards = _run(buildFacts(now: _now, monthlyIncome: 1000));
+      final history = [incomeAt(1, DateTime(2026, 9, 1))];
+      final cards = _run(
+        buildFacts(now: _now, monthlyIncome: 1000, incomes: history),
+      );
       expect(cards['saving-suggestion']!.action, InsightAction.createGoal);
       final withGoal = _run(
-        buildFacts(now: _now, monthlyIncome: 1000, goals: [_goal('g')]),
+        buildFacts(
+          now: _now,
+          monthlyIncome: 1000,
+          incomes: history,
+          goals: [_goal('g')],
+        ),
       );
       expect(withGoal['saving-suggestion']!.action, InsightAction.manualSave);
+      // A new user gets no amount yet.
+      expect(
+        _run(buildFacts(now: _now, monthlyIncome: 1000)),
+        isNot(contains('saving-suggestion')),
+      );
     });
   });
 
