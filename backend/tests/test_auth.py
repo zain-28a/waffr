@@ -153,8 +153,11 @@ def test_lockout_ends_when_its_time_is_up(client):
     from rate_limit import limiter
 
     register(client, "alice@example.com", password="right password")
-    for _ in range(5):
-        client.post("/auth/login", json={"email": "alice@example.com", "password": "bad one!"})
+    system_execute("UPDATE users SET locked_until = now() + interval '10 minutes'")
+    locked = client.post(
+        "/auth/login", json={"email": "alice@example.com", "password": "right password"}
+    )
+    assert locked.status_code == 429
     system_execute("UPDATE users SET locked_until = now() - interval '1 minute'")
     # The per-email failure counter would still refuse; a restart clears it.
     limiter.clear()

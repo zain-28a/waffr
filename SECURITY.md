@@ -52,7 +52,7 @@ does not stop SQL injection: code that can run any SQL could set
 | Every request | 180 a minute | account (valid token) |
 | Every request | 120 a minute | IP address (no valid token) |
 | Sign in | 30 per 5 minutes | IP address |
-| Wrong passwords | 5 per 15 minutes | email, existing or not |
+| Wrong passwords | 5 per 15 minutes; 20 an hour | email and IP address together; email from anywhere (existing or not) |
 | Sign up | 10 an hour; 300 an hour in total | IP address; everyone |
 | Forgot password | 5 per 15 minutes; 3 an hour; 100 an hour in total | IP address; email; everyone |
 | Reset with code | 10 per 15 minutes; 10 an hour | IP address; email |
@@ -62,16 +62,23 @@ does not stop SQL injection: code that can run any SQL could set
 | Sync | 30 a minute | account |
 | Manual news refresh | 2 per 10 minutes; 6 an hour in total | account; everyone |
 
-`GET /` (Render's health check) is not limited.
+`GET /` (Render's health check) is not limited. `GET /healthz` (database
+readiness, answered from a 5-second cache) is under the per-IP limit.
+
+Load limits, separate from the counts: at most `PASSWORD_HASH_CONCURRENCY`
+(2) password hashes at once, since each takes 19 MiB, and at most
+`SYNC_CONCURRENCY` (2) syncs at once. A request that waits more than 20
+seconds for a slot gets `503` with `Retry-After`.
 
 The counts live in the API's memory. Render runs one instance, so that is
 enough. With more instances or workers, move them to Redis first.
 
 On Render the client address comes from the first `X-Forwarded-For` entry
-(set `TRUST_PROXY_HEADERS=0` to use the socket address instead). Render says
-it puts the real client first, but if a client could forge that entry it
-could dodge the per-address limits. The per-email, per-account and total
-limits still hold, so brute force stays bounded either way.
+(set `TRUST_PROXY_HEADERS=0` to use the socket address instead). Render
+appends to a header the client sent instead of replacing it, so a client can
+forge that entry and dodge the per-address limits (BACKEND_AUDIT.md, M-2,
+still open). The per-email, per-account and total limits still hold, so brute
+force stays bounded either way.
 
 ## The 20-point checklist
 
@@ -93,7 +100,7 @@ limits still hold, so brute force stays bounded either way.
 | 14 | Lock down CORS | Done. No CORS headers by default, so browsers on other sites cannot read responses. `CORS_ORIGINS` (comma-separated) opens it for a named web build only, without credentials. |
 | 15 | Disable directory listing | Nothing is served from disk. The old avatar folder is deleted at startup. |
 | 16 | Remove default admin routes | Done. FastAPI's `/docs`, `/redoc` and `/openapi.json` are off (`ENABLE_API_DOCS=1` turns them back on). `POST /online/news/refresh` now needs an account and is tightly limited. Uvicorn no longer sends a `server` header. |
-| 17 | Lock accounts after failed logins | Done. 5 wrong passwords lock sign-in for 15 minutes. The lock is stored on the account, so a restart does not lift it. Signed-in devices keep working, and a password reset lifts it. |
+| 17 | Lock accounts after failed logins | Done. 5 wrong passwords from one address throttle that address for 15 minutes; 20 in a row from anywhere lock sign-in for 15 minutes, so a stranger with one address cannot lock the owner out. The lock is stored on the account, so a restart does not lift it. Signed-in devices keep working, and a password reset lifts it. |
 | 18 | Log security events | Done. JSON lines on the `waffr.security` logger (Render's Logs tab): sign-up, sign-in, failures, locks, rate limits, rejected tokens, reset requests and results, password changes, data key set, account deletion. Emails are logged as a keyed hash; passwords, codes and tokens never. |
 | 19 | Set secure cookie flags | No cookies. If one is added: `Secure; HttpOnly; SameSite=Strict`. |
 | 20 | Restrict database permissions | Done: forced row security on every table, and the pgAdmin login (`waffr_admin`) reads only redacted views. Startup warns if the API's role is a superuser or `BYPASSRLS`, which would skip the policies. |
@@ -141,6 +148,10 @@ limits still hold, so brute force stays bounded either way.
 | `ENABLE_API_DOCS` | off | `1` serves `/docs`, `/redoc`, `/openapi.json`. |
 | `CORS_ORIGINS` | empty | Comma-separated origins for a web build. |
 | `TRUST_PROXY_HEADERS` | on when `RENDER=true` | Read the client address from `X-Forwarded-For`. |
+| `PASSWORD_HASH_CONCURRENCY` | 2 | Password hashes at once (19 MiB each). Raise only with more memory. |
+| `SYNC_CONCURRENCY` | 2 | Syncs processed at once. |
+| `DB_STATEMENT_TIMEOUT_MS` | 30000 | Longest single query; startup migrations have none. |
+| `DB_IDLE_IN_TRANSACTION_TIMEOUT_MS` | 300000 | Ends transactions a stuck request left open. |
 
 ## Tests
 

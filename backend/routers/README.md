@@ -38,11 +38,15 @@ Expense categories and presets have no REST routes; they only travel through
 Order inside one request, all in one transaction (any error rolls back the
 whole push):
 
+0. One sync per account at a time (a Postgres advisory lock held for the
+   transaction); a second one answers `409` with `Retry-After`. Every row the
+   push names is fetched up front, a few queries per collection.
 1. Upserts, parents first: goals, lists, transactions, transfers, items,
    recurring expenses, notifications, categories, presets.
 2. Tombstones, children first: items, transfers, ... goals, lists.
-3. Settings.
-4. The reply: per collection, rows whose server stamp `changed_at` is
+3. One live transaction per `source_id` (see below).
+4. Settings.
+5. The reply: per collection, rows whose server stamp `changed_at` is
    after `last_sync_at` minus a two-minute overlap (every row when it is
    null), split into live upserts and tombstones; the full settings; `server_time`.
 
@@ -53,9 +57,19 @@ Rows:
 - Last write wins on the client's `updated_at` (falling back to
   `occurred_at` or `created_at`, then the server's clock). Older than the
   stored row: ignored. Equal or newer: applied, and the row is live again.
+- Device stamps (`updated_at`, `deleted_at`, the settings stamp) later than
+  the server clock plus `CLOCK_SKEW` (5 minutes) are stored as that. A stamp
+  stored further ahead than that (from before the cap) loses to any change.
 - A tombstone deletes the row unless the row's `updated_at` is newer; it also
   blanks the row's private text. A later tombstone never moves `deleted_at`
   back.
+- Generated transactions (a recurring charge, a shopping purchase) carry a
+  `source_id` every device derives the same way, with a random client id.
+  Only one live row per source id is kept: the one the server already had,
+  else the first in the push. Any other copy is stored as a tombstone stamped
+  no earlier than the device's own stamp, so that device drops its copy at
+  the pull in the same reply. A charge deleted and posted again in one push
+  keeps the new copy.
 - An item naming an unknown list creates that list; a transfer naming an
   unknown goal is stored without a goal.
 
@@ -71,5 +85,9 @@ Settings:
   `streak_last_date` wins, the same day keeps the larger count, an earlier or
   invalid day is ignored. `usage_started_at` keeps the earliest valid value.
 
-Every rule above has a test in `tests/test_sync_push_pull.py` or
-`tests/test_sync_settings.py`.
+Errors: a bad row is `422`; a constraint race `409`; the database unreachable
+or too slow `503`; anything else `500` "Sync failed". Each has `Retry-After`
+where a retry helps, and none carries SQL or host names.
+
+Every rule above has a test in `tests/test_sync_push_pull.py`,
+`tests/test_sync_settings.py` or `tests/test_sync_integrity.py`.

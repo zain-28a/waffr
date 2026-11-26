@@ -3,21 +3,21 @@
 Date: 2026-11-26. Scope: `backend/` (FastAPI, SQLAlchemy, Postgres), `render.yaml`,
 and the Flutter sync client in `lib/core/sync/` plus the stores it reads.
 
-**Status: phase 1 done (discovery and audit). No production system was touched.**
-Code fixes are on hold until you approve the plan in the last section. The only
-code changes so far are tests: a new file, `backend/tests/test_sync_integrity.py`,
-and five token-forgery tests added to `backend/tests/test_auth.py`.
+**Status: phase 2 done. The approved fixes are in the code and tested. No
+production system was touched**: nothing has been deployed, migrated or rotated.
+Section 7 lists what changed. Section 8 lists what still needs you.
 
 All tests ran against a throwaway local Postgres 16, using a role that is not a
 superuser and does not have BYPASSRLS, as the suite requires.
 
-| Check | Result |
-| --- | --- |
-| Existing test suite | 368 passed |
-| New tests (9 sync integrity, 5 token forgery) | 11 passed, 3 strict-xfail. The 3 xfails reproduce defects H-1 and M-1. Full suite: 382 passed, 3 xfailed |
-| `pip-audit -r requirements.txt` | 2 advisories, both in PyJWT 2.14.0 (L-1). Neither is reachable from this code |
-| `bandit -r backend -x tests` | 5 hits, all false positives: `"bearer"` read as a password; f-string SQL built from constant identifiers |
-| `ruff check` | 168 style findings, none security-relevant. F821 comes from SQLAlchemy forward references |
+| Check | At the audit | After the fixes |
+| --- | --- | --- |
+| Test suite | 368 passed | **418 passed, 0 failed**. 50 tests were added; the 3 defect reproductions now pass |
+| `pip-audit -r requirements.txt --strict` | 2 advisories (PyJWT 2.14.0, not reachable) | **no known vulnerabilities** |
+| `bandit -r backend -x tests` at medium severity and confidence | 0 (5 low-confidence false positives) | 0 |
+| `ruff check --select E9,F63,F7,F401,F811,F841` | — | clean (this is the CI gate; full style lint not enforced) |
+| SQL statements for a 200-row first sync | 414 | **17** |
+| 3,000-row first sync, local | 3.3 s | 0.6 s |
 
 Nothing here means the backend is "secure". These are the risks found and
 checked on 2026-11-26. Security work has to continue after this.
@@ -319,3 +319,41 @@ pass on 3.13.
 6. **Manual items for you:** the real database plan (C-1), the Google OAuth client
    (H-3), a header capture for M-2, the `waffr_admin` role (M-5), the constraint query
    (M-7), and the database's external access allowlist.
+
+---
+
+## 7. What changed (phase 2)
+
+| Finding | Status | Change | Verified by |
+| --- | --- | --- | --- |
+| **H-1** duplicate `source_id` | **Fixed** | `routers/sync.py`: after the tombstones, `_dedupe_sources` keeps one live row per source id. That is the row the server already had, or else the first in the push. Other copies are stored as tombstones stamped no earlier than the device's own stamp, so that device drops its copy in the same reply. `transaction_model.py` and `database.py`: the unique index now covers live rows only (`uq_transactions_user_source_live`). It is built before the old one is dropped, and it only loosens the rule, so existing rows already satisfy it. The REST create looks only at live rows. | `test_sync_integrity.py`: two devices, the tombstone reaching the device, repeat pushes, two copies in one push, undo then repost in one push or across pushes, a revival conflict, two accounts, the index definition. Migration checked on a database built by the old code. |
+| **M-1** wrong device clock | **Fixed** | Stamps are capped at the server clock plus 5 minutes (`CLOCK_SKEW`), for rows, tombstones and settings. A stamp stored further ahead before this change loses to any change, so frozen rows heal on their next edit. Event times (`occurred_at`) are not touched. | A 2099 edit followed by a later delete; healing a pre-existing 2099 row; capped settings. |
+| **H-2** Argon2 memory | **Fixed** | `auth.py`: at most `PASSWORD_HASH_CONCURRENCY` (2) hashes run at once. A request that waits more than 20 s gets `503` with `Retry-After`. New hashes use OWASP's minimum (19 MiB, t=2, p=1). Old hashes still verify and are rewritten at the next sign-in. `token_version` is untouched, so **nobody is signed out**. Login no longer holds a pooled connection while it waits to hash. | Hash parameters; an old hash signing in, upgrading, and the old token still working; a concurrency limit test (12 threads, at most 2 at once); 503 when the queue is full. |
+| **M-3** targeted lockout | **Fixed** | `main.py` and `rate_limit.py`: wrong passwords are throttled per **email + IP** (5 per 15 min). A ceiling of 20 per hour applies per email from all addresses. The account lock comes after 20 in a row. A successful sign-in or reset clears the counters. | The owner signing in from another address after a stranger is throttled; a lock after 20 failures spread over many addresses; the ceiling for unknown emails. |
+| **M-4** sync cost | **Fixed** | One batched lookup per collection, batched inserts, one flush for parents and one before the reply. One sync per account at a time, using a Postgres advisory lock (`409` with `Retry-After`). At most `SYNC_CONCURRENCY` (2) syncs at once server-wide (`security_middleware.SyncConcurrencyMiddleware`, applied before the body is read, `503` after 20 s). The reply serializes rows as stored (`populate_existing`). The 25 MB cap is kept, as no account size was given. The `changed_at` window now covers only the final flush, which also closes L-13. | A query-count test (300 rows in under 60 statements), the per-account lock, another account not blocked, the global cap, concurrent identical pushes. |
+| L-1 PyJWT | Fixed | 2.15.0 | pip-audit clean; token forgery tests |
+| L-2 account deletion | Fixed | One `DELETE` per owned table, children first, then the user, in one transaction. It does not rely on `ON DELETE CASCADE` and loads nothing. Startup refuses to run if the list misses an owned table. | Every owned table is emptied for that user and the other account is intact; a failure half-way keeps everything; coverage of the list. |
+| L-3 readiness | Fixed | `GET /healthz` runs `SELECT 1` with a 2 s statement timeout and caches the answer for 5 s. It answers only `{"status": "ok"}` or `503 {"status": "unavailable"}`. `GET /` stays Render's liveness check (`render.yaml` unchanged). | ok, down (no details leaked), caching, `/` not touching the database |
+| L-4 pool and timeouts | Fixed | `pool_pre_ping`, `pool_recycle=1800`, `connect_timeout=10`, `statement_timeout` 30 s and `idle_in_transaction_session_timeout` 5 min, set at connect time (works through a pooler). Migrations lift the statement timeout. Database errors anywhere become `503` with no details. | Timeout present on connections; a slow query cancelled; an outage returning 503 without host names |
+| L-5 status codes | Fixed | `/sync`: 422 bad row, 409 conflict or second sync, 503 database, 500 other. The app treats every non-200 except 401 as "try later" (`sync_service.dart`), and only 401 clears a session (`auth_session.dart`), so the app needs no change. | A parametrized test for each code, with nothing leaked |
+| M-5 admin script | Fixed in code | `sql/admin_readonly.sql` stops before changing anything unless the session sets `waffr.confirm_admin` and a `waffr.admin_password` of 20+ characters that is not `CHANGE_ME`. A re-run replaces an old `CHANGE_ME` password. | Run locally: refused with no settings; refused with a weak password; created; rotated; the admin can read `admin_view`; `public.users` refused |
+| M-6 CI | Fixed | `.github/workflows/backend.yml`: Postgres 16 service, a non-superuser test role, pytest, the ruff error gate, bandit (medium/medium), and `pip-audit --strict`. Read-only token, no repository secrets, actions pinned to commit SHAs, `persist-credentials: false`. | Every step was run locally with the same commands. The workflow itself has not run on GitHub yet |
+
+Docs updated: `SECURITY.md` (limits, lockout, new settings), `backend/routers/README.md`
+(sync rules, error codes) and `backend/sql/README.md`.
+
+### Still open (not approved or not doable from code)
+
+- **C-1, H-3, M-5 (production side), M-7**: these need you; see section 8.
+- **M-2** `X-Forwarded-For`: needs one header capture on Render before changing which entry is trusted.
+- **L-6** email verification at sign-up, **L-7** silent coercion and rounding, **L-8** time-zone dependent source ids (app), **L-9** growth and purging, **L-10** pinning the Python version on Render (a deploy change), **L-11** unused REST routes, **L-12** sign out everywhere.
+- **App follow-up for M-1**: a phone with a wrong clock keeps its own future-stamped copy of a row, because the app only takes strictly newer server rows. Other devices and the server stay correct. A fix belongs in the app (`sync_merge.dart`).
+
+## 8. Manual steps for you
+
+1. **Database plan (C-1).** In the Render dashboard, check the database's plan and creation date. If it is Free, upgrade it before it expires, then set up the nightly encrypted `pg_dump` and the restore drill in section 5.
+2. **Google OAuth client (H-3).** In Google Cloud Console → APIs & Services → Credentials, delete the OAuth client from commit `fe81ee4`, or rotate its secret.
+3. **`waffr_admin` (M-5).** Run `SELECT rolname FROM pg_roles WHERE rolname = 'waffr_admin';`. If the role exists, re-run the new script with a fresh password, which replaces `CHANGE_ME`. Then limit the database's external access to your own IP.
+4. **Constraints (M-7).** Run the read-only query in M-7, expect 9 rows, and send me the result.
+5. **Header capture (M-2).** After the next deploy, send one request with a made-up `X-Forwarded-For: 1.2.3.4` and note what the security log shows as `ip`. I can then pin the right entry.
+6. **Deploy.** Merging this branch deploys it. On first start, the API builds the new source-id index and drops the old one, in one short transaction. Nobody is signed out. Existing password hashes are upgraded as people sign in.

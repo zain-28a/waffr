@@ -8,12 +8,15 @@ older token.
 import logging
 import os
 import secrets
+import threading
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
 import jwt
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -43,8 +46,50 @@ SECRET_KEY = _load_secret_key()
 ALGORITHM = "HS256"
 TOKEN_LIFETIME = timedelta(days=7)
 
-password_hash = PasswordHash.recommended()
+# Argon2id at OWASP's minimum (19 MiB, 2 passes, 1 lane). Hashes made with the
+# older, heavier settings (64 MiB, 3 passes, 4 lanes) still verify, because
+# each hash carries its own parameters, and are rewritten at the next sign-in.
+password_hash = PasswordHash(
+    (Argon2Hasher(memory_cost=19 * 1024, time_cost=2, parallelism=1),)
+)
 security = HTTPBearer(auto_error=False)
+
+
+def _int_env(name: str, default: int, minimum: int = 1) -> int:
+    try:
+        return max(minimum, int(os.getenv(name) or default))
+    except ValueError:
+        return default
+
+
+# Every hash holds its memory until it finishes, so only a few may run at once:
+# a burst of sign-ins would otherwise use more memory than the server has.
+HASH_CONCURRENCY = _int_env("PASSWORD_HASH_CONCURRENCY", 2)
+HASH_WAIT_SECONDS = 20
+_hash_slots = threading.BoundedSemaphore(HASH_CONCURRENCY)
+
+
+class PasswordHashBusy(HTTPException):
+    """Every hashing slot stayed taken for HASH_WAIT_SECONDS."""
+
+    def __init__(self):
+        super().__init__(
+            status_code=503,
+            detail="Server busy, try again shortly",
+            headers={"Retry-After": "5"},
+        )
+
+
+@contextmanager
+def _hash_slot():
+    if not _hash_slots.acquire(timeout=HASH_WAIT_SECONDS):
+        logger.warning("password hashing queue is full")
+        raise PasswordHashBusy()
+    try:
+        yield
+    finally:
+        _hash_slots.release()
+
 
 # Checked when an email has no account, so the reply takes as long as a real
 # password check and does not reveal which emails are registered.
@@ -53,17 +98,27 @@ _DUMMY_HASH = password_hash.hash(secrets.token_urlsafe(16))
 
 def hash_password(password: str) -> str:
     """Argon2 hash of [password]."""
-    return password_hash.hash(password)
+    with _hash_slot():
+        return password_hash.hash(password)
 
 
 def verify_password(password: str, hashed_password: str) -> bool:
     """True when [password] matches [hashed_password]."""
-    return password_hash.verify(password, hashed_password)
+    with _hash_slot():
+        return password_hash.verify(password, hashed_password)
+
+
+def verify_and_upgrade(password: str, hashed_password: str) -> tuple[bool, str | None]:
+    """(matches, new hash). The new hash is set when the stored one uses
+    older parameters and should be replaced."""
+    with _hash_slot():
+        return password_hash.verify_and_update(password, hashed_password)
 
 
 def burn_password_check(password: str) -> None:
     """Spend the time of a real password check, for unknown accounts."""
-    password_hash.verify(password, _DUMMY_HASH)
+    with _hash_slot():
+        password_hash.verify(password, _DUMMY_HASH)
 
 
 def create_access_token(user: User) -> str:

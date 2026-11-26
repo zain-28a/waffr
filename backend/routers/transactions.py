@@ -63,6 +63,7 @@ def create_transaction(
             .filter(
                 Transaction.user_id == current_user.id,
                 Transaction.source_id == source_id,
+                Transaction.deleted_at.is_(None),
             )
             .first()
         )
@@ -99,6 +100,7 @@ def create_transaction(
             .filter(
                 Transaction.user_id == current_user.id,
                 Transaction.source_id == source_id,
+                Transaction.deleted_at.is_(None),
             )
             .first()
             if source_id

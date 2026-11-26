@@ -148,17 +148,46 @@ def test_password_change_signs_out_old_tokens(client):
 # Sign-in throttling and lockout
 
 
-def test_wrong_passwords_lock_the_account(client):
+def _login_from(client, address, password, email="alice@example.com"):
+    return client.post(
+        "/auth/login",
+        json={"email": email, "password": password},
+        headers={"X-Forwarded-For": address},
+    )
+
+
+@pytest.fixture
+def trusted_proxy(monkeypatch):
+    """Read client addresses from X-Forwarded-For, as on Render."""
+    import client_address
+
+    monkeypatch.setattr(client_address, "TRUST_FORWARDED", True)
+
+
+def test_wrong_passwords_throttle_that_address_only(client, trusted_proxy):
+    """A stranger guessing from one address cannot lock the owner out."""
     register(client, "alice@example.com", password="right password")
     for _ in range(5):
-        response = client.post(
-            "/auth/login", json={"email": "alice@example.com", "password": "wrong password"}
-        )
+        assert _login_from(client, "203.0.113.9", "wrong password").status_code == 401
+
+    blocked = _login_from(client, "203.0.113.9", "right password")
+    assert blocked.status_code == 429
+    assert int(blocked.headers["Retry-After"]) > 0
+
+    # The owner, elsewhere, still signs in.
+    assert _login_from(client, "198.51.100.7", "right password").status_code == 200
+
+
+def test_many_wrong_passwords_lock_the_account(client, trusted_proxy):
+    """Guessing spread over many addresses still locks the account."""
+    from main import MAX_FAILED_LOGINS
+
+    register(client, "alice@example.com", password="right password")
+    for n in range(MAX_FAILED_LOGINS):
+        response = _login_from(client, f"203.0.113.{n + 1}", "wrong password")
         assert response.status_code == 401
 
-    locked = client.post(
-        "/auth/login", json={"email": "alice@example.com", "password": "right password"}
-    )
+    locked = _login_from(client, "198.51.100.7", "right password")
     assert locked.status_code == 429
     assert int(locked.headers["Retry-After"]) > 0
 
@@ -166,11 +195,21 @@ def test_wrong_passwords_lock_the_account(client):
     from rate_limit import limiter
 
     limiter.clear()
-    still_locked = client.post(
-        "/auth/login", json={"email": "alice@example.com", "password": "right password"}
-    )
+    still_locked = _login_from(client, "198.51.100.7", "right password")
     assert still_locked.status_code == 429
     assert _system_scalar("SELECT locked_until IS NOT NULL FROM users") is True
+
+
+def test_the_per_email_ceiling_applies_to_unknown_emails_too(client, trusted_proxy):
+    from rate_limit import LOGIN_FAILURES_EMAIL
+
+    for n in range(LOGIN_FAILURES_EMAIL.limit):
+        response = _login_from(client, f"203.0.113.{n + 1}", "whatever 1", email="nobody@example.com")
+        assert response.status_code == 401
+    assert (
+        _login_from(client, "198.51.100.7", "whatever 1", email="nobody@example.com").status_code
+        == 429
+    )
 
 
 def test_unknown_emails_are_throttled_the_same_way(client):

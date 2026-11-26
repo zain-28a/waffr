@@ -6,15 +6,19 @@ Importing this module creates the tables and policies. Run it with
 
 import asyncio
 import logging
+import threading
+import time
 from contextlib import asynccontextmanager, suppress
 from datetime import timedelta
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
-from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+from fastapi.responses import JSONResponse
+from sqlalchemy import delete, text
+from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 from sqlalchemy.orm import Session
 
-from database import create_tables, get_db, utc_now
+from database import create_tables, engine, get_db, utc_now
 from legacy_photo import photo_meta, remove_uploaded_photos
 from category_model import ExpenseCategory
 from models import Notification, User, UserSettings
@@ -32,6 +36,7 @@ from schemas import (
 from auth import (
     burn_password_check,
     hash_password,
+    verify_and_upgrade,
     verify_password,
     create_access_token,
     get_current_user,
@@ -49,6 +54,7 @@ from rate_limit import (
     FORGOT_EMAIL,
     FORGOT_IP,
     LOGIN_FAILURES_EMAIL,
+    LOGIN_FAILURES_EMAIL_IP,
     LOGIN_IP,
     PASSWORD_CHANGE_USER,
     REGISTER_ALL,
@@ -61,7 +67,8 @@ from rate_limit import (
     limiter,
     too_many,
 )
-from row_security import bind_user
+from client_address import client_ip
+from row_security import OWNED_TABLES, bind_user
 from security_log import configure_logging, log_event
 import security_middleware
 from routers.notifications import router as notifications_router
@@ -89,12 +96,30 @@ _MODEL_MODULES = (
     ExchangeRate,
 )
 
+# Every table of an account's rows, children before the rows they point at.
+ACCOUNT_DELETE_ORDER = (
+    ShoppingItem,
+    SavingsTransfer,
+    Transaction,
+    RecurringExpense,
+    Notification,
+    ExpenseCategory,
+    ExpensePreset,
+    ShoppingList,
+    SavingsGoal,
+    UserSettings,
+)
+if {model.__tablename__ for model in ACCOUNT_DELETE_ORDER} != set(OWNED_TABLES):
+    raise RuntimeError("ACCOUNT_DELETE_ORDER must list every owned table")
+
 configure_logging()
 create_tables()
 remove_uploaded_photos()
 
-# Wrong passwords in a row before sign-in locks, and for how long.
-MAX_FAILED_LOGINS = 5
+# Wrong passwords in a row, from any address, before sign-in locks, and for how
+# long. Matches the per-email ceiling in rate_limit.LOGIN_FAILURES_EMAIL; one
+# address is throttled long before that (LOGIN_FAILURES_EMAIL_IP).
+MAX_FAILED_LOGINS = 20
 LOGIN_LOCKOUT = timedelta(minutes=15)
 
 
@@ -122,10 +147,67 @@ app.include_router(settings_router)
 app.include_router(sync_router)
 
 
+@app.exception_handler(OperationalError)
+@app.exception_handler(SQLAlchemyTimeoutError)
+async def _database_unavailable(request: Request, error: Exception):
+    """Database down, too slow or out of connections: a retryable 503.
+
+    The error text names hosts and SQL, so it stays in the server log.
+    """
+    logging.getLogger("waffr.db").warning(
+        "database unavailable on %s %s: %s",
+        request.method,
+        request.url.path,
+        type(error).__name__,
+    )
+    return JSONResponse(
+        {"detail": "Service temporarily unavailable"},
+        status_code=503,
+        headers={"Retry-After": "10"},
+    )
+
+
 @app.get("/")
 def root():
-    """Health check for Render."""
+    """Liveness check for Render: the process answers."""
     return {"message": "Waffr API is running"}
+
+
+# Readiness answers are reused this long, so polling /healthz cannot turn
+# into a stream of database round trips.
+HEALTH_CACHE_SECONDS = 5.0
+HEALTH_STATEMENT_TIMEOUT_MS = 2000
+_health_lock = threading.Lock()
+_health = {"checked_at": float("-inf"), "ok": False}
+
+
+def _database_reachable() -> bool:
+    try:
+        with engine.connect() as connection:
+            connection.execute(
+                text(f"SET LOCAL statement_timeout = {HEALTH_STATEMENT_TIMEOUT_MS}")
+            )
+            return connection.scalar(text("SELECT 1")) == 1
+    except Exception as error:  # noqa: BLE001 - any failure means "not ready"
+        logging.getLogger("waffr.db").warning("health check failed: %s", type(error).__name__)
+        return False
+
+
+@app.get("/healthz")
+def healthz():
+    """Readiness: the process answers and the database runs a query.
+
+    Says only ok or unavailable; never hosts, versions or error text.
+    """
+    with _health_lock:
+        now = time.monotonic()
+        if now - _health["checked_at"] >= HEALTH_CACHE_SECONDS:
+            _health["ok"] = _database_reachable()
+            _health["checked_at"] = now
+        ok = _health["ok"]
+    if ok:
+        return {"status": "ok"}
+    return JSONResponse({"status": "unavailable"}, status_code=503)
 
 
 @app.post("/auth/register", response_model=AuthResponse)
@@ -194,8 +276,16 @@ def register(data: RegisterRequest, request: Request, db: Session = Depends(get_
     }
 
 
+def _failure_keys(request: Request, email: str) -> tuple[str, str]:
+    """Limiter keys for wrong passwords: (this email from this address, this email)."""
+    per_ip = f"{email_key('login-failures', email)}:ip:{client_ip(request.scope)}"
+    return per_ip, email_key("login-failures", email)
+
+
 def _login_failed(request: Request, email: str, user_id: int | None) -> HTTPException:
-    limiter.hit(email_key("login-failures", email), LOGIN_FAILURES_EMAIL)
+    per_ip, per_email = _failure_keys(request, email)
+    limiter.hit(per_ip, LOGIN_FAILURES_EMAIL_IP)
+    limiter.hit(per_email, LOGIN_FAILURES_EMAIL)
     log_event(
         "login_failed",
         request=request,
@@ -213,14 +303,17 @@ def _login_failed(request: Request, email: str, user_id: int | None) -> HTTPExce
 def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
     """Check the password and return a token.
 
-    Wrong passwords count per email and per account; five in a row lock
-    sign-in for LOGIN_LOCKOUT.
+    Wrong passwords are throttled per email and address, capped per email,
+    and MAX_FAILED_LOGINS in a row lock sign-in for LOGIN_LOCKOUT.
     """
     enforce_ip(request, "login", LOGIN_IP)
-    # Counts wrong passwords per email whether or not the account exists, so
-    # the 429 does not reveal which emails are registered.
-    failures_key = email_key("login-failures", data.email)
-    wait = limiter.check(failures_key, LOGIN_FAILURES_EMAIL)
+    # Counted whether or not the account exists, so the 429 does not reveal
+    # which emails are registered.
+    per_ip, per_email = _failure_keys(request, data.email)
+    wait = max(
+        limiter.check(per_ip, LOGIN_FAILURES_EMAIL_IP),
+        limiter.check(per_email, LOGIN_FAILURES_EMAIL),
+    )
     if wait > 0:
         log_event("login_throttled", request=request, level=logging.WARNING, email=data.email)
         raise too_many(wait)
@@ -228,6 +321,8 @@ def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
     # The account, and whether it is locked.
     user_id = user_id_for_email(db, data.email)
     if user_id is None:
+        # Hand the connection back before the slow, queued hash.
+        db.rollback()
         burn_password_check(data.password)
         raise _login_failed(request, data.email, None)
 
@@ -238,8 +333,14 @@ def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
         log_event("login_locked", request=request, level=logging.WARNING, user_id=user.id)
         raise too_many((user.locked_until - now).total_seconds())
 
+    # The hash may wait for a free slot; do not hold a pooled connection then.
+    stored_hash = user.password_hash
+    db.rollback()
+    matches, upgraded_hash = verify_and_upgrade(data.password, stored_hash)
+
     # Wrong password: count it, and lock after MAX_FAILED_LOGINS in a row.
-    if not verify_password(data.password, user.password_hash):
+    user = db.get(User, user_id)
+    if not matches:
         user.failed_login_count += 1
         if user.failed_login_count >= MAX_FAILED_LOGINS:
             user.failed_login_count = 0
@@ -248,12 +349,21 @@ def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
         db.commit()
         raise _login_failed(request, data.email, user.id)
 
-    # Right password: clear the failure count and any expired lock.
+    # Right password: clear the failure count and any expired lock, and
+    # rewrite a hash made with older Argon2 settings. The token version stays,
+    # so no device is signed out.
+    changed = False
     if user.failed_login_count or user.locked_until is not None:
         user.failed_login_count = 0
         user.locked_until = None
+        changed = True
+    if upgraded_hash is not None and user.password_hash == stored_hash:
+        user.password_hash = upgraded_hash
+        changed = True
+    if changed:
         db.commit()
-    limiter.reset(failures_key)
+    limiter.reset(per_ip)
+    limiter.reset(per_email)
     log_event("login", request=request, user_id=user.id)
 
     token = create_access_token(user)
@@ -395,6 +505,7 @@ def reset_password(
     password_reset.drop_sealed_text(db, user.id)
     db.commit()
     limiter.reset(email_key("login-failures", data.email))
+    limiter.reset(f"{email_key('login-failures', data.email)}:ip:{client_ip(request.scope)}")
     log_event("password_reset", request=request, user_id=user.id)
     return {"ok": True}
 
@@ -444,9 +555,24 @@ def delete_account(
     """Delete the account and every row it owns."""
     enforce(request, f"account-delete:user:{current_user.id}", ACCOUNT_DELETE_USER)
     user_id = current_user.id
-    # Rows owned by the user go with it (ORM cascade and ON DELETE CASCADE).
-    db.delete(current_user)
-    db.commit()
+    # One statement per table, children first, in one transaction: either
+    # every row goes or none does. Does not rely on ON DELETE CASCADE, which
+    # older databases may lack, nor load the rows into memory.
+    try:
+        for model in ACCOUNT_DELETE_ORDER:
+            db.execute(
+                delete(model)
+                .where(model.user_id == user_id)
+                .execution_options(synchronize_session=False)
+            )
+        db.execute(
+            delete(User).where(User.id == user_id).execution_options(synchronize_session=False)
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    db.expunge_all()
     log_event("account_deleted", request=request, user_id=user_id)
 
 
