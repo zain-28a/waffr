@@ -112,6 +112,7 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-26 | Samsung Galaxy S23 Ultra (SM-S918B) | Snapdragon 8 Gen 2 (SM8550) | 17 (SDK 37) | 1 of 3 | passed | 15/15 match | 85 / 86 ms | 275 / 275 ms | 472 ms | 1,261 ms | 13,623 ms (others 3,387 and 3,620) |
 | 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 1 of 3 | passed | 15/15 match | 81 / 82 ms | 325 / 326 ms | 586 ms | 1,577 ms | 4,505 ms (others 4,201 and 4,296) |
+| 2026-11-26 | Infinix X6871 (GT 20 Pro), reported by مغناطيسية | MediaTek Dimensity 8350 class (MT6896) | 16 (SDK 36) | 1 of 3 | passed | 15/15 match | 94 / 94 ms | 268 / 280 ms | 481 ms | 1,188 ms | 3,423 ms (others 3,322 and 3,371) |
 
 ### Reading of run 1 (S23 Ultra)
 
@@ -149,3 +150,12 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 - **Gate status for Release B** (needs 3 Android phones incl. one low-end, 3 runs each):
   2 phones reported (S23 Ultra, A56), **1 run each**, no low-end phone yet. iOS is not
   distributed (see `RELEASE_B_READINESS_PLAN.md`), so the iPhone gate applies only when iOS is.
+
+### Reading of run 1 (Infinix GT 20 Pro, a mid-range MediaTek phone)
+
+- **Correctness: confirmed on a third chipset family** (MediaTek MT6896): all 15 vectors match,
+  self-test passed.
+- **Native 600,000: 268–280 ms (worst 280)**, about 7× under the 2 s target; at 210,000 (Release A): 94 ms.
+- **Pure Dart 600,000: 3.3–3.4 s**, steady (no outlier this time).
+- **Gate status for Release B:** three phones now reported (S23 Ultra, A56, GT 20 Pro), one run each.
+  The gate still needs **a low-end Android phone** and **two more runs per device**.
