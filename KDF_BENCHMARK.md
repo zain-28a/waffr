@@ -114,6 +114,7 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 | 2026-11-26 | Samsung Galaxy S23 Ultra (SM-S918B), run 2 | Snapdragon 8 Gen 2 (SM8550) | 17 (SDK 37) | 2 of 3 | passed | 15/15 match | 83 / 84 ms | 233 / 235 ms | 414 ms | 1,064 ms | 3,299 ms (others 3,003 and 3,103) |
 | 2026-11-26 | Samsung Galaxy S23 Ultra (SM-S918B), run 3 | Snapdragon 8 Gen 2 (SM8550) | 17 (SDK 37) | 3 of 3 | passed | 15/15 match | 96 / 96 ms | 275 / 280 ms | 526 ms | 1,261 ms | 5,671 ms (others 4,283 and 4,267) |
 | 2026-11-26 | Xiaomi 2404ARN45A, run 2 | MediaTek MT6769 (low-end) | 14 (SDK 34) | 2 of 3 | passed | 15/15 match | 235 / 240 ms | 675 / 677 ms | 1,248 ms | 3,264 ms | 9,318 ms (others 9,306 and 9,305) |
+| 2026-11-26 | Xiaomi 2404ARN45A, run 3 | MediaTek MT6769 (low-end) | 14 (SDK 34) | 3 of 3 | passed | 15/15 match | 250 / 266 ms | 678 / 682 ms | 1,401 ms (Android key factory) | 3,260 ms | 11,143 ms (others 10,074 and 9,310) |
 | 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 1 of 3 | passed | 15/15 match | 81 / 82 ms | 325 / 326 ms | 586 ms | 1,577 ms | 4,505 ms (others 4,201 and 4,296) |
 | 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), run 2, reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 2 of 3 | passed | 15/15 match | 82 / 85 ms | 279 / 322 ms | 585 ms | 1,535 ms | 4,606 ms (others 4,479 and 3,904) |
 | 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), run 3, reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 3 of 3 | passed | 15/15 match | 88 / 92 ms | 250 / 264 ms | 507 ms | 1,369 ms | 4,398 ms (others 4,001 and 4,138) |
@@ -235,3 +236,12 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 - **Pure Dart 600,000: 9.3 s**, consistent with run 1 (9.3–9.4 s).
 - **Gate status for this device:** 2 of 3 runs. One more run is needed here, plus a third Android
   phone at the low end.
+
+### Reading of run 3 (Xiaomi 2404ARN45A, third run: this device is complete)
+
+- **All 15 vectors match and the self-test passed.** This device now has **3 of 3 runs**.
+- **Native 600,000: 672–682 ms (worst 682)**, consistent with runs 1 and 2. About 3× under the 2 s target.
+- **Pure Dart 600,000: 9.3–11.1 s.** The 11.1 s run is the slowest pure-Dart run on record, and the
+  typical value (9.3–9.4 s in runs 1 and 2) is now a range. Another reason to keep native for new data.
+- **Gate status:** Galaxy S23 Ultra, Galaxy A56 and Xiaomi all have 3 of 3 runs. Infinix GT 20 Pro
+  has 2 of 3. The gate still needs: one more GT 20 Pro run, and a third Android phone at the low end.
