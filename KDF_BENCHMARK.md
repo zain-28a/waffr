@@ -103,3 +103,31 @@ Long-press the app → Uninstall, or:
 adb uninstall com.waffr.app.kdfbench
 ```
 Waffr itself is not affected.
+
+## 7. Results log
+
+Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app printed them.
+
+| Date | Device | Chip | Android | Run | Self-test | Vectors | Native 210k (median / worst) | Native 600k (median / worst) | Key factory 600k worst | Dart 210k worst | Dart 600k worst |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-26 | Samsung Galaxy S23 Ultra (SM-S918B) | Snapdragon 8 Gen 2 (SM8550) | 17 (SDK 37) | 1 of 3 | passed | 15/15 match | 85 / 86 ms | 275 / 275 ms | 472 ms | 1,261 ms | 13,623 ms (others 3,387 and 3,620) |
+
+### Reading of run 1 (S23 Ultra)
+
+- **Correctness on a real phone: confirmed.**
+  - Android's own provider (AndroidOpenSSL/Conscrypt) reproduces all 15 vectors
+    byte-for-byte, including Arabic, emoji, long, empty and unnormalised passwords, and
+    210,000 and 600,000 iterations.
+  - The app's self-test passed. This is the evidence Release A needs on this device.
+- **Speed-up: about 15×.** At today's 210,000, a sign-in derivation goes from about 1.26 s
+  in Dart to 85 ms. The chosen Mac loop is also 1.7× faster than the platform
+  `SecretKeyFactory`, which supports that choice.
+- **Native is steady:** 5 runs within 3 ms. Dart was not: one 600,000 run took 13.6 s
+  against 3.4–3.6 s for the others (the first run after the native and key-factory
+  runs). That looks like scheduling on a slower core or a burst of background work, and
+  it shows how variable the pure-Dart path is. In Release A that path is still used for
+  new wraps and backup files, so those can take a few seconds on such phones.
+- **What it does not show: the low end.** Scaling by rough single-core ratios (an
+  estimate only), a Cortex-A53 phone could be 5–7× slower. That puts native 600,000
+  around 1.4–2.0 s, right at the 2 s target. **The low-end run is the one that decides
+  Release B.**
