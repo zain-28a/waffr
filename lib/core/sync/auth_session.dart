@@ -99,6 +99,15 @@ class AuthSession {
     await prefs.setString(lastSyncKey, value.toUtc().toIso8601String());
   }
 
+  /// Deletes the password very old app versions kept in plain prefs (and so
+  /// in device backups). Runs at every start; a no-op once it is gone.
+  Future<void> forgetLegacyPassword() async {
+    final prefs = await AppPrefs.instance;
+    if (prefs.containsKey(legacyPasswordKey)) {
+      await prefs.remove(legacyPasswordKey);
+    }
+  }
+
   /// Forgets the JWT.
   Future<void> clearToken() async {
     await _secure.delete(key: tokenKey);

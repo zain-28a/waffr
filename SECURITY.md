@@ -58,6 +58,7 @@ does not stop SQL injection: code that can run any SQL could set
 | Reset with code | 10 per 15 minutes; 10 an hour | IP address; email |
 | Change password | 5 per 15 minutes | account |
 | Set data key | 10 an hour | account |
+| Re-wrap data key | 5 an hour | account |
 | Delete account | 3 an hour | account |
 | Sync | 30 a minute | account |
 | Manual news refresh | 2 per 10 minutes; 6 an hour in total | account; everyone |

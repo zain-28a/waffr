@@ -16,7 +16,7 @@ separate libraries for exporting expenses.
 | `transaction_history_screen.dart` | `TransactionHistoryScreen.expenses()` / `.incomes()`: ledger by day, per-row undo, multi-select sharing (expenses only). |
 | `transaction_history_rows.dart` | Day groups, history rows, the recurring badge and schedule-text helpers. |
 | `transaction_history_dialogs.dart` | Share-format dialog, selection bar, select marks. |
-| `expense_history_share.dart` | `shareExpenseHistoryPdf` / `shareExpenseHistoryText`; re-exports the two below. |
+| `expense_history_share.dart` | `shareExpenseHistoryPdf` / `shareExpenseHistoryText`, and `cleanUpSharedPdfs` (run at start-up: deletes shared PDFs older than a day); re-exports the two below. |
 | `expense_history_format.dart` | Pure Dart grouping by day, day labels, per-currency totals, plain-text export. |
 | `expense_history_pdf.dart` | `buildExpenseHistoryPdfBytes`: reads fonts and logo, then lays out the PDF in a background isolate (`compute`). |
 

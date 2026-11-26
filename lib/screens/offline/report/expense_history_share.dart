@@ -61,6 +61,29 @@ Future<void> shareExpenseHistoryPdf(List<WaffrTransaction> expenses) async {
   }
 }
 
+/// Shared PDFs older than this are deleted at the next start; the app that
+/// received one has long finished reading it.
+const Duration sharedPdfMaxAge = Duration(days: 1);
+
+/// Deletes old shared PDFs from the cache folder. Never throws.
+Future<void> cleanUpSharedPdfs({DateTime? now, Directory? folder}) async {
+  try {
+    final dir =
+        folder ??
+        Directory('${(await getTemporaryDirectory()).path}/shared_pdfs');
+    if (!await dir.exists()) return;
+    final cutoff = (now ?? DateTime.now()).subtract(sharedPdfMaxAge);
+    await for (final entry in dir.list()) {
+      if (entry is! File || !entry.path.endsWith('.pdf')) continue;
+      if ((await entry.lastModified()).isBefore(cutoff)) {
+        await entry.delete();
+      }
+    }
+  } catch (error) {
+    developer.log('Shared PDF clean-up failed: $error', name: 'waffr.pdf');
+  }
+}
+
 /// Android shares through a small native channel (it grants read access to
 /// the file); everything else, and any channel failure, uses share_plus.
 Future<void> _sharePdfFile(File file) async {

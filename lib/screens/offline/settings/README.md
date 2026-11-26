@@ -9,9 +9,10 @@ refresh the app lock and to return to login after signing out.
 | --- | --- | --- |
 | `settings_screen.dart` | `SettingsScreen` | Hub: account card, income, currencies, obligations, dark mode, card motion and touch haptics switches, language, app lock, smart analysis, privacy, help, guest reset. |
 | `account_screen.dart` | `AccountScreen` | Signed-in account: display name, email, change password, sign out, delete account. |
+| `backup_screen.dart` | `BackupScreen` | Save an encrypted backup file (passphrase, 10+ characters, typed twice) or restore one (pick, passphrase, confirm). Tells guests their data lives on this phone only. |
 | `change_password_screen.dart` | `ChangePasswordScreen` | Current / new / confirm password form (`AuthSession.changePassword`). |
 | `ai_permissions_screen.dart` | `AIPermissionsScreen` | Smart analysis shortcut and the `SmartSettings` switches. |
-| `privacy_security_screen.dart` | `PrivacySecurityScreen` | Controls only: the app-lock switch and the local data reset. No explanatory copy (by request). |
+| `privacy_security_screen.dart` | `PrivacySecurityScreen` | Controls only: the app-lock switch, the encrypted backup (opens `BackupScreen`) and the local data reset. No explanatory copy (by request). |
 | `about_screen.dart` | `AboutScreen` | "عن وفّر". Empty for now (by request). |
 | `help_screen.dart` | `HelpScreen` | Help center: a card that restarts the interactive tutorial, a search box (`searchHelp`, Arabic letter variants folded by `foldArabic`), and the questions by topic, each opening in place. |
 | `help_content.dart` | `helpSections` | The help copy: fourteen topics from getting started to troubleshooting. It does not repeat the privacy explanations removed from the Privacy page (what syncs, encryption on the server). Describes only what the app does; update it with the feature. |

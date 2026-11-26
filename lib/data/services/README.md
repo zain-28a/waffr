@@ -13,6 +13,7 @@ device, home widgets, the streak, smart switches and the online feed.
 | `notification_policy.dart` | `NotificationPolicy`: no device banners 22:00-08:00, one non-urgent banner a day (`NotificationType.isUrgent` bypasses it), one scheduled reminder a day by rank. Pure, so tested without the plugin. |
 | `usage_streak_service.dart` | `UsageStreakService.instance`: the daily streak in prefs (`recordToday`, `takeIncrease`, `applyRemote`, `markSynced`); rules from `core/usage/streak_math.dart`. |
 | `home_widget_sync.dart` | `HomeWidgetSync.instance.start()` / `refresh()`: formats balance, bills and streak text for the native Android/iOS home widgets. |
+| `ledger_backup_service.dart` | `LedgerBackupService.instance`: `export(passphrase)` seals the same snapshot a full sync push carries; `open(file, passphrase)` returns a `LedgerBackupPreview`; `restore(preview)` merges it like a first sync, adding and updating only (never deleting), then marks the rows for upload. |
 | `backup_service.dart` | `BackupService.instance`: guest choice (`authChoiceKey`), display name, wiping data on account switch or delete, restore listeners read by `main.dart`. |
 | `local_data_reset.dart` | `LocalDataReset.resetCurrentDevice()`: wipes prefs, session, OS notifications and every store cache (Privacy settings). |
 | `profile_identity.dart` | `ProfileIdentity.instance`: signed-in state, name and email for the profile header. |

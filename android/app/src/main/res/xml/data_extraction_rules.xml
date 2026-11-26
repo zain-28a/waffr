@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  What Android may copy off this phone (Android 12 and later).
+
+  Only the ledger prefs file goes, never the secure-storage files: their
+  Keystore key stays on the phone, so a copy could not be opened anyway
+  (flutter_secure_storage's FlutterSecureStorage.xml and
+  FlutterSecureKeyStorage.xml), and never the widget prefs, which are rebuilt
+  from the ledger on start.
+
+  Cloud backup only runs when it can be end-to-end encrypted with the
+  phone's screen lock, so the plaintext ledger never sits in a backup
+  readable with keys Google holds. Phone-to-phone transfer stays on: it is a
+  guest's way to move to a new phone. The encrypted backup file in the app
+  works everywhere else.
+-->
+<data-extraction-rules>
+    <cloud-backup disableIfNoEncryptionCapabilities="true">
+        <include domain="sharedpref" path="FlutterSharedPreferences.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="sharedpref" path="FlutterSharedPreferences.xml" />
+    </device-transfer>
+</data-extraction-rules>

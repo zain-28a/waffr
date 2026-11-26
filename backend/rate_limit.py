@@ -60,6 +60,9 @@ RESET_IP = Rule(10, 15 * 60)
 RESET_EMAIL = Rule(10, 60 * 60)
 PASSWORD_CHANGE_USER = Rule(5, 15 * 60)
 DATA_KEY_USER = Rule(10, 60 * 60)
+# Re-wrapping happens once per account after an app update; a few tries
+# cover retries after network errors.
+DATA_KEY_REWRAP_USER = Rule(5, 60 * 60)
 ACCOUNT_DELETE_USER = Rule(3, 60 * 60)
 SYNC_USER = Rule(30, 60)
 NEWS_REFRESH_USER = Rule(2, 10 * 60)

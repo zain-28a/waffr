@@ -3,6 +3,7 @@
 | File | Contents |
 | --- | --- |
 | `app_lock.dart` | `AppLock.isEnabled()` / `AppLock.setEnabled(enabled:, auth:)`: the "ask for biometrics or device PIN on open" flag (prefs key `app_lock`). Turning it on first asks `local_auth` to confirm the owner; returns an `AppLockToggleResult`. |
+| `ledger_backup_codec.dart` | The encrypted backup file format. `LedgerBackupCodec.seal` / `open` / `parseHeader`: a JSON header plus the gzipped snapshot sealed with AES-256-GCM under a PBKDF2-HMAC-SHA256 key from the user's passphrase (600,000 iterations). The header is bound to the ciphertext as associated data. Throws `BackupFormatException` or `BackupPassphraseException`. |
 | `data_key.dart` | End-to-end encryption of private sync fields. `DataCipher` (`seal` / `open` single strings, `enc1:` prefix), `WrappedDataKey` (the server copy), `DataKeyStore.instance` (`cipher()`, `save()`, `clear()`, static `create()`, `wrap()`, `unwrap()`). |
 
 How the pieces connect:

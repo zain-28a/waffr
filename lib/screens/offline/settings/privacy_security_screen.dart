@@ -1,5 +1,5 @@
-// Privacy and security: the app-lock switch and the reset of this device's
-// data. The page holds controls only, no explanatory copy.
+// Privacy and security: the app-lock switch, the encrypted backup file and
+// the reset of this device's data. The page holds controls only, no explanatory copy.
 
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
@@ -8,6 +8,7 @@ import 'package:waffr/core/theme/app_icons.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/data/services/local_data_reset.dart';
+import 'package:waffr/screens/offline/settings/backup_screen.dart';
 import 'package:waffr/widgets/brand/waffr_page_header.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
 import 'package:waffr/widgets/glass/aurora_backdrop.dart';
@@ -124,6 +125,14 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
             ),
             const SizedBox(height: 22),
             const AppSectionTitle(title: 'البيانات'),
+            AppListTile(
+              icon: AppIcons.shieldCheck,
+              title: 'النسخة الاحتياطية المشفّرة',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const BackupScreen()),
+              ),
+            ),
+            const SizedBox(height: 10),
             AppListTile(
               icon: AppIcons.trash,
               title: 'إعادة ضبط البيانات المحلية',

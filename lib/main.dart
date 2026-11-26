@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffr/screens/offline/onboarding/onboarding_screen.dart';
+import 'package:waffr/screens/offline/report/expense_history_share.dart';
 import 'package:waffr/widgets/tutorial/tutorial_layer.dart';
 import 'package:waffr/widgets/glass/liquid_glass.dart';
 import 'package:waffr/widgets/motion/tap_haptics.dart';
@@ -33,7 +34,8 @@ import 'package:waffr/core/prefs/app_prefs.dart';
 ///
 /// Preferences are loaded once in [AppPrefs] before [runApp], so later
 /// screens read the cached handle instead of hitting disk on each build.
-/// Sync start-up and legacy photo cleanup run in the background.
+/// Sync start-up and clean-ups (legacy photo and password, old shared PDFs)
+/// run in the background.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppPrefs.warmUp();
@@ -43,6 +45,8 @@ Future<void> main() async {
 
   unawaited(SyncService.instance.initialize());
   unawaited(LegacyProfilePhoto.remove());
+  unawaited(AuthSession.instance.forgetLegacyPassword());
+  unawaited(cleanUpSharedPdfs());
   // Draw behind the system bars; pages keep their own safe areas.
   unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
   // Warm the glass lens shader so the first frame of chrome can refract.

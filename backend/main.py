@@ -32,6 +32,7 @@ from schemas import (
     ForgotPasswordRequest,
     LoginRequest,
     RegisterRequest,
+    RewrapKeyRequest,
     ResetPasswordRequest,
 )
 from auth import (
@@ -50,6 +51,7 @@ from transaction_model import RecurringExpense, Transaction
 from news_service import news_refresh_loop
 from rate_limit import (
     ACCOUNT_DELETE_USER,
+    DATA_KEY_REWRAP_USER,
     DATA_KEY_USER,
     FORGOT_ALL,
     FORGOT_EMAIL,
@@ -493,6 +495,76 @@ def store_data_key(
     db.refresh(current_user)
     log_event("data_key_set", request=request, user_id=current_user.id)
     return {"data_key": _data_key(current_user)}
+
+
+# A re-wrap may only make the password-derived key stronger, never weaker.
+MIN_REWRAP_ITERATIONS = 600_000
+
+
+@app.post("/auth/key/rewrap")
+def rewrap_data_key(
+    data: RewrapKeyRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Replace the wrapped copy of the data key with a stronger one.
+
+    The key inside stays the same (the app checks that before sending), so
+    every encrypted row stays readable. It needs the password, like a
+    password change, but signs no device out. The copy is replaced only if
+    it is still the one the app opened (409 otherwise: another device, a
+    password change or a reset changed it meanwhile).
+    """
+    enforce(request, f"data-key-rewrap:user:{current_user.id}", DATA_KEY_REWRAP_USER)
+    user_id = current_user.id
+    if not current_user.wrapped_key:
+        raise HTTPException(status_code=409, detail="No data key to re-wrap")
+    floor = max(current_user.key_iterations or 0, MIN_REWRAP_ITERATIONS)
+    if data.data_key.iterations < floor:
+        raise HTTPException(status_code=422, detail="The new wrap must be stronger")
+
+    # The hash may wait for a free slot; do not hold a pooled connection then.
+    stored_hash = current_user.password_hash
+    db.rollback()
+    if not verify_password(data.current_password, stored_hash):
+        log_event(
+            "data_key_rewrap_failed",
+            request=request,
+            level=logging.WARNING,
+            user_id=user_id,
+        )
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    # Compare and swap: the copy the device opened, under the password it
+    # just proved. token_version is left alone, so nobody is signed out.
+    replaced = db.execute(
+        update(User)
+        .where(
+            User.id == user_id,
+            User.wrapped_key == data.expected_wrapped_key,
+            User.password_hash == stored_hash,
+        )
+        .values(
+            key_salt=data.data_key.salt,
+            key_iterations=data.data_key.iterations,
+            wrapped_key=data.data_key.wrapped_key,
+        )
+        .execution_options(synchronize_session=False)
+    ).rowcount
+    if replaced != 1:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Data key changed")
+    db.commit()
+    user = db.get(User, user_id)
+    db.refresh(user)
+    log_event(
+        "data_key_rewrapped",
+        request=request,
+        user_id=user_id,
+        iterations=data.data_key.iterations,
+    )
+    return {"data_key": _data_key(user)}
 
 
 @app.post("/auth/password/forgot")

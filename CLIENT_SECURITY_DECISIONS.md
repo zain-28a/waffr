@@ -390,3 +390,128 @@ working. Gate the release on the device benchmark. As follow-ups, keep W out of
 
 Nothing in either plan changes existing users' data, encryption keys or production
 settings when it ships. Both are additive and can be reverted.
+
+---
+
+## 4. Implementation status (after approval)
+
+### 4.1 Backups: implemented (B + C + small fixes)
+
+| Piece | Files | Tests |
+| --- | --- | --- |
+| Android backup rules. Only `FlutterSharedPreferences.xml` may leave the phone; Android 12+ cloud backup only when it can be end-to-end encrypted; phone-to-phone transfer kept; Android ≤11 only with `clientSideEncryption`. The secure-storage files (`FlutterSecureStorage.xml`, `FlutterSecureKeyStorage.xml`, file names checked in the plugin source) and `HomeWidgetPreferences.xml` are never included | `android/app/src/main/res/xml/data_extraction_rules.xml`, `backup_rules.xml`, `AndroidManifest.xml` | `test/core/security/android_backup_rules_test.dart` |
+| Encrypted backup file `waffr-backup` v1 | `lib/core/security/ledger_backup_codec.dart` | `test/core/security/ledger_backup_codec_test.dart` |
+| Export (the same snapshot a full sync push carries) and restore (merged like a first sync, add and update only, **never deletes**, marked for upload) | `lib/data/services/ledger_backup_service.dart` | `test/data/services/ledger_backup_service_test.dart` |
+| Screen: Settings → Privacy and security → **النسخة الاحتياطية المشفّرة**. Save asks for a passphrase twice (10+ characters); restore asks to pick a file, enter the passphrase, then confirm. Guests see a one-line notice | `lib/screens/offline/settings/backup_screen.dart`, `privacy_security_screen.dart` | `settings_screens_test.dart` (renders in light, dark and reduced motion; the guest notice; refusals) |
+| The legacy plaintext password is deleted at every start | `AuthSession.forgetLegacyPassword`, `main.dart` | `test/core/sync/auth_session_legacy_test.dart` |
+| Shared PDFs older than a day are deleted at start | `cleanUpSharedPdfs`, `main.dart` | `test/screens/offline/report/shared_pdf_cleanup_test.dart` |
+
+**File format.**
+- The header holds only `format`, `version`, `created_at`, the KDF name, iterations and
+  salt, and the cipher. The header is the AES-GCM associated data, so editing it (for
+  example lowering the iterations) breaks the MAC.
+- The body is gzip(JSON) sealed with AES-256-GCM. The account email travels inside the
+  sealed body and is shown before restoring.
+- Files are refused if they are over 50 MB, of a newer version, or ask for fewer than
+  100,000 or more than 10,000,000 iterations (a crafted file cannot freeze the app).
+
+**Restore semantics.**
+- A local row newer than its copy in the backup stays.
+- Deletes recorded in the backup are **not** applied. A restore can only add or update,
+  never lose a row.
+- On a signed-in phone the restored rows are uploaded at the next sync.
+
+**New dependency.** `file_picker` 13.3.3, pinned. It provides the system document picker
+for saving and opening the file, needs no storage permissions or plist keys, and the
+app's `MainActivity` does not override `onActivityResult`, which the plugin needs.
+
+**Not verified here: native builds.** No Android SDK or Xcode in this environment, so
+no APK or IPA was built. The Dart side is analysed and tested. Before release:
+- run the Build APK workflow on this branch;
+- on a device, test save, open and restore;
+- check that `adb shell bmgr backupnow com.waffr.app` produces a backup on a phone
+  with a screen lock and none without one;
+- do a phone-to-phone transfer.
+
+### 4.2 Key derivation: benchmark gate failed, so the app is NOT changed
+
+Measured with `tool/kdf_benchmark.dart`, the same pure-Dart PBKDF2 the app uses,
+AOT-compiled, on one core of this environment's 2.3 GHz Xeon:
+
+| Iterations | Time per derivation |
+| --- | --- |
+| 210,000 (today) | **0.84 s** |
+| 600,000 | **2.40 s** |
+
+The estimate in section 2.3 (0.3–0.9 s at 600,000) was **wrong by a wide margin**.
+Phones run this AOT code at roughly their single-core speed relative to that Xeon.
+That is an estimate, not a measurement:
+
+- flagships about 1–2 s;
+- mid-range phones about 3–5 s;
+- low-end Cortex-A53 phones, common in the app's market, about 8–15 s **per sign-in**,
+  and twice that for a password change.
+
+That fails the "about 2 s on a low-end phone" gate. Today's 210,000 is probably
+already 3–5 s on such phones.
+
+What **is** done, since it is additive and harmless:
+- the server route `POST /auth/key/rewrap`, with 13 tests (see 2.5);
+- the benchmark tool.
+
+`DataKeyStore.defaultIterations` stays at 210,000, and the app does not call the
+route yet.
+
+Options:
+
+| Option | Low-end sign-in | Effort and risk |
+| --- | --- | --- |
+| **K-1. Native PBKDF2 in the app**: Android `SecretKeyFactory("PBKDF2WithHmacSHA256")`, iOS CommonCrypto `CCKeyDerivationPBKDF`, over the existing method channel, with the Dart code as fallback, cross-checked against the Dart output with fixed test vectors | expected well under 1 s at 600,000 (native code is typically 10× or more faster than pure Dart); to be measured | small Kotlin and Swift additions; can only be built and tested on your machines or CI |
+| K-2. `cryptography_flutter`, native PBKDF2 on Android only | Android improves; iOS stays at pure-Dart speed | a new plugin with past device issues and a maintenance fork |
+| K-3. Stay at 210,000 and rely on the follow-ups below | unchanged | none |
+
+**Recommendation: K-1**, with 600,000 enabled only after the device benchmark on the
+native path. Measure on a device with:
+```bash
+flutter run --release -t tool/kdf_benchmark.dart
+```
+Until then the follow-ups below shrink the exposure without making sign-in slower.
+
+### 4.3 Planned follow-ups (approved for planning; not implemented)
+
+**F-1. Keep the wrapped key away from token holders.**
+- *Server, additive:* `POST /auth/key/unlock {password}` returns `data_key` after an
+  Argon2 check, with a per-account limit.
+- *App:* read the key from that route at sign-in, and keep `/auth/me` as a fallback for
+  one release.
+- *Next release:* `/auth/me` stops returning `wrapped_key` (it keeps `salt` and
+  `iterations` so old apps still know a key exists).
+- *Effect:* a stolen token no longer yields an offline password oracle.
+- *Compatibility:* app versions before the change cannot unlock the key on a *new*
+  sign-in until updated. Ship the server route two releases ahead and watch the version
+  mix before removing the field.
+
+**F-2. Stronger passwords.**
+- Raise the sign-up minimum from 8 to 10 characters, applied to new passwords only;
+  existing passwords keep signing in.
+- Check new passwords against an offline list of the most common or breached passwords,
+  bundled with the server (about 100,000 entries, hashed, a few MB), so nothing is sent
+  to a third party.
+- Show a strength hint in the app.
+- Touches `RegisterRequest`, `ResetPasswordRequest` and `ChangePasswordRequest`, and
+  the app's password fields and messages. Tests for each refusal.
+
+**F-3. iOS: encrypt the ledger on the device.**
+- Move the stores from `NSUserDefaults` to one file in Application Support.
+- Seal that file with AES-256-GCM under a 32-byte key kept in the Keychain as
+  `afterFirstUnlock`, not `ThisDeviceOnly`, so it travels only in encrypted backups and
+  iCloud restores.
+- Unencrypted Finder backups then hold only ciphertext.
+- Needs:
+  - a one-time migration (read the old prefs, write the sealed file, then remove the old
+    keys only after a verified read-back);
+  - writes moved off the UI isolate;
+  - a crash-safe write (temp file and rename);
+  - the backup file from 4.1 as the safety net if the Keychain key is ever lost.
+- Android keeps the prefs file. Keystore keys never back up, so the same scheme there
+  would make restores unreadable.
