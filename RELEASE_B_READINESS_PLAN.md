@@ -1,14 +1,14 @@
 # Release B readiness plan: raising the key-derivation count safely
 
-Date: 2026-11-26. Status: **updated with your final decisions on N-1 to N-7 (§11).
-Release B has not started.** The only code change in this phase is the rewrap switch (M-0):
-off by default, tested, **not merged or deployed**. No iteration count, production setting,
-merge or deployment has changed.
+Date: 2026-11-26. Status: **updated for a public launch planned for early 2027 (§0A).
+Nothing is published. Release B has not started.** The only code change in this phase is the
+rewrap switch (M-0): off by default, tested, **not merged or deployed**. No iteration count,
+production setting, merge, deployment or public release has changed.
 
-Builds on `NATIVE_PBKDF2_PLAN.md` (§9) and `KDF_BENCHMARK.md`. Release A (native PBKDF2 at
-210,000) is on the branch and **not yet released to users**. Release B means: new wraps use
-600,000 (or the count the benchmarks support), and existing accounts are upgraded in the
-background at sign-in.
+Builds on `NATIVE_PBKDF2_PLAN.md` (§9) and `KDF_BENCHMARK.md`. Release A and Release B are defined
+exactly in §0A. In short: Release A is the client build with native PBKDF2 at the **existing**
+210,000 iterations; Release B raises the count and upgrades existing accounts. **Neither is
+published, and Release A is not to be published before the launch-preparation phase.**
 
 ## 0. Approved decisions and the conditions that apply
 
@@ -29,7 +29,106 @@ background at sign-in.
 | Q-6 | Production changes | **your explicit approval, every time** | change protocol in §5.1 |
 | Q-7 | Emergency single-account recovery | allowed **only** with strict verification and audit logging | §6.5 |
 
-The open items N-1 to N-7 are decided in §11 (one new item, N-8, came out of N-1).
+## 0A. Phases, and exactly what Release A and Release B are
+
+**The public launch is planned for early 2027.** The domain, the production server and the other
+launch infrastructure are **not ready yet**. That is not a blocker for development and testing:
+everything below that does not need them continues now, without touching production. The Render
+service the app points at today is treated as a **development and test environment** until the
+launch-preparation phase.
+
+### 0A.1 Phases
+
+| Phase | When | What happens | Production touched? |
+| --- | --- | --- | --- |
+| **P0. Development and testing** | now → launch preparation | device benchmarks, security testing on isolated local servers with synthetic data, building and testing the Release A addendum and, later, Release B code, test builds for testers (debug-signed, never public) | **No** |
+| **P1. Launch preparation** | before launch, in 2026–early 2027 | buy the domain; build the production server; production database with backups and a restore drill; **final release-signing key and its verification (N-3)**; release workflow; final Arabic texts; set `UPDATE_PAGE_URL`; iOS decision | prepared here, each change approved (§5.1) |
+| **P2. Public launch** | early 2027 | publish **Release A** as the first public client (or the launch baseline of L-1) | yes, with your explicit approval |
+| **P3. After launch** | from launch on | server guard deployed dark; the 90-day observation clock starts; **Release B** rollout in the stages of §5 | yes, each step approved |
+
+**§4 to §6 (adoption, rollout, recovery in production) describe P3.** None of it starts before
+launch. The 90-day window cannot start before the production server is recording client
+versions, so **no ordinary account can be upgraded earlier than about 90 days after launch**.
+
+### 0A.2 What is blocked, and what is not
+
+| Work | Needs the domain or production? | Phase | Authorised today |
+| --- | --- | --- | --- |
+| Device benchmarks (older Cortex-A53-class phone, GT 20 Pro run 3) | no | P0 | **yes** |
+| Security testing on local, isolated servers with synthetic data | no | P0 | **yes** |
+| The rewrap switch (M-0) | no | P0 | **done** |
+| Release A addendum: header, install id, dormant notice (text only) | no (the URL constant stays empty) | P0 | approved in principle (D-1, N-2); **starts only when you say so** |
+| Release B code: guard, upgrade flow, repair routes, tests | no (local and CI only) | P0 | **not authorised** (Release B has not started) |
+| Server migration and guard in **production** | yes | P3 | no |
+| `UPDATE_PAGE_URL` and a tappable notice | **yes: domain** | P1 | deferred |
+| Support email address in the Arabic drafts | **yes: domain** | P1 | deferred |
+| Final release signing key, fingerprint, release workflow, in-place rehearsal (N-3) | needs the final key and release process | P1 | deferred; **mandatory before the first public APK** |
+| Production database backup and restore drill (C-1) | yes | P1 | deferred; **a launch blocker, not a present risk** (no real user data is in production) |
+| iPhone benchmark and iOS guard configuration (N-5) | needs iOS distribution | when iOS is planned | deferred |
+| Publishing any APK to the public | yes | P2 | **no** |
+
+### 0A.3 Release A (defined)
+
+**Release A is the first public client build. It does not change any key setting.**
+
+| # | In scope | Status |
+| --- | --- | --- |
+| A-1 | Native PBKDF2 on Android (`javax.crypto` HMAC) and iOS (CommonCrypto) at the **existing 210,000** iterations; Dart fallback; runtime self-test; new wraps and backup files still written with the Dart key | **built and tested** on the branch; Android verified on 4 real phones; iOS verified on a simulator only |
+| A-2 | Encrypted backup file, Android backup rules, deletion of the legacy plaintext password, cleanup of stale shared PDFs | **built**; Dart tests pass; on-device save/open/restore and a `bmgr` check are **still to do** |
+| A-3 | Client header `X-Waffr-Client` and install id (D-1) | approved; **not started** |
+| A-4 | Dormant soft-update notice, text only while `UPDATE_PAGE_URL` is empty (N-2) | approved; **not started** |
+| A-5 | Server compatibility: `KEY_UPGRADE_ENABLED` rewrap switch, off by default (M-0) | **done** on the branch |
+
+**Out of scope for Release A:** any change to an iteration count; any key upgrade; the version
+guard and its tables; repair routes; recovery tooling; iOS distribution.
+
+**Dependencies before it is published (all in P1):** the production server running the
+branch's backend; C-1 (backups and restore drill); **N-3 signing-key verification**; the
+domain, if you want a tappable notice (N-8); your approval of the Arabic texts (N-6); L-1 decided; on-device
+backup checks (A-2); the A-3 and A-4 code built and tested.
+
+**Done when:** every row above is built and tested, the §7.1 checklist is complete, and you
+approve publishing it.
+
+### 0A.4 Release B (defined)
+
+**Release B raises the key-derivation count and upgrades existing accounts.**
+
+| # | In scope |
+| --- | --- |
+| B-1 | `DataKeyStore.defaultIterations` raised to the count the device gate supports (**600,000 is supported by every Android run so far**, worst native 682 ms), with native writes behind a known-answer test (D-4 c) |
+| B-2 | Server guard: `client_installs`, `users.first_client_seen_at` and `legacy_seen_at`, the eligibility rules of §3.3, shadow mode, cohorts, `KEY_UPGRADE_ENABLED` and the other controls |
+| B-3 | Client upgrade flow of §6.1: dual-implementation check, compare-and-swap, never blocking sign-in |
+| B-4 | Recovery: `repair-request` and `repair` routes behind `KEY_REPAIR_ENABLED`, self-heal, the audit table, the operator command, the owner emails |
+| B-5 | `client_policy` in `/auth/me` for the soft notice |
+| B-6 | The rollout controls and the change log of §5.1 |
+
+**Out of scope for Release B:** iOS accounts until iOS is distributed; forced updates; any
+change to the backup file format.
+
+**Dependencies:** Release A published (or L-1 option 2); the production server recording client
+versions for **90 days** (rule 4); C-1 closed and the restore drill done; the device gate met for the
+target count; every test in §8; your written approval for each production change (§5.1).
+
+**Done when:** every stage of §5 has met its exit gate, with zero unwrap failures.
+
+### 0A.5 A decision for the launch-preparation phase: the launch baseline (L-1)
+
+Because nothing is published yet, **there are no real users on old apps or old wraps**. That
+opens a simpler option, **not decided and not authorised today** (no iteration count changes):
+
+| Option | What ships at launch | Consequence |
+| --- | --- | --- |
+| **1. As planned** | Release A at 210,000; Release B later | the whole migration machinery (§3, §5, §6) is needed for the public |
+| **2. Raise the count in the launch build** | the launch build creates new wraps at the target count (B-1 only); B-2 to B-5 are built **only when first needed** (for example for test accounts made before launch, or a later increase) | no public account ever needs migrating, no old-app risk, no 90-day wait |
+
+Option 2 needs the device gate fully met at the target count, and sign-up, password change and
+backup saving **timed on the oldest phone** (native writes, D-4 c). Test accounts made before
+launch can simply be recreated. **My recommendation: decide this in P1, and lean to option 2
+if the gate is met**, because it removes a whole class of risk instead of managing it. Release A
+and Release B stay defined as above either way.
+
+The open items N-1 to N-8 are decided in §11; the one decision still open is L-1 (§0A.5), for the launch-preparation phase.
 
 ## 1. What the inspection found
 
@@ -180,8 +279,8 @@ This is deliberate and is the price of the safest approach.
   - **while it is empty the notice is text only: no button, no link**;
   - when it is set, the app accepts only an `https` URL, and the **only host it will ever
     open is the host of that constant**;
-  - the constant is fixed at build time, so **only builds made after you provide the URL can
-    show a tappable link** (N-8).
+  - the constant is fixed at build time: **test builds stay text only; the launch build (P1) sets
+    it** once the domain exists (N-8, resolved by the timeline in §0A).
 - **Use a redirect on the domain** (for example `your-domain/download` pointing to wherever the
   APKs are hosted), so hosting can move later **without an app update**.
 - Changing `RECOMMENDED_BUILD_ANDROID` is a production setting (§5.1).
@@ -416,38 +515,42 @@ deleted (no cascade):
 
 ## 7. Release criteria and security checks
 
-### 7.1 Before Release A is released
+### 7.1 Before Release A is published (launch preparation, P1)
 
-- [ ] Header, install id and the dormant soft-update notice (N-2) are in the build, with tests
-      (§8.1). `UPDATE_PAGE_URL` is **empty** unless you have given me the domain (N-8).
-- [ ] **Signing-key verification, mandatory (N-3). A release is not published if any step
-      fails, and nothing overrides this without your written approval.**
-  - **Step 0, once, before anything else:** take a phone with the **Waffr that real users
-    have installed** (not a CI test build), pull its APK
-    (`adb shell pm path com.waffr.app`, then `adb pull <path> installed.apk`) and read its
-    certificate: `apksigner verify --print-certs installed.apk`. Record the
-    **signer certificate SHA-256** in `release/ANDROID_SIGNING_CERT.sha256` (a public
-    fingerprint, not a secret). If different installed copies show **different** fingerprints
-    (for example debug keys from different CI runs), **they cannot be updated in place**: stop
-    and bring me the facts; the migration path (guest backup file, reinstall) needs a
-    separate approval.
-  - **Step 1, every release:** the release APK's signer SHA-256 must **equal** the recorded
-    one. It must be signed with the v2 or v3 scheme and must **not** be a debug certificate.
-  - **Step 2, every release:** an **in-place update rehearsal** on a test phone: install the
-    previous release APK, add some data, install the new APK over it
-    (`adb install -r`). The install must succeed (`INSTALL_FAILED_UPDATE_INCOMPATIBLE` means a
-    key mismatch) and the data must still be there.
-  - **Step 3, once the release workflow exists (later, with your approval):** the workflow
-    fails if the fingerprint differs from the committed one or the certificate is a debug
-    certificate.
-- [ ] Benchmark gate for Release A: `self_test_passed` and `vectors_all_match` on at least
-      three Android phones with no mismatch (**met**: S23 Ultra, Galaxy A56, Xiaomi 2404ARN45A,
-      Infinix GT 20 Pro, all 15 of 15). **iOS is not distributed (N-5), so an iPhone is not
-      required** for this release.
-- [ ] C-1 closed: **the production database has a backup and a tested restore.**
+Release A is **not published before P1**. Test builds for you and your testers may be
+debug-signed and are never public.
+
+- [ ] Header, install id and the dormant soft-update notice are in the build, with tests (§8.1).
+      `UPDATE_PAGE_URL` is set by the launch build once the domain exists (N-1, N-8).
+- [ ] **Signing-key verification, mandatory (N-3), deferred to P1 and required before the first
+      public APK. A release is not published if any step fails, and nothing overrides this
+      without your written approval.** Because **no real users have installed a public build**,
+      there is no installed base to match; the job is to set the key up correctly **once**.
+  - **Step 0 (P1):** create the release keystore, **back it up offline in two separate places**
+    (losing the key means nobody can ever update in place), and record its signer
+    **certificate SHA-256** in `release/ANDROID_SIGNING_CERT.sha256` (a public fingerprint, not a
+    secret). The `ANDROID_KEYSTORE_*` secrets are set in the release workflow.
+  - **Step 1, every release:** the APK's signer SHA-256 equals the recorded one
+    (`apksigner verify --print-certs`), it is signed with the v2 or v3 scheme, and it is not a
+    debug certificate.
+  - **Step 2, every release after the first:** an **in-place update rehearsal**: install the
+    previous release APK, add data, install the new APK over it (`adb install -r`). The install
+    must succeed (`INSTALL_FAILED_UPDATE_INCOMPATIBLE` means a key mismatch) and the data stay.
+  - **Step 3:** the release workflow fails if the fingerprint differs or the certificate is a
+    debug one.
+  - **Before P1:** testers who installed **debug-signed** builds must uninstall them to move to
+    the release-signed build; their data is test data, so this is accepted. Testers are told so.
+- [ ] Benchmark gate for Release A: `self_test_passed` and `vectors_all_match` on at least three
+      Android phones (**met**: S23 Ultra, Galaxy A56, Xiaomi 2404ARN45A, Infinix GT 20 Pro, all
+      15 of 15). **iOS is not distributed (N-5), so an iPhone is not required**; it is required
+      before any iOS build is published.
+- [ ] A-2 on-device checks: save, open and restore a backup file; `adb shell bmgr` with and
+      without a screen lock; a phone-to-phone transfer.
+- [ ] C-1 closed: **the production database has a backup and a tested restore** (P1).
 - [ ] M-0 done and its tests green (**done on the branch**); the switch is not set in
       production.
-- [ ] Release A's build number is recorded as `MIN_GUARD_BUILD[android]`.
+- [ ] Release A's build number is recorded as `MIN_GUARD_BUILD[android]` (only needed if the
+      Release B guard is built, see L-1).
 
 ### 7.2 Before Release B's app is released
 
@@ -559,12 +662,15 @@ deleted (no cascade):
 
 ## 9. Before any merge or deployment of the current branch
 
+Nothing is merged or deployed in P0. This table lists what must be true **at the time** of
+a merge or a deployment, which belongs to P1 or later.
+
 | ID | Item | Status |
 | --- | --- | --- |
-| **M-0** | Gate `POST /auth/key/rewrap` behind `KEY_UPGRADE_ENABLED` (off by default; 403 before the password is read) | **Done on the branch, not merged or deployed.** `backend/key_upgrade.py`, `main.py`, `SECURITY.md`; 26 tests in `test_key_upgrade_flag.py`; the existing rewrap tests turn the switch on explicitly. Backend suite: 481 passed |
-| M-1 | Add the header, install id and the dormant notice to Release A (§8.1) | **approved (D-1, N-2); not started** |
-| M-2 | Close C-1 (database backup) | open; yours to do |
-| M-3 | Signing-key verification (§7.1, mandatory) | **approved (N-3); Step 0 is yours: it needs a real installed phone** |
+| **M-0** | Gate `POST /auth/key/rewrap` behind `KEY_UPGRADE_ENABLED` (off by default; 403 before the password is read) | **Done on the branch, not merged or deployed.** `backend/key_upgrade.py`, `main.py`, `SECURITY.md`; 26 tests in `test_key_upgrade_flag.py`. Backend suite: 481 passed |
+| M-1 | Header, install id and the dormant notice in Release A (§8.1) | approved; **not started; starts when you say so** |
+| M-2 | C-1: production database backup and restore drill | **deferred to P1**; a launch blocker, not a present risk |
+| M-3 | Signing-key verification (§7.1, mandatory) | **deferred to P1**; required before the first public APK |
 
 Deploying the current backend would **not** enable upgrades: the switch is off unless
 `KEY_UPGRADE_ENABLED` is set in production, and `render.yaml` does not set it.
@@ -577,9 +683,9 @@ Deploying the current backend would **not** enable upgrades: the switch is off u
 | R-2 | Bad wrap written | possible loss of access on that account | very low | round trip, Dart cross-check, compare-and-swap, self-heal, §6.5, backup file, database backup |
 | R-3 | Dart cross-check never completes on the slowest phones | those phones do not upgrade | medium on very low-end | another device of the same account can upgrade it; accepted (D-4) |
 | R-4 | Native write path has an input-dependent bug | wrong key written | very low | known-answer test at the target count; 15 vectors; Dart cross-check on rewrap |
-| R-5 | **APK updates fail** because the APK is debug-signed, or signed with a different key | a user must uninstall; a **guest could lose local data** | medium without a check | the mandatory signing-key verification in §7.1 (N-3): fingerprint match and an in-place rehearsal before every release; guests are told to save a backup file first |
+| R-5 | **APK updates fail** because a public APK is debug-signed, or signed with a different key, or the release key is lost | a user must uninstall; a **guest could lose local data**; with a lost key nobody can ever update in place | medium without a check | the mandatory verification in §7.1 (N-3, P1): one correctly created key backed up in two places, a fingerprint match and an in-place rehearsal before every release; guests are told to save a backup file first |
 | R-6 | Adoption stalls (manual updates) | Release B delayed; thresholds never met | high | soft notice, outreach, thresholds never lowered without approval |
-| R-7 | Users on apps older than Release A cannot be nudged in-app; and, until the domain exists, **users of Release A get a text-only notice** | they stay on the old path or must find the page themselves | certain | outreach outside the app; N-8 (hold Release A for the URL, or publish text-only) |
+| R-7 | Users on apps older than Release A cannot be nudged in-app (once Release A exists) | they stay on the old path | certain **only for builds that exist before Release A**; today those are test builds | outreach outside the app; no public build exists before Release A |
 | R-8 | An operator abuses the emergency window | an account's wrap replaced | very low | two proofs, your written approval, owner email notices, append-only audit log, 1 window at a time, daily caps |
 | R-9 | New table or throttle adds load | latency | low | throttled background writes; shadow-mode measurement |
 | R-10 | Env var change restarts Render | brief downtime | certain, small | schedule it with your approval (§5.1) |
@@ -587,37 +693,36 @@ Deploying the current backend would **not** enable upgrades: the switch is off u
 
 ## 11. Final decisions on the open items
 
-| # | Item | Your decision | What it means in this plan |
+| # | Item | Your decision | What it means now |
 | --- | --- | --- | --- |
-| **N-1** | Official download page for the soft notice | **Deferred until you buy your domain. No temporary URL is hardcoded.** | the notice is text only until a build includes `UPDATE_PAGE_URL`; see §3.6 and N-8 |
-| **N-2** | Soft-update notice code in Release A | **Approved** (dormant) | §3.6, §8.1; M-1 |
-| **N-3** | Signing-key verification | **Mandatory before release** | the hard gate in §7.1: fingerprint match, v2/v3, in-place rehearsal; Step 0 needs a real installed phone |
-| **N-4** | Recovery audit log retention | **At least 2 years** | §6.5 |
-| **N-5** | iOS | **No iOS users assumed; the iPhone benchmark is deferred until iOS is distributed** | §7.2; the iOS guard stays unconfigured, so no iOS account is ever upgraded |
-| **N-6** | Arabic texts | **I prepare drafts, you approve them** | Appendix A; **drafts, not approved**; nothing ships until you approve |
-| **N-7** | Emergency recovery approvals | **You are the sole approval authority** | §6.5; every window needs your written approval for that account |
+| **N-1** | Official download page for the soft notice | **Deferred until you buy your domain. No temporary URL is hardcoded.** | domain-dependent, deferred to P1; the notice is text only in test builds |
+| **N-2** | Soft-update notice code in Release A | **Approved** (dormant) | part of Release A (A-4); starts when you say so |
+| **N-3** | Signing-key verification | **Mandatory before release** | deferred to P1 and required **before the first public APK** (§7.1) |
+| **N-4** | Recovery audit log retention | **At least 2 years** | §6.5, Release B |
+| **N-5** | iOS | **No iOS users assumed; iPhone benchmark deferred until iOS distribution** | §0A.2, §7.2 |
+| **N-6** | Arabic texts | **Claude drafts, you approve** | Appendix A; drafts, not approved; final texts and the support address in P1 |
+| **N-7** | Emergency recovery approvals | **You are the sole approval authority** | §6.5, Release B |
+| **N-8** | Should Release A wait for the domain? | **Resolved by the timeline:** Release A is not published before P1, when the domain will exist | no temporary URL; the launch build sets `UPDATE_PAGE_URL` |
 
-**One new item came out of N-1:**
-
-| # | Item | My recommendation |
-| --- | --- | --- |
-| **N-8** | Because the link is fixed at build time, **should Release A wait for the domain?** (a) wait, so Release A users get a tappable notice; (b) publish Release A now with a text-only notice and reach those users outside the app | **(a) wait**, unless Release A is needed sooner for another reason. It costs only time, and the notice is most valuable on exactly the build that will become the base of Release B's rollout. Whatever you choose, **no temporary URL goes into the code** |
+**One decision is deferred to P1:** the launch baseline **L-1** (§0A.5): launch with Release A as
+planned, or raise the count for new accounts in the launch build. No iteration count changes
+before you decide.
 
 ## 12. What happens next
 
-1. **Now:** the rewrap switch is on the branch (off by default, 26 tests). Nothing else in
-   Release B has started, and nothing is merged or deployed.
-2. You answer **N-8** and, when you have it, give me the domain.
-3. **Step 0 of the signing-key verification (§7.1)** is yours: read the certificate of the
-   Waffr that real users have installed, and send me its SHA-256. Without it, Release A cannot be
-   published.
-4. You review and approve the Arabic drafts in Appendix A (N-6).
-5. After that, with your approval, I make the **Release A addendum** (§8.1): header, install
-   id and the dormant notice. Release A is then built and checked on devices; **N-3 and C-1 are
-   closed** before it is published.
-6. Only after Release A is out do I write the server part (§8.2, deployed dark with your
-   approval), then the 90-day observation starts.
-7. Release B's app and the rollout follow the stages in §5, each step approved by you (§5.1).
+**Now (P0), without touching production:**
+
+1. Device testing continues: the older, Cortex-A53-class phone (3 runs) and the third GT 20 Pro run.
+2. Security testing continues on isolated local servers with synthetic data.
+3. The Release A addendum (A-3, A-4) and, later, Release B's code can be built and tested
+   locally. **Neither is authorised yet.** Tell me when to start the addendum.
+
+**P1 (launch preparation), later:** domain; production server; database backups and the restore
+drill; the release signing key and its verification (N-3); the release workflow; final Arabic
+texts and support address; `UPDATE_PAGE_URL`; L-1; the iOS decision.
+
+**P2:** publish Release A, with your explicit approval. **P3:** server guard dark, the 90-day
+clock, then Release B in the stages of §5, each step approved (§5.1).
 
 Nothing in this plan starts without your explicit approval.
 
