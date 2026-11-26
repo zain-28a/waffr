@@ -8,11 +8,20 @@ wrap, and signs no device out.
 
 import threading
 
+import pytest
+
 from conftest import bearer, register, system_execute, system_scalar
 
 PASSWORD = "correct horse 1"
 OLD = {"salt": "s" * 16, "iterations": 210_000, "wrapped_key": "old-wrap-" + "w" * 40}
 NEW = {"salt": "t" * 16, "iterations": 600_000, "wrapped_key": "new-wrap-" + "n" * 40}
+
+
+@pytest.fixture(autouse=True)
+def upgrades_on(monkeypatch):
+    """These tests cover the route itself, so the switch is on (it is off by
+    default, see test_key_upgrade_flag.py)."""
+    monkeypatch.setenv("KEY_UPGRADE_ENABLED", "1")
 
 
 def _with_key(client, email="alice@example.com"):

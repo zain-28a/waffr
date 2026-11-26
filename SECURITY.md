@@ -155,6 +155,7 @@ limits.
 | `TRUSTED_PROXY_HOPS` | 0 | Proxies appending to `X-Forwarded-For`; used only when `True-Client-IP` is missing. |
 | `PASSWORD_HASH_CONCURRENCY` | 2 | Password hashes at once (19 MiB each). Raise only with more memory. |
 | `SYNC_CONCURRENCY` | 2 | Syncs processed at once. |
+| `KEY_UPGRADE_ENABLED` | **off** | `1`, `true` or `yes` lets `POST /auth/key/rewrap` upgrade a data-key wrap. Off, the route answers 403 before reading the password. Leave it unset until Release B is approved (RELEASE_B_READINESS_PLAN.md). |
 | `DB_STATEMENT_TIMEOUT_MS` | 30000 | Longest single query; startup migrations have none. |
 | `DB_IDLE_IN_TRANSACTION_TIMEOUT_MS` | 300000 | Ends transactions a stuck request left open. |
 

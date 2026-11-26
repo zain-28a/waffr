@@ -1,12 +1,33 @@
 # Release B readiness plan: raising the key-derivation count safely
 
-Date: 2026-11-26. Status: **plan only, waiting for your approval.** No code, iteration
-count, production setting, merge or deployment has changed.
+Date: 2026-11-26. Status: **updated with your approvals (D-1 to D-7, Q-1 to Q-7).
+Release B has not started.** The only code change in this phase is the rewrap switch (M-0):
+off by default, tested, **not merged or deployed**. No iteration count, production setting,
+merge or deployment has changed.
 
 Builds on `NATIVE_PBKDF2_PLAN.md` (§9) and `KDF_BENCHMARK.md`. Release A (native PBKDF2 at
 210,000) is on the branch and **not yet released to users**. Release B means: new wraps use
 600,000 (or the count the benchmarks support), and existing accounts are upgraded in the
 background at sign-in.
+
+## 0. Approved decisions and the conditions that apply
+
+| ID | Decision | Approved as | Conditions added by your answers |
+| --- | --- | --- | --- |
+| D-1 | Client header and install id in Release A | yes | the header is the **only** signal; no header means legacy |
+| D-2 | `client_installs` table and old-app-seen column, deployed dark | yes | plus a `first_client_seen_at` column (§3.2) so the whole 90-day window must be observed |
+| D-3 | Thresholds: ≥ 95% of active installs on Release A+, ≥ 85% of accounts passing the guard, held 30 days | yes | with APK distribution this may take long; **it is never lowered without your approval** (§4.3) |
+| D-4 | Write path at the target count: option **(c)** | yes | native writes for sign-up, password change and backup files behind a known-answer test at the target count; the rewrap keeps the Dart cross-check with a 90-second budget |
+| D-5 | 90-day guard window; pause at 0.5% `legacy_after_upgrade` | yes | the window **stays 90 days** (Q-4) |
+| D-6 | Kill switch as an environment variable | yes | every change to it needs your explicit approval (§5.1) |
+| D-7 | Self-heal with a repair rewrap | yes | as a **separate route behind its own switch**, with audit logging (§6.4), and the emergency tool in §6.5 |
+| Q-1 | Distribution | **APK only** | no store dashboards; the server is the only adoption source (§4); updates are manual (§3.6, §10) |
+| Q-2 | Gate the rewrap route behind a switch | **done** | `KEY_UPGRADE_ENABLED`, off unless set, 403 before the password is read, 26 tests (§9) |
+| Q-3 | Which versions may start an upgrade | safest rule | never upgrade an account if an older installation may still need access (§3.3) |
+| Q-4 | Guard window | **90 days** | kept |
+| Q-5 | Soft update notice | **allowed** | non-blocking, dismissible, no server-supplied links (§3.6) |
+| Q-6 | Production changes | **your explicit approval, every time** | change protocol in §5.1 |
+| Q-7 | Emergency single-account recovery | allowed **only** with strict verification and audit logging | §6.5 |
 
 ## 1. What the inspection found
 
@@ -17,11 +38,11 @@ background at sign-in.
 | F-3 | The server has **no device concept**. A token belongs to the account (`sub`, `ver`), not to a device. | `auth.py:create_access_token` | "Which versions does this account use?" needs a small new record per install. |
 | F-4 | Tokens last **7 days** and are never refreshed. After that a request gets 401 and the app signs in again **with the password**. | `auth.py:47`, `auth_session.dart:ensureToken` | An upgrade needs the password, so it can only run at a password sign-in. An active user is reached within about a week. |
 | F-5 | `GET /auth/me` runs at **every sync start**. | `auth_session.dart:ensureToken` → `_getMe` | It is the natural carrier for "you may upgrade" and for refreshing last-seen data, at no extra request. |
-| F-6 | **`POST /auth/key/rewrap` is ungated.** It checks the password and compare-and-swap, never lowers the count, and signs nobody out, but has no flag and no version check. | `backend/main.py:rewrap_data_key` | If the branch's backend is deployed as it is, any user with a custom client could upgrade their own wrap. Nothing in the shipped app calls it, and it only affects their own account. Still, it contradicts "no upgrades until approved". **Gate it (flag, default off) before the next backend deploy** (§9, M-0). |
+| F-6 | **`POST /auth/key/rewrap` was ungated** on the branch. It checks the password and compare-and-swap, never lowers the count, and signs nobody out, but had no switch and no version check. | `backend/main.py:rewrap_data_key` | **Resolved on the branch (M-0):** `KEY_UPGRADE_ENABLED`, off unless set to `1`/`true`/`yes`, read on every request; while off the route answers 403 before reading the password. `render.yaml` does not set it (a test enforces that). The version guard itself is still to be built (§8.2). |
 | F-7 | An **old app reads the stored iteration count**, with no cap, and unwraps any count in pure Dart. | `data_key.dart:fromJson`, `unwrap` | **Correct but slow.** An old app can never be locked out by an upgraded wrap; the worst case is a slow sign-in (S23 Ultra, pure Dart at 600,000: 3.4–13.6 s; low-end phones are probably several times slower, an estimate). |
 | F-8 | Under Release A, **new wraps and new backup files are derived by the Dart code**, even where native is available. | `Pbkdf2Engine.deriveForWriting` | At 600,000, sign-up, password change and **backup saving** would take the Dart time (S23: 3.4 s typical, one run 13.6 s). See D-4. |
 | F-9 | The backup file format is **independent of the wrap**: own passphrase, own stored iterations (600,000 already for new files), format `waffr-backup` v1. The backup feature does not exist in any released app. | `ledger_backup_codec.dart` | Release B cannot break existing backups. It only touches speed (F-8). |
-| F-10 | **How the app is distributed is not visible in the repo.** There is no Play Store or App Store reference, only a CI workflow that builds APKs. | repo | Store dashboards may not exist or may not cover all installs. **Server-side measurement must be the primary adoption source** (§4). Question Q-1. |
+| F-10 | **Distribution is by APK** (answer to Q-1): no store, no store dashboards, **updates are manual**. iOS is not distributed. | you | The server-side header is the **only** adoption source. Adoption will be slower than with store auto-update. APKs must be signed with the **same release key** or they cannot update an installed copy (§10, R-5). iOS stays out of the guard until you configure it (§3.3 rule 2). |
 | F-11 | Any new account-owned table must have a row-security policy and be added to `ACCOUNT_DELETE_ORDER`, or startup refuses to run. | `row_security.py`, `main.py` | Part of the exact change list (§8). |
 | F-12 | Only a 401 signs a device out. A 403, 409 or 503 from the new routes never does. | `auth_session.dart`, `sync_service.dart` | The guard can refuse with a 403 without affecting any session. |
 
@@ -81,8 +102,12 @@ New table `client_installs` (additive; old apps never see it):
 | `first_seen_at`, `last_seen_at` | UTC |
 | unique `(user_id, install_id)` | |
 
-Plus one column `users.legacy_seen_at` (nullable timestamp): the last time an
-**authenticated request without a valid header** came from this account.
+Plus two columns on `users` (nullable timestamps):
+
+- `legacy_seen_at`: the last time an **authenticated request without a valid header** came
+  from this account (a legacy app).
+- `first_client_seen_at`: the first time a request **with** a valid header came from this
+  account. It starts the account's observation window (§3.3 rule 4).
 
 - Written **at most once per 6 hours per (user, install)** from an in-memory throttle, on
   login, register, `/auth/me`, and `/sync`, through a short background session (the pattern
@@ -91,19 +116,34 @@ Plus one column `users.legacy_seen_at` (nullable timestamp): the last time an
   `ACCOUNT_DELETE_ORDER` and `row_security.OWNED_TABLES`, F-11).
 - No device model, no IP, no name: only what the guard needs.
 
-### 3.3 Eligibility rule (computed on the server only)
+### 3.3 Eligibility rule (computed on the server only; fails closed)
 
-An account may be upgraded **only if all of these hold**:
+**Principle (Q-3): never upgrade an account if an older installation may still need
+access.** An account is upgraded only when **every** rule holds. Any doubt, missing data or
+error means *not eligible*.
 
-1. `KEY_UPGRADE_ENABLED` is on and the account is in the rollout cohort (§5).
-2. The **current request** carries a header with `build ≥ MIN_UPGRADE_BUILD[platform]`
-   (Release B's build, or Release A's if you decide the A-only upgrade is allowed; Q-3).
-3. **Guard window:** in the last `GUARD_WINDOW_DAYS` (default **90**), the account has
-   `legacy_seen_at` null **and** every `client_installs` row seen in that window has
-   `build ≥ MIN_GUARD_BUILD[platform]` (Release A's build).
-4. The stored wrap is below the target count, and the new wrap's count is at least the
-   target and at least the stored count (already enforced).
-5. The wrap is not being changed by someone else (compare-and-swap, already enforced).
+1. **Switch and cohort:** `KEY_UPGRADE_ENABLED` is on and the account is in the approved
+   rollout cohort (§5).
+2. **The platform is configured:** `MIN_UPGRADE_BUILD` and `MIN_GUARD_BUILD` are set for the
+   platform of the request **and** of every install on the account. An unconfigured platform
+   (iOS today) is never eligible.
+3. **The upgrading device is capable:** the request header has
+   `build ≥ MIN_UPGRADE_BUILD[platform]` (Release B or later: the build that writes wraps).
+4. **The whole 90-day window has been observed:** `first_client_seen_at` is at least
+   `GUARD_WINDOW_DAYS` (**90**) ago. An account seen for 10 days is not eligible, because a
+   second phone that was merely idle would still be invisible.
+5. **No old app in the window:** `legacy_seen_at` is null or older than the window.
+6. **Every known install is new enough:** every `client_installs` row last seen in the window
+   has `build ≥ MIN_GUARD_BUILD[platform]` (Release A or later), and **there is at least
+   one** such row (an account with no recorded install is unknown, so not eligible).
+7. The stored wrap is below the target count; the new wrap is at least the target and at
+   least the stored count; the swap is compare-and-swap (already enforced).
+
+**Allowlisted test accounts** (your own, named in writing, §5.1) skip **rule 4 only**, so
+Release B can be tested before 90 days have passed. They still need rules 1–3 and 5–7.
+
+**Earliest first real upgrade:** 90 days after the recorder starts (Stage 1), by rule 4.
+This is deliberate and is the price of the safest approach.
 
 ### 3.4 API changes (all additive; old apps ignore them)
 
@@ -115,12 +155,26 @@ An account may be upgraded **only if all of these hold**:
 
 ### 3.5 What the guard cannot know (honest limits)
 
-- A phone with an **old app that has not been opened for 90 days** is invisible. If its
-  owner opens it later, they get a slow but working sign-in (F-7). Measured afterwards
-  (§4.4), not prevented.
-- A phone on a **new app that never talks to the server** is simply not counted.
-- The window trades safety against coverage: a longer window protects more dormant phones
-  but delays upgrading accounts that once used an old app (Q-4).
+- A phone with an **old app that has not been opened for 90 days** is invisible. If its owner
+  opens it later, they get a slow but working sign-in (F-7), never a lockout. It is measured
+  afterwards (§4.4), not prevented. This is the residual risk of the approved 90-day window.
+- **Apps older than Release A cannot show the update notice** (they lack the code) and send
+  no header. Reaching those users needs a message from you outside the app.
+- A phone on a new app that never talks to the server is not counted.
+
+### 3.6 Soft update notice (Q-5)
+
+- **Server:** `GET /auth/me` adds `client_policy: {"recommended_build": N}`, from
+  `RECOMMENDED_BUILD_ANDROID` (unset = no notice). A number only: **the server never sends
+  text or links**, so a compromised server cannot point users at a malicious download.
+- **App (Release A onward):** if its own build is below `recommended_build`, it shows a
+  **dismissible** banner or sheet, at most **once every 7 days**, with Arabic text approved by
+  you. It **never blocks** sign-in, sync or any screen.
+- **The link** is a compile-time constant in the app (the official APK page, question N-1),
+  opened only if it is `https` and on a built-in host allowlist.
+- Including the notice code in **Release A** lets A users be reached later. Without it, only
+  Release B and later could be nudged. Recommended; needs your approval (N-2).
+- Changing `RECOMMENDED_BUILD_ANDROID` is a production setting (§5.1).
 
 ## 4. Measuring Release A adoption
 
@@ -139,11 +193,15 @@ only, no emails or ids**) gives:
 
 It works for every channel (store, CI-built APK, TestFlight), and Android and iOS alike.
 
-### 4.2 Cross-checks (only if they exist for you, F-10)
+### 4.2 No store cross-checks (Q-1)
 
-- Google Play Console → *Statistics* → installs by app version.
-- App Store Connect → *App Analytics* → sessions or active devices by version.
-- Neither is needed for the decision, and neither sees APKs installed from CI.
+APK distribution means there is no Play Console or App Store Connect. The server view is
+the **only** measurement. Two sanity checks that need no new data:
+
+- the number of APK downloads you can see on the page where you host them, against the
+  active installs on the newest build;
+- the count of **distinct install ids** against the count of accounts (more installs than
+  accounts means accounts with several phones).
 
 ### 4.3 Adoption thresholds
 
@@ -152,8 +210,13 @@ It works for every channel (store, CI-built APK, TestFlight), and Android and iO
 | Start of any Release B upgrade | **≥ 95% of active installs** on Release A+ **and** **≥ 85% of active accounts passing the guard**, both held for **30 days** | go / no-go |
 | Widening the cohort | the per-stage gates in §5 | stage progress |
 
-95% and 30 days are my proposal from the earlier plan; the guard makes the exact figure less
-critical, because an account is only upgraded when **its own** devices pass. See D-3.
+You approved these figures (D-3). **With manual APK updates they may take a long time to
+reach, or never.** Two points keep that safe:
+
+- The per-account guard (§3.3) protects each account on its own, so a slow fleet cannot
+  cause harm; it only delays upgrades.
+- **The thresholds are never lowered, shortened or waived without your explicit approval.**
+  If adoption stalls, the tools are the soft notice (§3.6) and your own outreach.
 
 ### 4.4 Measuring the damage the guard cannot prevent
 
@@ -175,11 +238,16 @@ changes between requests.
 | **3. Allowlist** | your own accounts only, then a few volunteers | | 7 days (one token lifetime) | every upgraded account signs in on every device it owns; zero `unwrap_failed` |
 | **4. 1%, 5%, 25%, 100%** | `KEY_UPGRADE_PERCENT` | previous stage met | 7 days each | **0** unwrap failures; rewrap success ≥ 99% of attempts (excluding 403 and 409); `legacy_after_upgrade` < 0.5%; no rise in 401 or sync errors beyond ±0.5 points; sign-in p95 not worse than today |
 
-**Controls (each is a production setting, so each needs your approval, Q-6):**
+**Timing consequence of the strict window (§3.3 rule 4).** The first real upgrade of an
+ordinary account can happen no earlier than **90 days after the recorder starts** (Stage 1),
+however fast adoption is. Stages 2–3 can run earlier **only on allowlisted test accounts**,
+which skip that one rule. Stage 4 widens only as accounts complete their 90 days.
+
+**Controls (each is a production setting, so each needs your explicit approval, §5.1):**
 
 - `KEY_UPGRADE_ENABLED` (kill switch), `KEY_UPGRADE_PERCENT`, `KEY_UPGRADE_ALLOWLIST`,
-  `KEY_UPGRADE_TARGET_ITERATIONS`, `GUARD_WINDOW_DAYS`, `MIN_GUARD_BUILD_*`,
-  `MIN_UPGRADE_BUILD_*`.
+  `KEY_UPGRADE_TARGET_ITERATIONS`, `GUARD_WINDOW_DAYS` (stays 90), `MIN_GUARD_BUILD_*`,
+  `MIN_UPGRADE_BUILD_*`, `KEY_REPAIR_ENABLED`, `RECOMMENDED_BUILD_*`.
 - Changing an environment variable restarts the Render service (seconds to a minute of
   downtime on the Free plan; none on paid plans with a rolling deploy). If you need an instant
   switch, the alternative is one row in a settings table (more code; D-6).
@@ -187,6 +255,29 @@ changes between requests.
 **Pause rule:** any unwrap failure, or crossing a gate limit, stops widening. Setting the
 percent back to 0 stops new upgrades the same minute and **does not touch already upgraded
 accounts**, which stay valid.
+
+### 5.1 Production change protocol (Q-6)
+
+Every production change below needs **your explicit written approval for that exact change,
+before it is made**: a backend deploy, a database migration, any environment variable
+(`KEY_UPGRADE_ENABLED`, `KEY_REPAIR_ENABLED`, `KEY_UPGRADE_PERCENT`, `KEY_UPGRADE_ALLOWLIST`,
+`GUARD_WINDOW_DAYS`, `MIN_*_BUILD_*`, `RECOMMENDED_BUILD_*`), publishing an APK, and an
+emergency window (§6.5). Approval for one change is not approval for the next.
+
+Each change is recorded in `RELEASE_B_CHANGE_LOG.md` (created at the first change):
+
+| Field | Content |
+| --- | --- |
+| Date, time (UTC) | when it was made |
+| Change | the exact setting, old value and new value |
+| Approved by | you, with the message or reference |
+| Evidence | the gate metrics and test run that justified it |
+| Verification | what was checked afterwards |
+| Rollback | the exact reverse change, and who does it |
+| Result | outcome, with any anomaly |
+
+I have no access to Render or to production, so **you make the change**; I prepare the exact
+value, the pre-checks and the verification queries. A change is never batched with another.
 
 ## 6. The upgrade procedure, interruptions, rollback, recovery
 
@@ -220,13 +311,13 @@ sign in → /auth/me says key_upgrade.target_iterations = N          (else stop)
 
 ### 6.3 Rollback (the rollout)
 
-- **Stop:** `KEY_UPGRADE_ENABLED=false` (or percent 0). No new upgrades; no account changes.
+- **Stop:** `KEY_UPGRADE_ENABLED` off (or percent 0), with your approval (§5.1). No new
+  upgrades; no account changes.
 - **Revert the app default:** if Release B's app is found faulty, ship a build with
-  `defaultIterations` back at 210,000. Wraps already at 600,000 keep working on every
-  version (F-7), so **no data rollback is needed**.
-- **Downgrading an account's wrap is not provided** (the server refuses a weaker wrap on
-  purpose). If one account must be brought back to 210,000, it is a one-off operation with
-  your approval (Q-7), not a route.
+  `defaultIterations` back at 210,000. Wraps already at 600,000 keep working on every version
+  (F-7), so **no data rollback is needed**.
+- **No route lowers a wrap.** The server refuses a weaker wrap on purpose. Bringing one
+  account back to 210,000 is the emergency procedure in §6.5, not a rollout step.
 
 ### 6.4 Recovery (a bad or unreadable wrap)
 
@@ -237,41 +328,112 @@ Layered defences:
    compare-and-swap keeping W_old until the swap (§6.1).
 2. **Detection:** the post-upload verify, and a counter `unwrap_failed` at every sign-in
    (counts only).
-3. **Self-heal (new, Release B):** if a password sign-in succeeds on the server but the
-   stored wrap does not open, and **this device still holds the account's data key** in secure
-   storage, the app proves the key is right by opening one sealed `enc1:` value from the
-   sync reply, then **re-wraps it with the password and replaces the server wrap** through the
-   same route, using the broken wrap as `expected_wrapped_key`. This fixes the bad-wrap
-   case on any device that still has the key. It needs one server allowance: the route
-   accepts a rewrap **without raising the count** when the request carries
-   `repair: true` and the password check passes.
+3. **Self-heal (D-7), as its own route and switch.** If a password sign-in succeeds but the
+   stored wrap does not open, and **this device still holds the account's data key** in
+   secure storage:
+   1. the app proves the local key is the account's by opening one sealed `enc1:` value from
+      the sync reply;
+   2. it calls `POST /auth/key/repair-request` (password required). The server records an
+      audit event and opens a **15-minute** repair slot for this account, at most **3 a day**;
+   3. within the slot it calls `POST /auth/key/repair` with a wrap of that key made with the
+      password, using the broken wrap as `expected_wrapped_key` (compare-and-swap);
+   4. a self-heal repair may **keep or raise** the count, never lower it.
+   Both routes sit behind `KEY_REPAIR_ENABLED` (**off by default**; turning it on is a
+   production change, §5.1). Neither route is the upgrade route, so the upgrade kill switch
+   does not disable recovery.
+   *Security note:* this adds no capability an attacker with the password does not already
+   have: `POST /auth/password/change` already replaces the wrap from a password. What it adds
+   is the audit trail.
 4. **Backup file:** the user's encrypted export (`waffr-backup`) restores the ledger if
    every device has lost the key.
-5. **Last resort:** the existing password-reset path (server drops the wrap and blanks the
-   sealed text; the next sign-in makes a new key and the device's local data repopulates it).
+5. **Last resort:** the existing password-reset path (the server drops the wrap and blanks
+   the sealed text; the next sign-in makes a new key and the device's local data repopulates
+   it).
 6. **Database restore:** if a bad write ever reached many rows, only a database backup can
    undo it, and **the production database has no backup today (C-1).** This must be fixed
    before Release B (§7.1).
+
+### 6.5 Emergency single-account recovery (Q-7)
+
+**What it can and cannot do.** The server never holds the data key or the password, so no
+operator action can create a wrap or open anyone's data. What an operator can do is open a
+**time-limited repair window for one account**, so the owner's own device (which holds the key)
+can write a replacement wrap, **including one at a lower count** (the emergency downgrade).
+If no device holds the key, the options are the backup file or a password reset (§6.4).
+
+**It is used only when all of these hold:**
+
+1. **The owner asked, or `unwrap_failed` was detected,** and the case is written down
+   (ticket id, reason).
+2. **The owner is verified by two independent proofs:** (a) a one-time code sent to the
+   account's registered email (the existing reset-code mechanism, but **not** a reset);
+   (b) the account password, checked by the repair route at the moment of the write.
+3. **You approve this account and this window in writing** (§5.1) before it is opened.
+4. **Nothing is edited directly in the database.** Wraps are never changed by hand; any
+   direct database access for this purpose is itself recorded in the audit log.
+
+**Mechanism (to be built after approval; nothing exists yet):**
+
+- An operator command `python -m tools.open_repair_window --user-id N --ticket T
+  --approved-by NAME --hours H` refuses to run unless every argument is given, caps `H` at
+  **24**, allows **one open window per account**, and at most **3 per account per 90 days**.
+- The window allows exactly one `POST /auth/key/repair` for that account, which needs the
+  password and compare-and-swap, accepts any count ≥ 100,000, and **closes the window on
+  success or expiry**.
+- The command and the route never see or print a password, wrap or key.
+- **The account owner is emailed** when a window is opened and when a repair succeeds, so no
+  operator can act silently.
+
+**Audit log (append-only):** table `key_recovery_audit`, kept even if the account is later
+deleted (no cascade):
+
+| Column | Content |
+| --- | --- |
+| `id`, `created_at` | |
+| `user_id` | the account |
+| `action` | `window_opened`, `repair_requested`, `repair_succeeded`, `repair_failed`, `window_expired`, `window_closed` |
+| `actor` | operator name, or `owner` for self-heal |
+| `ticket`, `approved_by`, `reason` | from the command |
+| `verification` | which proofs passed (`email_code`, `password`), never their values |
+| `request_ip` | for routes; `null` for the command |
+| `outcome` | `ok` or a short error code |
+
+- A database trigger refuses `UPDATE` and `DELETE` on this table, and the application role
+  has `INSERT` and `SELECT` only.
+- Every row is also written as a structured log line (`waffr.audit`) with no key material.
+- Rows are kept at least **2 years** (N-4). You review the log after every use and record the
+  result in `RELEASE_B_CHANGE_LOG.md`.
 
 ## 7. Release criteria and security checks
 
 ### 7.1 Before Release A is released
 
-- [ ] Header and install id added, built on the existing `info` call, with tests (§8).
-- [ ] The benchmark gate for Release A: `self_test_passed` and `vectors_all_match` on at least
-      **three Android phones** (S23 Ultra done) **and one iPhone**, with no mismatch.
+- [ ] Header, install id and (if approved, N-2) the soft-update notice are in the build, with
+      tests (§8.1).
+- [ ] **Release A's APK is signed with the release key**, the same one as the installed apps
+      (check with `apksigner verify --print-certs`), so it **updates in place**. A debug-signed
+      APK cannot update an installed copy, and a user who must uninstall could **lose a
+      guest's local data** (R-5).
+- [ ] Benchmark gate for Release A: `self_test_passed` and `vectors_all_match` on at least
+      **three Android phones** with no mismatch (S23 Ultra and Galaxy A56 reported; one more).
+      iOS is not distributed, so an iPhone is **not required for the first release**; it
+      becomes required before any iOS build is published.
 - [ ] C-1 closed: **the production database has a backup and a tested restore.**
-- [ ] M-0 done: the rewrap route is flag-gated, default off (§9).
-- [ ] Release A's build number is recorded as `MIN_GUARD_BUILD` for each platform.
+- [ ] M-0 done and its tests green (**done on the branch**); the switch is not set in
+      production.
+- [ ] Release A's build number is recorded as `MIN_GUARD_BUILD[android]`.
 
 ### 7.2 Before Release B's app is released
 
-- [ ] **Device gate** (unchanged): at least 3 Android phones including a low-end one, plus an
-      older iPhone; three runs each; native worst run ≤ 2.0 s at the proposed count.
-      If 600,000 fails anywhere, propose the highest count that passes everywhere.
+- [ ] **Device gate:** at least 3 Android phones **including a low-end one** (Cortex-A53 class),
+      three runs each; native worst run ≤ 2.0 s at the proposed count. If 600,000 fails
+      anywhere, propose the highest count that passes everywhere. *Status: S23 Ultra and A56
+      reported, 1 run each, no low-end phone yet (`KDF_BENCHMARK.md` §7).*
+- [ ] An iPhone result before any iOS build is published.
 - [ ] All tests in §8 pass, including interruption and mixed-version cases.
 - [ ] The server guard has run in shadow mode for 14 days (Stage 1) with the §5 exit gate met.
-- [ ] Self-heal (§6.4) works against a deliberately broken wrap on a test account.
+- [ ] Self-heal and the emergency window work end to end against a deliberately broken wrap
+      on a **test account**, and the audit log shows every step.
 - [ ] A restore drill from the database backup has been done.
 
 ### 7.3 Security checks before enabling the server flag
@@ -281,7 +443,11 @@ Layered defences:
 - [ ] The header cannot be used to **gain** an upgrade: a forged "new" build only affects the
       caller's own account (the upgrade also needs the password and a wrap the caller can
       open), and rule 3 still demands no legacy sightings.
-- [ ] The guard fails **closed**: any error computing eligibility means "not eligible".
+- [ ] The guard fails **closed**: any error computing eligibility means "not eligible"; an
+      unconfigured platform, an account with no install record, and an account observed for
+      less than 90 days are each tested as not eligible.
+- [ ] The repair routes are off by default, rate-limited, audited, and cannot lower a count
+      outside an operator window; the audit table refuses `UPDATE` and `DELETE`.
 - [ ] No new secret, token change, or log of the header contents beyond counts.
 - [ ] Rate limits cover the new paths (rewrap: 5 an hour already; ingestion is throttled).
 - [ ] `bandit`, `pip-audit`, the backend suite, and the Flutter suite are green; a regression
@@ -290,7 +456,7 @@ Layered defences:
 - [ ] A staged dry run: on a **copy** of the schema (never production), run the migration
       twice and confirm it is idempotent and that the table and policy exist.
 
-## 8. Exact changes required (no code written yet)
+## 8. Exact changes required (only M-0 is built; everything else is a plan)
 
 ### 8.1 Addendum to Release A (before it ships)
 
@@ -298,6 +464,7 @@ Layered defences:
 | --- | --- |
 | `lib/core/net/api_client.dart` (new) | one helper that adds `Content-Type`, `Authorization` and `X-Waffr-Client`; replaces the raw `http` calls |
 | `lib/core/net/client_identity.dart` (new) | version and build via the native `info` call; install id in prefs |
+| `lib/core/net/update_notice.dart`, a small banner widget (new, if N-2 is approved) | the §3.6 notice: reads `client_policy`, 7-day throttle, dismissible, compile-time `https` link on an allowlist |
 | `lib/core/sync/auth_session.dart`, `sync_service.dart` | use the helper (7 call sites) |
 | `lib/data/services/local_data_reset.dart` | clear the install id on reset |
 | `test/core/net/*` (new) | header format; missing `info`; no header on the news feed; reset clears the id |
@@ -321,6 +488,17 @@ Layered defences:
 | `backend/tests/test_data_key_rewrap.py` | flag off by default; 403 when ineligible |
 | `.github/workflows/backend.yml` | unchanged |
 | `SECURITY.md`, `backend/README.md`, `backend/routers/README.md` | settings table, guard, runbook |
+
+**Additional server changes from your answers:**
+
+| File | Change |
+| --- | --- |
+| `backend/key_upgrade.py` | **exists (flag only)**; add eligibility, cohort and allowlist later |
+| `backend/models.py`, `database.py` | also `users.first_client_seen_at`; `KeyRecoveryAudit` model and trigger |
+| `backend/main.py` | `client_policy` in `/auth/me` (soft notice); `POST /auth/key/repair-request` and `POST /auth/key/repair` behind `KEY_REPAIR_ENABLED` (off by default) |
+| `backend/tools/open_repair_window.py` (new) | the §6.5 operator command |
+| `backend/tests/test_key_repair.py` (new) | switch off by default; slot expiry and daily cap; no lowering outside a window; compare-and-swap; email notices; audit rows and the append-only trigger |
+| `backend/tests/test_client_policy.py` (new) | notice number only, no text or links; absent when unset |
 
 ### 8.3 Release B: app
 
@@ -348,68 +526,54 @@ Layered defences:
 
 ## 9. Before any merge or deployment of the current branch
 
-| ID | Item | Why |
+| ID | Item | Status |
 | --- | --- | --- |
-| **M-0** | Gate `POST /auth/key/rewrap` behind `KEY_UPGRADE_ENABLED` (default **off**) and return 403 when off. This is a few lines and a test. | F-6: otherwise deploying the branch enables self-upgrades before the guard exists |
-| M-1 | Add the header and install id to Release A (§8.1) | F-1, F-2 |
-| M-2 | Close C-1 (database backup) | recovery layer 6 |
+| **M-0** | Gate `POST /auth/key/rewrap` behind `KEY_UPGRADE_ENABLED` (off by default; 403 before the password is read) | **Done on the branch, not merged or deployed.** `backend/key_upgrade.py`, `main.py`, `SECURITY.md`; 26 tests in `test_key_upgrade_flag.py` and the existing rewrap tests now turn the switch on explicitly. Verified that the new tests fail without the gate. Backend suite: 481 passed |
+| M-1 | Add the header, install id and notice code to Release A (§8.1) | planned, needs N-2 |
+| M-2 | Close C-1 (database backup) | open; yours to do |
+| M-3 | Release signing key and the APK update path (§7.1, R-5) | open; needs your confirmation (N-3) |
 
-M-0 changes the key-upgrade behaviour on the server, so it is one of the changes you asked
-me to hold. It is the **only** thing I would change before merging, and I need your word to
-do it (Q-2).
+Deploying the current backend would **not** enable upgrades: the switch is off unless
+`KEY_UPGRADE_ENABLED` is set in production, and `render.yaml` does not set it.
 
 ## 10. Risks
 
-| Risk | Impact | Likelihood | Mitigation |
-| --- | --- | --- | --- |
-| Old app meets an upgraded wrap | slow sign-in (never lockout) | low with the guard; the dormant-phone tail remains | guard window; `legacy_after_upgrade` metric; pause threshold; support note |
-| Bad wrap written | possible loss of access on that account | very low | round trip, Dart cross-check, compare-and-swap, self-heal, backup file, database backup |
-| Dart cross-check never completes on the slowest phones | those phones do not upgrade | medium on very low-end | a different device of the same account can upgrade it; accepted (D-4) |
-| Native write path (if allowed) has an input-dependent bug | wrong key written | very low | known-answer test at the target count; the 15 vectors; dual check on rewrap |
-| Header spoofing | none that grants anything | n/a | server decides; the guard fails closed |
-| New table or throttle adds load | latency | low | throttled background writes; shadow-mode measurement |
-| Release A adoption stalls | Release B delayed | medium (distribution unknown) | the server measures it; forced-update message is a separate decision (Q-5) |
-| Env var change restarts Render | brief downtime | certain, small | schedule it; D-6 alternative |
-| Backup saving slow at 600,000 via Dart | slow save on low-end | medium | D-4 |
+| # | Risk | Impact | Likelihood | Mitigation |
+| --- | --- | --- | --- | --- |
+| R-1 | Old app meets an upgraded wrap | slow sign-in, never lockout | low with the strict guard; the dormant (> 90 days) phone remains | rules 4–6; `legacy_after_upgrade` metric; pause at 0.5% |
+| R-2 | Bad wrap written | possible loss of access on that account | very low | round trip, Dart cross-check, compare-and-swap, self-heal, §6.5, backup file, database backup |
+| R-3 | Dart cross-check never completes on the slowest phones | those phones do not upgrade | medium on very low-end | another device of the same account can upgrade it; accepted (D-4) |
+| R-4 | Native write path has an input-dependent bug | wrong key written | very low | known-answer test at the target count; 15 vectors; Dart cross-check on rewrap |
+| R-5 | **APK updates fail** because the APK is debug-signed, or signed with a different key | a user must uninstall; a **guest could lose local data** | medium without a check | release-key check in §7.1; guests are told to save a backup file first |
+| R-6 | Adoption stalls (manual updates) | Release B delayed; thresholds never met | high | soft notice, outreach, thresholds never lowered without approval |
+| R-7 | Users on apps older than Release A cannot be nudged in-app | they stay on the old path | certain | outreach outside the app; the guard keeps their accounts at 210,000 while they are seen |
+| R-8 | An operator abuses the emergency window | an account's wrap replaced | very low | two proofs, your written approval, owner email notices, append-only audit log, 1 window at a time, daily caps |
+| R-9 | New table or throttle adds load | latency | low | throttled background writes; shadow-mode measurement |
+| R-10 | Env var change restarts Render | brief downtime | certain, small | schedule it with your approval (§5.1) |
+| R-11 | Backup saving slow at 600,000 via Dart | slow save on low-end | medium | D-4 (c) |
 
-## 11. Decisions requiring your approval
+## 11. Open items (new, from your answers)
 
-| # | Decision | Recommendation |
+| # | Item | My recommendation |
 | --- | --- | --- |
-| **D-1** | Add the client header and install id to **Release A** before it ships (§3.1, §8.1) | **Yes.** It is the only way to tell Release A apps from older ones. Without it, the guard cannot work and adoption cannot be measured server-side |
-| **D-2** | Add the `client_installs` table, `users.legacy_seen_at` and the throttled recorder (§3.2). Additive schema change | **Yes**, deployed dark (Stage 1) with the flag off |
-| **D-3** | Adoption threshold: **≥ 95% of active installs on Release A+ and ≥ 85% of accounts passing the guard, held 30 days**, before any upgrade | **Yes** as written. It can be made stricter, not looser, without losing the guard's protection |
-| **D-4** | The write path at 600,000 and the cross-check budget. **(a)** keep Dart writes, verified against native (slow on low-end: seconds to ~15 s for sign-up, password change and backup saving). **(b)** native writes behind a known-answer test at the target count. **(c)** (b) for sign-up, password change and backup files, but the **rewrap** keeps the Dart cross-check, with a 90-second budget | **(c).** Keeps the strictest check where an existing good wrap is replaced, and avoids long waits elsewhere |
-| **D-5** | Guard window **90 days** and the 0.5% `legacy_after_upgrade` pause threshold | **90 days** (3× the 30-day activity window and about 13 token lifetimes) |
-| **D-6** | The kill switch as an **environment variable** (restart on change) or a **settings row** (instant, more code) | **Environment variable** at first; revisit if you want instant control |
-| **D-7** | Self-heal with a `repair` rewrap (§6.4) | **Yes.** It is the best recovery for the one failure that can lose access |
-
-### Questions I need answered
-
-- **Q-1.** How is the app distributed: Google Play, the App Store or TestFlight, APKs from CI,
-  or a mix? That decides whether store dashboards can cross-check §4.
-- **Q-2.** May I do **M-0** (flag-gate the rewrap route, default off) before the branch is
-  merged or deployed? It is the one server key-upgrade change needed to make a deploy safe.
-- **Q-3.** Which app versions must a device be on before it may **start** an upgrade, and which
-  versions may the account's **other** devices be on? I recommend: the upgrading device must run
-  **Release B or later** (it is the one that writes the wrap), and every other device seen in the
-  guard window must run **Release A or later** (Release A can already read any count, it just
-  never writes one). That is the rule in §3.3.
-- **Q-4.** Is a 90-day guard window acceptable, given it delays accounts that used an old app
-  within that time?
-- **Q-5.** If Release A adoption stalls, may a later release show a soft "please update" notice?
-  (Separate decision; nothing here forces updates.)
-- **Q-6.** Who changes production settings and when? Each stage in §5 needs a setting changed
-  and your explicit go-ahead.
-- **Q-7.** Is a one-off downgrade of a single account's wrap (with your approval each time) an
-  acceptable emergency tool, instead of a route?
+| **N-1** | What is the **official page** users download APKs from? The soft notice needs one compile-time `https` link | give me the URL; the app will only open that host |
+| **N-2** | Add the **soft-update notice code to Release A**, so A users can be nudged later (§3.6) | yes; it is dormant until the server sends a number |
+| **N-3** | Confirm **APKs are signed with the release key** (the `ANDROID_KEYSTORE_*` secrets are set in CI) and that this is the key on installed copies | confirm before Release A is published (R-5) |
+| **N-4** | Retention for the recovery audit log | at least 2 years |
+| **N-5** | Confirm **iOS has no users**, so its guard stays unconfigured and the iPhone benchmark is deferred | yes |
+| **N-6** | Approve the Arabic text of the update notice and of the owner emails for repair windows | I will draft it for review |
+| **N-7** | Who is the second pair of eyes for an emergency window? You approve each one in writing; if you want a named second person, say so | you only, unless you name someone |
 
 ## 12. What happens next
 
-1. You answer the questions and approve D-1 to D-7 (or change them).
-2. I make the **Release A addendum** (§8.1) and, with Q-2, **M-0** — still not merging or deploying.
-3. Release A is built and checked on devices (more S23 runs, a low-end Android, an older iPhone).
-4. Only after Release A is out and adoption is measured (§4) do I write the server part
-   (§8.2) and deploy it dark; Release B's app (§8.3) comes after the Stage 1 exit gate.
+1. **Now:** the rewrap switch is on the branch (off by default, 26 tests). Nothing else in
+   Release B has started, and nothing is merged or deployed.
+2. You answer N-1 to N-7. I then make the **Release A addendum** (§8.1): header, install id
+   and, if you approve, the notice.
+3. Release A is built and checked on devices (a low-end Android phone is still missing), and
+   **N-3 and C-1 are closed**, before it is published.
+4. Only after Release A is out do I write the server part (§8.2, deployed dark with your
+   approval), then the 90-day observation starts.
+5. Release B's app and the rollout follow the stages in §5, each step approved by you (§5.1).
 
 Nothing in this plan starts without your explicit approval.

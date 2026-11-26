@@ -73,6 +73,7 @@ from rate_limit import (
 from client_address import client_ip
 from row_security import OWNED_TABLES, bind_user
 from security_log import configure_logging, log_event
+import key_upgrade
 import security_middleware
 from routers.notifications import router as notifications_router
 from routers.online import router as online_router
@@ -515,7 +516,15 @@ def rewrap_data_key(
     password change, but signs no device out. The copy is replaced only if
     it is still the one the app opened (409 otherwise: another device, a
     password change or a reset changed it meanwhile).
+
+    Off by default: see key_upgrade.enabled().
     """
+    # Off unless KEY_UPGRADE_ENABLED is set (key_upgrade.py): refused before
+    # the password is read, so nothing can change while upgrades are not
+    # approved. A 403 never signs a device out.
+    if not key_upgrade.enabled():
+        log_event("data_key_rewrap_refused", request=request, user_id=current_user.id, reason="disabled")
+        raise HTTPException(status_code=403, detail=key_upgrade.REFUSED_DETAIL)
     enforce(request, f"data-key-rewrap:user:{current_user.id}", DATA_KEY_REWRAP_USER)
     user_id = current_user.id
     if not current_user.wrapped_key:

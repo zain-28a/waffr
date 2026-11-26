@@ -30,6 +30,8 @@ if TEST_DATABASE_URL:
     os.environ.setdefault("SECRET_KEY", "test-secret-" + "x" * 40)
     os.environ.pop("ENABLE_API_DOCS", None)
     os.environ.pop("CORS_ORIGINS", None)
+    # Key upgrades are off unless a test turns them on.
+    os.environ.pop("KEY_UPGRADE_ENABLED", None)
     os.environ["TRUST_PROXY_HEADERS"] = "0"
     for name in ("SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM"):
         os.environ[name] = "test"

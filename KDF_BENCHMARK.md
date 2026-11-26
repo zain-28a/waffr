@@ -111,6 +111,7 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 | Date | Device | Chip | Android | Run | Self-test | Vectors | Native 210k (median / worst) | Native 600k (median / worst) | Key factory 600k worst | Dart 210k worst | Dart 600k worst |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-26 | Samsung Galaxy S23 Ultra (SM-S918B) | Snapdragon 8 Gen 2 (SM8550) | 17 (SDK 37) | 1 of 3 | passed | 15/15 match | 85 / 86 ms | 275 / 275 ms | 472 ms | 1,261 ms | 13,623 ms (others 3,387 and 3,620) |
+| 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 1 of 3 | passed | 15/15 match | 81 / 82 ms | 325 / 326 ms | 586 ms | 1,577 ms | 4,505 ms (others 4,201 and 4,296) |
 
 ### Reading of run 1 (S23 Ultra)
 
@@ -131,3 +132,20 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
   estimate only), a Cortex-A53 phone could be 5–7× slower. That puts native 600,000
   around 1.4–2.0 s, right at the 2 s target. **The low-end run is the one that decides
   Release B.**
+
+### Reading of run 1 (Galaxy A56 5G, a mid-range phone)
+
+- **Correctness: confirmed again** on a second chipset (Exynos) and Android version: all 15
+  vectors match, self-test passed, provider AndroidOpenSSL.
+- **Native at 600,000: 325 ms worst**, about 6× under the 2 s target. At 210,000 (Release A):
+  81 ms.
+- **Pure Dart at 600,000: 4.2–4.5 s**, steady this time (no 13 s outlier). This is the cost
+  of writing a new wrap through Dart (decision D-4), on a **mid-range** phone.
+- **Ratios hold across both phones:** native 600,000 is about 1.2× slower on the A56 than on
+  the S23 Ultra, Dart about 1.2×, and Dart is consistently about 13× slower than native.
+- **Still not the low end.** To miss the 2 s target, native would have to run about 6×
+  slower than on this mid-range phone. That is possible on the weakest hardware (an
+  estimate, not a measurement), so **the low-end Android run remains the deciding one**.
+- **Gate status for Release B** (needs 3 Android phones incl. one low-end, 3 runs each):
+  2 phones reported (S23 Ultra, A56), **1 run each**, no low-end phone yet. iOS is not
+  distributed (see `RELEASE_B_READINESS_PLAN.md`), so the iPhone gate applies only when iOS is.
