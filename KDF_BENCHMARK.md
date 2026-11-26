@@ -210,7 +210,7 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 ### Reading of run 2 (Galaxy S23 Ultra, second run)
 
 - **All 15 vectors match and the self-test passed again.**
-- **Native 600,000: 232–235 ms (worst 235)**, consistent with run 1 (worst 286 ms earlier was run 1's
-  dispersion; the median is 233 ms). Still about 8× under the 2 s target.
+- **Native 600,000: 232–235 ms (worst 235)**, consistent with run 1 (median 275 ms, worst 275 ms).
+  Still about 8× under the 2 s target.
 - **Pure Dart 600,000: 3.0–3.3 s**, a little faster than run 1 (3.4–3.6 s, with one outlier earlier).
 - **Gate status for the S23 Ultra:** 2 of 3 runs. Still missing: run 3.
