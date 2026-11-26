@@ -14,7 +14,7 @@ refresh the app lock and to return to login after signing out.
 | `privacy_security_screen.dart` | `PrivacySecurityScreen` | Controls only: the app-lock switch and the local data reset. No explanatory copy (by request). |
 | `about_screen.dart` | `AboutScreen` | "عن وفّر". Empty for now (by request). |
 | `help_screen.dart` | `HelpScreen` | Help center: a card that restarts the interactive tutorial, a search box (`searchHelp`, Arabic letter variants folded by `foldArabic`), and the questions by topic, each opening in place. |
-| `help_content.dart` | `helpSections` | The help copy: fourteen topics from getting started to troubleshooting. Describes only what the app does; update it with the feature. |
+| `help_content.dart` | `helpSections` | The help copy: fourteen topics from getting started to troubleshooting. It does not repeat the privacy explanations removed from the Privacy page (what syncs, encryption on the server). Describes only what the app does; update it with the feature. |
 | `sheets/` | | Currencies and income sheets; see `sheets/README.md`. |
 
 How it connects:
