@@ -17,6 +17,7 @@ from api_schemas import (
 )
 from auth import get_current_user
 from crud_utils import (
+    RecordId,
     as_utc,
     as_utc_or_now,
     commit_or_existing,
@@ -196,7 +197,7 @@ def create_goal(
 
 @router.get("/savings-goals/{goal_id}", response_model=SavingsGoalOut)
 def get_goal(
-    goal_id: int,
+    goal_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -207,7 +208,7 @@ def get_goal(
 
 @router.patch("/savings-goals/{goal_id}", response_model=SavingsGoalOut)
 def update_goal(
-    goal_id: int,
+    goal_id: RecordId,
     data: SavingsGoalUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -255,7 +256,7 @@ def update_goal(
 
 @router.delete("/savings-goals/{goal_id}", status_code=204)
 def delete_goal(
-    goal_id: int,
+    goal_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -322,7 +323,7 @@ def create_transfer(
 
 @router.get("/savings-transfers/{transfer_id}", response_model=SavingsTransferOut)
 def get_transfer(
-    transfer_id: int,
+    transfer_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -333,7 +334,7 @@ def get_transfer(
 
 @router.delete("/savings-transfers/{transfer_id}", status_code=204)
 def delete_transfer(
-    transfer_id: int,
+    transfer_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

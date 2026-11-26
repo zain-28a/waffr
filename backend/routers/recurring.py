@@ -10,6 +10,7 @@ from api_schemas import (
 )
 from auth import get_current_user
 from crud_utils import (
+    RecordId,
     as_utc_or_now,
     commit_or_existing,
     empty_to_none,
@@ -98,7 +99,7 @@ def create_recurring(
 
 @router.get("/{expense_id}", response_model=RecurringExpenseOut)
 def get_recurring(
-    expense_id: int,
+    expense_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -108,7 +109,7 @@ def get_recurring(
 
 @router.patch("/{expense_id}", response_model=RecurringExpenseOut)
 def update_recurring(
-    expense_id: int,
+    expense_id: RecordId,
     data: RecurringExpenseUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -141,7 +142,7 @@ def update_recurring(
 
 @router.delete("/{expense_id}", status_code=204)
 def delete_recurring(
-    expense_id: int,
+    expense_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

@@ -99,9 +99,18 @@ def no_network(monkeypatch):
     def refuse(*_args, **_kwargs):
         raise RuntimeError("network access is disabled in the tests")
 
+    real_getaddrinfo = socket.getaddrinfo
+
+    def local_only(host, *args, **kwargs):
+        # psycopg looks up the database host when the pool opens a new
+        # connection; only the loopback names are allowed.
+        if host in ("localhost", "127.0.0.1", "::1"):
+            return real_getaddrinfo(host, *args, **kwargs)
+        return refuse()
+
     monkeypatch.setattr(socket.socket, "connect", refuse)
     monkeypatch.setattr(socket.socket, "connect_ex", refuse)
-    monkeypatch.setattr(socket, "getaddrinfo", refuse)
+    monkeypatch.setattr(socket, "getaddrinfo", local_only)
     monkeypatch.setattr(socket, "create_connection", refuse)
 
 
@@ -124,6 +133,8 @@ def offline_services(monkeypatch):
 
     monkeypatch.setattr(password_reset, "send_code", no_email)
     monkeypatch.setattr(news_service, "fetch_feed", no_feed)
+    # Each test may fill an empty news table once.
+    monkeypatch.setattr(news_service, "_last_fill_attempt", float("-inf"))
 
 
 @pytest.fixture

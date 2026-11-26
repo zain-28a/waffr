@@ -11,6 +11,7 @@ import re
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import ValidationError
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
@@ -33,6 +34,7 @@ from crud_utils import (
 )
 from database import get_db, scrub_private_text
 from legacy_photo import photo_meta
+from safe_errors import log_error
 from category_model import ExpenseCategory
 from goal_model import SavingsGoal, SavingsTransfer
 from models import Notification, User, UserSettings
@@ -71,7 +73,7 @@ CLOCK_SKEW = timedelta(minutes=5)
 _LOOKUP_CHUNK = 1000
 
 # Postgres advisory lock class for "a sync of this user is running".
-_SYNC_LOCK_CLASS = 7461
+SYNC_LOCK_CLASS = 7461
 
 
 def _newer_or_equal(
@@ -96,11 +98,24 @@ def _newer_or_equal(
 
 def _parse_many(model, items: list[dict]):
     parsed = []
-    for item in items:
+    for index, item in enumerate(items):
         try:
             parsed.append(model.model_validate(item))
+        except ValidationError as error:
+            # Where and why, never the rejected values (private text, amounts).
+            raise HTTPException(
+                status_code=422,
+                detail=[
+                    {
+                        "type": problem.get("type"),
+                        "loc": [model.__name__, index, *problem.get("loc", ())],
+                        "msg": problem.get("msg"),
+                    }
+                    for problem in error.errors()
+                ],
+            ) from error
         except Exception as error:
-            raise HTTPException(status_code=422, detail=str(error)) from error
+            raise HTTPException(status_code=422, detail="Invalid row") from error
     return parsed
 
 
@@ -685,7 +700,7 @@ def sync_changes(
         # would race the first on the same rows.
         locked = db.scalar(
             text("SELECT pg_try_advisory_xact_lock(:kind, :user_id)"),
-            {"kind": _SYNC_LOCK_CLASS, "user_id": user_id},
+            {"kind": SYNC_LOCK_CLASS, "user_id": user_id},
         )
         if not locked:
             raise HTTPException(
@@ -983,6 +998,6 @@ def sync_changes(
         ) from error
     except Exception as error:
         db.rollback()
-        # The details name tables and SQL; they stay in the server log.
-        logger.exception("sync failed for user %s", user_id)
+        # The type and stack go to the log; the message can quote row values.
+        log_error("sync failed for user %s", error, user_id)
         raise HTTPException(status_code=500, detail="Sync failed") from error

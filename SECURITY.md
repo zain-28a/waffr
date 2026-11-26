@@ -73,12 +73,15 @@ seconds for a slot gets `503` with `Retry-After`.
 The counts live in the API's memory. Render runs one instance, so that is
 enough. With more instances or workers, move them to Redis first.
 
-On Render the client address comes from the first `X-Forwarded-For` entry
-(set `TRUST_PROXY_HEADERS=0` to use the socket address instead). Render
-appends to a header the client sent instead of replacing it, so a client can
-forge that entry and dodge the per-address limits (BACKEND_AUDIT.md, M-2,
-still open). The per-email, per-account and total limits still hold, so brute
-force stays bounded either way.
+On Render the client address comes from `True-Client-IP`, which Render's
+Cloudflare edge sets to the connecting address and overwrites when a client
+sends its own. Without it, set `TRUSTED_PROXY_HOPS` to the number of proxies
+that append to `X-Forwarded-For`, and the entry that many places from the
+right is used. Only as a last resort is the left-most entry used, which a
+client can forge (Render keeps a forged `X-Forwarded-For` and appends to it).
+`TRUST_PROXY_HEADERS=0` uses the socket address instead. Wrong passwords are
+counted as each attempt arrives, so simultaneous guesses cannot run past the
+limits.
 
 ## The 20-point checklist
 
@@ -147,7 +150,8 @@ force stays bounded either way.
 | `SECRET_KEY` | random per process | Signs tokens. Render generates it. Use 32+ characters. |
 | `ENABLE_API_DOCS` | off | `1` serves `/docs`, `/redoc`, `/openapi.json`. |
 | `CORS_ORIGINS` | empty | Comma-separated origins for a web build. |
-| `TRUST_PROXY_HEADERS` | on when `RENDER=true` | Read the client address from `X-Forwarded-For`. |
+| `TRUST_PROXY_HEADERS` | on when `RENDER=true` | Read the client address from proxy headers (`True-Client-IP`, then `X-Forwarded-For`). |
+| `TRUSTED_PROXY_HOPS` | 0 | Proxies appending to `X-Forwarded-For`; used only when `True-Client-IP` is missing. |
 | `PASSWORD_HASH_CONCURRENCY` | 2 | Password hashes at once (19 MiB each). Raise only with more memory. |
 | `SYNC_CONCURRENCY` | 2 | Syncs processed at once. |
 | `DB_STATEMENT_TIMEOUT_MS` | 30000 | Longest single query; startup migrations have none. |

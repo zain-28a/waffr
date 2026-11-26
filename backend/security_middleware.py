@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
 from rate_limit import RateLimitMiddleware, bearer_user
+from safe_errors import SafeErrorMiddleware
 
 # A first sync uploads the whole ledger in one request; nothing else is big.
 DEFAULT_MAX_BODY_BYTES = 256 * 1024
@@ -212,3 +213,5 @@ def install(app: FastAPI) -> None:
             max_age=600,
         )
     app.add_middleware(SecurityHeadersMiddleware)
+    # Outermost: anything that escapes becomes a plain 500 with a clean log.
+    app.add_middleware(SafeErrorMiddleware)

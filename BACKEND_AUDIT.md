@@ -345,7 +345,7 @@ Docs updated: `SECURITY.md` (limits, lockout, new settings), `backend/routers/RE
 ### Still open (not approved or not doable from code)
 
 - **C-1, H-3, M-5 (production side), M-7**: these need you; see section 8.
-- **M-2** `X-Forwarded-For`: needs one header capture on Render before changing which entry is trusted.
+- **M-2** `X-Forwarded-For`: fixed in the pre-merge verification as P-1 (`SECURITY_VERIFICATION.md`): `True-Client-IP` is used first. It still needs one check on Render after the deploy.
 - **L-6** email verification at sign-up, **L-7** silent coercion and rounding, **L-8** time-zone dependent source ids (app), **L-9** growth and purging, **L-10** pinning the Python version on Render (a deploy change), **L-11** unused REST routes, **L-12** sign out everywhere.
 - **App follow-up for M-1**: a phone with a wrong clock keeps its own future-stamped copy of a row, because the app only takes strictly newer server rows. Other devices and the server stay correct. A fix belongs in the app (`sync_merge.dart`).
 

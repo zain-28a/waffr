@@ -391,20 +391,20 @@ def test_a_second_sync_of_the_same_account_waits_its_turn(client, alice):
     from sqlalchemy import text
 
     from database import engine
-    from routers.sync import _SYNC_LOCK_CLASS
+    from routers.sync import SYNC_LOCK_CLASS
 
     user_id = system_scalar("SELECT id FROM users")
     with engine.connect() as other:
         other.execute(
             text("SELECT pg_advisory_lock(:kind, :user_id)"),
-            {"kind": _SYNC_LOCK_CLASS, "user_id": user_id},
+            {"kind": SYNC_LOCK_CLASS, "user_id": user_id},
         )
         try:
             busy = client.post("/sync", json=sync_payload(), headers=bearer(alice))
         finally:
             other.execute(
                 text("SELECT pg_advisory_unlock(:kind, :user_id)"),
-                {"kind": _SYNC_LOCK_CLASS, "user_id": user_id},
+                {"kind": SYNC_LOCK_CLASS, "user_id": user_id},
             )
     assert busy.status_code == 409
     assert busy.headers["Retry-After"]
@@ -416,20 +416,20 @@ def test_another_accounts_sync_is_not_blocked(client, alice, bob):
     from sqlalchemy import text
 
     from database import engine
-    from routers.sync import _SYNC_LOCK_CLASS
+    from routers.sync import SYNC_LOCK_CLASS
 
     alice_id = system_scalar("SELECT id FROM users WHERE email = 'alice@example.com'")
     with engine.connect() as other:
         other.execute(
             text("SELECT pg_advisory_lock(:kind, :user_id)"),
-            {"kind": _SYNC_LOCK_CLASS, "user_id": alice_id},
+            {"kind": SYNC_LOCK_CLASS, "user_id": alice_id},
         )
         try:
             sync(client, bob)
         finally:
             other.execute(
                 text("SELECT pg_advisory_unlock(:kind, :user_id)"),
-                {"kind": _SYNC_LOCK_CLASS, "user_id": alice_id},
+                {"kind": SYNC_LOCK_CLASS, "user_id": alice_id},
             )
 
 

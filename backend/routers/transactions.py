@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from api_schemas import TransactionCreate, TransactionOut, TransactionUpdate
 from auth import get_current_user
 from crud_utils import (
+    RecordId,
     apply_frequency,
     as_utc_or_now,
     commit_or_existing,
@@ -116,7 +117,7 @@ def create_transaction(
 
 @router.get("/{transaction_id}", response_model=TransactionOut)
 def get_transaction(
-    transaction_id: int,
+    transaction_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -127,7 +128,7 @@ def get_transaction(
 
 @router.patch("/{transaction_id}", response_model=TransactionOut)
 def update_transaction(
-    transaction_id: int,
+    transaction_id: RecordId,
     data: TransactionUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -163,7 +164,7 @@ def update_transaction(
 
 @router.delete("/{transaction_id}", status_code=204)
 def delete_transaction(
-    transaction_id: int,
+    transaction_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

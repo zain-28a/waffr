@@ -12,9 +12,10 @@ from contextlib import asynccontextmanager, suppress
 from datetime import timedelta
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from sqlalchemy import delete, text
-from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy import delete, or_, text, update
+from sqlalchemy.exc import DataError, IntegrityError, OperationalError
 from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 from sqlalchemy.orm import Session
 
@@ -77,7 +78,7 @@ from routers.recurring import router as recurring_router
 from routers.savings import router as savings_router
 from routers.settings import router as settings_router
 from routers.shopping import router as shopping_router
-from routers.sync import router as sync_router
+from routers.sync import SYNC_LOCK_CLASS, router as sync_router
 from routers.transactions import router as transactions_router
 
 _MODEL_MODULES = (
@@ -165,6 +166,35 @@ async def _database_unavailable(request: Request, error: Exception):
         status_code=503,
         headers={"Retry-After": "10"},
     )
+
+
+@app.exception_handler(DataError)
+async def _value_out_of_range(request: Request, error: DataError):
+    """A value Postgres cannot hold (e.g. an id past the integer range): 422.
+
+    Request bodies and ids are checked before this; it is the backstop.
+    """
+    logging.getLogger("waffr.db").warning(
+        "value refused by the database on %s %s: %s",
+        request.method,
+        request.url.path,
+        type(getattr(error, "orig", error)).__name__,
+    )
+    return JSONResponse({"detail": "Invalid value"}, status_code=422)
+
+
+@app.exception_handler(RequestValidationError)
+async def _validation_failed(request: Request, error: RequestValidationError):
+    """422 with where and why, but never the rejected value itself.
+
+    FastAPI's default echoes the input, which can be a password or a row of
+    private text. The app reads only ``detail[0]["msg"]``.
+    """
+    detail = [
+        {"type": item.get("type"), "loc": list(item.get("loc", ())), "msg": item.get("msg")}
+        for item in error.errors()
+    ]
+    return JSONResponse({"detail": detail}, status_code=422)
 
 
 @app.get("/")
@@ -283,9 +313,7 @@ def _failure_keys(request: Request, email: str) -> tuple[str, str]:
 
 
 def _login_failed(request: Request, email: str, user_id: int | None) -> HTTPException:
-    per_ip, per_email = _failure_keys(request, email)
-    limiter.hit(per_ip, LOGIN_FAILURES_EMAIL_IP)
-    limiter.hit(per_email, LOGIN_FAILURES_EMAIL)
+    # The attempt was already counted when it came in (see login).
     log_event(
         "login_failed",
         request=request,
@@ -307,13 +335,15 @@ def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
     and MAX_FAILED_LOGINS in a row lock sign-in for LOGIN_LOCKOUT.
     """
     enforce_ip(request, "login", LOGIN_IP)
+    # Every attempt is counted as it comes in, before the password is
+    # checked, and a right password gives the attempts back. Counting only
+    # after a wrong password let a burst of simultaneous guesses all pass.
     # Counted whether or not the account exists, so the 429 does not reveal
     # which emails are registered.
     per_ip, per_email = _failure_keys(request, data.email)
-    wait = max(
-        limiter.check(per_ip, LOGIN_FAILURES_EMAIL_IP),
-        limiter.check(per_email, LOGIN_FAILURES_EMAIL),
-    )
+    wait = limiter.hit(per_ip, LOGIN_FAILURES_EMAIL_IP)
+    if wait <= 0:
+        wait = limiter.hit(per_email, LOGIN_FAILURES_EMAIL)
     if wait > 0:
         log_event("login_throttled", request=request, level=logging.WARNING, email=data.email)
         raise too_many(wait)
@@ -338,16 +368,25 @@ def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
     db.rollback()
     matches, upgraded_hash = verify_and_upgrade(data.password, stored_hash)
 
-    # Wrong password: count it, and lock after MAX_FAILED_LOGINS in a row.
-    user = db.get(User, user_id)
+    # Wrong password: count it in the database (one atomic increment, so
+    # simultaneous guesses are all counted) and lock after MAX_FAILED_LOGINS.
     if not matches:
-        user.failed_login_count += 1
-        if user.failed_login_count >= MAX_FAILED_LOGINS:
-            user.failed_login_count = 0
-            user.locked_until = now + LOGIN_LOCKOUT
-            log_event("account_locked", request=request, level=logging.WARNING, user_id=user.id)
+        failures = db.scalar(
+            update(User)
+            .where(User.id == user_id)
+            .values(failed_login_count=User.failed_login_count + 1)
+            .returning(User.failed_login_count)
+        )
+        if failures is not None and failures >= MAX_FAILED_LOGINS:
+            db.execute(
+                update(User)
+                .where(User.id == user_id)
+                .values(failed_login_count=0, locked_until=now + LOGIN_LOCKOUT)
+            )
+            log_event("account_locked", request=request, level=logging.WARNING, user_id=user_id)
         db.commit()
-        raise _login_failed(request, data.email, user.id)
+        raise _login_failed(request, data.email, user_id)
+    user = db.get(User, user_id)
 
     # Right password: clear the failure count and any expired lock, and
     # rewrite a hash made with older Argon2 settings. The token version stays,
@@ -431,12 +470,25 @@ def store_data_key(
 ):
     """Store the wrapped data key once; 409 when one is already set."""
     enforce(request, f"data-key:user:{current_user.id}", DATA_KEY_USER)
-    # Set once. Replacing it would leave the encrypted rows unreadable.
-    if current_user.wrapped_key:
+    # Set once. Replacing it would leave the encrypted rows unreadable. The
+    # check and the write are one statement, so of two devices racing to set
+    # their own key exactly one wins and the other gets 409 and fetches it.
+    stored = db.execute(
+        update(User)
+        .where(
+            User.id == current_user.id,
+            or_(User.wrapped_key.is_(None), User.wrapped_key == ""),
+        )
+        .values(
+            key_salt=data.salt,
+            key_iterations=data.iterations,
+            wrapped_key=data.wrapped_key,
+        )
+        .execution_options(synchronize_session=False)
+    ).rowcount
+    if stored != 1:
+        db.rollback()
         raise HTTPException(status_code=409, detail="Data key already set")
-    current_user.key_salt = data.salt
-    current_user.key_iterations = data.iterations
-    current_user.wrapped_key = data.wrapped_key
     db.commit()
     db.refresh(current_user)
     log_event("data_key_set", request=request, user_id=current_user.id)
@@ -559,6 +611,12 @@ def delete_account(
     # every row goes or none does. Does not rely on ON DELETE CASCADE, which
     # older databases may lack, nor load the rows into memory.
     try:
+        # Wait for a sync of this account to finish, and keep new ones out
+        # until the rows are gone (same lock as routers/sync.py).
+        db.execute(
+            text("SELECT pg_advisory_xact_lock(:kind, :user_id)"),
+            {"kind": SYNC_LOCK_CLASS, "user_id": user_id},
+        )
         for model in ACCOUNT_DELETE_ORDER:
             db.execute(
                 delete(model)

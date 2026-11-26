@@ -20,6 +20,7 @@ from auth import burn_password_check, hash_password, user_id_for_email, verify_p
 from database import PRIVATE_TEXT_COLUMNS, SessionLocal, utc_now
 from models import User
 from row_security import bind_user
+from safe_errors import log_error
 from security_log import log_event
 
 CODE_TTL = timedelta(minutes=15)
@@ -119,9 +120,9 @@ def email_code(email: str) -> None:
             log_event("password_reset_email_failed", level=logging.ERROR, user_id=user_id)
             return
         log_event("password_reset_code_sent", user_id=user_id)
-    except Exception:
+    except Exception as error:
         db.rollback()
-        logging.getLogger("waffr.security").exception("password reset email failed")
+        log_error("password reset email failed", error)
     finally:
         db.close()
 

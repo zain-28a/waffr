@@ -55,6 +55,9 @@ engine = create_engine(
     pool_recycle=1800,
     pool_timeout=30,
     connect_args={"connect_timeout": 10},
+    # Error messages and logs show the SQL but not its values: those are
+    # amounts, emails and sealed text.
+    hide_parameters=True,
 )
 
 

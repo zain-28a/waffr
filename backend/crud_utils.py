@@ -5,12 +5,17 @@ idempotent creates, and the unit/period and kind/direction mappings.
 import re
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+from typing import Annotated
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Path
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from database import new_client_id, utc_now
+
+# A row id in a URL: a positive Postgres INTEGER. Anything else is a 422
+# before the database sees it.
+RecordId = Annotated[int, Path(ge=1, le=2_147_483_647)]
 
 UNIT_TO_PERIOD = {
     "day": "daily",
