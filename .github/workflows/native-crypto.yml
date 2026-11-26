@@ -71,7 +71,10 @@ jobs:
 
       - name: Build the benchmark APK
         run: |
+          # arm64 only: every benchmark phone so far is 64-bit ARM, and the
+          # smaller APK is what gets installed for testing.
           flutter build apk --release -t tool/kdf_benchmark.dart \
+            --target-platform android-arm64 \
             -P waffrBenchmark=true \
             --dart-define=WAFFR_COMMIT=${{ github.sha }}
           mkdir -p dist
