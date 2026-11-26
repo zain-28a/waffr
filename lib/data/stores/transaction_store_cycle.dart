@@ -6,8 +6,9 @@ part of 'transaction_store.dart';
 /// The balance cycle: the 100% the home bar measures against.
 ///
 /// A new cycle starts when income arrives on an empty balance (all of it
-/// spent, or the leftover just moved to savings), and at the start of every
-/// month when the income is monthly.
+/// spent, or the leftover just moved to savings), when an income is saved
+/// as the start of a new cycle, and at the start of every month when the
+/// income is monthly.
 extension BalanceCycle on TransactionStore {
   // Balances this close to zero count as empty (rounding).
   static const double _cycleEpsilon = 0.005;
@@ -18,6 +19,12 @@ extension BalanceCycle on TransactionStore {
           (item.transferKind == SavingsTransferKind.manual &&
               item.note == TransactionStore._carryOverNote));
 
+  // An income saved as the start of a new cycle, keeping the balance.
+  bool _startsNewCycle(WaffrTransaction item) =>
+      item.isIncome &&
+      (item.sourceId?.startsWith(TransactionStore.newCycleSourcePrefix) ??
+          false);
+
   // Transfers that close a cycle rather than spend from it.
   bool _closesCycle(WaffrTransaction item) =>
       _isCarryOver(item) ||
@@ -27,8 +34,9 @@ extension BalanceCycle on TransactionStore {
   /// Start of the current balance cycle, or null before the first reset.
   ///
   /// A new cycle starts when income arrives on an empty balance (all of it
-  /// spent, or the leftover just moved to savings), and at the start of
-  /// every month when the income is monthly.
+  /// spent, or the leftover just moved to savings), when an income is saved
+  /// as the start of a new cycle, and at the start of every month when the
+  /// income is monthly.
   DateTime? cycleStartFor(String currencyCode) {
     final code = Currencies.normalize(currencyCode);
     // Monthly income also restarts the cycle on the 1st, so the month and
@@ -54,7 +62,10 @@ extension BalanceCycle on TransactionStore {
     var running = 0.0;
     var saved = 0.0;
     for (final item in rows) {
-      if (item.isIncome && running <= _cycleEpsilon) start = item.dateTime;
+      if (item.isIncome &&
+          (running <= _cycleEpsilon || _startsNewCycle(item))) {
+        start = item.dateTime;
+      }
       if (item.isIncome) running += item.amount;
       if (item.isExpense) running -= item.amount;
       if (item.isSavingsIn) {

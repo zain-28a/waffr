@@ -67,6 +67,35 @@ void main() {
     expect(store.cycleSpent, 200);
   });
 
+  test('new income saved as a new cycle keeps the balance at 100%', () async {
+    await store.addIncome(amount: 1000);
+    await spend(400);
+    expect(store.remainingRatio, closeTo(0.6, 1e-9));
+
+    await store.addIncome(amount: 500, startNewCycle: true);
+
+    expect(store.balance, 1100);
+    expect(store.maxBalance, 1100);
+    expect(store.cycleSpent, 0);
+    expect(store.remainingRatio, 1);
+    expect(store.savingsBalance, 0);
+
+    await spend(110);
+    expect(store.remainingRatio, closeTo(0.9, 1e-9));
+  });
+
+  test('the new-cycle mark survives a reload from prefs', () async {
+    await store.addIncome(amount: 1000);
+    await spend(400);
+    await store.addIncome(amount: 500, startNewCycle: true);
+
+    store.resetCache();
+    await store.ensureLoaded();
+
+    expect(store.maxBalance, 1100);
+    expect(store.remainingRatio, 1);
+  });
+
   test('monthly income starts a new cycle every month', () async {
     await store.addIncome(amount: 1000, frequency: RecurringFrequency.monthly);
     final now = DateTime.now();
