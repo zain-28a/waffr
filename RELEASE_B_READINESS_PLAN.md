@@ -1,6 +1,6 @@
 # Release B readiness plan: raising the key-derivation count safely
 
-Date: 2026-11-26. Status: **updated with your approvals (D-1 to D-7, Q-1 to Q-7).
+Date: 2026-11-26. Status: **updated with your final decisions on N-1 to N-7 (§11).
 Release B has not started.** The only code change in this phase is the rewrap switch (M-0):
 off by default, tested, **not merged or deployed**. No iteration count, production setting,
 merge or deployment has changed.
@@ -28,6 +28,8 @@ background at sign-in.
 | Q-5 | Soft update notice | **allowed** | non-blocking, dismissible, no server-supplied links (§3.6) |
 | Q-6 | Production changes | **your explicit approval, every time** | change protocol in §5.1 |
 | Q-7 | Emergency single-account recovery | allowed **only** with strict verification and audit logging | §6.5 |
+
+The open items N-1 to N-7 are decided in §11 (one new item, N-8, came out of N-1).
 
 ## 1. What the inspection found
 
@@ -162,18 +164,26 @@ This is deliberate and is the price of the safest approach.
   no header. Reaching those users needs a message from you outside the app.
 - A phone on a new app that never talks to the server is not counted.
 
-### 3.6 Soft update notice (Q-5)
+### 3.6 Soft update notice (Q-5, N-1, N-2)
 
 - **Server:** `GET /auth/me` adds `client_policy: {"recommended_build": N}`, from
   `RECOMMENDED_BUILD_ANDROID` (unset = no notice). A number only: **the server never sends
   text or links**, so a compromised server cannot point users at a malicious download.
-- **App (Release A onward):** if its own build is below `recommended_build`, it shows a
-  **dismissible** banner or sheet, at most **once every 7 days**, with Arabic text approved by
-  you. It **never blocks** sign-in, sync or any screen.
-- **The link** is a compile-time constant in the app (the official APK page, question N-1),
-  opened only if it is `https` and on a built-in host allowlist.
-- Including the notice code in **Release A** lets A users be reached later. Without it, only
-  Release B and later could be nudged. Recommended; needs your approval (N-2).
+- **App (Release A onward, approved in N-2):** if its own build is below `recommended_build`,
+  it shows a **dismissible** notice, at most **once every 7 days**, with Arabic text you
+  approve (Appendix A). It **never blocks** sign-in, sync or any screen. The code is dormant
+  until the server sends a number.
+- **The download link (N-1: deferred until you buy your domain).** **No temporary URL is
+  written into the code.** Instead:
+  - the app has one build-time constant `UPDATE_PAGE_URL` (`--dart-define`), **empty in every
+    build until you give me the domain**;
+  - **while it is empty the notice is text only: no button, no link**;
+  - when it is set, the app accepts only an `https` URL, and the **only host it will ever
+    open is the host of that constant**;
+  - the constant is fixed at build time, so **only builds made after you provide the URL can
+    show a tappable link** (N-8).
+- **Use a redirect on the domain** (for example `your-domain/download` pointing to wherever the
+  APKs are hosted), so hosting can move later **without an app update**.
 - Changing `RECOMMENDED_BUILD_ANDROID` is a production setting (§5.1).
 
 ## 4. Measuring Release A adoption
@@ -408,16 +418,32 @@ deleted (no cascade):
 
 ### 7.1 Before Release A is released
 
-- [ ] Header, install id and (if approved, N-2) the soft-update notice are in the build, with
-      tests (§8.1).
-- [ ] **Release A's APK is signed with the release key**, the same one as the installed apps
-      (check with `apksigner verify --print-certs`), so it **updates in place**. A debug-signed
-      APK cannot update an installed copy, and a user who must uninstall could **lose a
-      guest's local data** (R-5).
+- [ ] Header, install id and the dormant soft-update notice (N-2) are in the build, with tests
+      (§8.1). `UPDATE_PAGE_URL` is **empty** unless you have given me the domain (N-8).
+- [ ] **Signing-key verification, mandatory (N-3). A release is not published if any step
+      fails, and nothing overrides this without your written approval.**
+  - **Step 0, once, before anything else:** take a phone with the **Waffr that real users
+    have installed** (not a CI test build), pull its APK
+    (`adb shell pm path com.waffr.app`, then `adb pull <path> installed.apk`) and read its
+    certificate: `apksigner verify --print-certs installed.apk`. Record the
+    **signer certificate SHA-256** in `release/ANDROID_SIGNING_CERT.sha256` (a public
+    fingerprint, not a secret). If different installed copies show **different** fingerprints
+    (for example debug keys from different CI runs), **they cannot be updated in place**: stop
+    and bring me the facts; the migration path (guest backup file, reinstall) needs a
+    separate approval.
+  - **Step 1, every release:** the release APK's signer SHA-256 must **equal** the recorded
+    one. It must be signed with the v2 or v3 scheme and must **not** be a debug certificate.
+  - **Step 2, every release:** an **in-place update rehearsal** on a test phone: install the
+    previous release APK, add some data, install the new APK over it
+    (`adb install -r`). The install must succeed (`INSTALL_FAILED_UPDATE_INCOMPATIBLE` means a
+    key mismatch) and the data must still be there.
+  - **Step 3, once the release workflow exists (later, with your approval):** the workflow
+    fails if the fingerprint differs from the committed one or the certificate is a debug
+    certificate.
 - [ ] Benchmark gate for Release A: `self_test_passed` and `vectors_all_match` on at least
-      **three Android phones** with no mismatch (S23 Ultra and Galaxy A56 reported; one more).
-      iOS is not distributed, so an iPhone is **not required for the first release**; it
-      becomes required before any iOS build is published.
+      three Android phones with no mismatch (**met**: S23 Ultra, Galaxy A56, Xiaomi 2404ARN45A,
+      Infinix GT 20 Pro, all 15 of 15). **iOS is not distributed (N-5), so an iPhone is not
+      required** for this release.
 - [ ] C-1 closed: **the production database has a backup and a tested restore.**
 - [ ] M-0 done and its tests green (**done on the branch**); the switch is not set in
       production.
@@ -427,9 +453,16 @@ deleted (no cascade):
 
 - [ ] **Device gate:** at least 3 Android phones **including a low-end one** (Cortex-A53 class),
       three runs each; native worst run ≤ 2.0 s at the proposed count. If 600,000 fails
-      anywhere, propose the highest count that passes everywhere. *Status: S23 Ultra and A56
-      reported, 1 run each, no low-end phone yet (`KDF_BENCHMARK.md` §7).*
-- [ ] An iPhone result before any iOS build is published.
+      anywhere, propose the highest count that passes everywhere. *Status (`KDF_BENCHMARK.md` §7): S23 Ultra 3 of 3 runs; Galaxy A56 4 runs; Xiaomi 2404ARN45A
+      (MediaTek MT6769, a budget chip, 2× Cortex-A75 + 6× A55 by my reading of the chip
+      family, not reported by the app) 3 of 3 runs, native 600,000 worst 682 ms; Infinix GT 20 Pro
+      2 of 3 (extra). By the gate's wording the device count is met if you accept the Xiaomi
+      as the low-end phone. It is one step above the Cortex-A53 class the gate named, so I
+      recommend also testing the **older, A53-class phone** you are getting (3 runs): it costs
+      little and closes the question.*
+- [ ] **iOS (N-5):** no iOS users are assumed, so the iPhone benchmark is deferred. An iPhone
+      result, the iOS guard configuration and your approval are required **before any iOS build is
+      published**; until then the guard never upgrades an iOS account (§3.3 rule 2).
 - [ ] All tests in §8 pass, including interruption and mixed-version cases.
 - [ ] The server guard has run in shadow mode for 14 days (Stage 1) with the §5 exit gate met.
 - [ ] Self-heal and the emergency window work end to end against a deliberately broken wrap
@@ -464,7 +497,7 @@ deleted (no cascade):
 | --- | --- |
 | `lib/core/net/api_client.dart` (new) | one helper that adds `Content-Type`, `Authorization` and `X-Waffr-Client`; replaces the raw `http` calls |
 | `lib/core/net/client_identity.dart` (new) | version and build via the native `info` call; install id in prefs |
-| `lib/core/net/update_notice.dart`, a small banner widget (new, if N-2 is approved) | the §3.6 notice: reads `client_policy`, 7-day throttle, dismissible, compile-time `https` link on an allowlist |
+| `lib/core/net/update_notice.dart`, a small notice widget (new, approved in N-2) | the §3.6 notice: reads `client_policy`, 7-day throttle, dismissible, text only while `UPDATE_PAGE_URL` is empty, then one `https` host from that constant; dormant until the server sends a number |
 | `lib/core/sync/auth_session.dart`, `sync_service.dart` | use the helper (7 call sites) |
 | `lib/data/services/local_data_reset.dart` | clear the install id on reset |
 | `test/core/net/*` (new) | header format; missing `info`; no header on the news feed; reset clears the id |
@@ -528,10 +561,10 @@ deleted (no cascade):
 
 | ID | Item | Status |
 | --- | --- | --- |
-| **M-0** | Gate `POST /auth/key/rewrap` behind `KEY_UPGRADE_ENABLED` (off by default; 403 before the password is read) | **Done on the branch, not merged or deployed.** `backend/key_upgrade.py`, `main.py`, `SECURITY.md`; 26 tests in `test_key_upgrade_flag.py` and the existing rewrap tests now turn the switch on explicitly. Verified that the new tests fail without the gate. Backend suite: 481 passed |
-| M-1 | Add the header, install id and notice code to Release A (§8.1) | planned, needs N-2 |
+| **M-0** | Gate `POST /auth/key/rewrap` behind `KEY_UPGRADE_ENABLED` (off by default; 403 before the password is read) | **Done on the branch, not merged or deployed.** `backend/key_upgrade.py`, `main.py`, `SECURITY.md`; 26 tests in `test_key_upgrade_flag.py`; the existing rewrap tests turn the switch on explicitly. Backend suite: 481 passed |
+| M-1 | Add the header, install id and the dormant notice to Release A (§8.1) | **approved (D-1, N-2); not started** |
 | M-2 | Close C-1 (database backup) | open; yours to do |
-| M-3 | Release signing key and the APK update path (§7.1, R-5) | open; needs your confirmation (N-3) |
+| M-3 | Signing-key verification (§7.1, mandatory) | **approved (N-3); Step 0 is yours: it needs a real installed phone** |
 
 Deploying the current backend would **not** enable upgrades: the switch is off unless
 `KEY_UPGRADE_ENABLED` is set in production, and `render.yaml` does not set it.
@@ -544,36 +577,102 @@ Deploying the current backend would **not** enable upgrades: the switch is off u
 | R-2 | Bad wrap written | possible loss of access on that account | very low | round trip, Dart cross-check, compare-and-swap, self-heal, §6.5, backup file, database backup |
 | R-3 | Dart cross-check never completes on the slowest phones | those phones do not upgrade | medium on very low-end | another device of the same account can upgrade it; accepted (D-4) |
 | R-4 | Native write path has an input-dependent bug | wrong key written | very low | known-answer test at the target count; 15 vectors; Dart cross-check on rewrap |
-| R-5 | **APK updates fail** because the APK is debug-signed, or signed with a different key | a user must uninstall; a **guest could lose local data** | medium without a check | release-key check in §7.1; guests are told to save a backup file first |
+| R-5 | **APK updates fail** because the APK is debug-signed, or signed with a different key | a user must uninstall; a **guest could lose local data** | medium without a check | the mandatory signing-key verification in §7.1 (N-3): fingerprint match and an in-place rehearsal before every release; guests are told to save a backup file first |
 | R-6 | Adoption stalls (manual updates) | Release B delayed; thresholds never met | high | soft notice, outreach, thresholds never lowered without approval |
-| R-7 | Users on apps older than Release A cannot be nudged in-app | they stay on the old path | certain | outreach outside the app; the guard keeps their accounts at 210,000 while they are seen |
+| R-7 | Users on apps older than Release A cannot be nudged in-app; and, until the domain exists, **users of Release A get a text-only notice** | they stay on the old path or must find the page themselves | certain | outreach outside the app; N-8 (hold Release A for the URL, or publish text-only) |
 | R-8 | An operator abuses the emergency window | an account's wrap replaced | very low | two proofs, your written approval, owner email notices, append-only audit log, 1 window at a time, daily caps |
 | R-9 | New table or throttle adds load | latency | low | throttled background writes; shadow-mode measurement |
 | R-10 | Env var change restarts Render | brief downtime | certain, small | schedule it with your approval (§5.1) |
 | R-11 | Backup saving slow at 600,000 via Dart | slow save on low-end | medium | D-4 (c) |
 
-## 11. Open items (new, from your answers)
+## 11. Final decisions on the open items
+
+| # | Item | Your decision | What it means in this plan |
+| --- | --- | --- | --- |
+| **N-1** | Official download page for the soft notice | **Deferred until you buy your domain. No temporary URL is hardcoded.** | the notice is text only until a build includes `UPDATE_PAGE_URL`; see §3.6 and N-8 |
+| **N-2** | Soft-update notice code in Release A | **Approved** (dormant) | §3.6, §8.1; M-1 |
+| **N-3** | Signing-key verification | **Mandatory before release** | the hard gate in §7.1: fingerprint match, v2/v3, in-place rehearsal; Step 0 needs a real installed phone |
+| **N-4** | Recovery audit log retention | **At least 2 years** | §6.5 |
+| **N-5** | iOS | **No iOS users assumed; the iPhone benchmark is deferred until iOS is distributed** | §7.2; the iOS guard stays unconfigured, so no iOS account is ever upgraded |
+| **N-6** | Arabic texts | **I prepare drafts, you approve them** | Appendix A; **drafts, not approved**; nothing ships until you approve |
+| **N-7** | Emergency recovery approvals | **You are the sole approval authority** | §6.5; every window needs your written approval for that account |
+
+**One new item came out of N-1:**
 
 | # | Item | My recommendation |
 | --- | --- | --- |
-| **N-1** | What is the **official page** users download APKs from? The soft notice needs one compile-time `https` link | give me the URL; the app will only open that host |
-| **N-2** | Add the **soft-update notice code to Release A**, so A users can be nudged later (§3.6) | yes; it is dormant until the server sends a number |
-| **N-3** | Confirm **APKs are signed with the release key** (the `ANDROID_KEYSTORE_*` secrets are set in CI) and that this is the key on installed copies | confirm before Release A is published (R-5) |
-| **N-4** | Retention for the recovery audit log | at least 2 years |
-| **N-5** | Confirm **iOS has no users**, so its guard stays unconfigured and the iPhone benchmark is deferred | yes |
-| **N-6** | Approve the Arabic text of the update notice and of the owner emails for repair windows | I will draft it for review |
-| **N-7** | Who is the second pair of eyes for an emergency window? You approve each one in writing; if you want a named second person, say so | you only, unless you name someone |
+| **N-8** | Because the link is fixed at build time, **should Release A wait for the domain?** (a) wait, so Release A users get a tappable notice; (b) publish Release A now with a text-only notice and reach those users outside the app | **(a) wait**, unless Release A is needed sooner for another reason. It costs only time, and the notice is most valuable on exactly the build that will become the base of Release B's rollout. Whatever you choose, **no temporary URL goes into the code** |
 
 ## 12. What happens next
 
 1. **Now:** the rewrap switch is on the branch (off by default, 26 tests). Nothing else in
    Release B has started, and nothing is merged or deployed.
-2. You answer N-1 to N-7. I then make the **Release A addendum** (§8.1): header, install id
-   and, if you approve, the notice.
-3. Release A is built and checked on devices (a low-end Android phone is still missing), and
-   **N-3 and C-1 are closed**, before it is published.
-4. Only after Release A is out do I write the server part (§8.2, deployed dark with your
+2. You answer **N-8** and, when you have it, give me the domain.
+3. **Step 0 of the signing-key verification (§7.1)** is yours: read the certificate of the
+   Waffr that real users have installed, and send me its SHA-256. Without it, Release A cannot be
+   published.
+4. You review and approve the Arabic drafts in Appendix A (N-6).
+5. After that, with your approval, I make the **Release A addendum** (§8.1): header, install
+   id and the dormant notice. Release A is then built and checked on devices; **N-3 and C-1 are
+   closed** before it is published.
+6. Only after Release A is out do I write the server part (§8.2, deployed dark with your
    approval), then the 90-day observation starts.
-5. Release B's app and the rollout follow the stages in §5, each step approved by you (§5.1).
+7. Release B's app and the rollout follow the stages in §5, each step approved by you (§5.1).
 
 Nothing in this plan starts without your explicit approval.
+
+## Appendix A. Arabic drafts (N-6): DRAFT, NOT APPROVED
+
+Nothing below is in the code. Placeholders in `[brackets]` are filled when you approve. Rules
+for every text: no keys, wraps, passwords or codes in it; **emails contain no links** (they tell
+the user to open the app, so they cannot be mistaken for phishing).
+
+### A.1 In-app update notice (dismissible, at most once every 7 days)
+
+Title: **يتوفر إصدار أحدث من وفّر**
+
+Body, while `UPDATE_PAGE_URL` is empty (text only):
+
+> يتوفر إصدار جديد من التطبيق فيه تحسينات للأمان والأداء. يمكنك متابعة استخدام وفّر كالمعتاد،
+> ويُنصح بالتحديث من صفحة التنزيل الرسمية عند أول فرصة.
+
+Body, once a link exists (adds a button):
+
+> يتوفر إصدار جديد من التطبيق فيه تحسينات للأمان والأداء. يمكنك متابعة استخدام وفّر كالمعتاد،
+> ويُنصح بالتحديث عند أول فرصة.
+
+Buttons: **فتح صفحة التنزيل** (only when a link exists) · **لاحقاً**
+
+Extra line shown **only to guests** (no account), because a failed update can cost local data:
+
+> قبل التحديث، احفظ نسخة احتياطية مشفّرة من بياناتك: الإعدادات ← الخصوصية والأمان ← النسخة
+> الاحتياطية المشفّرة.
+
+### A.2 Emails to the account owner (§6.5)
+
+**Window opened.** Subject: **وفّر: فُتحت نافذة إصلاح لمفتاح التشفير في حسابك**
+
+> مرحباً،
+>
+> بناءً على طلبك، فُتحت نافذة إصلاح مؤقتة لمفتاح تشفير بياناتك في حسابك. تنتهي النافذة بعد
+> [عدد الساعات] ساعة، ولا يتغير شيء في حسابك قبل أن تُجري الإصلاح بنفسك من التطبيق بكلمة مرورك.
+>
+> إذا لم تطلب ذلك، غيّر كلمة مرورك فوراً من التطبيق، ثم راسلنا على [بريد الدعم].
+
+**Repair done.** Subject: **وفّر: تم تحديث مفتاح التشفير في حسابك**
+
+> مرحباً،
+>
+> تم بتاريخ [التاريخ والوقت] تحديث مفتاح تشفير بياناتك في حسابك بنجاح، وأُغلقت نافذة الإصلاح.
+>
+> إذا لم تقم بذلك أنت، غيّر كلمة مرورك فوراً من التطبيق، ثم راسلنا على [بريد الدعم].
+
+**Window expired unused.** Subject: **وفّر: انتهت نافذة الإصلاح دون استخدام**
+
+> مرحباً،
+>
+> انتهت نافذة الإصلاح المؤقتة لحسابك دون أن تُستخدم، ولم يتغير شيء في حسابك. إن ما زلت تحتاج
+> مساعدة، راسلنا على [بريد الدعم].
+
+**To decide when you approve:** the support address `[بريد الدعم]` (a domain address once you have
+one; until then, an address you choose).
