@@ -171,13 +171,16 @@ extension IncomeSettings on TransactionStore {
       preferredIncomeFrequencyFor(_activeCode);
 
   /// Records an income. With [moveBalanceToSavings] the current balance is
-  /// first moved to savings, which starts a new cycle. A weekly or monthly
-  /// income also becomes the configured amount.
+  /// first moved to savings, which starts a new cycle. With [startNewCycle]
+  /// the balance stays and the income starts a new cycle, so the home bar
+  /// is back at 100% of balance plus income. A weekly or monthly income
+  /// also becomes the configured amount.
   Future<void> addIncome({
     required double amount,
     String? source,
     RecurringFrequency frequency = RecurringFrequency.none,
     bool moveBalanceToSavings = false,
+    bool startNewCycle = false,
     String? currencyCode,
   }) async {
     await ensureLoaded();
@@ -209,14 +212,19 @@ extension IncomeSettings on TransactionStore {
     }
 
     final now = deviceNow();
+    final id = WaffrTransaction.newId();
 
     await _add(
       WaffrTransaction(
-        id: WaffrTransaction.newId(),
+        id: id,
         type: TransactionType.income,
         amount: amount,
         currencyCode: code,
         note: source,
+        // The mark travels with the row through sync as its source id.
+        sourceId: startNewCycle && !moveBalanceToSavings
+            ? '${TransactionStore.newCycleSourcePrefix}$id'
+            : null,
         dateTime: now,
         frequency: frequency,
         periodKey: frequency == RecurringFrequency.none

@@ -144,6 +144,11 @@ class TransactionStore extends ChangeNotifier {
   /// savings while adding a new income.
   static const String carryOverKey = 'carry';
 
+  /// sourceId prefix on an income that starts a new balance cycle while
+  /// keeping the current balance: the new 100% is that balance plus the
+  /// income.
+  static const String newCycleSourcePrefix = 'cycle:';
+
   /// Note on that carry-over transfer (also how older rows are recognized).
   static const String _carryOverNote = 'نقل الرصيد الحالي إلى التوفير';
 
