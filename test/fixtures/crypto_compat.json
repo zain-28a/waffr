@@ -1,0 +1,51 @@
+{
+  "wrapped_keys": [
+    {
+      "password": "correct horse 1",
+      "data_key_hex": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+      "wrapped": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "iterations": 210000,
+        "wrapped_key": "AAECAwQFBgcICQoLfBH66DR/WWea15+LaH95RG+ssZUIn/UHnjtnUZuUN1VC/7DMyR4Y1xUNOWTkDh6C"
+      }
+    },
+    {
+      "password": "كلمة المرور ٢٠٢٦ 🔐",
+      "data_key_hex": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+      "wrapped": {
+        "salt": "MjM0NTY3ODk6Ozw9Pj9AQQ==",
+        "iterations": 210000,
+        "wrapped_key": "AQIDBAUGBwgJCgsMJGBEsCvVG+VPJOtaQNELCwp38C67w9cwXrt/tEiAzdTiqAeSqQtr6so2/q4S84J8"
+      }
+    },
+    {
+      "password": "é-not-normalised",
+      "data_key_hex": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+      "wrapped": {
+        "salt": "RkdISUpLTE1OT1BRUlNUVQ==",
+        "iterations": 100000,
+        "wrapped_key": "AgMEBQYHCAkKCwwN7iOLtLaEBXQ9EQO2/J8cD+sTDhp2MHey3RqeJwpZsp4N6WRpZ1+Tsf/70V5e2Eh7"
+      }
+    }
+  ],
+  "backups": [
+    {
+      "passphrase": "a long backup passphrase",
+      "body": {
+        "snapshot": {
+          "transactions": {
+            "upserts": [
+              {
+                "client_id": "t1",
+                "amount": "12500",
+                "note": "إيجار"
+              }
+            ]
+          }
+        },
+        "account_email": null
+      },
+      "file": "{\"format\": \"waffr-backup\", \"version\": 1, \"created_at\": \"2026-11-20T09:30:00.000Z\", \"kdf\": {\"name\": \"pbkdf2-hmac-sha256\", \"iterations\": 100000, \"salt\": \"AAECAwQFBgcICQoLDA0ODw==\"}, \"cipher\": \"aes-256-gcm\", \"nonce\": \"AAECAwQFBgcICQoL\", \"data\": \"9iutBrN/1Wsurx8/vpYoiBWMkm5OtxE2gaZWt9JNvTDvqkcJtMfcmw0Y5iMnc3+p5BTp1VDJjYsTfFlw/RzCrcYTpuYoW4q9BeWCrJepwuECkWzcry2WYTPQGu+wekcO0Br2fXxV4pwh4W4xnYlqq1yOtft2oI7iW9R6hs8XRU/ufkXqdA==\", \"mac\": \"I3E/41j0ODxYZkhA7G+/cA==\"}"
+    }
+  ]
+}

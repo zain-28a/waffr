@@ -43,6 +43,15 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["appLabel"] = "waffr"
+    }
+
+    // The key-derivation benchmark (tool/kdf_benchmark.dart) is built with
+    // -P waffrBenchmark=true. It gets its own package name, so it installs next
+    // to the real app without touching it or its data.
+    if (project.findProperty("waffrBenchmark") == "true") {
+        defaultConfig.applicationIdSuffix = ".kdfbench"
+        defaultConfig.manifestPlaceholders["appLabel"] = "Waffr KDF benchmark"
     }
 
     signingConfigs {
@@ -73,6 +82,8 @@ kotlin {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // JVM unit tests only (src/test); not part of the app.
+    testImplementation("junit:junit:4.13.2")
 }
 
 flutter {

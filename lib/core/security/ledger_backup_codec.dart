@@ -1,6 +1,7 @@
 // The encrypted backup file format: a small JSON header and the ledger
 // snapshot, gzipped and sealed with AES-256-GCM under a key derived from a
-// passphrase the user chooses (PBKDF2-HMAC-SHA256).
+// passphrase the user chooses (PBKDF2-HMAC-SHA256, through Pbkdf2Engine:
+// native where available, Dart otherwise; both give the same key).
 //
 // File (UTF-8 JSON):
 //   {
@@ -18,6 +19,7 @@ import 'dart:math';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
+import 'package:waffr/core/security/pbkdf2.dart';
 
 /// The file is not a Waffr backup, or one this version cannot read.
 class BackupFormatException implements Exception {
@@ -76,18 +78,31 @@ class LedgerBackupCodec {
     required String passphrase,
     int iterations = defaultIterations,
     DateTime? now,
-  }) {
+  }) async {
     final random = Random.secure();
+    final salt = Uint8List.fromList(
+      List<int>.generate(16, (_) => random.nextInt(256)),
+    );
+    // A new file: derived by the Dart code, checked against native (see
+    // Pbkdf2Engine.deriveForWriting).
+    final key = await engine.deriveForWriting(
+      password: utf8.encode(passphrase),
+      salt: salt,
+      iterations: iterations,
+    );
     return compute(_sealJob, (
       plain: Uint8List.fromList(gzip.encode(utf8.encode(jsonEncode(body)))),
-      passphrase: passphrase,
+      key: key,
       iterations: iterations,
-      salt: Uint8List.fromList(
-        List<int>.generate(16, (_) => random.nextInt(256)),
-      ),
+      salt: salt,
       createdAt: (now ?? DateTime.now()).toUtc().toIso8601String(),
     ), debugLabel: 'seal backup');
   }
+
+  /// Derives the passphrase keys. Tests swap in an engine with a mocked
+  /// native side.
+  @visibleForTesting
+  static Pbkdf2Engine engine = Pbkdf2Engine.instance;
 
   /// Opens a backup [file] with [passphrase] and returns the sealed map.
   ///
@@ -99,10 +114,30 @@ class LedgerBackupCodec {
     required String passphrase,
   }) async {
     final header = parseHeader(file);
-    final plain = await compute(_openJob, (
+    final passphraseBytes = utf8.encode(passphrase);
+    final derived = await engine.derive(
+      password: passphraseBytes,
+      salt: header.salt,
+      iterations: header.iterations,
+    );
+    var plain = await compute(_openJob, (
       header: header,
-      passphrase: passphrase,
+      key: derived.key,
     ), debugLabel: 'open backup');
+    // A natively derived key that does not open the file is checked with
+    // Dart before the passphrase is called wrong, so a native fault can
+    // never make a backup unreadable.
+    if (plain == null && derived.backend == Pbkdf2Backend.native) {
+      final checked = await engine.deriveDart(
+        password: passphraseBytes,
+        salt: header.salt,
+        iterations: header.iterations,
+      );
+      plain = await compute(_openJob, (
+        header: header,
+        key: checked,
+      ), debugLabel: 'open backup');
+    }
     if (plain == null) throw const BackupPassphraseException();
     final Object? decoded;
     try {
@@ -232,33 +267,20 @@ List<int> _associatedData(
   );
 }
 
-Future<SecretKey> _deriveKey(
-  String passphrase,
-  List<int> salt,
-  int iterations,
-) {
-  return Pbkdf2(
-    macAlgorithm: Hmac.sha256(),
-    iterations: iterations,
-    bits: 256,
-  ).deriveKey(secretKey: SecretKey(utf8.encode(passphrase)), nonce: salt);
-}
-
 // Runs in a background isolate.
 Future<Uint8List> _sealJob(
   ({
     Uint8List plain,
-    String passphrase,
+    Uint8List key,
     int iterations,
     Uint8List salt,
     String createdAt,
   })
   input,
 ) async {
-  final key = await _deriveKey(input.passphrase, input.salt, input.iterations);
   final box = await _aes.encrypt(
     input.plain,
-    secretKey: key,
+    secretKey: SecretKey(input.key),
     nonce: _aes.newNonce(),
     aad: _associatedData(
       LedgerBackupCodec.version,
@@ -286,18 +308,13 @@ Future<Uint8List> _sealJob(
 
 // Runs in a background isolate. Null when the MAC check fails.
 Future<Uint8List?> _openJob(
-  ({BackupHeader header, String passphrase}) input,
+  ({BackupHeader header, Uint8List key}) input,
 ) async {
   final header = input.header;
-  final key = await _deriveKey(
-    input.passphrase,
-    header.salt,
-    header.iterations,
-  );
   try {
     final plain = await _aes.decrypt(
       SecretBox(header.data, nonce: header.nonce, mac: Mac(header.mac)),
-      secretKey: key,
+      secretKey: SecretKey(input.key),
       aad: _associatedData(
         header.version,
         header.createdAt,

@@ -471,7 +471,8 @@ Options:
 | K-3. Stay at 210,000 and rely on the follow-ups below | unchanged | none |
 
 **Recommendation: K-1**, with 600,000 enabled only after the device benchmark on the
-native path. Measure on a device with:
+native path. *Update: K-1 was approved and Release A (native at 210,000) is
+implemented; see `NATIVE_PBKDF2_PLAN.md` §9 and `KDF_BENCHMARK.md`.* Measure on a device with:
 ```bash
 flutter run --release -t tool/kdf_benchmark.dart
 ```

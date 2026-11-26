@@ -3,9 +3,10 @@
 // derived from the user's password, so notes and names stay unreadable in
 // the database.
 //
-// AES-GCM and PBKDF2 here are pure Dart. Wrapping and unwrapping run in a
-// background isolate (`compute`), and SyncService seals whole requests there
-// too, so none of it blocks the UI thread.
+// AES-GCM is pure Dart; SyncService seals whole requests in a background
+// isolate. The slow step of wrapping and unwrapping, PBKDF2, goes through
+// Pbkdf2Engine (pbkdf2.dart): native on Android and iOS, Dart in a
+// background isolate otherwise. Either way the UI thread never waits on it.
 
 import 'dart:convert';
 import 'dart:math';
@@ -13,6 +14,7 @@ import 'dart:math';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:waffr/core/security/pbkdf2.dart';
 
 final AesGcm _aes = AesGcm.with256bits();
 
@@ -168,6 +170,11 @@ class DataKeyStore {
     return NewDataKey(key, await wrap(key, password, iterations: iterations));
   }
 
+  /// Derives the password keys. Tests swap in an engine with a mocked
+  /// native side.
+  @visibleForTesting
+  static Pbkdf2Engine engine = Pbkdf2Engine.instance;
+
   /// Wraps an existing [key] with [password], e.g. after a password change.
   static Future<WrappedDataKey> wrap(
     List<int> key,
@@ -175,32 +182,70 @@ class DataKeyStore {
     int iterations = defaultIterations,
   }) async {
     final salt = _randomBytes(16);
-    final box = await compute(_wrapKey, (
-      key: Uint8List.fromList(key),
-      password: password,
+    // A new wrap: derived by the Dart code, checked against native (see
+    // Pbkdf2Engine.deriveForWriting).
+    final passwordKey = await engine.deriveForWriting(
+      password: utf8.encode(password),
       salt: salt,
       iterations: iterations,
-    ), debugLabel: 'wrap data key');
+    );
+    final box = await _aes.encrypt(
+      key,
+      secretKey: SecretKey(passwordKey),
+      nonce: _aes.newNonce(),
+    );
     return WrappedDataKey(
       salt: base64Encode(salt),
       iterations: iterations,
-      wrappedKey: base64Encode(box),
+      wrappedKey: base64Encode(box.concatenation()),
     );
   }
 
   /// The raw key inside [wrapped], or null when [password] does not open it.
+  ///
+  /// If a natively derived key does not open the box, the Dart one is tried
+  /// before giving up, so a fault in the native code could only ever make
+  /// a sign-in slower, never lock anyone out of an existing key.
   static Future<Uint8List?> unwrap(
     String password,
     WrappedDataKey wrapped,
   ) async {
     try {
-      return await compute(_unwrapKey, (
-        box: base64Decode(wrapped.wrappedKey),
-        password: password,
-        salt: base64Decode(wrapped.salt),
+      final box = SecretBox.fromConcatenation(
+        base64Decode(wrapped.wrappedKey),
+        nonceLength: _aes.nonceLength,
+        macLength: _aes.macAlgorithm.macLength,
+      );
+      final passwordBytes = utf8.encode(password);
+      final salt = base64Decode(wrapped.salt);
+      final derived = await engine.derive(
+        password: passwordBytes,
+        salt: salt,
         iterations: wrapped.iterations,
-      ), debugLabel: 'unwrap data key');
+      );
+      final opened = await _open(box, derived.key);
+      if (opened != null || derived.backend == Pbkdf2Backend.dart) {
+        return opened;
+      }
+      final checked = await engine.deriveDart(
+        password: passwordBytes,
+        salt: salt,
+        iterations: wrapped.iterations,
+      );
+      if (!listEquals(checked, derived.key)) {
+        debugPrint('PBKDF2: native and Dart keys differ; opened with Dart');
+      }
+      return await _open(box, checked);
     } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<Uint8List?> _open(SecretBox box, List<int> passwordKey) async {
+    try {
+      final key = await _aes.decrypt(box, secretKey: SecretKey(passwordKey));
+      return Uint8List.fromList(key);
+    } on SecretBoxAuthenticationError {
       return null;
     }
   }
@@ -211,62 +256,4 @@ class DataKeyStore {
       List<int>.generate(length, (_) => random.nextInt(256)),
     );
   }
-}
-
-// Runs in a background isolate: PBKDF2 the password, then seal the key.
-Future<Uint8List> _wrapKey(
-  ({Uint8List key, String password, Uint8List salt, int iterations}) input,
-) async {
-  final passwordKey = await _derivePasswordKey(
-    input.password,
-    input.salt,
-    input.iterations,
-  );
-  final box = await _aes.encrypt(
-    input.key,
-    secretKey: SecretKey(passwordKey),
-    nonce: _aes.newNonce(),
-  );
-  return Uint8List.fromList(box.concatenation());
-}
-
-// Runs in a background isolate. Null when the MAC check fails (wrong
-// password); malformed input throws and the caller maps it to null.
-Future<Uint8List?> _unwrapKey(
-  ({Uint8List box, String password, Uint8List salt, int iterations}) input,
-) async {
-  final passwordKey = await _derivePasswordKey(
-    input.password,
-    input.salt,
-    input.iterations,
-  );
-  final box = SecretBox.fromConcatenation(
-    input.box,
-    nonceLength: _aes.nonceLength,
-    macLength: _aes.macAlgorithm.macLength,
-  );
-  try {
-    final key = await _aes.decrypt(box, secretKey: SecretKey(passwordKey));
-    return Uint8List.fromList(key);
-  } on SecretBoxAuthenticationError {
-    return null;
-  }
-}
-
-// PBKDF2-HMAC-SHA256 is slow on purpose; only ever call it off the UI isolate.
-Future<List<int>> _derivePasswordKey(
-  String password,
-  List<int> salt,
-  int iterations,
-) async {
-  final pbkdf2 = Pbkdf2(
-    macAlgorithm: Hmac.sha256(),
-    iterations: iterations,
-    bits: 256,
-  );
-  final derived = await pbkdf2.deriveKey(
-    secretKey: SecretKey(utf8.encode(password)),
-    nonce: salt,
-  );
-  return derived.extractBytes();
 }

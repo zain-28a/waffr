@@ -241,3 +241,76 @@ runs at the target count must be ≤ 2.0 s**.
 2. The benchmark gate (≤ 2.0 s worst-of-5 on the device matrix) and how I get the device
    numbers (option 1, 2 or 3 in section 4).
 3. The rule for starting Release B (when old app versions are rare enough).
+
+---
+
+## 9. Status: Release A implemented (Release B not started)
+
+Approved scope: native PBKDF2 at the existing 210,000 iterations, with no change to the
+formats, the counts, the server, or background upgrades.
+
+### What changed
+
+| Area | Files |
+| --- | --- |
+| Engine: native first, Dart fallback, self-test | `lib/core/security/pbkdf2.dart` (new) |
+| Callers | `lib/core/security/data_key.dart`, `lib/core/security/ledger_backup_codec.dart` |
+| Android | `android/app/src/main/kotlin/com/waffr/app/Pbkdf2.kt` (algorithm, plain JVM), `Pbkdf2Channel.kt` (channel on a background thread), `MainActivity.kt` (registration), `android/app/build.gradle.kts` (JUnit for tests only; `-P waffrBenchmark=true` gives the benchmark build its own package), `AndroidManifest.xml` (label placeholder) |
+| iOS | `ios/Runner/AppDelegate.swift` (CommonCrypto and the channel; in the existing file, so the Xcode project is untouched) |
+| Vectors | `tool/gen_pbkdf2_vectors.py` writes `test/fixtures/pbkdf2_vectors.json`, its Android copy, the Swift block in `ios/RunnerTests/RunnerTests.swift`, the runtime self-test block in `pbkdf2.dart`, and `tool/kdf_benchmark_vectors.dart`. `--check` fails if any copy is stale |
+| Compatibility fixture | `tool/gen_crypto_compat_fixture.py` writes `test/fixtures/crypto_compat.json`: wrapped keys and a backup file made by Python, independent of the app |
+| Benchmark | `tool/kdf_benchmark.dart`, `KDF_BENCHMARK.md` |
+| CI | `.github/workflows/native-crypto.yml`: Dart tests; vector sync; the benchmark APK as an artifact; Kotlin JUnit through Gradle; Swift XCTest on an iOS simulator |
+
+### Two refinements to the plan, both stricter
+
+1. **Native is used for reading only.**
+   - Unwrapping the data key and opening a backup file use native, then Dart if the key
+     fails the AES-GCM check.
+   - Keys that protect **new** data (a new wrap or a new backup file) are always
+     derived by the Dart code earlier app versions used. Native runs alongside only as
+     a check, and a disagreement switches it off for the process
+     (`Pbkdf2Engine.deriveForWriting`).
+   - So a native fault can never be written into anything, even one the self-test
+     misses. A test with a native side that is wrong only above 4,096 iterations proves
+     this.
+   - The cost: new wraps (sign-up, password change) and new backup files keep today's
+     timing. The frequent operation, sign-in, gets the speed-up.
+2. **The self-test runs in every process, with the 12 cheap vectors** (a few
+   milliseconds natively), instead of a cached run that includes 210,000. That makes the
+   cache unnecessary. The expensive vectors are checked by the unit tests and on every
+   device by the benchmark app.
+
+### Results here
+
+| Check | Result |
+| --- | --- |
+| Flutter tests | **1,298 passed** (65 new): vectors, engine faults and fallbacks, compatibility, benchmark report, plus all earlier tests |
+| `flutter analyze` | no issues |
+| Vector copies in sync (`gen_pbkdf2_vectors.py --check`) | yes |
+| Kotlin `Pbkdf2.kt` on the JVM (Kotlin 2.2.20, JUnit) | 4 tests passed, all 15 vectors including 600,000 |
+| Backend tests | 455 passed; the backend is unchanged in this step |
+| Android Gradle build, Swift build and XCTest | **not run here** (no Android SDK or Xcode). They run in the *Native crypto* workflow |
+| Device benchmarks | **none yet.** The first device is the Galaxy S23 Ultra; see `KDF_BENCHMARK.md` |
+
+### Before Release B (needs your approval; not built)
+
+**Proposed adoption threshold.** At least **95% of active installs** on Release A or
+later, on both the Play Console and App Store Connect, held for **30 days**. Until then,
+an account upgraded to the higher count would make any remaining old app slow to sign
+in (pure Dart).
+
+**Proposed guard so old app versions cannot be hurt.**
+- From Release A on, the app would send its build number (`X-Waffr-App-Version`) with
+  `/auth/login` and `/sync`.
+- The server would remember, per account, the lowest version seen in the last 60 days.
+- The background upgrade would run only when every device on that account reported a
+  native-capable version.
+- This is a server change in the key-upgrade path, so it is **not implemented**. It
+  needs your approval together with Release B.
+- If you want the header added in Release A already, so the data exists when Release B
+  is decided, that is a small additive app change. Say so.
+
+**Device gate (unchanged):** at least 3 Android phones including a low-end one, plus an
+older iPhone, three runs each, with the worst native run ≤ 2,000 ms at the proposed
+count.

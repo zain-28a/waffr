@@ -1,0 +1,111 @@
+{
+  "algorithm": "pbkdf2-hmac-sha256",
+  "length": 32,
+  "vectors": [
+    {
+      "name": "rfc7914",
+      "password_hex": "706173737764",
+      "salt_hex": "73616c74",
+      "iterations": 1,
+      "derived_hex": "55ac046e56e3089fec1691c22544b605f94185216dde0465e68b9d57c20dacbc"
+    },
+    {
+      "name": "ascii-1",
+      "password_hex": "70617373776f7264",
+      "salt_hex": "73616c74",
+      "iterations": 1,
+      "derived_hex": "120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b"
+    },
+    {
+      "name": "ascii-2",
+      "password_hex": "70617373776f7264",
+      "salt_hex": "73616c74",
+      "iterations": 2,
+      "derived_hex": "ae4d0c95af6b46d32d0adff928f06dd02a303f8ef3c251dfd6e2d85a95474c43"
+    },
+    {
+      "name": "ascii-4096",
+      "password_hex": "70617373776f7264",
+      "salt_hex": "73616c74",
+      "iterations": 4096,
+      "derived_hex": "c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a"
+    },
+    {
+      "name": "arabic",
+      "password_hex": "d983d984d985d8a920d8b3d8b120d8b9d8b1d8a8d98ad8a920d9a1d9a2d9a3",
+      "salt_hex": "000102030405060708090a0b0c0d0e0f",
+      "iterations": 1000,
+      "derived_hex": "6c6f32e04cbf6506f427dc5be6d5ba8b609e5e0862a50757cf88b170290e2416"
+    },
+    {
+      "name": "arabic-salt32",
+      "password_hex": "d985d8b1d8add8a8d8a720d8a8d8a7d984d8b9d8a7d984d985",
+      "salt_hex": "6465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f80818283",
+      "iterations": 1000,
+      "derived_hex": "f6de7a2cf092d2e176b58a11f0db63568fcd42a86c9d03f7afc5eae74a54c900"
+    },
+    {
+      "name": "emoji",
+      "password_hex": "656d6f6a6920f09f9490f09f918df09f8fbd2070617373",
+      "salt_hex": "000102030405060708090a0b0c0d0e0f",
+      "iterations": 1000,
+      "derived_hex": "40ffbcbed3e9df56c6092c82119906def31cf90d8fb5eefb786296c3dfc0f1a5"
+    },
+    {
+      "name": "long-100-bytes",
+      "password_hex": "78787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878",
+      "salt_hex": "000102030405060708090a0b0c0d0e0f",
+      "iterations": 1000,
+      "derived_hex": "7361429554ed1659d8d9e8f94f65ff15798a3c4739b530e00d68a5c95540dab2"
+    },
+    {
+      "name": "long-mixed",
+      "password_hex": "d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920d8b7d988d98ad984d8a920f09f9490f09f9490f09f9490f09f9490f09f9490f09f9490f09f9490f09f9490f09f9490f09f9490",
+      "salt_hex": "000102030405060708090a0b0c0d0e0f",
+      "iterations": 3,
+      "derived_hex": "8418fed9a9c756fa2c9b4a57f7e05ef2bd2436684cdfaaaf1d30d3c858b4555c"
+    },
+    {
+      "name": "exactly-64-bytes",
+      "password_hex": "6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b",
+      "salt_hex": "000102030405060708090a0b0c0d0e0f",
+      "iterations": 5,
+      "derived_hex": "e80c4cbcd756cdbae649f072d930c85d56740e522cdb135a3c0d33d8a1645f7a"
+    },
+    {
+      "name": "empty",
+      "password_hex": "",
+      "salt_hex": "000102030405060708090a0b0c0d0e0f",
+      "iterations": 10,
+      "derived_hex": "595bd935ae36fc1e8960427231aa29d9198368740b19b26517bd9d4cb586fda2"
+    },
+    {
+      "name": "unnormalised-nfd",
+      "password_hex": "65cc8120767320c3a9",
+      "salt_hex": "000102030405060708090a0b0c0d0e0f",
+      "iterations": 7,
+      "derived_hex": "93f6b2a484091b5660c314f0dba1164c430ebcc405d042f58c6ef99663bffe10"
+    },
+    {
+      "name": "app-210000",
+      "password_hex": "636f727265637420686f7273652031",
+      "salt_hex": "000102030405060708090a0b0c0d0e0f",
+      "iterations": 210000,
+      "derived_hex": "9e6044e79bd0eb2e9efc1e0ee4bc88525231f2e33ee8e39c7a27b20f1c9e05ba"
+    },
+    {
+      "name": "app-600000",
+      "password_hex": "636f727265637420686f7273652031",
+      "salt_hex": "000102030405060708090a0b0c0d0e0f",
+      "iterations": 600000,
+      "derived_hex": "bb3fbb39c441df0f82bf1523f493d86097f7e4dc4d18d32ce001967731233773"
+    },
+    {
+      "name": "app-arabic-210000",
+      "password_hex": "d983d984d985d8a920d8a7d984d985d8b1d988d8b120d9a2d9a0d9a2d9a6",
+      "salt_hex": "6465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f80818283",
+      "iterations": 210000,
+      "derived_hex": "934129b14f90b71dd2c01ac87fd57d715619f2ea6ec45a7594adac2a6d349fac"
+    }
+  ]
+}
