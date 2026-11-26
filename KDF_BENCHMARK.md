@@ -112,6 +112,7 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-26 | Samsung Galaxy S23 Ultra (SM-S918B) | Snapdragon 8 Gen 2 (SM8550) | 17 (SDK 37) | 1 of 3 | passed | 15/15 match | 85 / 86 ms | 275 / 275 ms | 472 ms | 1,261 ms | 13,623 ms (others 3,387 and 3,620) |
 | 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 1 of 3 | passed | 15/15 match | 81 / 82 ms | 325 / 326 ms | 586 ms | 1,577 ms | 4,505 ms (others 4,201 and 4,296) |
+| 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), run 2, reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 2 of 3 | passed | 15/15 match | 82 / 85 ms | 279 / 322 ms | 585 ms | 1,535 ms | 4,606 ms (others 4,479 and 3,904) |
 | 2026-11-26 | Infinix X6871 (GT 20 Pro), reported by مغناطيسية | MediaTek Dimensity 8350 class (MT6896) | 16 (SDK 36) | 1 of 3 | passed | 15/15 match | 94 / 94 ms | 268 / 280 ms | 481 ms | 1,188 ms | 3,423 ms (others 3,322 and 3,371) |
 | 2026-11-26 | Infinix X6871 (GT 20 Pro), run 2, reported by مغناطيسية | MediaTek MT6896 | 16 (SDK 36) | 2 of 3 | passed | 15/15 match | 97 / 106 ms | 279 / 284 ms | 494 ms | 1,163 ms | 3,365 ms (others 3,321 and 3,359) |
 
@@ -166,5 +167,13 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 - **Repeats run 1:** all 15 vectors match and the self-test passed again.
 - **Native 600,000: 274–284 ms (worst 284)**, consistent with run 1 (worst 280). Still about 7× under the 2 s target.
 - **Pure Dart 600,000: 3.3–3.4 s**, consistent with run 1.
+- **Gate status:** this device now has 2 of 3 runs. Still missing: one more run on this device, and
+  a low-end Android phone with 3 runs.
+
+### Reading of run 2 (Galaxy A56 5G, second run)
+
+- **Repeats run 1:** all 15 vectors match and the self-test passed.
+- **Native 600,000: 269–322 ms (worst 322).** Median unchanged (279 ms). The 322 ms outlier is still far under the 2 s target.
+- **Pure Dart 600,000: 3.9–4.6 s**, slightly wider spread than run 1 (4.2–4.5 s). Still the slowest path by about 14×.
 - **Gate status:** this device now has 2 of 3 runs. Still missing: one more run on this device, and
   a low-end Android phone with 3 runs.
