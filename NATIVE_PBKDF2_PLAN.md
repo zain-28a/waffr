@@ -290,7 +290,11 @@ formats, the counts, the server, or background upgrades.
 | Vector copies in sync (`gen_pbkdf2_vectors.py --check`) | yes |
 | Kotlin `Pbkdf2.kt` on the JVM (Kotlin 2.2.20, JUnit) | 4 tests passed, all 15 vectors including 600,000 |
 | Backend tests | 455 passed; the backend is unchanged in this step |
-| Android Gradle build, Swift build and XCTest | **not run here** (no Android SDK or Xcode). They run in the *Native crypto* workflow |
+| **CI: Native crypto, run #2** ([45852020847](https://github.com/zain-28a/waffr/actions/runs/45852020847), commit `3ff52a0`) | **Both jobs passed** |
+| Android job | Dart tests and vector sync passed. The release benchmark APK and the app's Kotlin (`Pbkdf2.kt`, `Pbkdf2Channel.kt`, `MainActivity.kt`) built. `:app:testDebugUnitTest` (Kotlin, all 15 vectors) passed |
+| iOS job (macOS 26, Xcode 26, iPhone 17 Pro simulator) | The app with `AppDelegate.swift` (CommonCrypto) built. `RunnerTests`: `testEveryVectorMatches`, `testOutOfRangeInputIsRefused` and `testFiveRunsAt210000ArePrinted` passed |
+| CI fix needed on the way | Run #1's iOS job failed before our code was compiled: `connectivity_plus` 7.3.1 (an existing dependency) uses `NWPath.isUltraConstrained` from the iOS 26 SDK, which the macOS 15 image's Xcode lacks. The job now runs on `macos-26` with the newest Xcode. **The app itself needs Xcode 26+ to build for iOS**, whatever this change does |
+| Benchmark APK | `waffr-kdf-benchmark-3ff52a0.apk`, 50.9 MB, SHA-256 `ab202c93647cbb04547a8d28ad7f85c6722799cb5ad50ac0c1a443662a0d34ab`, artifact `waffr-kdf-benchmark-android` of run #2 (kept until 2026-12-26) |
 | Device benchmarks | **none yet.** The first device is the Galaxy S23 Ultra; see `KDF_BENCHMARK.md` |
 
 ### Before Release B (needs your approval; not built)

@@ -12,7 +12,15 @@ implementation gives exactly the expected bytes.
 
 ## 1. Get the APK
 
-The **Native crypto** GitHub Actions workflow builds it on every push to the branch.
+**The current build:**
+- Run: https://github.com/zain-28a/waffr/actions/runs/45852020847
+- Artifact: `waffr-kdf-benchmark-android`, available until 2026-12-26. GitHub asks you to
+  sign in to download artifacts, even for a public repository.
+- File: `waffr-kdf-benchmark-3ff52a0.apk` (50.9 MB)
+- SHA-256: `ab202c93647cbb04547a8d28ad7f85c6722799cb5ad50ac0c1a443662a0d34ab`
+
+The **Native crypto** GitHub Actions workflow builds it on every push to the branch
+that touches the native code.
 
 1. Open the repository on GitHub → **Actions** → **Native crypto**. Pick the latest
    green run for the branch `claude/affectionate-wozniak-9zle5o`.
