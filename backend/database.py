@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
-from sqlalchemy import DateTime, Numeric, String, create_engine, inspect, text
+from sqlalchemy import DateTime, Numeric, String, create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 import row_security
@@ -32,7 +32,50 @@ def _engine_url(raw: str | None) -> str:
 
 DATABASE_URL = _engine_url(os.getenv("DATABASE_URL"))
 
-engine = create_engine(DATABASE_URL)
+
+def _ms_env(name: str, default: int) -> int:
+    try:
+        return max(0, int(os.getenv(name) or default))
+    except ValueError:
+        return default
+
+
+# Per statement, so one slow query cannot hold a connection forever. A large
+# first sync runs many statements, each far below this. Startup migrations
+# lift it for their own transaction.
+STATEMENT_TIMEOUT_MS = _ms_env("DB_STATEMENT_TIMEOUT_MS", 30_000)
+# A transaction left open by a stuck request is ended after this long.
+IDLE_IN_TRANSACTION_TIMEOUT_MS = _ms_env("DB_IDLE_IN_TRANSACTION_TIMEOUT_MS", 300_000)
+
+engine = create_engine(
+    DATABASE_URL,
+    # Test each pooled connection before use: Render restarts and database
+    # maintenance otherwise surface as errors on the next request.
+    pool_pre_ping=True,
+    pool_recycle=1800,
+    pool_timeout=30,
+    connect_args={"connect_timeout": 10},
+    # Error messages and logs show the SQL but not its values: those are
+    # amounts, emails and sealed text.
+    hide_parameters=True,
+)
+
+
+@event.listens_for(engine, "connect")
+def _session_timeouts(dbapi_connection, _record) -> None:
+    # SET on connect instead of startup options: works through a pooler too.
+    autocommit = dbapi_connection.autocommit
+    dbapi_connection.autocommit = True
+    try:
+        with dbapi_connection.cursor() as cursor:
+            cursor.execute(f"SET statement_timeout = {int(STATEMENT_TIMEOUT_MS)}")
+            cursor.execute(
+                "SET idle_in_transaction_session_timeout = "
+                f"{int(IDLE_IN_TRANSACTION_TIMEOUT_MS)}"
+            )
+    finally:
+        dbapi_connection.autocommit = autocommit
+
 
 SessionLocal = sessionmaker(
     bind=engine,
@@ -161,8 +204,10 @@ def _ensure_schema_updates() -> None:
     tables = set(inspector.get_table_names())
 
     with engine.begin() as connection:
-        # Migrations touch every account's rows.
+        # Migrations touch every account's rows, and may rewrite a large
+        # table: no statement timeout for them.
         connection.execute(text("SELECT set_config('app.system', 'on', true)"))
+        connection.execute(text("SET LOCAL statement_timeout = 0"))
         _ensure_user_timestamp_columns(connection, inspector, tables)
         _ensure_user_photo_column(connection, inspector, tables)
         _ensure_user_profile_columns(connection, inspector, tables)
@@ -175,6 +220,7 @@ def _ensure_schema_updates() -> None:
         _ensure_settings_columns(connection, inspector, tables)
         _ensure_currency_columns(connection, inspector, tables)
         _ensure_soft_delete_columns(connection, inspector, tables)
+        _ensure_transaction_source_index(connection, tables)
         _ensure_transfer_updated_at(connection, inspector, tables)
         _ensure_notification_updated_at(connection, inspector, tables)
         _ensure_notification_event_unique(connection, tables)
@@ -310,13 +356,6 @@ def _ensure_transaction_columns(connection, inspector, tables: set[str]) -> None
     )
     if "transactions" not in tables:
         return
-    connection.execute(
-        text(
-            "CREATE UNIQUE INDEX IF NOT EXISTS uq_transactions_user_source "
-            "ON transactions (user_id, source_id) "
-            "WHERE source_id IS NOT NULL"
-        )
-    )
     connection.execute(
         text(
             "CREATE INDEX IF NOT EXISTS ix_transactions_user_occurred "
@@ -561,6 +600,23 @@ def _ensure_notification_columns(connection, inspector, tables: set[str]) -> Non
             "ON notifications (user_id, event_key)"
         )
     )
+
+
+def _ensure_transaction_source_index(connection, tables: set[str]) -> None:
+    if "transactions" not in tables:
+        return
+    # One live row per source id. The older index also covered deleted rows,
+    # so an undone charge could never be posted again. This only loosens the
+    # rule: every existing row already satisfies the new index. Built before
+    # the old one is dropped, so the rule holds throughout.
+    connection.execute(
+        text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_transactions_user_source_live "
+            "ON transactions (user_id, source_id) "
+            "WHERE source_id IS NOT NULL AND deleted_at IS NULL"
+        )
+    )
+    connection.execute(text("DROP INDEX IF EXISTS uq_transactions_user_source"))
 
 
 def _ensure_soft_delete_columns(connection, inspector, tables: set[str]) -> None:

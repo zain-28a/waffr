@@ -101,6 +101,16 @@ class DataKeyIn(CleanModel):
     wrapped_key: str = Field(min_length=40, max_length=512)
 
 
+class RewrapKeyRequest(CleanModel):
+    """Body of POST /auth/key/rewrap: the same data key in a stronger wrap."""
+
+    current_password: str = Field(max_length=PASSWORD_MAX)
+    # The wrapped copy the device just opened. The new one replaces it only if
+    # it is still the stored one.
+    expected_wrapped_key: str = Field(min_length=40, max_length=512)
+    data_key: DataKeyIn
+
+
 class ChangePasswordRequest(CleanModel):
     """Body of POST /auth/password/change."""
 

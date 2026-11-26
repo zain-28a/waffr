@@ -196,3 +196,27 @@ def test_old_articles_are_pruned(client, alice, news_feeds):
     # The newest ones stay.
     assert system_scalar("SELECT count(*) FROM news_articles WHERE guid IN ('sana-1', 'ikh-1')") == 2
     assert len(client.get("/online/news").json()) == 30
+
+
+def test_an_empty_table_is_not_refetched_on_every_anonymous_read(client, monkeypatch):
+    """Feeds down and nothing stored: one fetch, then a fast 503 until the pause ends."""
+    import news_service
+
+    fetched = []
+
+    def down(source):
+        fetched.append(source.name)
+        raise news_service.NewsFeedUnavailable()
+
+    monkeypatch.setattr(news_service, "fetch_feed", down)
+    for _ in range(10):
+        assert client.get("/online/news").status_code == 503
+    first_round = len(fetched)
+    assert first_round >= 1
+    # Nine more reads started no fetch at all.
+    assert len(fetched) == first_round
+
+    # After the pause one read may try again.
+    monkeypatch.setattr(news_service, "_last_fill_attempt", float("-inf"))
+    client.get("/online/news")
+    assert len(fetched) > first_round

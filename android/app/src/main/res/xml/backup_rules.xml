@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Backup rules for Android 11 and earlier (Android 12+ reads
+  data_extraction_rules.xml). Only the ledger prefs file, and only when the
+  backup is end-to-end encrypted with the screen lock (Android 9+). See
+  data_extraction_rules.xml for why the other files stay out.
+-->
+<full-backup-content>
+    <include
+        domain="sharedpref"
+        path="FlutterSharedPreferences.xml"
+        requireFlags="clientSideEncryption" />
+</full-backup-content>

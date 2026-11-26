@@ -1,12 +1,16 @@
 """HTTP hardening: security headers, request size limits, CORS, API docs."""
 
 import os
+import threading
+import time
 
+import anyio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
 from rate_limit import RateLimitMiddleware, bearer_user
+from safe_errors import SafeErrorMiddleware
 
 # A first sync uploads the whole ledger in one request; nothing else is big.
 DEFAULT_MAX_BODY_BYTES = 256 * 1024
@@ -41,6 +45,19 @@ def docs_settings() -> dict:
 def _cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS") or ""
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+def _int_env(name: str, default: int) -> int:
+    try:
+        return max(1, int(os.getenv(name) or default))
+    except ValueError:
+        return default
+
+
+# Syncs that may run at once. A large first sync costs a few hundred MB while
+# its body is parsed and its rows are written; the Free instance has 512 MB.
+SYNC_CONCURRENCY = _int_env("SYNC_CONCURRENCY", 2)
+SYNC_WAIT_SECONDS = 20
 
 
 def max_body_bytes(scope) -> int:
@@ -135,6 +152,44 @@ class BodySizeLimitMiddleware:
         await self.app(scope, replay, send)
 
 
+class SyncConcurrencyMiddleware:
+    """Lets SYNC_CONCURRENCY syncs run at once; others wait, then get a 503.
+
+    It sits outside the body limit, so a waiting sync has not read its body
+    yet. A thread semaphore polled from the event loop works whatever loop
+    the request runs on.
+    """
+
+    def __init__(self, app, slots: int | None = None, wait_seconds: float | None = None):
+        self.app = app
+        self._slots = threading.BoundedSemaphore(slots or SYNC_CONCURRENCY)
+        self._wait = SYNC_WAIT_SECONDS if wait_seconds is None else wait_seconds
+
+    async def __call__(self, scope, receive, send):
+        if (
+            scope["type"] != "http"
+            or scope.get("path") != "/sync"
+            or scope.get("method") != "POST"
+        ):
+            await self.app(scope, receive, send)
+            return
+        deadline = time.monotonic() + self._wait
+        while not self._slots.acquire(blocking=False):
+            if time.monotonic() >= deadline:
+                response = JSONResponse(
+                    {"detail": "Server busy, try again shortly"},
+                    status_code=503,
+                    headers={"Retry-After": "10"},
+                )
+                await response(scope, receive, send)
+                return
+            await anyio.sleep(0.05)
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            self._slots.release()
+
+
 async def _error(scope, receive, send, status: int, detail: str) -> None:
     await JSONResponse({"detail": detail}, status_code=status)(scope, receive, send)
 
@@ -143,6 +198,7 @@ def install(app: FastAPI) -> None:
     """Add the middleware stack to [app]."""
     # Added inside-out: the last one added sees the request first.
     app.add_middleware(BodySizeLimitMiddleware)
+    app.add_middleware(SyncConcurrencyMiddleware)
     app.add_middleware(RateLimitMiddleware)
     origins = _cors_origins()
     if origins:
@@ -157,3 +213,5 @@ def install(app: FastAPI) -> None:
             max_age=600,
         )
     app.add_middleware(SecurityHeadersMiddleware)
+    # Outermost: anything that escapes becomes a plain 500 with a clean log.
+    app.add_middleware(SafeErrorMiddleware)

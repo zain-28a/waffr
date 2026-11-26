@@ -1,0 +1,135 @@
+name: Native crypto
+
+# Release A of NATIVE_PBKDF2_PLAN.md: checks that the Android (Kotlin) and iOS
+# (Swift/CommonCrypto) PBKDF2 give exactly the bytes of the Dart code, and
+# builds the benchmark APK for device testing (KDF_BENCHMARK.md).
+#
+# Needs no repository secrets: the benchmark APK is signed with the debug key
+# and has its own package name (com.waffr.app.kdfbench).
+
+on:
+  push:
+    paths:
+      - "android/**"
+      - "ios/**"
+      - "lib/core/security/**"
+      - "test/core/security/**"
+      - "test/fixtures/**"
+      - "test/tool/**"
+      - "tool/kdf_benchmark*.dart"
+      - "tool/gen_pbkdf2_vectors.py"
+      - ".github/workflows/native-crypto.yml"
+  pull_request:
+    paths:
+      - "android/**"
+      - "ios/**"
+      - "lib/core/security/**"
+      - "tool/kdf_benchmark*.dart"
+      - ".github/workflows/native-crypto.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-crypto-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      # The committed wrapper points at a local Windows zip; CI downloads it.
+      - name: Use the public Gradle distribution
+        run: |
+          sed -i 's#^distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-9.3.1-all.zip#' \
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - run: flutter pub get
+
+      - name: Vector copies are in sync
+        run: python3 tool/gen_pbkdf2_vectors.py --check
+
+      - name: Dart vectors, engine and compatibility tests
+        run: flutter test test/core/security test/tool
+
+      - name: Build the benchmark APK
+        run: |
+          # arm64 only: every benchmark phone so far is 64-bit ARM, and the
+          # smaller APK is what gets installed for testing.
+          flutter build apk --release -t tool/kdf_benchmark.dart \
+            --target-platform android-arm64 \
+            -P waffrBenchmark=true \
+            --dart-define=WAFFR_COMMIT=${{ github.sha }}
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "dist/waffr-kdf-benchmark-${GITHUB_SHA::7}.apk"
+          (cd dist && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - name: Kotlin PBKDF2 unit tests (JVM)
+        working-directory: android
+        run: ./gradlew :app:testDebugUnitTest --no-daemon
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: waffr-kdf-benchmark-android
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+
+  ios:
+    # connectivity_plus 7.3 uses NWPath.isUltraConstrained from the iOS 26 SDK,
+    # so the app needs Xcode 26 or newer to build at all.
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Use the newest Xcode on the runner
+        run: |
+          XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Build for the simulator (installs pods)
+        run: flutter build ios --simulator --debug --no-codesign
+
+      - name: CommonCrypto PBKDF2 vectors (XCTest)
+        run: |
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          names = [d["udid"] for runtime, items in devices.items() if "iOS" in runtime for d in items if d["name"].startswith("iPhone")]
+          print(names[0])')
+          xcodebuild test \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -destination "id=${DEVICE}" \
+            -only-testing:RunnerTests \
+            CODE_SIGNING_ALLOWED=NO

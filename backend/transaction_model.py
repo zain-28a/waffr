@@ -34,12 +34,14 @@ class Transaction(ClientIdMixin, SoftDeleteMixin, TimestampMixin, Base):
         Index("ix_transactions_user_updated", "user_id", "updated_at"),
         Index("ix_transactions_user_created", "user_id", "created_at"),
         Index("ix_transactions_user_occurred", "user_id", "occurred_at"),
+        # One live row per generated entry. Deleted rows keep their source id
+        # (an undone charge may be posted again), so they are left out.
         Index(
-            "uq_transactions_user_source",
+            "uq_transactions_user_source_live",
             "user_id",
             "source_id",
             unique=True,
-            postgresql_where=text("source_id IS NOT NULL"),
+            postgresql_where=text("source_id IS NOT NULL AND deleted_at IS NULL"),
         ),
     )
 

@@ -44,8 +44,12 @@ GLOBAL_USER = Rule(180, 60)
 GLOBAL_IP = Rule(120, 60)
 
 LOGIN_IP = Rule(30, 5 * 60)
-# Wrong passwords per email, whether or not the account exists.
-LOGIN_FAILURES_EMAIL = Rule(5, 15 * 60)
+# Wrong passwords for one email from one address, whether or not the account
+# exists. Counting per address means a stranger cannot lock the owner out.
+LOGIN_FAILURES_EMAIL_IP = Rule(5, 15 * 60)
+# Wrong passwords for one email from every address together: the ceiling on
+# guessing spread over many addresses.
+LOGIN_FAILURES_EMAIL = Rule(20, 60 * 60)
 REGISTER_IP = Rule(10, 60 * 60)
 REGISTER_ALL = Rule(300, 60 * 60)
 FORGOT_IP = Rule(5, 15 * 60)
@@ -56,6 +60,9 @@ RESET_IP = Rule(10, 15 * 60)
 RESET_EMAIL = Rule(10, 60 * 60)
 PASSWORD_CHANGE_USER = Rule(5, 15 * 60)
 DATA_KEY_USER = Rule(10, 60 * 60)
+# Re-wrapping happens once per account after an app update; a few tries
+# cover retries after network errors.
+DATA_KEY_REWRAP_USER = Rule(5, 60 * 60)
 ACCOUNT_DELETE_USER = Rule(3, 60 * 60)
 SYNC_USER = Rule(30, 60)
 NEWS_REFRESH_USER = Rule(2, 10 * 60)

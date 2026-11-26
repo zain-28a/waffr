@@ -480,7 +480,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
+                      // Partner logos (دليل الشباب and GUIDE+): white artwork on
+                      // a transparent background, tinted to the theme.
+                      Center(
+                        child: Semantics(
+                          label: 'دليل الشباب و GUIDE+',
+                          image: true,
+                          child: Image.asset(
+                            'assets/brand/partner_logos.png',
+                            width: 200,
+                            color: palette.textSecondary.withValues(alpha: 0.7),
+                            colorBlendMode: BlendMode.srcIn,
+                            filterQuality: FilterQuality.medium,
+                            excludeFromSemantics: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),

@@ -11,6 +11,10 @@ import re
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import ValidationError
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -30,6 +34,7 @@ from crud_utils import (
 )
 from database import get_db, scrub_private_text
 from legacy_photo import photo_meta
+from safe_errors import log_error
 from category_model import ExpenseCategory
 from goal_model import SavingsGoal, SavingsTransfer
 from models import Notification, User, UserSettings
@@ -58,40 +63,123 @@ router = APIRouter(tags=["sync"])
 logger = logging.getLogger("waffr.sync")
 
 
-def _newer_or_equal(incoming: datetime | None, current: datetime | None) -> bool:
+# Device clocks can be wrong. A stamp later than the server's clock by more
+# than this is stored as this far ahead, so one phone set to the wrong year
+# cannot win every later conflict. A stamp stored that far ahead before this
+# rule existed loses to any change.
+CLOCK_SKEW = timedelta(minutes=5)
+
+# Rows looked up per query when a push names many client ids.
+_LOOKUP_CHUNK = 1000
+
+# Postgres advisory lock class for "a sync of this user is running".
+SYNC_LOCK_CLASS = 7461
+
+
+def _newer_or_equal(
+    incoming: datetime | None,
+    current: datetime | None,
+    cap: datetime | None = None,
+) -> bool:
     if incoming is None:
         return current is None
     if current is None:
         return True
     incoming_utc = as_utc(incoming)
     current_utc = as_utc(current)
+    if cap is not None:
+        # A stored stamp past the cap came from a wrong clock before stamps
+        # were capped; it loses to any real change.
+        if current_utc > cap:
+            return True
+        incoming_utc = min(incoming_utc, cap)
     return incoming_utc >= current_utc
 
 
 def _parse_many(model, items: list[dict]):
     parsed = []
-    for item in items:
+    for index, item in enumerate(items):
         try:
             parsed.append(model.model_validate(item))
+        except ValidationError as error:
+            # Where and why, never the rejected values (private text, amounts).
+            raise HTTPException(
+                status_code=422,
+                detail=[
+                    {
+                        "type": problem.get("type"),
+                        "loc": [model.__name__, index, *problem.get("loc", ())],
+                        "msg": problem.get("msg"),
+                    }
+                    for problem in error.errors()
+                ],
+            ) from error
         except Exception as error:
-            raise HTTPException(status_code=422, detail=str(error)) from error
+            raise HTTPException(status_code=422, detail="Invalid row") from error
     return parsed
 
 
-def _get_by_client(db: Session, model, user_id: int, client_id: str):
-    db.flush()
-    return (
-        db.query(model)
-        .filter(model.user_id == user_id, model.client_id == client_id)
-        .first()
-    )
+class _Push:
+    """One push: its clock, and the user's rows it touches, by client id.
+
+    Rows are looked up per collection in a few queries up front instead of
+    one query (and one flush) per pushed row.
+    """
+
+    def __init__(self, db: Session, user_id: int):
+        self.db = db
+        self.user_id = user_id
+        self.now = utc_now()
+        self.cap = self.now + CLOCK_SKEW
+        self._rows: dict[type, dict[str, object]] = {}
+        # Transactions with a source id that this push wrote, in push order,
+        # with the stamp the device sent; and the live holder of each source
+        # id before the push.
+        self.sourced: list[tuple[Transaction, datetime]] = []
+        self.source_holders: dict[str, Transaction] = {}
+
+    def stamp(self, value: datetime | None) -> datetime:
+        """A device stamp in UTC, no later than the server clock plus skew."""
+        return min(as_utc_or_now(value), self.cap)
+
+    def load(self, model, client_ids) -> None:
+        """Fetch the user's rows of [model] for [client_ids] not yet known."""
+        cache = self._rows.setdefault(model, {})
+        wanted = sorted({cid for cid in client_ids if cid and cid not in cache})
+        for start in range(0, len(wanted), _LOOKUP_CHUNK):
+            chunk = wanted[start : start + _LOOKUP_CHUNK]
+            for row in self.db.query(model).filter(
+                model.user_id == self.user_id,
+                model.client_id.in_(chunk),
+            ):
+                cache[row.client_id] = row
+
+    def get(self, model, client_id: str):
+        return self._rows.setdefault(model, {}).get(client_id)
+
+    def add(self, model, row) -> None:
+        self.db.add(row)
+        self._rows.setdefault(model, {})[row.client_id] = row
+
+    def load_source_holders(self, sources) -> None:
+        wanted = sorted({source for source in sources if source})
+        cache = self._rows.setdefault(Transaction, {})
+        for start in range(0, len(wanted), _LOOKUP_CHUNK):
+            chunk = wanted[start : start + _LOOKUP_CHUNK]
+            for row in self.db.query(Transaction).filter(
+                Transaction.user_id == self.user_id,
+                Transaction.source_id.in_(chunk),
+                Transaction.deleted_at.is_(None),
+            ):
+                self.source_holders[row.source_id] = row
+                cache.setdefault(row.client_id, row)
 
 
-def _apply_delete(row, deleted_at: datetime | None) -> None:
-    stamp = as_utc_or_now(deleted_at)
-    if row.deleted_at is not None and not _newer_or_equal(stamp, row.deleted_at):
+def _apply_delete(row, deleted_at: datetime | None, push: _Push) -> None:
+    stamp = push.stamp(deleted_at)
+    if row.deleted_at is not None and not _newer_or_equal(stamp, row.deleted_at, push.cap):
         return
-    if hasattr(row, "updated_at") and not _newer_or_equal(stamp, row.updated_at):
+    if hasattr(row, "updated_at") and not _newer_or_equal(stamp, row.updated_at, push.cap):
         return
     row.deleted_at = stamp
     if hasattr(row, "updated_at"):
@@ -143,15 +231,18 @@ def _apply_settings(
     data: SettingsSyncIn,
     *,
     created: bool = False,
+    cap: datetime | None = None,
 ) -> None:
     incoming = as_utc(data.updated_at)
+    if incoming is not None and cap is not None:
+        incoming = min(incoming, cap)
     # The streak merges by calendar day, not by the settings timestamp, so a
     # device whose other settings are older still records today's open.
     _merge_streak(row, data)
     if (
         not created
         and incoming is not None
-        and not _newer_or_equal(incoming, row.updated_at)
+        and not _newer_or_equal(incoming, row.updated_at, cap)
     ):
         keys = set(row.processed_period_keys or [])
         keys.update(data.processed_period_keys or [])
@@ -295,14 +386,15 @@ def _settings_out(row: UserSettings, user: User) -> SettingsSyncOut:
     )
 
 
-def _apply_transaction(db: Session, user_id: int, data: TransactionSyncIn) -> None:
-    row = _get_by_client(db, Transaction, user_id, data.client_id)
-    incoming = as_utc_or_now(data.updated_at or data.occurred_at)
+def _apply_transaction(push: _Push, data: TransactionSyncIn) -> None:
+    row = push.get(Transaction, data.client_id)
+    sent = as_utc_or_now(data.updated_at or data.occurred_at)
+    incoming = push.stamp(sent)
     frequency, is_recurring, recurring_period = apply_frequency(data.frequency)
     if row is None:
-        row = Transaction(user_id=user_id, client_id=data.client_id)
-        db.add(row)
-    elif not _newer_or_equal(incoming, row.updated_at):
+        row = Transaction(user_id=push.user_id, client_id=data.client_id)
+        push.add(Transaction, row)
+    elif not _newer_or_equal(incoming, row.updated_at, push.cap):
         return
     row.type = data.type
     row.amount = data.amount
@@ -318,15 +410,48 @@ def _apply_transaction(db: Session, user_id: int, data: TransactionSyncIn) -> No
     row.recurring_period = recurring_period
     row.deleted_at = None
     row.updated_at = incoming
+    if row.source_id is not None:
+        push.sourced.append((row, sent))
 
 
-def _apply_goal(db: Session, user_id: int, data: GoalSyncIn) -> None:
-    row = _get_by_client(db, SavingsGoal, user_id, data.client_id)
-    incoming = as_utc_or_now(data.updated_at or data.created_at)
+def _dedupe_sources(push: _Push) -> list[Transaction]:
+    """One live transaction per source id; returns the rows turned into tombstones.
+
+    Generated entries (a recurring charge, a shopping purchase) carry a
+    source id that every device derives the same way, but each device gives
+    its copy a random client id. The copy the server already had stays (or,
+    for a new source, the first one in this push); later copies become
+    tombstones, so the device that sent one drops it at its next pull and
+    the charge is counted once everywhere.
+    """
+    keep: dict[str, Transaction] = {}
+    for source, holder in push.source_holders.items():
+        if holder.deleted_at is None and holder.source_id == source:
+            keep[source] = holder
+    dropped: list[Transaction] = []
+    for row, sent in push.sourced:
+        if row.deleted_at is not None or row.source_id is None:
+            continue
+        winner = keep.setdefault(row.source_id, row)
+        if winner is row:
+            continue
+        # The device's own (unclamped) stamp, so its copy is never newer
+        # than this tombstone and is removed on the device.
+        stamp = max(row.updated_at, sent)
+        row.deleted_at = stamp
+        row.updated_at = stamp
+        scrub_private_text(row)
+        dropped.append(row)
+    return dropped
+
+
+def _apply_goal(push: _Push, data: GoalSyncIn) -> None:
+    row = push.get(SavingsGoal, data.client_id)
+    incoming = push.stamp(data.updated_at or data.created_at)
     if row is None:
-        row = SavingsGoal(user_id=user_id, client_id=data.client_id)
-        db.add(row)
-    elif not _newer_or_equal(incoming, row.updated_at):
+        row = SavingsGoal(user_id=push.user_id, client_id=data.client_id)
+        push.add(SavingsGoal, row)
+    elif not _newer_or_equal(incoming, row.updated_at, push.cap):
         return
     row.name = data.name
     row.currency_code = normalize_currency(data.currency_code)
@@ -348,17 +473,17 @@ def _apply_goal(db: Session, user_id: int, data: GoalSyncIn) -> None:
     row.updated_at = incoming
 
 
-def _apply_transfer(db: Session, user_id: int, data: TransferSyncIn) -> None:
-    row = _get_by_client(db, SavingsTransfer, user_id, data.client_id)
-    incoming = as_utc_or_now(data.updated_at or data.occurred_at)
+def _apply_transfer(push: _Push, data: TransferSyncIn) -> None:
+    row = push.get(SavingsTransfer, data.client_id)
+    incoming = push.stamp(data.updated_at or data.occurred_at)
     goal = None
     goal_client_id = empty_to_none(data.goal_client_id)
     if goal_client_id is not None:
-        goal = _get_by_client(db, SavingsGoal, user_id, goal_client_id)
+        goal = push.get(SavingsGoal, goal_client_id)
     if row is None:
-        row = SavingsTransfer(user_id=user_id, client_id=data.client_id)
-        db.add(row)
-    elif not _newer_or_equal(incoming, row.updated_at):
+        row = SavingsTransfer(user_id=push.user_id, client_id=data.client_id)
+        push.add(SavingsTransfer, row)
+    elif not _newer_or_equal(incoming, row.updated_at, push.cap):
         return
     row.goal_id = None if goal is None else goal.id
     row.amount = data.amount
@@ -372,35 +497,45 @@ def _apply_transfer(db: Session, user_id: int, data: TransferSyncIn) -> None:
     row.updated_at = incoming
 
 
-def _apply_list(db: Session, user_id: int, data: ShoppingListSyncIn) -> None:
-    row = _get_by_client(db, ShoppingList, user_id, data.client_id)
-    incoming = as_utc_or_now(data.updated_at)
+def _apply_list(push: _Push, data: ShoppingListSyncIn) -> None:
+    row = push.get(ShoppingList, data.client_id)
+    incoming = push.stamp(data.updated_at)
     if row is None:
-        row = ShoppingList(user_id=user_id, client_id=data.client_id)
-        db.add(row)
-    elif not _newer_or_equal(incoming, row.updated_at):
+        row = ShoppingList(user_id=push.user_id, client_id=data.client_id)
+        push.add(ShoppingList, row)
+    elif not _newer_or_equal(incoming, row.updated_at, push.cap):
         return
     row.name = data.name
     row.deleted_at = None
     row.updated_at = incoming
 
 
-def _apply_item(db: Session, user_id: int, data: ShoppingItemSyncIn) -> None:
-    shopping_list = _get_by_client(db, ShoppingList, user_id, data.list_client_id)
-    if shopping_list is None:
-        shopping_list = ShoppingList(
-            user_id=user_id,
-            client_id=data.list_client_id,
-            name="المشتريات",
+def _ensure_lists(push: _Push, items: list[ShoppingItemSyncIn]) -> bool:
+    """Create the lists that items name but nobody pushed. True when any was."""
+    created = False
+    for data in items:
+        if push.get(ShoppingList, data.list_client_id) is not None:
+            continue
+        push.add(
+            ShoppingList,
+            ShoppingList(
+                user_id=push.user_id,
+                client_id=data.list_client_id,
+                name="المشتريات",
+            ),
         )
-        db.add(shopping_list)
-        db.flush()
-    row = _get_by_client(db, ShoppingItem, user_id, data.client_id)
-    incoming = as_utc_or_now(data.updated_at or data.created_at)
+        created = True
+    return created
+
+
+def _apply_item(push: _Push, data: ShoppingItemSyncIn) -> None:
+    shopping_list = push.get(ShoppingList, data.list_client_id)
+    row = push.get(ShoppingItem, data.client_id)
+    incoming = push.stamp(data.updated_at or data.created_at)
     if row is None:
-        row = ShoppingItem(user_id=user_id, client_id=data.client_id)
-        db.add(row)
-    elif not _newer_or_equal(incoming, row.updated_at):
+        row = ShoppingItem(user_id=push.user_id, client_id=data.client_id)
+        push.add(ShoppingItem, row)
+    elif not _newer_or_equal(incoming, row.updated_at, push.cap):
         return
     row.list_id = shopping_list.id
     row.name = data.name
@@ -415,13 +550,13 @@ def _apply_item(db: Session, user_id: int, data: ShoppingItemSyncIn) -> None:
     row.updated_at = incoming
 
 
-def _apply_recurring(db: Session, user_id: int, data: RecurringSyncIn) -> None:
-    row = _get_by_client(db, RecurringExpense, user_id, data.client_id)
-    incoming = as_utc_or_now(data.updated_at or data.created_at)
+def _apply_recurring(push: _Push, data: RecurringSyncIn) -> None:
+    row = push.get(RecurringExpense, data.client_id)
+    incoming = push.stamp(data.updated_at or data.created_at)
     if row is None:
-        row = RecurringExpense(user_id=user_id, client_id=data.client_id)
-        db.add(row)
-    elif not _newer_or_equal(incoming, row.updated_at):
+        row = RecurringExpense(user_id=push.user_id, client_id=data.client_id)
+        push.add(RecurringExpense, row)
+    elif not _newer_or_equal(incoming, row.updated_at, push.cap):
         return
     row.amount = data.amount
     row.currency_code = normalize_currency(data.currency_code)
@@ -441,13 +576,13 @@ def _apply_recurring(db: Session, user_id: int, data: RecurringSyncIn) -> None:
     row.updated_at = incoming
 
 
-def _apply_category(db: Session, user_id: int, data: CategorySyncIn) -> None:
-    row = _get_by_client(db, ExpenseCategory, user_id, data.client_id)
-    incoming = as_utc_or_now(data.updated_at or data.created_at)
+def _apply_category(push: _Push, data: CategorySyncIn) -> None:
+    row = push.get(ExpenseCategory, data.client_id)
+    incoming = push.stamp(data.updated_at or data.created_at)
     if row is None:
-        row = ExpenseCategory(user_id=user_id, client_id=data.client_id)
-        db.add(row)
-    elif not _newer_or_equal(incoming, row.updated_at):
+        row = ExpenseCategory(user_id=push.user_id, client_id=data.client_id)
+        push.add(ExpenseCategory, row)
+    elif not _newer_or_equal(incoming, row.updated_at, push.cap):
         return
     row.label = data.label.strip()
     row.icon_index = max(0, data.icon_index)
@@ -455,13 +590,13 @@ def _apply_category(db: Session, user_id: int, data: CategorySyncIn) -> None:
     row.updated_at = incoming
 
 
-def _apply_preset(db: Session, user_id: int, data: PresetSyncIn) -> None:
-    row = _get_by_client(db, ExpensePreset, user_id, data.client_id)
-    incoming = as_utc_or_now(data.updated_at or data.created_at)
+def _apply_preset(push: _Push, data: PresetSyncIn) -> None:
+    row = push.get(ExpensePreset, data.client_id)
+    incoming = push.stamp(data.updated_at or data.created_at)
     if row is None:
-        row = ExpensePreset(user_id=user_id, client_id=data.client_id)
-        db.add(row)
-    elif not _newer_or_equal(incoming, row.updated_at):
+        row = ExpensePreset(user_id=push.user_id, client_id=data.client_id)
+        push.add(ExpensePreset, row)
+    elif not _newer_or_equal(incoming, row.updated_at, push.cap):
         return
     row.amount = data.amount
     row.multiplier = data.multiplier
@@ -478,24 +613,40 @@ def _apply_preset(db: Session, user_id: int, data: PresetSyncIn) -> None:
     row.updated_at = incoming
 
 
-def _apply_notification(db: Session, user_id: int, data: NotificationSyncIn) -> None:
-    row = _get_by_client(db, Notification, user_id, data.client_id)
+def _live_notifications_by_event(push: _Push, keys) -> dict[str, Notification]:
+    wanted = sorted({key for key in keys if key is not None})
+    found: dict[str, Notification] = {}
+    cache = push._rows.setdefault(Notification, {})
+    for start in range(0, len(wanted), _LOOKUP_CHUNK):
+        chunk = wanted[start : start + _LOOKUP_CHUNK]
+        for row in push.db.query(Notification).filter(
+            Notification.user_id == push.user_id,
+            Notification.event_key.in_(chunk),
+            Notification.deleted_at.is_(None),
+        ):
+            found.setdefault(row.event_key, row)
+            cache.setdefault(row.client_id, row)
+    return found
+
+
+def _apply_notification(
+    push: _Push,
+    data: NotificationSyncIn,
+    by_event: dict[str, Notification],
+) -> None:
+    row = push.get(Notification, data.client_id)
     if row is None:
-        row = (
-            db.query(Notification)
-            .filter(
-                Notification.user_id == user_id,
-                Notification.event_key == data.event_key,
-                Notification.deleted_at.is_(None),
-            )
-            .first()
-        )
-    incoming = as_utc_or_now(data.updated_at or data.created_at)
+        candidate = by_event.get(data.event_key)
+        if candidate is not None and candidate.deleted_at is None:
+            row = candidate
+    incoming = push.stamp(data.updated_at or data.created_at)
     if row is None:
-        row = Notification(user_id=user_id, client_id=data.client_id)
-        db.add(row)
-    elif not _newer_or_equal(incoming, row.updated_at):
+        row = Notification(user_id=push.user_id, client_id=data.client_id)
+        push.add(Notification, row)
+    elif not _newer_or_equal(incoming, row.updated_at, push.cap):
         return
+    if by_event.get(row.event_key) is row and row.event_key != data.event_key:
+        by_event.pop(row.event_key, None)
     row.type = data.type
     row.title = data.title
     row.message = data.message
@@ -507,14 +658,15 @@ def _apply_notification(db: Session, user_id: int, data: NotificationSyncIn) -> 
         row.created_at = as_utc_or_now(data.created_at)
     row.deleted_at = None
     row.updated_at = incoming
+    by_event.setdefault(row.event_key, row)
 
 
-def _apply_deletes(db: Session, model, user_id: int, deletes: list[TombstoneIn]) -> None:
+def _apply_deletes(push: _Push, model, deletes: list[TombstoneIn]) -> None:
     for item in deletes:
-        row = _get_by_client(db, model, user_id, item.client_id)
+        row = push.get(model, item.client_id)
         if row is None:
             continue
-        _apply_delete(row, item.deleted_at)
+        _apply_delete(row, item.deleted_at, push)
 
 
 def _collection_out(live_rows, tombstones, serialize) -> SyncCollectionOut:
@@ -534,43 +686,111 @@ def sync_changes(
 
     Upserts run parent first (goals and lists before the rows that point at
     them), then tombstones, then settings. Everything happens in one
-    transaction: a bad row rolls the whole push back.
+    transaction: a bad row rolls the whole push back. Device stamps are
+    capped at the server clock plus CLOCK_SKEW, and a generated entry that
+    another device already posted (same source id) is kept once.
     """
     # Its rate limit runs in RateLimitMiddleware, before the body is read.
     user_id = current_user.id
     last_sync = as_utc(payload.last_sync_at)
 
     try:
-        # Upserts, parents first: goals and lists before the rows that point at them.
-        for item in _parse_many(GoalSyncIn, payload.savings_goals.upserts):
-            _apply_goal(db, user_id, item)
-        for item in _parse_many(ShoppingListSyncIn, payload.shopping_lists.upserts):
-            _apply_list(db, user_id, item)
-        for item in _parse_many(TransactionSyncIn, payload.transactions.upserts):
-            _apply_transaction(db, user_id, item)
-        for item in _parse_many(TransferSyncIn, payload.savings_transfers.upserts):
-            _apply_transfer(db, user_id, item)
-        for item in _parse_many(ShoppingItemSyncIn, payload.shopping_items.upserts):
-            _apply_item(db, user_id, item)
-        for item in _parse_many(RecurringSyncIn, payload.recurring_expenses.upserts):
-            _apply_recurring(db, user_id, item)
-        for item in _parse_many(NotificationSyncIn, payload.notifications.upserts):
-            _apply_notification(db, user_id, item)
-        for item in _parse_many(CategorySyncIn, payload.expense_categories.upserts):
-            _apply_category(db, user_id, item)
-        for item in _parse_many(PresetSyncIn, payload.expense_presets.upserts):
-            _apply_preset(db, user_id, item)
+        # One sync per account at a time, held until this transaction ends.
+        # A second one (two taps, a retry while the first is still running)
+        # would race the first on the same rows.
+        locked = db.scalar(
+            text("SELECT pg_try_advisory_xact_lock(:kind, :user_id)"),
+            {"kind": SYNC_LOCK_CLASS, "user_id": user_id},
+        )
+        if not locked:
+            raise HTTPException(
+                status_code=409,
+                detail="Sync already running",
+                headers={"Retry-After": "5"},
+            )
+
+        goals_in = _parse_many(GoalSyncIn, payload.savings_goals.upserts)
+        lists_in = _parse_many(ShoppingListSyncIn, payload.shopping_lists.upserts)
+        transactions_in = _parse_many(TransactionSyncIn, payload.transactions.upserts)
+        transfers_in = _parse_many(TransferSyncIn, payload.savings_transfers.upserts)
+        items_in = _parse_many(ShoppingItemSyncIn, payload.shopping_items.upserts)
+        recurring_in = _parse_many(RecurringSyncIn, payload.recurring_expenses.upserts)
+        notifications_in = _parse_many(NotificationSyncIn, payload.notifications.upserts)
+        categories_in = _parse_many(CategorySyncIn, payload.expense_categories.upserts)
+        presets_in = _parse_many(PresetSyncIn, payload.expense_presets.upserts)
+
+        push = _Push(db, user_id)
+
+        def ids_of(rows, deletes):
+            return [row.client_id for row in rows] + [item.client_id for item in deletes]
+
+        # Every row this push names, a few queries per collection.
+        push.load(
+            SavingsGoal,
+            ids_of(goals_in, payload.savings_goals.deletes)
+            + [empty_to_none(row.goal_client_id) for row in transfers_in],
+        )
+        push.load(
+            ShoppingList,
+            ids_of(lists_in, payload.shopping_lists.deletes)
+            + [row.list_client_id for row in items_in],
+        )
+        push.load(Transaction, ids_of(transactions_in, payload.transactions.deletes))
+        push.load_source_holders(empty_to_none(row.source_id) for row in transactions_in)
+        push.load(SavingsTransfer, ids_of(transfers_in, payload.savings_transfers.deletes))
+        push.load(ShoppingItem, ids_of(items_in, payload.shopping_items.deletes))
+        push.load(RecurringExpense, ids_of(recurring_in, payload.recurring_expenses.deletes))
+        push.load(Notification, ids_of(notifications_in, payload.notifications.deletes))
+        push.load(ExpenseCategory, ids_of(categories_in, payload.expense_categories.deletes))
+        push.load(ExpensePreset, ids_of(presets_in, payload.expense_presets.deletes))
+        by_event = _live_notifications_by_event(push, [row.event_key for row in notifications_in])
+
+        # Upserts, parents first: goals and lists before the rows that point
+        # at them. Parents get their ids in one flush.
+        for item in goals_in:
+            _apply_goal(push, item)
+        for item in lists_in:
+            _apply_list(push, item)
+        _ensure_lists(push, items_in)
+        db.flush()
+        for item in transactions_in:
+            _apply_transaction(push, item)
+        for item in transfers_in:
+            _apply_transfer(push, item)
+        for item in items_in:
+            _apply_item(push, item)
+        for item in recurring_in:
+            _apply_recurring(push, item)
+        for item in notifications_in:
+            _apply_notification(push, item, by_event)
+        for item in categories_in:
+            _apply_category(push, item)
+        for item in presets_in:
+            _apply_preset(push, item)
 
         # Tombstones, children first, so a list goes after its items.
-        _apply_deletes(db, ShoppingItem, user_id, payload.shopping_items.deletes)
-        _apply_deletes(db, SavingsTransfer, user_id, payload.savings_transfers.deletes)
-        _apply_deletes(db, Transaction, user_id, payload.transactions.deletes)
-        _apply_deletes(db, RecurringExpense, user_id, payload.recurring_expenses.deletes)
-        _apply_deletes(db, Notification, user_id, payload.notifications.deletes)
-        _apply_deletes(db, ExpenseCategory, user_id, payload.expense_categories.deletes)
-        _apply_deletes(db, ExpensePreset, user_id, payload.expense_presets.deletes)
-        _apply_deletes(db, SavingsGoal, user_id, payload.savings_goals.deletes)
-        _apply_deletes(db, ShoppingList, user_id, payload.shopping_lists.deletes)
+        _apply_deletes(push, ShoppingItem, payload.shopping_items.deletes)
+        _apply_deletes(push, SavingsTransfer, payload.savings_transfers.deletes)
+        _apply_deletes(push, Transaction, payload.transactions.deletes)
+        _apply_deletes(push, RecurringExpense, payload.recurring_expenses.deletes)
+        _apply_deletes(push, Notification, payload.notifications.deletes)
+        _apply_deletes(push, ExpenseCategory, payload.expense_categories.deletes)
+        _apply_deletes(push, ExpensePreset, payload.expense_presets.deletes)
+        _apply_deletes(push, SavingsGoal, payload.savings_goals.deletes)
+        _apply_deletes(push, ShoppingList, payload.shopping_lists.deletes)
+
+        # After the tombstones: a charge deleted and posted again in one push
+        # keeps the new copy.
+        _dedupe_sources(push)
+        # Rows leaving a source id go out before rows taking it, so the
+        # one-live-row-per-source index never sees two at once.
+        leaving = [
+            row
+            for row in push._rows.get(Transaction, {}).values()
+            if row.source_id is not None and row.deleted_at is not None
+        ]
+        if leaving:
+            db.flush(leaving)
 
         # Settings: one row per user, created here if it is missing.
         settings, settings_created = _settings_row(db, current_user)
@@ -580,6 +800,7 @@ def sync_changes(
                 current_user,
                 payload.settings,
                 created=settings_created,
+                cap=push.cap,
             )
 
         # Reply: every row changed since last_sync_at, live rows and tombstones apart.
@@ -587,8 +808,10 @@ def sync_changes(
         server_time = utc_now()
 
         def dump_changed(model, serialize_live):
+            # populate_existing: rows written above go out as stored (amounts
+            # rounded by the column), not as the Python values that were set.
             rows = _changed_since(
-                db.query(model).filter(model.user_id == user_id),
+                db.query(model).populate_existing().filter(model.user_id == user_id),
                 model,
                 last_sync,
             ).all()
@@ -754,8 +977,27 @@ def sync_changes(
     except HTTPException:
         db.rollback()
         raise
+    except IntegrityError as error:
+        # A constraint refused a row, most likely another write racing this
+        # one. Nothing was saved; the app retries the same push later.
+        db.rollback()
+        logger.warning("sync conflict for user %s: %s", user_id, type(error.orig).__name__)
+        raise HTTPException(
+            status_code=409,
+            detail="Sync conflict, try again",
+            headers={"Retry-After": "5"},
+        ) from error
+    except (OperationalError, SQLAlchemyTimeoutError) as error:
+        # Database unreachable, too slow (statement timeout) or pool exhausted.
+        db.rollback()
+        logger.warning("sync unavailable for user %s: %s", user_id, type(error).__name__)
+        raise HTTPException(
+            status_code=503,
+            detail="Service temporarily unavailable",
+            headers={"Retry-After": "10"},
+        ) from error
     except Exception as error:
         db.rollback()
-        # The details name tables and SQL; they stay in the server log.
-        logger.exception("sync failed for user %s", user_id)
-        raise HTTPException(status_code=400, detail="Sync failed") from error
+        # The type and stack go to the log; the message can quote row values.
+        log_error("sync failed for user %s", error, user_id)
+        raise HTTPException(status_code=500, detail="Sync failed") from error

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from api_schemas import NotificationCreate, NotificationOut, NotificationUpdate
 from auth import get_current_user
 from crud_utils import (
+    RecordId,
     as_utc_or_now,
     commit_or_existing,
     empty_to_none,
@@ -134,7 +135,7 @@ def mark_all_read(
 
 @router.get("/{notification_id}", response_model=NotificationOut)
 def get_notification(
-    notification_id: int,
+    notification_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -144,7 +145,7 @@ def get_notification(
 
 @router.patch("/{notification_id}", response_model=NotificationOut)
 def update_notification(
-    notification_id: int,
+    notification_id: RecordId,
     data: NotificationUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -160,7 +161,7 @@ def update_notification(
 
 @router.delete("/{notification_id}", status_code=204)
 def delete_notification(
-    notification_id: int,
+    notification_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

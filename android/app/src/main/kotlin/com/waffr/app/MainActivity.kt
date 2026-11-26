@@ -18,6 +18,7 @@ class SharedPdfProvider : FileProvider()
 class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        Pbkdf2Channel(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             "waffr/haptics",

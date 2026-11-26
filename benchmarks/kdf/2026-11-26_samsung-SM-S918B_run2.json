@@ -1,0 +1,49 @@
+{
+  "report_version": 1,
+  "commit": "3ff52a0ac2f7f5d011b6ac44936656fb41d1e4d9",
+  "measured_at": "2026-11-26T17:01:31.910914Z",
+  "build_mode": "release",
+  "device": {
+    "platform": "android",
+    "implementation": "javax.crypto.Mac HmacSHA256 (AndroidOpenSSL)",
+    "manufacturer": "samsung",
+    "model": "SM-S918B",
+    "soc": "QTI SM8550",
+    "abis": "arm64-v8a,armeabi-v7a,armeabi",
+    "os_version": "17",
+    "sdk": 37,
+    "app_version": "2.15.12+17",
+    "cpu_count": 8,
+    "package": "com.waffr.app.kdfbench"
+  },
+  "self_test_passed": true,
+  "self_test_disabled_reason": null,
+  "vectors_all_match": true,
+  "vectors": [
+    {"name": "rfc7914", "iterations": 1, "result": "match"},
+    {"name": "ascii-1", "iterations": 1, "result": "match"},
+    {"name": "ascii-2", "iterations": 2, "result": "match"},
+    {"name": "ascii-4096", "iterations": 4096, "result": "match"},
+    {"name": "arabic", "iterations": 1000, "result": "match"},
+    {"name": "arabic-salt32", "iterations": 1000, "result": "match"},
+    {"name": "emoji", "iterations": 1000, "result": "match"},
+    {"name": "long-100-bytes", "iterations": 1000, "result": "match"},
+    {"name": "long-mixed", "iterations": 3, "result": "match"},
+    {"name": "exactly-64-bytes", "iterations": 5, "result": "match"},
+    {"name": "empty", "iterations": 10, "result": "match"},
+    {"name": "unnormalised-nfd", "iterations": 7, "result": "match"},
+    {"name": "app-210000", "iterations": 210000, "result": "match"},
+    {"name": "app-600000", "iterations": 600000, "result": "match"},
+    {"name": "app-arabic-210000", "iterations": 210000, "result": "match"}
+  ],
+  "timings": [
+    {"implementation": "native", "iterations": 210000, "runs_ms": [83, 84, 82, 83, 81], "median_ms": 83, "worst_ms": 84},
+    {"implementation": "android_secret_key_factory", "iterations": 210000, "runs_ms": [138, 140, 144, 135, 134], "median_ms": 138, "worst_ms": 144},
+    {"implementation": "dart", "iterations": 210000, "runs_ms": [1064, 1050, 1131], "median_ms": 1064, "worst_ms": 1131},
+    {"implementation": "native", "iterations": 600000, "runs_ms": [233, 235, 235, 232, 233], "median_ms": 233, "worst_ms": 235},
+    {"implementation": "android_secret_key_factory", "iterations": 600000, "runs_ms": [392, 388, 393, 414, 386], "median_ms": 392, "worst_ms": 414},
+    {"implementation": "dart", "iterations": 600000, "runs_ms": [3003, 3103, 3299], "median_ms": 3103, "worst_ms": 3299}
+  ],
+  "target_ms": 2000,
+  "native_worst_ms_within_target": {"210000": true, "600000": true}
+}

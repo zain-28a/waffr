@@ -13,6 +13,7 @@ from api_schemas import (
 )
 from auth import get_current_user
 from crud_utils import (
+    RecordId,
     as_utc,
     commit_or_existing,
     empty_to_none,
@@ -131,7 +132,7 @@ def create_list(
 
 @router.get("/{list_id}", response_model=ShoppingListOut)
 def get_list(
-    list_id: int,
+    list_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -141,7 +142,7 @@ def get_list(
 
 @router.patch("/{list_id}", response_model=ShoppingListOut)
 def update_list(
-    list_id: int,
+    list_id: RecordId,
     data: ShoppingListUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -157,7 +158,7 @@ def update_list(
 
 @router.delete("/{list_id}", status_code=204)
 def delete_list(
-    list_id: int,
+    list_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -176,7 +177,7 @@ def delete_list(
 
 @router.get("/{list_id}/items", response_model=list[ShoppingItemOut])
 def list_items(
-    list_id: int,
+    list_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -192,7 +193,7 @@ def list_items(
 
 @router.post("/{list_id}/items", response_model=ShoppingItemOut, status_code=201)
 def create_item(
-    list_id: int,
+    list_id: RecordId,
     data: ShoppingItemCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -228,8 +229,8 @@ def create_item(
 
 @router.get("/{list_id}/items/{item_id}", response_model=ShoppingItemOut)
 def get_item(
-    list_id: int,
-    item_id: int,
+    list_id: RecordId,
+    item_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -241,8 +242,8 @@ def get_item(
 
 @router.patch("/{list_id}/items/{item_id}", response_model=ShoppingItemOut)
 def update_item(
-    list_id: int,
-    item_id: int,
+    list_id: RecordId,
+    item_id: RecordId,
     data: ShoppingItemUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -274,8 +275,8 @@ def update_item(
 
 @router.delete("/{list_id}/items/{item_id}", status_code=204)
 def delete_item(
-    list_id: int,
-    item_id: int,
+    list_id: RecordId,
+    item_id: RecordId,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

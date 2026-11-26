@@ -588,15 +588,39 @@ def refresh_news(*, wait: bool = True) -> NewsRefreshResult:
         _refresh_lock.release()
 
 
+# An empty table is filled by the first anonymous read. While the feeds are
+# down it stays empty, so without a pause every read would start another
+# fetch (and hold a worker for it): one try per this many seconds.
+NEWS_FILL_COOLDOWN_SECONDS = 10 * 60
+_fill_lock = threading.Lock()
+_last_fill_attempt = float("-inf")
+
+
+def _may_try_fill() -> bool:
+    global _last_fill_attempt
+    with _fill_lock:
+        now = time.monotonic()
+        if now - _last_fill_attempt < NEWS_FILL_COOLDOWN_SECONDS:
+            return False
+        _last_fill_attempt = now
+        return True
+
+
 def latest_articles(db: Session, limit: int = NEWS_LIST_LIMIT) -> list[NewsArticle]:
-    """Return stored articles, filling the table once when it is empty."""
+    """Return stored articles, filling the table once when it is empty.
+
+    Only one read per NEWS_FILL_COOLDOWN_SECONDS may fetch; the others, and
+    any read while a fetch is running, get NewsFeedUnavailable at once.
+    """
     bounded = max(1, min(limit, NEWS_LIST_LIMIT))
     existing = db.query(NewsArticle.id).limit(1).first()
     if existing is not None:
         return _query_latest(db, bounded)
 
     db.rollback()
-    result = refresh_news(wait=True)
+    if not _may_try_fill():
+        raise NewsFeedUnavailable()
+    result = refresh_news(wait=False)
     rows = _query_latest(db, bounded)
     if not rows and not result.ok:
         raise NewsFeedUnavailable()

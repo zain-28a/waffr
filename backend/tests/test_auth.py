@@ -153,8 +153,11 @@ def test_lockout_ends_when_its_time_is_up(client):
     from rate_limit import limiter
 
     register(client, "alice@example.com", password="right password")
-    for _ in range(5):
-        client.post("/auth/login", json={"email": "alice@example.com", "password": "bad one!"})
+    system_execute("UPDATE users SET locked_until = now() + interval '10 minutes'")
+    locked = client.post(
+        "/auth/login", json={"email": "alice@example.com", "password": "right password"}
+    )
+    assert locked.status_code == 429
     system_execute("UPDATE users SET locked_until = now() - interval '1 minute'")
     # The per-email failure counter would still refuse; a restart clears it.
     limiter.clear()
@@ -206,6 +209,56 @@ def test_expired_tokens_are_refused(client, alice):
 )
 def test_tokens_for_the_wrong_account_or_version_are_refused(client, alice, claims):
     token = _token(**claims, exp=_soon())
+    assert client.get("/auth/me", headers=bearer(token)).status_code == 401
+
+
+def _forged(user_id: int, *, key: str | None = None, algorithm: str = "HS256", **claims) -> str:
+    import auth
+
+    payload = {"sub": str(user_id), "ver": 0, "exp": _soon(), **claims}
+    if algorithm == "none":
+        return jwt.encode(payload, None, algorithm="none")
+    return jwt.encode(payload, key or auth.SECRET_KEY, algorithm=algorithm)
+
+
+def test_unsigned_tokens_are_refused(client, alice):
+    user_id = system_scalar("SELECT id FROM users")
+    token = _forged(user_id, algorithm="none")
+    assert client.get("/auth/me", headers=bearer(token)).status_code == 401
+
+
+def test_tokens_signed_with_another_key_are_refused(client, alice):
+    user_id = system_scalar("SELECT id FROM users")
+    token = _forged(user_id, key="not-the-server-key-" + "y" * 40)
+    assert client.get("/auth/me", headers=bearer(token)).status_code == 401
+
+
+def test_tokens_with_an_unexpected_algorithm_are_refused(client, alice):
+    """Same secret, different HMAC: only HS256 is accepted."""
+    user_id = system_scalar("SELECT id FROM users")
+    token = _forged(user_id, algorithm="HS512")
+    assert client.get("/auth/me", headers=bearer(token)).status_code == 401
+
+
+def test_a_token_whose_payload_was_edited_is_refused(client, alice, bob):
+    """Swap the subject of Alice's token to Bob's id, keeping her signature."""
+    import base64
+    import json
+
+    bob_id = system_scalar("SELECT id FROM users WHERE email = 'bob@example.com'")
+    header, payload, signature = alice.split(".")
+    claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+    claims["sub"] = str(bob_id)
+    edited = base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
+    token = f"{header}.{edited}.{signature}"
+    assert client.get("/auth/me", headers=bearer(token)).status_code == 401
+
+
+def test_tokens_without_an_expiry_are_refused(client, alice):
+    import auth
+
+    user_id = system_scalar("SELECT id FROM users")
+    token = jwt.encode({"sub": str(user_id), "ver": 0}, auth.SECRET_KEY, algorithm="HS256")
     assert client.get("/auth/me", headers=bearer(token)).status_code == 401
 
 

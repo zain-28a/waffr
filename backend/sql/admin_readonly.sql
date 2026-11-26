@@ -8,8 +8,15 @@
 -- payment methods, goal names, shopping lists, notifications or settings,
 -- and no password hashes.
 --
--- Before running: replace CHANGE_ME with a strong password. Do not commit
--- the real password.
+-- It will not run unless you first say, in the same session, that you mean
+-- to and which password the login gets (20+ characters, never committed):
+--
+--   SET waffr.confirm_admin = 'create-read-only-admin';
+--   SET waffr.admin_password = '<a long random password>';
+--
+-- Running it again with a new password changes the login's password. When it
+-- is done, run RESET waffr.admin_password; (or close the Query Tool tab).
+-- Turn off statement logging first if it is on: the password is in the text.
 --
 -- Row level security: the API turns it on for every table (row_security.py)
 -- and adds a read policy for waffr_admin, so these views keep working.
@@ -18,6 +25,22 @@
 -- in that Query Tool session.
 
 BEGIN;
+
+-- Stop here, before anything changes, unless the run was asked for on purpose
+-- and has a real password.
+DO $$
+DECLARE
+    confirm text := current_setting('waffr.confirm_admin', true);
+    secret text := current_setting('waffr.admin_password', true);
+BEGIN
+    IF confirm IS DISTINCT FROM 'create-read-only-admin' THEN
+        RAISE EXCEPTION 'Refusing to run: SET waffr.confirm_admin = ''create-read-only-admin'' first';
+    END IF;
+    IF secret IS NULL OR length(secret) < 20 OR upper(secret) LIKE '%CHANGE_ME%' THEN
+        RAISE EXCEPTION 'Refusing to run: SET waffr.admin_password to a random password of 20 or more characters first';
+    END IF;
+END
+$$;
 
 CREATE SCHEMA IF NOT EXISTS admin_view;
 
@@ -75,10 +98,19 @@ SELECT
 FROM public.savings_goals
 WHERE deleted_at IS NULL;
 
+-- Created, or given the new password if it already exists (this also replaces
+-- the CHANGE_ME password older versions of this script set).
 DO $$
+DECLARE
+    secret text := current_setting('waffr.admin_password', true);
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'waffr_admin') THEN
-        CREATE ROLE waffr_admin LOGIN PASSWORD 'CHANGE_ME';
+        EXECUTE format(
+            'CREATE ROLE waffr_admin LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD %L',
+            secret
+        );
+    ELSE
+        EXECUTE format('ALTER ROLE waffr_admin WITH LOGIN PASSWORD %L', secret);
     END IF;
 END
 $$;

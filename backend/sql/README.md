@@ -10,9 +10,23 @@ these files; its own schema changes happen at startup in
 
 ## admin_readonly.sql
 
-Run it once in pgAdmin's Query Tool while connected as the main database user
-(the role the API uses). Replace `CHANGE_ME` with a strong password first and
-do not commit the real one. Re-running it is safe; it refreshes the views.
+Run it in pgAdmin's Query Tool while connected as the main database user
+(the role the API uses). It refuses to run, and changes nothing, unless the
+same session first sets a confirmation and the login's password:
+
+```sql
+SET waffr.confirm_admin = 'create-read-only-admin';
+SET waffr.admin_password = '<a random password of 20+ characters>';
+```
+
+Never commit the password. Re-running it is safe: it refreshes the views and
+sets the login's password to the one given, which also replaces the
+`CHANGE_ME` password older versions of the script used. Afterwards run
+`RESET waffr.admin_password;`.
+
+Render databases accept outside connections from any address unless you
+limit them: under the database's **Networking / Access Control**, allow only
+the addresses you connect from.
 
 The views run with their owner's rights, and `row_security.py` gives the
 `waffr_admin` role a read policy on every owned table, so the views work
