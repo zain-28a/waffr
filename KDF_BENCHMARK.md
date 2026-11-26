@@ -113,6 +113,7 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 | 2026-11-26 | Samsung Galaxy S23 Ultra (SM-S918B) | Snapdragon 8 Gen 2 (SM8550) | 17 (SDK 37) | 1 of 3 | passed | 15/15 match | 85 / 86 ms | 275 / 275 ms | 472 ms | 1,261 ms | 13,623 ms (others 3,387 and 3,620) |
 | 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 1 of 3 | passed | 15/15 match | 81 / 82 ms | 325 / 326 ms | 586 ms | 1,577 ms | 4,505 ms (others 4,201 and 4,296) |
 | 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), run 2, reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 2 of 3 | passed | 15/15 match | 82 / 85 ms | 279 / 322 ms | 585 ms | 1,535 ms | 4,606 ms (others 4,479 and 3,904) |
+| 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), run 3, reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 3 of 3 | passed | 15/15 match | 88 / 92 ms | 250 / 264 ms | 507 ms | 1,369 ms | 4,398 ms (others 4,001 and 4,138) |
 | 2026-11-26 | Xiaomi 2404ARN45A (Redmi-class, Helio G99 class), run 1 | MediaTek MT6769 (Helio G85/G95-class, low-end) | 14 (SDK 34) | 1 of 3 | passed | 15/15 match | 234 / 240 ms | 664 / 673 ms | 1,250 ms | 3,261 ms | 9,389 ms (others 9,317 and 9,322) |
 | 2026-11-26 | Infinix X6871 (GT 20 Pro), reported by مغناطيسية | MediaTek Dimensity 8350 class (MT6896) | 16 (SDK 36) | 1 of 3 | passed | 15/15 match | 94 / 94 ms | 268 / 280 ms | 481 ms | 1,188 ms | 3,423 ms (others 3,322 and 3,371) |
 | 2026-11-26 | Infinix X6871 (GT 20 Pro), run 2, reported by مغناطيسية | MediaTek MT6896 | 16 (SDK 36) | 2 of 3 | passed | 15/15 match | 97 / 106 ms | 279 / 284 ms | 494 ms | 1,163 ms | 3,365 ms (others 3,321 and 3,359) |
@@ -193,3 +194,14 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 - **Gate status:** the low-end device now has 1 of 3 runs; the target 2 s is met with room to spare
   on this phone. Still missing: two more runs on this device, and a third Android phone at the
   low end for the gate's "at least 3 devices" rule, plus two more runs on each other device.
+
+### Reading of run 3 (Galaxy A56 5G, third run: the A56 is complete)
+
+- **All 15 vectors match and the self-test passed again.**
+- **Native 600,000: 250–264 ms (worst 264)**: the fastest A56 run so far, and the A56 now has
+  **3 of 3 runs**. Still about 7× under the 2 s target.
+- **Pure Dart 600,000: 4.0–4.4 s**, within the range of runs 1 and 2.
+- **Gate status:** Galaxy A56 and S23 Ultra have 3 runs each on record for the A56, and the S23 Ultra
+  still has 1 run. Infinix GT 20 Pro has 2 of 3 runs, and the Xiaomi low-end device has 1 of 3.
+  The gate still needs: the S23 Ultra runs 2 and 3, the GT 20 Pro run 3, two more Xiaomi runs, and a
+  third Android phone at the low end.
