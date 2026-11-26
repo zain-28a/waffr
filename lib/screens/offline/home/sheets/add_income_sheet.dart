@@ -50,9 +50,12 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
     _freqMonthly,
     _freqNone,
   ];
-  // Leftover-balance chip labels: keep it, or move it to savings.
-  static const String _keepBalance = 'إبقاء الرصيد';
-  static const String _moveBalance = 'نقل الرصيد للتوفير';
+  // Leftover-balance chip labels: add the income to the current cycle,
+  // keep the balance and start a new cycle at 100%, or move the balance to
+  // savings first.
+  static const String _keepBalance = 'إضافة للرصيد';
+  static const String _newCycle = 'بداية جديدة';
+  static const String _moveBalance = 'نقل للتوفير';
 
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _sourceController = TextEditingController();
@@ -119,6 +122,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
       source: source.isEmpty ? null : source,
       frequency: _frequency,
       moveBalanceToSavings: _balanceAction == _moveBalance,
+      startNewCycle: _balanceAction == _newCycle,
       currencyCode: _currencyCode,
     );
 
@@ -192,11 +196,14 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
                 text: 'الرصيد الحالي',
                 action: const SheetInfoButton(
                   title: 'الرصيد الحالي',
-                  message: 'هذا هو المبلغ المتبقي لديك من الفترة السابقة. اختر ما تريد فعله به: نقله إلى التوفير، أو إبقاءه ضمن رصيدك الجديد.',
+                  message: 'هذا هو المبلغ المتبقي لديك من الفترة السابقة. اختر ما تريد فعله به:\n'
+                      '«إضافة للرصيد»: يُضاف الدخل إلى الفترة الحالية وتبقى نسبة المتبقي محسوبة منها.\n'
+                      '«بداية جديدة»: يبقى رصيدك كما هو وتبدأ فترة جديدة، فتعود النسبة إلى 100% من رصيدك مع الدخل الجديد.\n'
+                      '«نقل للتوفير»: يُنقل رصيدك الحالي كله إلى التوفير وتبدأ فترة جديدة بالدخل الجديد.',
                 ),
               ),
               SheetChoiceChips(
-                options: const [_keepBalance, _moveBalance],
+                options: const [_keepBalance, _newCycle, _moveBalance],
                 selected: _balanceAction,
                 onSelected: (value) => setState(() => _balanceAction = value),
               ),
