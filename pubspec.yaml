@@ -81,6 +81,7 @@ flutter:
     - assets/brand/waffr_logo.png
     - assets/brand/waffr_logo_backdrop.png
     - assets/brand/waffr_logo_mouthless.png
+    - assets/brand/partner_logos.png
     - assets/licenses/
 
   fonts:
