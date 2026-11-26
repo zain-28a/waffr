@@ -111,6 +111,7 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 | Date | Device | Chip | Android | Run | Self-test | Vectors | Native 210k (median / worst) | Native 600k (median / worst) | Key factory 600k worst | Dart 210k worst | Dart 600k worst |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-26 | Samsung Galaxy S23 Ultra (SM-S918B) | Snapdragon 8 Gen 2 (SM8550) | 17 (SDK 37) | 1 of 3 | passed | 15/15 match | 85 / 86 ms | 275 / 275 ms | 472 ms | 1,261 ms | 13,623 ms (others 3,387 and 3,620) |
+| 2026-11-26 | Samsung Galaxy S23 Ultra (SM-S918B), run 2 | Snapdragon 8 Gen 2 (SM8550) | 17 (SDK 37) | 2 of 3 | passed | 15/15 match | 83 / 84 ms | 233 / 235 ms | 414 ms | 1,064 ms | 3,299 ms (others 3,003 and 3,103) |
 | 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 1 of 3 | passed | 15/15 match | 81 / 82 ms | 325 / 326 ms | 586 ms | 1,577 ms | 4,505 ms (others 4,201 and 4,296) |
 | 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), run 2, reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 2 of 3 | passed | 15/15 match | 82 / 85 ms | 279 / 322 ms | 585 ms | 1,535 ms | 4,606 ms (others 4,479 and 3,904) |
 | 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), run 3, reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 3 of 3 | passed | 15/15 match | 88 / 92 ms | 250 / 264 ms | 507 ms | 1,369 ms | 4,398 ms (others 4,001 and 4,138) |
@@ -205,3 +206,11 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
   still has 1 run. Infinix GT 20 Pro has 2 of 3 runs, and the Xiaomi low-end device has 1 of 3.
   The gate still needs: the S23 Ultra runs 2 and 3, the GT 20 Pro run 3, two more Xiaomi runs, and a
   third Android phone at the low end.
+
+### Reading of run 2 (Galaxy S23 Ultra, second run)
+
+- **All 15 vectors match and the self-test passed again.**
+- **Native 600,000: 232–235 ms (worst 235)**, consistent with run 1 (worst 286 ms earlier was run 1's
+  dispersion; the median is 233 ms). Still about 8× under the 2 s target.
+- **Pure Dart 600,000: 3.0–3.3 s**, a little faster than run 1 (3.4–3.6 s, with one outlier earlier).
+- **Gate status for the S23 Ultra:** 2 of 3 runs. Still missing: run 3.
