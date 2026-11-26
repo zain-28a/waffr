@@ -91,9 +91,17 @@ jobs:
           retention-days: 30
 
   ios:
-    runs-on: macos-15
+    # connectivity_plus 7.3 uses NWPath.isUltraConstrained from the iOS 26 SDK,
+    # so the app needs Xcode 26 or newer to build at all.
+    runs-on: macos-26
     timeout-minutes: 60
     steps:
+      - name: Use the newest Xcode on the runner
+        run: |
+          XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
