@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="widget_balance_title">الرصيد الحالي</string>
-    <string name="widget_balance_description">رصيدك ونسبة المتبقي منه</string>
-    <string name="widget_quick_add_description">أضف مصروفاً أو دخلاً بلمسة</string>
+    <string name="widget_balance_description">رصيدك ونسبة المتبقي منه، مع إضافة سريعة</string>
+    <string name="widget_quick_add_description">أضف مصروفاً أو دخلاً بلمسة، وشاهد آخر العمليات</string>
     <string name="widget_add_expense">إضافة مصروف</string>
     <string name="widget_add_income">إضافة دخل</string>
     <string name="widget_goal_title">هدف التوفير</string>
@@ -14,4 +14,19 @@
     <string name="widget_obligation_empty">لا توجد التزامات قادمة</string>
     <string name="widget_streak_word">يوم</string>
     <string name="widget_streak_description">سلسلة أيامك المتواصلة مع وفّر</string>
+    <string name="widget_streak_title">سلسلة الأيام</string>
+    <string name="widget_balance_short">الرصيد</string>
+    <string name="widget_cycle_spent">مصروف الفترة</string>
+    <string name="widget_cycle_income">دخل الفترة</string>
+    <string name="widget_expense_short">مصروف</string>
+    <string name="widget_income_short">دخل</string>
+    <string name="widget_quick_add_title">إضافة سريعة</string>
+    <string name="widget_recent_title">آخر العمليات</string>
+    <string name="widget_recent_empty">لا توجد عمليات مسجّلة بعد</string>
+    <string name="widget_month_title">هذا الشهر</string>
+    <string name="widget_month_description">مصروف الشهر ودخله وأكبر التصنيفات</string>
+    <string name="widget_month_spent">المصروف</string>
+    <string name="widget_month_income">الدخل</string>
+    <string name="widget_month_empty">لا مصروفات هذا الشهر بعد</string>
+    <string name="widget_month_stale">افتح وفّر لتحديث أرقام الشهر</string>
 </resources>

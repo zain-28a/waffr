@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- AppIcons.arrowDownLeft from fonts/WaffrIcons.ttf (the app's own line icons),
+     converted by tool/build_widget_icons.py. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -6,5 +8,5 @@
     android:viewportHeight="24">
     <path
         android:fillColor="@color/widget_accent"
-        android:pathData="M13,7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zM12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM12,20c-4.41,0 -8,-3.59 -8,-8s3.59,-8 8,-8 8,3.59 8,8 -3.59,8 -8,8z" />
+        android:pathData="M16.992 17.784H7.008Q6.72 17.784 6.456 17.567Q6.216 17.328 6.216 16.992V7.007Q6.216 6.672 6.444 6.444Q6.672 6.216 7.008 6.216Q7.32 6.216 7.548 6.444Q7.776 6.672 7.776 7.007V15.12L16.464 6.455Q16.704 6.216 16.992 6.216Q17.328 6.216 17.555 6.455Q17.784 6.695 17.784 7.007Q17.784 7.295 17.544 7.536L8.88 16.224H16.992Q17.328 16.224 17.555 16.451Q17.784 16.68 17.784 16.992Q17.784 17.328 17.555 17.555Q17.328 17.784 16.992 17.784Z" />
 </vector>

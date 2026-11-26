@@ -5,13 +5,15 @@ import 'package:waffr/widgets/glass/tilt.dart';
 import 'package:waffr/widgets/glass/aurora_backdrop.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:waffr/core/theme/app_motion.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:waffr/widgets/motion/motion.dart';
 import 'package:waffr/widgets/containers/app_list_tile.dart';
+import 'package:waffr/widgets/containers/glass.dart';
 import 'package:waffr/data/stores/expense_preset_store.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
+import 'package:waffr/data/services/home_widget_sync.dart';
 import 'package:waffr/data/services/notification_service.dart';
 import 'package:waffr/data/services/profile_identity.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
@@ -22,9 +24,11 @@ import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/sync/auth_session.dart';
 import 'package:waffr/core/sync/sync_service.dart';
 import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
 import 'package:waffr/core/utils/app_feedback.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/screens/offline/login/login_screen.dart';
+import 'package:waffr/screens/offline/settings/about_screen.dart';
 import 'package:waffr/screens/offline/settings/account_screen.dart';
 import 'package:waffr/screens/offline/settings/ai_permissions_screen.dart';
 import 'package:waffr/screens/offline/settings/help_screen.dart';
@@ -117,6 +121,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Whether the home-screen widgets show dots instead of amounts.
+  bool _hideWidgetAmounts = false;
+
+  /// Home-screen widgets exist only on Android for now.
+  static bool get _widgetsSupported =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  Future<void> _setHideWidgetAmounts(bool hide) async {
+    setState(() => _hideWidgetAmounts = hide);
+    await HomeWidgetSync.instance.setHideAmounts(hide);
+  }
+
   /// Pulls prefs, auth session, and configured income into state.
   Future<void> _loadSettings() async {
     final prefs = await AppPrefs.instance;
@@ -130,6 +146,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     setState(() {
       _appLock = prefs.getBool('app_lock') ?? false;
+      _hideWidgetAmounts =
+          prefs.getBool(HomeWidgetSync.hideAmountsKey) ?? false;
 
       _loggedIn = loggedIn;
 
@@ -347,8 +365,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// The About text is not written yet, so the tile does nothing.
-  void _showAbout() {}
+  /// Opens the About page.
+  void _showAbout() {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const AboutScreen()));
+  }
 
   /// Clears prefs, session, and in-memory stores, then returns to first route.
   Future<void> _resetApp() async {
@@ -370,6 +391,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await AuthSession.instance.clearDataOwner();
 
     // Drop every singleton's in-memory copy so nothing stale survives.
+    TutorialController.instance.reset();
     TransactionStore.instance.resetCache();
     CurrencyStore.instance.resetCache();
     NotificationService.instance.resetCache();
@@ -414,6 +436,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// Opens the help screen.
   void _openHelp() {
+    TutorialController.instance.emit('help-opened');
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const HelpScreen()));
   }
@@ -437,7 +460,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onNotification: _onScroll,
                   child: ListView(
                     padding: const EdgeInsets.all(20),
-                    children: staggered([
+                    children: [
                       ..._accountSection(palette),
                       const SizedBox(height: 25),
                       ..._appearanceSection(isDark),
@@ -458,7 +481,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                    ]),
+                    ],
                   ),
                 ),
               ),
@@ -569,6 +592,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => AppHaptics.setEnabled(!on),
             ),
           ),
+          if (_widgetsSupported)
+            AppListTile(
+              icon: AppIcons.eyeOff,
+              title: 'إخفاء المبالغ في الأدوات',
+              subtitle: _hideWidgetAmounts
+                  ? 'تظهر نقاط بدل المبالغ على الشاشة الرئيسية'
+                  : 'تظهر المبالغ في أدوات الشاشة الرئيسية',
+              trailing: Switch(
+                value: _hideWidgetAmounts,
+                onChanged: _setHideWidgetAmounts,
+              ),
+              onTap: () => _setHideWidgetAmounts(!_hideWidgetAmounts),
+            ),
           AppListTile(
             icon: AppIcons.language,
             title: 'اللغة',
@@ -617,11 +653,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       const AppSectionTitle(title: 'الدعم'),
       AppListGroup(
         children: [
-          AppListTile(
-            icon: AppIcons.help,
-            title: 'المساعدة',
-            subtitle: 'الأسئلة الشائعة والدعم',
-            onTap: _openHelp,
+          KeyedSubtree(
+            key: TutorialTargets.of(TutorialTarget.helpTile),
+            child: AppListTile(
+              icon: AppIcons.help,
+              title: 'المساعدة',
+              subtitle: 'الأسئلة الشائعة والدعم',
+              onTap: _openHelp,
+            ),
           ),
           AppListTile(
             icon: AppIcons.info,
@@ -666,12 +705,10 @@ class _ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GlassContainer(
+      colorType: GlassColorType.surface,
+      borderRadius: 28,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(25),
-      ),
       child: Row(
         children: [
           ProfileAvatar(accent: palette.accent, radius: 27, signedIn: signedIn),

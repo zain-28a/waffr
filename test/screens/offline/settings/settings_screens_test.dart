@@ -1,11 +1,11 @@
 // Smoke tests for the settings screen and every screen it opens.
 
 import 'package:flutter/material.dart';
+import 'package:waffr/screens/offline/settings/about_screen.dart';
 import 'package:waffr/screens/offline/settings/account_screen.dart';
 import 'package:waffr/screens/offline/settings/ai_permissions_screen.dart';
 import 'package:waffr/screens/offline/settings/change_password_screen.dart';
 import 'package:waffr/screens/offline/settings/help_screen.dart';
-import 'package:waffr/screens/offline/settings/privacy_info_screen.dart';
 import 'package:waffr/screens/offline/settings/privacy_security_screen.dart';
 import 'package:waffr/screens/offline/settings/settings_screen.dart';
 
@@ -27,5 +27,5 @@ void main() {
   smokeTestScreen('AIPermissionsScreen', () => const AIPermissionsScreen());
   smokeTestScreen('ChangePasswordScreen', () => const ChangePasswordScreen());
   smokeTestScreen('HelpScreen', () => const HelpScreen());
-  smokeTestScreen('PrivacyInfoScreen', () => const PrivacyInfoScreen());
+  smokeTestScreen('AboutScreen', () => const AboutScreen());
 }

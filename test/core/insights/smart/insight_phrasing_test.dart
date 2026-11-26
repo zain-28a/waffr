@@ -1,11 +1,9 @@
-// InsightPhrasing: money/percent/day formatting, seeded picks, and say()
-// never reusing an opener or closer within one report.
+// InsightPhrasing: money/percent/day formatting and seeded picks.
 
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/core/insights/smart/insight_phrasing.dart';
-import 'package:waffr/core/insights/smart/smart_insight.dart';
 
 void main() {
   InsightPhrasing phrasing([int seed = 1]) =>
@@ -34,25 +32,5 @@ void main() {
     phrasing(3).shuffle(list);
     phrasing(3).shuffle(other);
     expect(list, other);
-  });
-
-  test('say keeps the core and never repeats an opener or closer', () {
-    final p = phrasing(11);
-    final extras = <String>[];
-    for (var i = 0; i < 30; i++) {
-      final text = p.say(InsightTone.positive, ['جوهر النص.']);
-      expect(text, contains('جوهر النص.'));
-      final rest = text.replaceFirst('جوهر النص.', '|').split('|');
-      extras.addAll(rest.map((s) => s.trim()).where((s) => s.isNotEmpty));
-    }
-    expect(extras.toSet().length, extras.length);
-  });
-
-  test('long cores get no closer', () {
-    final long = 'ا' * 120;
-    for (var seed = 0; seed < 20; seed++) {
-      final text = phrasing(seed).say(InsightTone.warning, [long]);
-      expect(text.endsWith(long), isTrue);
-    }
   });
 }

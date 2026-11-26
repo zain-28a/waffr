@@ -296,11 +296,39 @@ void main() {
     expect(_ids_(report), contains('streak'));
   });
 
-  test('every report ends with a tip', () {
-    for (final scope in InsightScope.values) {
-      final report = InsightEngine(_facts(), seed: 7).analyze(scope);
-      expect(report.insights.last.id, 'tip');
-    }
+  test('a tip closes a report only when the data fits one', () {
+    // The savings scope always has a saving tip that fits.
+    final savings = InsightEngine(
+      _facts(),
+      seed: 7,
+    ).analyze(InsightScope.savings);
+    expect(savings.insights.last.id, 'tip');
+    expect(savings.insights.last.kind, InsightKind.suggestion);
+    // An empty ledger with nothing matching ends without a tip.
+    final reports = InsightEngine(
+      _facts(income: null),
+      seed: 7,
+    ).analyze(InsightScope.reports);
+    expect(reports.insights.map((item) => item.id), isNot(contains('tip')));
+  });
+
+  test('one card per topic: the strongest wins', () {
+    final facts = _facts(
+      expenses: [
+        for (var d = 1; d <= 20; d++) _expense(60, DateTime(2026, 10, d)),
+        for (var d = 1; d <= 20; d++) _expense(20, DateTime(2026, 9, d)),
+        for (var d = 1; d <= 30; d++) _expense(20, DateTime(2026, 8, d)),
+      ],
+    );
+    final report = InsightEngine(facts, seed: 1).analyze(InsightScope.reports);
+    final topics = [
+      for (final item in report.insights)
+        if (item.topic != null) item.topic,
+    ];
+    expect(topics.toSet(), hasLength(topics.length));
+    // The same-span month comparison outranks the full-month one.
+    expect(_ids_(report), contains('month-trend'));
+    expect(_ids_(report), isNot(contains('last-month-compare')));
   });
 
   test('different seeds word the same findings differently', () {

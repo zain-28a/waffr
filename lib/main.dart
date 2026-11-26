@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waffr/screens/offline/onboarding/onboarding_screen.dart';
+import 'package:waffr/widgets/tutorial/tutorial_layer.dart';
 import 'package:waffr/widgets/glass/liquid_glass.dart';
 import 'package:waffr/widgets/motion/tap_haptics.dart';
 import 'package:waffr/data/services/backup_service.dart';
@@ -174,8 +175,9 @@ class _WafarAppState extends State<WafarApp> {
               value: _systemBarsFor(Theme.of(context).brightness),
               child: Directionality(
                 textDirection: TextDirection.rtl,
-                // Every tap on something tappable gets a light haptic.
-                child: TapHaptics(child: child!),
+                // Every tap on something tappable gets a light haptic. The
+                // first-run tutorial draws above every page and sheet.
+                child: TutorialLayer(child: TapHaptics(child: child!)),
               ),
             );
           },

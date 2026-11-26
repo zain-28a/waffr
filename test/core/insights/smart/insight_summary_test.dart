@@ -26,14 +26,30 @@ SmartInsight _card(InsightTone tone) => SmartInsight(
 );
 
 void main() {
-  test('the tip is a zero-priority tip card for every scope', () {
-    for (final scope in InsightScope.values) {
-      final tip = _summary(buildFacts(now: _now)).tip(scope);
-      expect(tip.id, 'tip');
-      expect(tip.tone, InsightTone.tip);
-      expect(tip.priority, 0);
-      expect(tip.body, isNotEmpty);
-    }
+  test('the tip fits the data, or there is none', () {
+    // Nothing recorded: no spending tip applies, but saving tips need no
+    // spending (no goal yet).
+    expect(_summary(buildFacts(now: _now)).tip(InsightScope.reports), isNull);
+    final savings = _summary(buildFacts(now: _now)).tip(InsightScope.savings)!;
+    expect(savings.id, 'tip');
+    expect(savings.tone, InsightTone.tip);
+    expect(savings.kind, InsightKind.suggestion);
+    expect(savings.priority, 0);
+    expect(savings.body, contains('هدف'));
+
+    // Food as the top category brings the weekly-cap tip into the options.
+    final food = buildFacts(
+      now: _now,
+      expenses: [
+        expenseAt(300, DateTime(2026, 10, 3)),
+        expenseAt(100, DateTime(2026, 10, 4), category: 'مواصلات'),
+      ],
+    );
+    final bodies = {
+      for (var seed = 0; seed < 20; seed++)
+        _summary(food, seed: seed).tip(InsightScope.reports)!.body,
+    };
+    expect(bodies.any((body) => body.contains('الطعام')), isTrue);
   });
 
   test('profile headlines speak of the score', () {
@@ -43,9 +59,7 @@ void main() {
         seed: seed,
       ).headline(InsightScope.profile, const [], 82);
       expect(
-        line.contains('ممتازة') ||
-            line.contains('82/100') ||
-            line.startsWith('جمعت لك'),
+        line.contains('ممتازة') || line.contains('82/100'),
         isTrue,
         reason: line,
       );
@@ -58,11 +72,9 @@ void main() {
     expect(
       line,
       anyOf(
-        startsWith('لنبدأ معاً'),
+        startsWith('سجّل مصروفاتك'),
         startsWith('التحليل جاهز'),
         startsWith('سجّل أول مصروف'),
-        startsWith('كل مصروف تسجّله'),
-        startsWith('بانتظار مصاريفك'),
       ),
     );
   });
@@ -74,13 +86,8 @@ void main() {
     );
     const two = [
       'هناك نقطتان تحتاجان إلى انتباهك.',
-      'لاحظت أموراً تستحق التوقف عندها.',
-      'وضعك جيد، لكن انتبه لهذه النقاط.',
-      'إليك ما يحتاج إلى متابعة أدق.',
-      'عدة أمور تستحق نظرة أقرب.',
       'بعض المؤشرات تطلب انتباهك.',
-      'راجع هذه النقاط لتضبط صرفك.',
-      'هناك ما يمكن تحسينه، وإليك التفاصيل.',
+      'إليك ما يحتاج إلى متابعة أدق.',
     ];
     for (var seed = 0; seed < 8; seed++) {
       expect(
@@ -115,10 +122,7 @@ void main() {
       _card(InsightTone.positive),
       _card(InsightTone.positive),
     ], null);
-    expect(
-      happy,
-      anyOf(contains('رائع'), contains('أخبار جيدة'), contains('المؤشرات')),
-    );
+    expect(happy, anyOf(contains('أخبار جيدة'), contains('المؤشرات')));
   });
 
   test('report summary mentions the month total and top category', () {
@@ -132,6 +136,7 @@ void main() {
     for (var seed = 0; seed < 6; seed++) {
       final text = _summary(facts, seed: seed).summary(InsightScope.reports);
       expect(text, contains('المواصلات'));
+      expect(text, contains('\u206675%\u2069'), reason: 'its real share');
       expect(text, anyOf(contains('400 ل.س'), contains('20 ل.س')));
     }
     expect(_summary(buildFacts(now: _now)).summary(InsightScope.reports), '');

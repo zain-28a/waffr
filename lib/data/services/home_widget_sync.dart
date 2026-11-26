@@ -2,6 +2,12 @@
 // Arabic and in the active currency, so the native widgets only display it.
 // Native code: android/app/src/main/kotlin/com/waffr/app/widgets and
 // ios/WaffrWidgets.
+//
+// The widgets are redrawn whenever the ledger changes (the only way their
+// numbers change), and the Android widgets also every few hours on their
+// own, so the parts that depend on the date (the month, "today", how far a
+// bill is) are worked out natively from the dates saved here rather than
+// from text written days earlier.
 
 import 'dart:async';
 
@@ -9,6 +15,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:waffr/core/insights/smart/arabic_text.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
 import 'package:waffr/core/usage/streak_math.dart';
 import 'package:waffr/core/utils/money.dart';
@@ -17,6 +24,9 @@ import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/stores/recurring_expense_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/core/utils/calendar_days.dart';
+import 'package:waffr/data/models/calendar_period.dart';
+import 'package:waffr/data/models/expense_categories.dart';
+import 'package:waffr/data/models/transaction.dart';
 
 /// Writes the figures the home screen widgets show and asks them to redraw.
 class HomeWidgetSync {
@@ -49,7 +59,24 @@ class HomeWidgetSync {
       android: 'com.waffr.app.widgets.StreakWidgetProvider',
       ios: 'WaffrStreakWidget',
     ),
+    (
+      android: 'com.waffr.app.widgets.MonthWidgetProvider',
+      ios: 'WaffrMonthWidget',
+    ),
   ];
+
+  /// Prefs key of the "hide amounts on the home screen" switch.
+  static const String hideAmountsKey = 'widget_hide_amounts';
+
+  /// Whether the widgets show dots instead of amounts.
+  Future<bool> hideAmounts() async =>
+      (await AppPrefs.instance).getBool(hideAmountsKey) ?? false;
+
+  /// Turns the amount mask on or off and redraws the widgets.
+  Future<void> setHideAmounts(bool hide) async {
+    await (await AppPrefs.instance).setBool(hideAmountsKey, hide);
+    await refresh();
+  }
 
   bool _started = false;
   Timer? _debounce;
@@ -119,8 +146,18 @@ class HomeWidgetSync {
       recurring.ensureLoaded(),
       streak.ensureLoaded(),
     ]);
+    final now = deviceNow();
+    final monthStart = CalendarPeriod.monthStart(now);
+    final month = store.spendingBreakdown(since: monthStart);
+    final monthIncome = store.incomes
+        .where((item) => !item.dateTime.isBefore(monthStart))
+        .fold(0.0, (sum, item) => sum + item.amount);
+    // Both lists come newest first, so the four newest records are among
+    // the first four of each; no need to sort the whole ledger.
+    final recent = [...store.expenses.take(4), ...store.incomes.take(4)]
+      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return buildHomeWidgetData(
-      now: deviceNow(),
+      now: now,
       symbol: CurrencyStore.instance.activeSymbol,
       balance: store.balance,
       spent: store.cycleSpent,
@@ -148,6 +185,14 @@ class HomeWidgetSync {
       ],
       streak: streak.count,
       streakLastDay: streak.lastDay,
+      hideAmounts: await hideAmounts(),
+      monthSpent: month.total,
+      monthIncome: monthIncome,
+      monthTop: [
+        for (final item in month.items.take(4))
+          (category: item.category, amount: item.amount, share: item.share),
+      ],
+      recent: [for (final item in recent.take(4)) item],
     );
   }
 }
@@ -165,16 +210,65 @@ Map<String, Object> buildHomeWidgetData({
   required List<({String name, double amount, DateTime due})> obligations,
   required int streak,
   DateTime? streakLastDay,
+  bool hideAmounts = false,
+  double monthSpent = 0,
+  double monthIncome = 0,
+  List<({String category, double amount, double share})> monthTop = const [],
+  List<WaffrTransaction> recent = const [],
 }) {
+  // Amounts become dots when the user hides them on the home screen;
+  // shares and dates stay.
+  String money(double value) => hideAmounts ? '••••' : formatMoney(value);
+  String dayKey(DateTime value) => StreakSnapshot.dayKey(value)!;
+
   final remaining = (remainingRatio * 100).round().clamp(0, 100);
   final data = <String, Object>{
-    'balance_amount': formatMoney(balance),
+    'hide_amounts': hideAmounts,
+    'balance_amount': money(balance),
     'balance_currency': symbol,
     'balance_percent': '$remaining',
     'balance_percent_label': 'المتبقي \u2066$remaining%\u2069',
-    'balance_caption':
-        'مصروف ${formatMoney(spent)} من ${formatMoney(maxBalance)} $symbol',
+    'balance_caption': 'مصروف ${money(spent)} من ${money(maxBalance)} $symbol',
+    'cycle_spent': money(spent),
+    'cycle_income': money(maxBalance),
   };
+
+  // This month: totals and up to four categories with their colors. The
+  // widget compares month_key with today and asks to open the app once the
+  // month has turned.
+  data['month_key'] = dayKey(now).substring(0, 7);
+  data['month_label'] = CalendarPeriod.monthName(now.month);
+  data['month_spent'] = money(monthSpent);
+  data['month_income'] = money(monthIncome);
+  data['month_top_count'] = monthTop.length;
+  for (final (index, item) in monthTop.indexed) {
+    final category = categoryFor(item.category);
+    data['month_top_${index}_name'] = item.category;
+    data['month_top_${index}_amount'] = money(item.amount);
+    data['month_top_${index}_percent'] = '${(item.share * 100).round()}';
+    data['month_top_${index}_color'] = category.color.toARGB32();
+    data['month_top_${index}_color_dark'] = category.darkColor.toARGB32();
+  }
+
+  // The newest records for the large quick-add widget; the widget words
+  // the day ("اليوم", "أمس", a date) from recent_N_day.
+  data['recent_count'] = recent.length;
+  for (final (index, item) in recent.indexed) {
+    final income = item.isIncome;
+    final category = income ? null : categoryFor(item.category);
+    final note = item.note?.trim() ?? '';
+    data['recent_${index}_title'] = note.isNotEmpty
+        ? note
+        : (income ? 'دخل' : category!.label);
+    data['recent_${index}_amount'] =
+        '${income ? '+' : '−'}${money(item.amount)}';
+    data['recent_${index}_day'] = dayKey(item.dateTime);
+    data['recent_${index}_income'] = income;
+    data['recent_${index}_color'] = (category?.color ?? _incomeColor)
+        .toARGB32();
+    data['recent_${index}_color_dark'] =
+        (category?.darkColor ?? _incomeDarkColor).toARGB32();
+  }
 
   if (goal == null || goal.target <= 0) {
     data['goal_empty'] = true;
@@ -189,7 +283,9 @@ Map<String, Object> buildHomeWidgetData({
     data['goal_percent'] = '$percent';
     data['goal_percent_label'] = '\u2066$percent%\u2069';
     data['goal_caption'] =
-        'تم توفير ${formatMoney(goal.saved)} من ${formatMoney(goal.target)} $symbol';
+        'تم توفير ${money(goal.saved)} من ${money(goal.target)} $symbol';
+    data['goal_remaining'] =
+        'المتبقي ${money(goal.target - goal.saved < 0 ? 0 : goal.target - goal.saved)} $symbol';
   }
 
   final today = DateTime(now.year, now.month, now.day);
@@ -206,8 +302,9 @@ Map<String, Object> buildHomeWidgetData({
     final days = calendarDaysBetween(today, dueDay);
     data['obligation_empty'] = false;
     data['obligation_name'] = next.name;
-    data['obligation_amount'] = '${formatMoney(next.amount)} $symbol';
-    data['obligation_value'] = formatMoney(next.amount);
+    data['obligation_amount'] = '${money(next.amount)} $symbol';
+    data['obligation_value'] = money(next.amount);
+    data['obligation_due_day'] = dayKey(dueDay);
     data['obligation_when'] = switch (days) {
       < 0 => 'مستحق الآن',
       0 => 'اليوم',
@@ -231,6 +328,9 @@ Map<String, Object> buildHomeWidgetData({
   }
   data['streak_reset_label'] = 'ابدأ من جديد';
   // The ring fills toward the next milestone, as on the profile card.
+  final milestone = nextStreakMilestone(count);
+  data['streak_next'] =
+      'بقي ${Ar.days.of(milestone - count)} على ${Ar.consecutiveDays.of(milestone)}';
   data['streak_percent'] =
       '${(count / nextStreakMilestone(count) * 100).round().clamp(0, 100)}';
   data['streak_word'] = switch (count) {
@@ -246,3 +346,7 @@ Map<String, Object> buildHomeWidgetData({
   };
   return data;
 }
+
+// The income dot in the recent list: the app's brand greens.
+const Color _incomeColor = Color(0xFF254A23);
+const Color _incomeDarkColor = Color(0xFF7BC17A);

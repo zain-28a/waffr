@@ -1,9 +1,9 @@
 // Turns SmartFacts into a SmartReport. Everything runs on the device.
 //
 // Each rule checks one pattern in the numbers and, when it applies, writes
-// an insight. Titles and sentences come in several phrasings, and bodies
-// may gain an opening phrase and a closing remark, so the seed changes the
-// wording each time while the findings stay the same.
+// an insight. Titles and sentences come in a few phrasings, so the seed
+// changes the wording while the findings stay the same. Cards that tell the
+// same story share a topic, and only the strongest of each topic is kept.
 //
 // The rules live in report_insights.dart, savings_insights.dart and
 // profile_insights.dart; the wording helpers in insight_phrasing.dart; the
@@ -35,7 +35,7 @@ class InsightEngine {
 
   // Most cards a scope shows before the closing tip.
   static const Map<InsightScope, int> _limits = {
-    InsightScope.reports: 7,
+    InsightScope.reports: 8,
     InsightScope.savings: 7,
     InsightScope.profile: 8,
   };
@@ -48,19 +48,27 @@ class InsightEngine {
       InsightScope.profile => ProfileInsights(facts, _phrasing).all(),
     };
 
-    // The cut is by priority alone so the findings stay the same; inside
-    // it, near-equal priorities trade places between runs for variety.
+    // One card per topic (the highest priority), then the cut by priority
+    // alone so the findings stay the same; inside it, near-equal
+    // priorities trade places between runs for variety.
     found.sort((a, b) => b.priority.compareTo(a.priority));
-    final limited = found.take(_limits[scope]!).toList();
+    final topics = <String>{};
+    final distinct = [
+      for (final item in found)
+        if (item.topic == null || topics.add(item.topic!)) item,
+    ];
+    final limited = distinct.take(_limits[scope]!).toList();
     final jitter = {for (final item in limited) item.id: _phrasing.nextInt(8)};
     limited.sort(
       (a, b) =>
           (b.priority + jitter[b.id]!).compareTo(a.priority + jitter[a.id]!),
     );
 
-    // A tip always closes the list; the profile also carries the score.
+    // A tip that fits the data closes the list when there is one; the
+    // profile also carries the score.
     final text = InsightSummary(facts, _phrasing);
-    limited.add(text.tip(scope));
+    final tip = text.tip(scope);
+    if (tip != null) limited.add(tip);
     final score = scope == InsightScope.profile ? healthScore() : null;
     return SmartReport(
       scope: scope,

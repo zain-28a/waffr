@@ -59,7 +59,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'حدّد هدفاً ونسبة من دخلك، '
           'ووفّر يقتطعها ويتابع تقدّمك نحوه.',
       face: SmileForm.excellent,
-      marks: [AppIcons.piggyBank, AppIcons.target, AppIcons.trophy],
+      marks: [AppIcons.savings, AppIcons.target, AppIcons.trophy],
     ),
     _Page(
       title: 'تحليل يفهم أرقامك',

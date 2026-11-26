@@ -29,7 +29,9 @@ import 'package:waffr/core/sync/sync_mapper.dart';
 import 'package:waffr/core/sync/sync_merge.dart';
 import 'package:waffr/core/sync/sync_tombstones.dart';
 import 'package:waffr/data/models/calendar_period.dart';
+import 'package:waffr/data/models/expense_categories.dart';
 import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/models/spending_breakdown.dart';
 import 'package:waffr/data/models/transaction.dart';
 import 'package:waffr/data/stores/currency_store.dart';
 

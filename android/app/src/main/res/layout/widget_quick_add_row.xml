@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Quick add, one row high (4 x 1): the two buttons side by side. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:layoutDirection="rtl"
+    android:orientation="vertical"
+    android:paddingStart="10dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="10dp"
+    android:paddingBottom="8dp">
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+    <LinearLayout
+        android:id="@+id/quick_add_expense"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_weight="1"
+        android:background="@drawable/widget_pill"
+        android:gravity="center"
+        android:orientation="horizontal">
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_expense" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/tajawal_bold"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="@string/widget_add_expense"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="13.5sp"
+            android:layout_marginStart="7dp" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="10dp"
+        android:layout_height="1dp"
+        android:orientation="horizontal" />
+    <LinearLayout
+        android:id="@+id/quick_add_income"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:layout_weight="1"
+        android:background="@drawable/widget_pill"
+        android:gravity="center"
+        android:orientation="horizontal">
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_income" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/tajawal_bold"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="@string/widget_add_income"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="13.5sp"
+            android:layout_marginStart="7dp" />
+    </LinearLayout>
+</LinearLayout>
+</LinearLayout>

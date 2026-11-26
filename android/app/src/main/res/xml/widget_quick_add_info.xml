@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Resizable: WaffrWidgets.kt picks the small, medium or large layout for the
+     size. A six-hour refresh redraws date-dependent text (today, the month,
+     days to a bill) from saved data only; it never wakes the app. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_quick_add_description"
     android:initialLayout="@layout/widget_quick_add"
     android:minWidth="250dp"
-    android:minHeight="40dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="40dp"
     android:previewLayout="@layout/widget_quick_add"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="4"
-    android:targetCellHeight="1"
-    android:updatePeriodMillis="0"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="21600000"
     android:widgetCategory="home_screen" />

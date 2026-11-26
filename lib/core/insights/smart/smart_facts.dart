@@ -162,10 +162,70 @@ class SmartFacts {
   /// True when any expense was ever recorded.
   bool get hasExpenses => expenses.isNotEmpty;
 
-  /// Total spent in [start, end).
-  double spentBetween(DateTime start, DateTime end) {
+  /// The first day anything was recorded (an expense, an income or a
+  /// savings transfer), or null on an empty ledger. Rules use it to avoid
+  /// reading a month the user had not started yet as a cheap month.
+  late final DateTime? firstActivityDay = () {
+    DateTime? first;
+    for (final list in [expenses, incomes, savingsTransfers]) {
+      for (final item in list) {
+        if (first == null || item.dateTime.isBefore(first)) {
+          first = item.dateTime;
+        }
+      }
+    }
+    return first == null ? null : DateTime(first.year, first.month, first.day);
+  }();
+
+  /// Days from the first record to today, both included; 0 when empty.
+  int get historyDays {
+    final first = firstActivityDay;
+    if (first == null) return 0;
+    return today.difference(first).inDays + 1;
+  }
+
+  /// Days of this week so far, today included (1 on Saturday).
+  int get weekDaysElapsed => today.difference(weekStart).inDays + 1;
+
+  /// First day of the month [back] months before this one (0 = this month).
+  DateTime monthStartBack(int back) => DateTime(now.year, now.month - back);
+
+  /// True when the history covers month [back] (1 = last month) from its
+  /// first days, so its totals describe a whole month. A start on the 3rd
+  /// still counts: a couple of unlogged days do not make a month partial.
+  bool coversMonth(int back) {
+    final first = firstActivityDay;
+    if (first == null || back < 1) return false;
+    final start = monthStartBack(back);
+    return !first.isAfter(start.add(const Duration(days: 2)));
+  }
+
+  /// True when the history starts by this month's 3rd, so the month so far
+  /// is a fair sample (not one that began yesterday).
+  bool get tracksThisMonth {
+    final first = firstActivityDay;
+    return first != null &&
+        !first.isAfter(monthStart.add(const Duration(days: 2)));
+  }
+
+  /// True when the history starts by this week's first day.
+  bool get tracksThisWeek {
+    final first = firstActivityDay;
+    return first != null && !first.isAfter(weekStart);
+  }
+
+  /// Spent over the whole month [back] (1 = last month).
+  double fullMonthSpent(int back) =>
+      spentBetween(monthStartBack(back), monthStartBack(back - 1));
+
+  /// Income recorded over the whole month [back] (1 = last month).
+  double fullMonthIncome(int back) =>
+      incomeBetween(monthStartBack(back), monthStartBack(back - 1));
+
+  /// Income recorded in [start, end).
+  double incomeBetween(DateTime start, DateTime end) {
     var total = 0.0;
-    for (final item in expenses) {
+    for (final item in incomes) {
       if (!item.dateTime.isBefore(start) && item.dateTime.isBefore(end)) {
         total += item.amount;
       }
@@ -173,11 +233,48 @@ class SmartFacts {
     return total;
   }
 
-  /// Expenses in [start, end).
-  List<WaffrTransaction> expensesBetween(DateTime start, DateTime end) => [
-    for (final item in expenses)
-      if (!item.dateTime.isBefore(start) && item.dateTime.isBefore(end)) item,
-  ];
+  // The rules ask for spans of the ledger dozens of times per run, so the
+  // expenses are sorted by time once, with running totals, and each span
+  // is found by binary search instead of a scan of the whole ledger.
+  late final List<WaffrTransaction> _byTime = [...expenses]
+    ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
+  // _runningTotal[i] is the sum of the first i expenses in _byTime.
+  late final List<double> _runningTotal = () {
+    final totals = List<double>.filled(_byTime.length + 1, 0);
+    for (var i = 0; i < _byTime.length; i++) {
+      totals[i + 1] = totals[i] + _byTime[i].amount;
+    }
+    return totals;
+  }();
+
+  // Index of the first expense in _byTime at or after [time].
+  int _firstAtOrAfter(DateTime time) {
+    var low = 0;
+    var high = _byTime.length;
+    while (low < high) {
+      final mid = (low + high) >> 1;
+      if (_byTime[mid].dateTime.isBefore(time)) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+    return low;
+  }
+
+  /// Total spent in [start, end).
+  double spentBetween(DateTime start, DateTime end) {
+    if (!start.isBefore(end)) return 0;
+    return _runningTotal[_firstAtOrAfter(end)] -
+        _runningTotal[_firstAtOrAfter(start)];
+  }
+
+  /// Expenses in [start, end), oldest first.
+  List<WaffrTransaction> expensesBetween(DateTime start, DateTime end) {
+    if (!start.isBefore(end)) return const [];
+    return _byTime.sublist(_firstAtOrAfter(start), _firstAtOrAfter(end));
+  }
 
   /// Spending per category in [start, end); no category counts as "أخرى".
   Map<String, double> categoryTotals(DateTime start, DateTime end) {
@@ -278,16 +375,15 @@ class SmartFacts {
   double get obligationsMonthly =>
       obligations.fold(0.0, (sum, item) => sum + item.monthlyEquivalent);
 
-  /// Average monthly spending over the last three full months that have
-  /// data, falling back to the projection for new users.
+  /// Average monthly spending over the last three full months the history
+  /// covers and that hold expenses (an empty month is a gap in logging,
+  /// and a month the user started halfway through would read as cheap),
+  /// falling back to the projection for new users.
   late final double averageMonthlySpend = () {
-    final totals = <double>[];
-    for (var back = 1; back <= 3; back++) {
-      final start = DateTime(now.year, now.month - back);
-      final end = DateTime(now.year, now.month - back + 1);
-      final total = spentBetween(start, end);
-      if (total > 0) totals.add(total);
-    }
+    final totals = <double>[
+      for (var back = 1; back <= 3; back++)
+        if (coversMonth(back) && fullMonthSpent(back) > 0) fullMonthSpent(back),
+    ];
     if (totals.isEmpty) return projectedMonthSpend;
     return totals.reduce((a, b) => a + b) / totals.length;
   }();
@@ -362,49 +458,53 @@ class SmartFacts {
   }
 
   /// Time of the newest expense, if any.
-  DateTime? get lastExpenseAt => expenses.isEmpty
-      ? null
-      : expenses.map((e) => e.dateTime).reduce((a, b) => a.isAfter(b) ? a : b);
+  DateTime? get lastExpenseAt => _byTime.isEmpty ? null : _byTime.last.dateTime;
+
+  // Expenses after the start of the day 30 days ago (the window the two
+  // counts below have always used).
+  late final List<WaffrTransaction> _last30 = [
+    for (final e in _byTime.sublist(
+      _firstAtOrAfter(today.subtract(const Duration(days: 30))),
+    ))
+      if (e.dateTime.isAfter(today.subtract(const Duration(days: 30)))) e,
+  ];
 
   /// Expenses logged in the last 30 days.
-  int get loggedLast30 => expenses
-      .where(
-        (e) => e.dateTime.isAfter(today.subtract(const Duration(days: 30))),
-      )
-      .length;
+  int get loggedLast30 => _last30.length;
 
   /// Distinct days with at least one expense in the last 30 days.
-  int get activeDaysLast30 => {
-    for (final e in expenses)
-      if (e.dateTime.isAfter(today.subtract(const Duration(days: 30))))
-        DateTime(e.dateTime.year, e.dateTime.month, e.dateTime.day),
+  late final int activeDaysLast30 = {
+    for (final e in _last30)
+      DateTime(e.dateTime.year, e.dateTime.month, e.dateTime.day),
   }.length;
 
-  /// Days of this month so far without any expense.
+  /// Finished days of this month (today is not over yet) without any
+  /// expense, counted from the first record when the user started this
+  /// month.
   int get noSpendDaysThisMonth {
+    final first = firstActivityDay;
+    if (first == null || !first.isBefore(today)) return 0;
+    final from = first.isAfter(monthStart) ? first : monthStart;
     final spentDays = {
-      for (final e in expensesBetween(monthStart, _tomorrow)) e.dateTime.day,
+      for (final e in expensesBetween(from, today))
+        DateTime(e.dateTime.year, e.dateTime.month, e.dateTime.day),
     };
-    return dayOfMonth - spentDays.length;
+    return today.difference(from).inDays - spentDays.length;
   }
 
   /// Total spent per weekday (DateTime.monday..sunday) over the last 8 weeks.
-  Map<int, double> get weekdayTotals {
+  late final Map<int, double> weekdayTotals = () {
     final totals = <int, double>{};
     final from = today.subtract(const Duration(days: 55));
     for (final e in expensesBetween(from, _tomorrow)) {
       totals[e.dateTime.weekday] = (totals[e.dateTime.weekday] ?? 0) + e.amount;
     }
     return totals;
-  }
+  }();
 
   /// Whole weeks since the first expense.
   int get weeksOfHistory {
-    final first = expenses.isEmpty
-        ? today
-        : expenses
-              .map((e) => e.dateTime)
-              .reduce((a, b) => a.isBefore(b) ? a : b);
+    final first = _byTime.isEmpty ? today : _byTime.first.dateTime;
     return today.difference(first).inDays ~/ 7;
   }
 

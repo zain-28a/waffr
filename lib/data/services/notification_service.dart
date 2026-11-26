@@ -11,13 +11,16 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:waffr/core/insights/smart/arabic_text.dart';
+import 'package:waffr/core/insights/smart/report_insights.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';
+import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
 import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
 import 'package:waffr/core/sync/sync_dirty.dart';
 import 'package:waffr/core/sync/sync_mapper.dart';
 import 'package:waffr/core/sync/sync_merge.dart';
 import 'package:waffr/core/sync/sync_tombstones.dart';
+import 'package:waffr/core/utils/calendar_days.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/data/models/app_notification.dart';
 import 'package:waffr/data/models/calendar_period.dart';
@@ -27,12 +30,30 @@ import 'package:waffr/data/models/transaction.dart';
 import 'package:waffr/data/services/smart_settings.dart';
 import 'package:waffr/data/services/system_notifications.dart';
 import 'package:waffr/data/services/usage_streak_service.dart';
+import 'package:waffr/data/stores/currency_store.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 
 export 'package:waffr/data/services/notification_time_group.dart';
 
 part 'notification_rules.dart';
 part 'notification_snapshot.dart';
+
+/// True when [spentShare] of a period's income is spent well ahead of the
+/// time passed in the period [start, end): at least a fifth and five days
+/// of it gone, at most four fifths, and spending a quarter or more ahead.
+bool isSpendingAhead({
+  required DateTime start,
+  required DateTime end,
+  required DateTime now,
+  required double spentShare,
+}) {
+  final length = end.difference(start).inHours / 24;
+  final passed = now.difference(start).inHours / 24;
+  if (length <= 0 || passed < 5) return false;
+  final elapsed = passed / length;
+  if (elapsed < 0.2 || elapsed > 0.8) return false;
+  return spentShare >= elapsed + NotificationThresholds.spendingPaceLead;
+}
 
 /// In-app notification engine for balance, spending, goals, savings, and periods.
 ///
@@ -74,6 +95,11 @@ class NotificationService extends ChangeNotifier {
   bool _listening = false;
 
   bool _evaluating = false;
+
+  // What the logging nudge was last scheduled from, so it is re-planned
+  // only when the newest expense or the switches change.
+  DateTime? _nudgeBase;
+  bool? _nudgeEnabled;
 
   /// True once loaded from prefs.
   bool get isLoaded => _loaded;
@@ -133,6 +159,10 @@ class NotificationService extends ChangeNotifier {
       changed |= _evaluatePeriods(store);
       changed |= _evaluateLargeExpenses(store);
       changed |= _evaluateForecast(store);
+      changed |= _evaluateSpendingPace(store);
+      changed |= _evaluateGoalDeadlines(store);
+      changed |= _evaluateCycleSummary(store);
+      _syncLoggingNudge(store);
 
       final previous = _snapshot;
       _refreshSnapshot(store);
@@ -360,6 +390,7 @@ class NotificationService extends ChangeNotifier {
         eventKey: eventKey,
         title: title,
         body: message,
+        urgent: type.isUrgent,
       ),
     );
     return true;

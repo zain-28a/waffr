@@ -27,8 +27,8 @@ class ExpenseCategory {
 }
 
 /// Grid order for "add expense". Chart colors are an earthy set that sits
-/// with the app's green: terracotta, teal, berry, ochre, leaf green, violet
-/// and sky blue. Each hue has its own lightness so neighbouring slices stay
+/// with the app's green: terracotta, teal, berry, ochre, red, violet and sky
+/// blue. Each hue has its own lightness so neighbouring slices stay
 /// apart, also for color-blind readers.
 const List<ExpenseCategory> expenseCategories = [
   ExpenseCategory(
@@ -55,11 +55,13 @@ const List<ExpenseCategory> expenseCategories = [
     color: Color(0xFFDBB155),
     darkColor: Color(0xFFE8C773),
   ),
+  // A clear red, apart from the brand green that marks good news and from
+  // the heart of the health score.
   ExpenseCategory(
     label: 'صحة',
-    icon: AppIcons.heart,
-    color: Color(0xFF4E8841),
-    darkColor: Color(0xFF518B44),
+    icon: AppIcons.stethoscope,
+    color: Color(0xFFC8453F),
+    darkColor: Color(0xFFE2655E),
   ),
   ExpenseCategory(
     label: 'ترفيه',
@@ -98,7 +100,14 @@ const ExpenseCategory fallbackCategory = ExpenseCategory(
 const List<String> paymentMethods = ['نقداً', 'بطاقة'];
 
 /// Icons users can pick when creating a custom category.
+///
+/// A saved category stores its icon as an index into this list, so entries
+/// are only ever appended: never reorder or remove one. Slot 11 was a second
+/// shopping cart and now shows a basket; slot 32 was the piggy bank and now
+/// shows the Waffr wallet that replaced it. The picker shows the slots in
+/// themed groups ([customCategoryIconGroups]).
 const List<IconData> customCategoryIconChoices = [
+  // 0-38: the original set.
   AppIcons.food,
   AppIcons.burger,
   AppIcons.coffee,
@@ -110,7 +119,7 @@ const List<IconData> customCategoryIconChoices = [
   AppIcons.fuel,
   AppIcons.plane,
   AppIcons.shoppingBag,
-  AppIcons.shoppingCart,
+  AppIcons.shoppingBasket,
   AppIcons.shirt,
   AppIcons.home,
   AppIcons.droplet,
@@ -131,17 +140,209 @@ const List<IconData> customCategoryIconChoices = [
   AppIcons.movie,
   AppIcons.wallet,
   AppIcons.creditCard,
-  AppIcons.piggyBank,
+  AppIcons.savings,
   AppIcons.baby,
   AppIcons.pet,
   AppIcons.gift,
   AppIcons.scissors,
   AppIcons.wrench,
   AppIcons.celebration,
+  // 39 on: added later.
+  AppIcons.pizza,
+  AppIcons.croissant,
+  AppIcons.sandwich,
+  AppIcons.drumstick,
+  AppIcons.beef,
+  AppIcons.soup,
+  AppIcons.salad,
+  AppIcons.apple,
+  AppIcons.milk,
+  AppIcons.egg,
+  AppIcons.cookie,
+  AppIcons.iceCream,
+  AppIcons.soda,
+  AppIcons.cookingPot,
+  AppIcons.restaurant,
+  AppIcons.motorbike,
+  AppIcons.train,
+  AppIcons.tram,
+  AppIcons.ship,
+  AppIcons.truck,
+  AppIcons.parking,
+  AppIcons.luggage,
+  AppIcons.hotel,
+  AppIcons.tent,
+  AppIcons.palmTree,
+  AppIcons.mapPin,
+  AppIcons.ticket,
+  AppIcons.umbrella,
+  AppIcons.building,
+  AppIcons.key,
+  AppIcons.sofa,
+  AppIcons.bed,
+  AppIcons.lamp,
+  AppIcons.washingMachine,
+  AppIcons.fridge,
+  AppIcons.hammer,
+  AppIcons.paintRoller,
+  AppIcons.plug,
+  AppIcons.electricity,
+  AppIcons.flame,
+  AppIcons.router,
+  AppIcons.sprout,
+  AppIcons.flower,
+  AppIcons.footprints,
+  AppIcons.watch,
+  AppIcons.gem,
+  AppIcons.glasses,
+  AppIcons.perfume,
+  AppIcons.bath,
+  AppIcons.brush,
+  AppIcons.sparkles,
+  AppIcons.stethoscope,
+  AppIcons.syringe,
+  AppIcons.heartPulse,
+  AppIcons.bandage,
+  AppIcons.swimming,
+  AppIcons.school,
+  AppIcons.backpack,
+  AppIcons.library,
+  AppIcons.edit,
+  AppIcons.laptop,
+  AppIcons.monitor,
+  AppIcons.printer,
+  AppIcons.hardHat,
+  AppIcons.family,
+  AppIcons.cake,
+  AppIcons.charity,
+  AppIcons.handHeart,
+  AppIcons.handCoins,
+  AppIcons.mosque,
+  AppIcons.cat,
+  AppIcons.dog,
+  AppIcons.fish,
+  AppIcons.bone,
+  AppIcons.music,
+  AppIcons.headphones,
+  AppIcons.camera,
+  AppIcons.popcorn,
+  AppIcons.puzzle,
+  AppIcons.dice,
+  AppIcons.trophy,
+  AppIcons.bank,
+  AppIcons.coins,
+  AppIcons.percent,
+  AppIcons.scale,
+  AppIcons.insurance,
+  AppIcons.fileText,
+  AppIcons.cloud,
+  AppIcons.repeat,
+];
+
+/// How many icons the picker had before it grew. Categories saved without
+/// an icon index (old lists, labels only known from synced expenses) get an
+/// icon from the label's hash modulo this count, so they keep the icon they
+/// always showed.
+const int legacyCustomIconCount = 39;
+
+/// The picker's sections: an Arabic title and the [customCategoryIconChoices]
+/// slots it shows. Every slot appears in exactly one group.
+const List<({String title, List<int> slots})> customCategoryIconGroups = [
+  (
+    title: 'طعام وشراب',
+    slots: [
+      0,
+      1,
+      2,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+    ],
+  ),
+  (
+    title: 'تسوّق وعناية',
+    slots: [3, 11, 10, 12, 82, 83, 84, 85, 86, 87, 88, 36, 89],
+  ),
+  (
+    title: 'مواصلات وسفر',
+    slots: [
+      4,
+      5,
+      6,
+      7,
+      54,
+      8,
+      55,
+      56,
+      57,
+      58,
+      59,
+      9,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+    ],
+  ),
+  (
+    title: 'البيت والفواتير',
+    slots: [
+      13,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      37,
+      76,
+      77,
+      14,
+      78,
+      15,
+      16,
+      17,
+      79,
+      18,
+      19,
+      80,
+      81,
+    ],
+  ),
+  (title: 'صحة ورياضة', slots: [20, 90, 21, 91, 92, 93, 27, 94, 25, 26]),
+  (title: 'تعليم وعمل', slots: [22, 95, 96, 23, 97, 98, 99, 100, 101, 24, 102]),
+  (
+    title: 'عائلة وعطاء',
+    slots: [103, 33, 35, 104, 38, 105, 106, 107, 108, 34, 109, 110, 111, 112],
+  ),
+  (title: 'ترفيه', slots: [28, 29, 113, 114, 115, 116, 117, 118, 119]),
+  (
+    title: 'مال واشتراكات',
+    slots: [30, 31, 32, 120, 121, 122, 123, 124, 125, 126, 127],
+  ),
 ];
 
 /// Chart slices for added categories: more hues from the same earthy
-/// family. Saved categories keep their slot index, so the order is fixed.
+/// family. Saved categories keep their slot index, so the order is fixed and
+/// new colors are only appended.
 const List<Color> customCategoryColors = [
   Color(0xFF848D42),
   Color(0xFFA24B36),
@@ -155,7 +356,17 @@ const List<Color> customCategoryColors = [
   Color(0xFF4C682E),
   Color(0xFFAD98D5),
   Color(0xFF57B6B6),
+  Color(0xFF2E6F9E),
+  Color(0xFF9C4F96),
+  Color(0xFFB8902C),
+  Color(0xFF5F7A8A),
+  Color(0xFFCF6A3A),
+  Color(0xFF3E8E6E),
 ];
+
+/// How many colors the palette had before it grew. Like
+/// [legacyCustomIconCount], it keeps hashed colors where they always were.
+const int legacyCustomColorCount = 12;
 
 /// [customCategoryColors] for the dark theme, slot for slot.
 const List<Color> customCategoryDarkColors = [
@@ -171,6 +382,12 @@ const List<Color> customCategoryDarkColors = [
   Color(0xFF637F45),
   Color(0xFFBAA4E2),
   Color(0xFF64C3C3),
+  Color(0xFF4A8BBA),
+  Color(0xFFB667B0),
+  Color(0xFFD1A845),
+  Color(0xFF7D97A7),
+  Color(0xFFE5824F),
+  Color(0xFF52A783),
 ];
 
 /// Wired by CategoryStore so charts/reports resolve saved custom icons.
@@ -206,10 +423,10 @@ ExpenseCategory customCategoryNamed(
 }) {
   final hash = label.hashCode.abs();
   final resolvedIcon = iconIndex == null
-      ? hash % customCategoryIconChoices.length
+      ? hash % legacyCustomIconCount
       : clampCustomIconIndex(iconIndex);
   final resolvedColor = colorIndex == null
-      ? hash % customCategoryColors.length
+      ? hash % legacyCustomColorCount
       : clampCustomColorIndex(colorIndex);
 
   return ExpenseCategory(

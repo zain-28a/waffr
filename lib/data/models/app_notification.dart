@@ -38,6 +38,19 @@ enum NotificationType {
   recurringExpenseDue,
 }
 
+/// Which alerts are urgent: they may show a device banner on a day that
+/// already had one (the quiet hours still apply).
+extension NotificationUrgency on NotificationType {
+  /// True for money that is about to run short or a bill that needs action.
+  bool get isUrgent => switch (this) {
+    NotificationType.balanceWarning ||
+    NotificationType.recurringExpenseDue ||
+    NotificationType.recurringExpenseBlocked ||
+    NotificationType.recurringExpenseUpcoming => true,
+    _ => false,
+  };
+}
+
 /// Light visual weight for list styling (no extra theme colors).
 enum NotificationPriority {
   /// Needs attention.
@@ -68,11 +81,27 @@ class NotificationThresholds {
   /// Goal progress levels that celebrate once each.
   static const List<int> goalPercents = [50, 75];
 
-  /// An expense this many times the average counts as large.
+  /// An expense this many times its category's recent average counts as
+  /// large.
   static const double largeExpenseMultiplier = 2.0;
 
-  /// Expenses needed before "large" can be judged.
-  static const int minExpensesForLarge = 4;
+  /// Earlier expenses in the same category (within [largeExpenseWindowDays])
+  /// needed before "large" can be judged.
+  static const int minExpensesForLarge = 5;
+
+  /// How far back the category average looks.
+  static const int largeExpenseWindowDays = 90;
+
+  /// Only expenses dated this recently are judged, so an old row arriving
+  /// by sync or typed in late does not raise a fresh alert.
+  static const int largeExpenseRecentDays = 3;
+
+  /// Spending this far ahead of the period's share of time (spent share
+  /// minus elapsed share) is called a fast pace.
+  static const double spendingPaceLead = 0.25;
+
+  /// Days before a goal's deadline that a short goal is flagged.
+  static const int goalDeadlineDays = 7;
 }
 
 /// One notification as stored in SharedPreferences.

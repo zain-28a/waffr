@@ -1,6 +1,10 @@
 // The alert rules of NotificationService. Each compares the ledger with
 // the last snapshot and writes an alert when a value crossed a threshold,
-// so reopening the app never repeats an alert.
+// so reopening the app never repeats an alert. Event keys make every alert
+// fire once (per period, goal or expense).
+//
+// Smart alerts (forecast, spending pace, goal deadline, period summary)
+// also need SmartSettings.alerts and enough history behind them.
 
 part of 'notification_service.dart';
 
@@ -47,10 +51,10 @@ extension _NotificationRules on NotificationService {
     final income = '${formatMoney(store.maxBalance)} $currencyLabel';
     return _tryAdd(
       type: NotificationType.balanceWarning,
-      title: percent <= 10 ? 'رصيدك على وشك النفاد' : 'بقي ربع رصيدك',
+      title: percent <= 10 ? 'رصيدك على وشك النفاد' : 'بقي ربع رصيد الفترة',
       message: percent <= 10
           ? 'بقي $left فقط من أصل $income.'
-          : 'المتاح الآن $left من أصل $income. راجع مصروفاتك حتى الدخل القادم.',
+          : 'المتاح الآن $left من أصل $income. راقب مصروفاتك حتى الدخل القادم.',
       eventKey: 'balanceWarning:$percent:$cycle',
       metadata: {'percent': '$percent', 'cycle': cycle},
     );
@@ -60,24 +64,7 @@ extension _NotificationRules on NotificationService {
   /// income. At most once a week per cycle, and only with enough history.
   bool _evaluateForecast(TransactionStore store) {
     if (!SmartSettings.instance.alerts || store.balance <= 0) return false;
-    final facts = SmartFacts(
-      now: deviceNow(),
-      currencySymbol: currencyLabel,
-      expenses: store.expenses,
-      incomes: store.incomes,
-      savingsTransfers: const [],
-      balance: store.balance,
-      monthlyIncome: store.configuredMonthlyIncome,
-      incomeFrequency: store.preferredIncomeFrequency,
-      hasRecurringIncome: store.hasRecurringIncome,
-      savingsBalance: 0,
-      goals: const [],
-      completedGoals: 0,
-      obligations: const [],
-      pendingShopping: 0,
-      streakCount: 0,
-      usageStartedAt: null,
-    );
+    final facts = _factsFor(store);
     final untilIncome = facts.daysUntilIncome;
     final runway = facts.runwayDays;
     if (untilIncome == null || untilIncome < 3 || runway == null) return false;
@@ -92,9 +79,9 @@ extension _NotificationRules on NotificationService {
       type: NotificationType.balanceWarning,
       title: 'قد ينفد رصيدك قبل الدخل',
       message:
-          'بوتيرتك الحالية سينفد رصيدك قبل الدخل القادم بنحو '
-          '${Ar.days.of(gap)}. حاول ألا تتجاوز '
-          '${formatMoney(dailyLimit)} $currencyLabel يومياً.',
+          'بوتيرة آخر أسبوعين ينفد رصيدك قبل الدخل القادم بنحو '
+          '${Ar.days.of(gap)}. حدّك اليومي الآمن '
+          '${formatMoney(dailyLimit)} $currencyLabel.',
       eventKey: 'balanceForecast:$cycle:$week',
       metadata: {'cycle': cycle, 'gapDays': '$gap'},
     );
@@ -122,9 +109,11 @@ extension _NotificationRules on NotificationService {
     final cycle = _incomeCycle(store);
     return _tryAdd(
       type: NotificationType.highSpending,
-      title: 'صرفت \u2066$percent%\u2069 من رصيد الدورة',
+      title: percent == 50
+          ? 'صرفت نصف رصيد الفترة'
+          : 'صرفت \u2066$percent%\u2069 من رصيد الفترة',
       message:
-          'صرفت ${formatMoney(store.cycleSpent)} من '
+          'صرفت ${formatMoney(store.cycleSpent)} $currencyLabel من أصل '
           '${formatMoney(store.maxBalance)} $currencyLabel، '
           'والمتاح الآن ${formatMoney(store.balance)} $currencyLabel.',
       eventKey: 'highSpending:$percent:$cycle',
@@ -146,8 +135,8 @@ extension _NotificationRules on NotificationService {
           type: NotificationType.goalReached,
           title: 'اكتمل هدف ${Ar.quote(goal.name)}',
           message:
-              'جمعت ${formatMoney(goal.targetAmount)} '
-              '${currencyLabelFor(goal.currencyCode)} المطلوبة لهذا الهدف.',
+              'جمعت المبلغ المطلوب كاملاً: ${formatMoney(goal.targetAmount)} '
+              '${currencyLabelFor(goal.currencyCode)}.',
           eventKey: _goalReachedKey(goal.id),
           relatedId: goal.id,
           metadata: {'goalName': goal.name, 'percent': '100'},
@@ -171,9 +160,9 @@ extension _NotificationRules on NotificationService {
       final symbol = currencyLabelFor(goal.currencyCode);
       changed |= _tryAdd(
         type: NotificationType.goalProgress,
-        title: 'هدف ${Ar.quote(goal.name)}: \u2066$percent%\u2069',
+        title: 'وصل هدف ${Ar.quote(goal.name)} إلى \u2066$percent%\u2069',
         message:
-            'وفّرت ${formatMoney(store.currentSaved(goal))} من '
+            'وفّرت ${formatMoney(store.currentSaved(goal))} $symbol من أصل '
             '${formatMoney(goal.targetAmount)} $symbol.',
         eventKey: _goalProgressKey(goal.id, percent),
         relatedId: goal.id,
@@ -274,54 +263,245 @@ extension _NotificationRules on NotificationService {
     return changed;
   }
 
-  /// Flags expenses ≥ 2× the average of earlier ones (needs >4 expenses).
+  /// Flags a new, recent expense at least twice the average of the same
+  /// category over the previous 90 days (five earlier expenses needed).
+  /// Scheduled bills are expected amounts and have their own notices.
   bool _evaluateLargeExpenses(TransactionStore store) {
-    final expenses = store.expenses;
-    if (expenses.length <= NotificationThresholds.minExpensesForLarge) {
-      return false;
-    }
+    final now = deviceNow();
+    final recentFrom = now.subtract(
+      const Duration(days: NotificationThresholds.largeExpenseRecentDays),
+    );
+    final fresh = [
+      for (final expense in store.expenses)
+        if (!_snapshot.knownTransactionIds.contains(expense.id) &&
+            !expense.dateTime.isBefore(recentFrom) &&
+            !RecurringExpense.isRecurringSource(expense.sourceId))
+          expense,
+    ];
+    if (fresh.isEmpty) return false;
 
     var changed = false;
-    final chronological = [...expenses]
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-
-    // Sum of the expenses before index i, kept as the loop runs instead of
-    // re-adding them for every new row (a pulled ledger can bring thousands).
-    var priorSum = 0.0;
-    for (var i = 0; i < chronological.length; i++) {
-      final expense = chronological[i];
-      final sumBefore = priorSum;
-      priorSum += expense.amount;
-      if (_snapshot.knownTransactionIds.contains(expense.id)) continue;
-      if (i < NotificationThresholds.minExpensesForLarge) continue;
-      // Scheduled bills have their own notice and are expected amounts.
-      if (RecurringExpense.isRecurringSource(expense.sourceId)) continue;
-
-      final average = sumBefore / i;
-      if (average <= 0) continue;
-      if (expense.amount <
-          average * NotificationThresholds.largeExpenseMultiplier) {
+    for (final expense in fresh) {
+      final category = expense.category ?? fallbackCategory.label;
+      final from = expense.dateTime.subtract(
+        const Duration(days: NotificationThresholds.largeExpenseWindowDays),
+      );
+      var count = 0;
+      var sum = 0.0;
+      for (final other in store.expenses) {
+        if (identical(other, expense) || other.id == expense.id) continue;
+        if ((other.category ?? fallbackCategory.label) != category) continue;
+        if (other.dateTime.isBefore(from) ||
+            !other.dateTime.isBefore(expense.dateTime)) {
+          continue;
+        }
+        count++;
+        sum += other.amount;
+      }
+      if (count < NotificationThresholds.minExpensesForLarge) continue;
+      final average = sum / count;
+      if (average <= 0 ||
+          expense.amount <
+              average * NotificationThresholds.largeExpenseMultiplier) {
         continue;
       }
 
+      final symbol = currencyLabelFor(expense.currencyCode);
+      final name = Ar.category(categoryFor(category).label);
       changed |= _tryAdd(
         type: NotificationType.largeExpense,
-        title: 'مصروف أعلى من المعتاد',
+        title: 'مصروف أكبر من المعتاد على $name',
         message:
-            '${formatMoney(expense.amount)} '
-            '${currencyLabelFor(expense.currencyCode)} على '
-            '${Ar.category(categoryFor(expense.category).label)}، أي ضعف متوسط مصروفاتك أو أكثر.',
+            '${formatMoney(expense.amount)} $symbol، أي أكثر من ضعف متوسط '
+            'مصروفك على $name في آخر 90 يوماً '
+            '(${formatMoney(average)} $symbol).',
         eventKey: 'largeExpense:${expense.id}',
         relatedId: expense.id,
-        metadata: {
-          'amount': '${expense.amount}',
-          'category': ?expense.category,
-        },
+        metadata: {'amount': '${expense.amount}', 'category': category},
         createdAt: expense.dateTime,
       );
     }
-
     return changed;
+  }
+
+  /// Smart alert: spending well ahead of the period. Once the period is a
+  /// fifth gone (and five days old), spending a quarter more of its income
+  /// than the share of time passed is flagged once per period, unless the
+  /// balance forecast already warned about this period.
+  bool _evaluateSpendingPace(TransactionStore store) {
+    if (!SmartSettings.instance.alerts || store.maxBalance <= 0) return false;
+    final code = CurrencyStore.instance.activeCode;
+    final start = store.cycleStartFor(code);
+    final end = _cycleEnd(store, start);
+    if (start == null || end == null) return false;
+    final now = deviceNow();
+    final spentShare = store.cycleSpent / store.maxBalance;
+    if (!isSpendingAhead(
+      start: start,
+      end: end,
+      now: now,
+      spentShare: spentShare,
+    )) {
+      return false;
+    }
+    final length = end.difference(start).inHours / 24;
+    final passed = now.difference(start).inHours / 24;
+    final elapsed = passed / length;
+    final cycle = _incomeCycle(store);
+    if (_eventKeys.any((key) => key.startsWith('balanceForecast:$cycle'))) {
+      return false;
+    }
+    final daysLeft = (length - passed).ceil();
+    return _tryAdd(
+      type: NotificationType.highSpending,
+      title: 'صرفك يسبق الفترة',
+      message:
+          'صرفت \u2066${(spentShare * 100).round()}%\u2069 من رصيد الفترة ولم '
+          'يمضِ منها إلا \u2066${(elapsed * 100).round()}%\u2069. '
+          'بقي من رصيدك ${formatMoney(store.balance)} $currencyLabel، '
+          'وأمامك نحو ${Ar.days.of(daysLeft)} حتى نهايتها.',
+      eventKey: 'spendingPace:$cycle',
+      metadata: {'kind': 'pace', 'cycle': cycle},
+    );
+  }
+
+  /// Smart alert: an unfinished goal whose deadline is a week away or less,
+  /// once per goal.
+  bool _evaluateGoalDeadlines(TransactionStore store) {
+    if (!SmartSettings.instance.alerts) return false;
+    final today = deviceNow();
+    var changed = false;
+    for (final goal in store.activeGoals) {
+      final saved = store.goalProgress(goal);
+      final remaining = goal.targetAmount - saved;
+      if (remaining <= 0) continue;
+      final months = SmartFactsLoader.plannedMonths(goal.duration);
+      final deadline = goal.createdAt.add(
+        Duration(days: (months * 30).round()),
+      );
+      final daysLeft = calendarDaysBetween(today, deadline);
+      if (daysLeft < 1 || daysLeft > NotificationThresholds.goalDeadlineDays) {
+        continue;
+      }
+      final symbol = currencyLabelFor(goal.currencyCode);
+      changed |= _tryAdd(
+        type: NotificationType.goalProgress,
+        title: 'موعد هدف ${Ar.quote(goal.name)} بعد ${Ar.days.of(daysLeft)}',
+        message:
+            'ينقصه ${formatMoney(remaining)} $symbol، أي نحو '
+            '${formatMoney(remaining / daysLeft)} $symbol يومياً حتى موعده.',
+        eventKey: 'goalDeadline:${goal.id}',
+        relatedId: goal.id,
+        metadata: {'goalName': goal.name, 'kind': 'deadline'},
+      );
+    }
+    return changed;
+  }
+
+  /// Smart alert: when a balance period ends (a new one started), a short
+  /// summary of the one that ended: spent, its income, and the biggest
+  /// category. Periods under five days or without spending are skipped.
+  bool _evaluateCycleSummary(TransactionStore store) {
+    if (!SmartSettings.instance.alerts) return false;
+    final previousKey = _snapshot.cycleKey;
+    final previousStart = _snapshot.cycleStart;
+    final code = CurrencyStore.instance.activeCode;
+    final start = store.cycleStartFor(code);
+    if (previousKey == null || previousStart == null || start == null) {
+      return false;
+    }
+    if (_snapshot.cycleCurrency != code) return false;
+    if (store.cycleKey == previousKey || !start.isAfter(previousStart)) {
+      return false;
+    }
+    if (start.difference(previousStart).inDays < 5) return false;
+
+    var spent = 0.0;
+    var income = 0.0;
+    final totals = <String, double>{};
+    for (final item in store.transactions) {
+      if (item.currencyCode != code) continue;
+      if (item.dateTime.isBefore(previousStart) ||
+          !item.dateTime.isBefore(start)) {
+        continue;
+      }
+      if (item.isExpense) {
+        spent += item.amount;
+        final category = item.category ?? fallbackCategory.label;
+        totals[category] = (totals[category] ?? 0) + item.amount;
+      } else if (item.isIncome) {
+        income += item.amount;
+      }
+    }
+    if (spent <= 0) return false;
+    final top = largestCategory(totals)!;
+    final share = (top.value / spent * 100).round();
+    final ofIncome = income > 0
+        ? ' من دخل قدره ${formatMoney(income)} $currencyLabel'
+        : '';
+    return _tryAdd(
+      type: NotificationType.recurringPeriodCompleted,
+      title: 'ملخّص الفترة الماضية',
+      message:
+          'صرفت ${formatMoney(spent)} $currencyLabel$ofIncome. '
+          'أكبر بند كان ${Ar.category(top.key)} '
+          '(\u2066$share%\u2069).',
+      eventKey: 'cycleSummary:$code:$previousKey',
+      metadata: {'kind': 'cycleSummary', 'periodKey': previousKey},
+    );
+  }
+
+  /// Keeps the "nothing logged for three days" reminder in step with the
+  /// newest expense; it is a scheduled device reminder, not a list item.
+  void _syncLoggingNudge(TransactionStore store) {
+    DateTime? last;
+    for (final expense in store.expenses) {
+      if (last == null || expense.dateTime.isAfter(last)) {
+        last = expense.dateTime;
+      }
+    }
+    if (last == _nudgeBase && _nudgeEnabled == _nudgeWanted) return;
+    _nudgeBase = last;
+    _nudgeEnabled = _nudgeWanted;
+    unawaited(
+      SystemNotifications.instance.syncLoggingNudge(
+        enabled: _nudgeWanted,
+        lastExpenseAt: last,
+      ),
+    );
+  }
+
+  bool get _nudgeWanted => SmartSettings.instance.alerts && !_muted;
+
+  /// The facts the smart alerts read, for the active currency.
+  SmartFacts _factsFor(TransactionStore store) => SmartFacts(
+    now: deviceNow(),
+    currencySymbol: currencyLabel,
+    expenses: store.expenses,
+    incomes: store.incomes,
+    savingsTransfers: const [],
+    balance: store.balance,
+    monthlyIncome: store.configuredMonthlyIncome,
+    incomeFrequency: store.preferredIncomeFrequency,
+    hasRecurringIncome: store.hasRecurringIncome,
+    savingsBalance: 0,
+    goals: const [],
+    completedGoals: 0,
+    obligations: const [],
+    pendingShopping: 0,
+    streakCount: 0,
+    usageStartedAt: null,
+  );
+
+  /// When the current period ends: the next income period for a weekly or
+  /// monthly income, else null (no expected end to pace against).
+  DateTime? _cycleEnd(TransactionStore store, DateTime? start) {
+    if (start == null) return null;
+    final frequency = store.preferredIncomeFrequency;
+    if (!store.hasRecurringIncome || frequency == RecurringFrequency.none) {
+      return null;
+    }
+    return CalendarPeriod.ofFrequency(frequency, deviceNow()).end;
   }
 
   String _incomeCycle(TransactionStore store) => 'cycle:${store.cycleKey}';

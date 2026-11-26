@@ -580,7 +580,8 @@ class _ImprovementCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-          const SmartAnalysisButton(
+          SmartAnalysisButton(
+            key: TutorialTargets.of(TutorialTarget.smartButton),
             scope: InsightScope.reports,
             style: SmartButtonStyle.tile,
           ),

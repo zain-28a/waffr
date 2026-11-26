@@ -138,6 +138,27 @@ void main() {
     expect(totals.map((e) => e.amount), [80, 70, 5]);
   });
 
+  test('the spending breakdown can start from a date', () async {
+    await seed([
+      expenseAt(100, DateTime(2026, 1, 5), category: 'مواصلات'),
+      expenseAt(30, DateTime(2026, 2, 3), category: 'طعام'),
+      expenseAt(10, DateTime(2026, 2, 4), category: 'مواصلات'),
+    ]);
+
+    final all = store.spendingBreakdown();
+    expect(all.top!.category, 'مواصلات');
+    expect(all.total, 140);
+
+    final february = store.spendingBreakdown(since: DateTime(2026, 2));
+    expect(february.top!.category, 'طعام');
+    expect(february.top!.share, closeTo(0.75, 1e-9));
+    expect(
+      store.expensesByCategory(since: DateTime(2026, 2)).map((e) => e.amount),
+      [30, 10],
+    );
+    expect(store.spendingBreakdown(since: DateTime(2026, 3)).isEmpty, isTrue);
+  });
+
   test('net savings inside a window are floored at zero', () async {
     await seed([
       incomeAt(1000, DateTime(2026, 1, 1)),

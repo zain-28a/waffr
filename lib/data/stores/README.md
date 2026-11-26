@@ -7,7 +7,7 @@ serves memory and notifies listeners on every change.
 | File | Contents |
 | --- | --- |
 | `transaction_store.dart` | `TransactionStore`: the ledger (incomes, expenses, savings transfers), balances, income settings and savings goals, per currency. Library root; declares the part files below. |
-| `transaction_store_queries.dart` | `TransactionQueries`: `expenses`, `incomes`, `goals`, `balance`, `savingsBalance`, totals, `expensesByCategory`. |
+| `transaction_store_queries.dart` | `TransactionQueries`: `expenses`, `incomes`, `goals`, `balance`, `savingsBalance`, totals, `expensesByCategory` / `spendingBreakdown` (optionally from a start date). |
 | `transaction_store_cycle.dart` | `BalanceCycle`: cycle start, `cycleSpent`, `maxBalance` (the home bar's 100%), `remainingRatio`, `cycleKey`. |
 | `transaction_store_income.dart` | `IncomeSettings`: `addIncome`, configured weekly/monthly income per currency, `referenceIncome`. |
 | `transaction_store_entries.dart` | `LedgerEntries`: `addExpense`, `undoExpense`, `undoIncome`, `saveManually`, `withdrawFromSavings`, and the edits `updateExpense`, `updateIncome`, `updateSavingsTransfer`, `deleteSavingsTransfer` (manual moves only; see `isEditableTransfer`). An edit is refused when it would leave the balance or the savings balance below zero. |

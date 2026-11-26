@@ -5,6 +5,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/models/transaction.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/data/services/home_widget_sync.dart';
 
@@ -35,6 +36,81 @@ void main() {
     expect(data['balance_amount'], '400');
     expect(data['balance_percent'], '40');
     expect(data['balance_caption'], 'مصروف 600 من 1,000 ل.س');
+  });
+
+  test('hidden amounts become dots, shares stay', () {
+    final data = buildHomeWidgetData(
+      now: now,
+      symbol: 'ل.س',
+      balance: 400,
+      spent: 600,
+      maxBalance: 1000,
+      remainingRatio: 0.4,
+      goal: (name: 'سفر', target: 1000, saved: 250),
+      obligations: [(name: 'إيجار', amount: 300, due: DateTime(2026, 10, 21))],
+      streak: 3,
+      hideAmounts: true,
+      monthSpent: 600,
+      monthTop: [(category: 'طعام', amount: 600, share: 1)],
+    );
+    expect(data['balance_amount'], '••••');
+    expect(data['balance_caption'], isNot(contains('600')));
+    expect(data['goal_caption'], isNot(contains('250')));
+    expect(data['obligation_value'], '••••');
+    expect(data['month_top_0_amount'], '••••');
+    expect(data['month_top_0_percent'], '100');
+    expect(data['balance_percent'], '40');
+  });
+
+  test('the month and recent rows carry dates and colors', () {
+    final data = buildHomeWidgetData(
+      now: now,
+      symbol: 'ل.س',
+      balance: 400,
+      spent: 600,
+      maxBalance: 1000,
+      remainingRatio: 0.4,
+      goal: null,
+      obligations: [(name: 'إيجار', amount: 300, due: DateTime(2026, 10, 21))],
+      streak: 1,
+      monthSpent: 600,
+      monthIncome: 1000,
+      monthTop: [
+        (category: 'طعام', amount: 450, share: 0.75),
+        (category: 'مواصلات', amount: 150, share: 0.25),
+      ],
+      recent: [
+        WaffrTransaction(
+          id: 'a',
+          type: TransactionType.expense,
+          amount: 50,
+          dateTime: DateTime(2026, 10, 19, 13),
+          category: 'طعام',
+        ),
+        WaffrTransaction(
+          id: 'b',
+          type: TransactionType.income,
+          amount: 1000,
+          dateTime: DateTime(2026, 10, 1),
+          note: 'راتب',
+        ),
+      ],
+    );
+    expect(data['month_key'], '2026-10');
+    expect(data['month_label'], 'تشرين الأول');
+    expect(data['month_spent'], '600');
+    expect(data['month_income'], '1,000');
+    expect(data['month_top_count'], 2);
+    expect(data['month_top_0_percent'], '75');
+    expect(data['month_top_0_color'], isA<int>());
+    expect(data['recent_count'], 2);
+    expect(data['recent_0_title'], 'طعام');
+    expect(data['recent_0_amount'], '−50');
+    expect(data['recent_0_day'], '2026-10-19');
+    expect(data['recent_1_title'], 'راتب');
+    expect(data['recent_1_amount'], '+1,000');
+    expect(data['recent_1_income'], true);
+    expect(data['obligation_due_day'], '2026-10-21');
   });
 
   test('empty goal and obligation fall back to friendly text', () {
@@ -144,7 +220,8 @@ void main() {
       expect(saved['goal_name'], 'سفر');
       expect(saved['goal_percent'], '10');
       expect(saved['obligation_empty'], true);
-      expect(updated, hasLength(5));
+      expect(updated, hasLength(6));
+      expect(updated, contains('com.waffr.app.widgets.MonthWidgetProvider'));
       expect(updated, contains('com.waffr.app.widgets.BalanceWidgetProvider'));
     });
 

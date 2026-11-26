@@ -49,7 +49,7 @@ class SmartFactsLoader {
             target: goal.targetAmount,
             saved: store.goalProgress(goal),
             createdAt: goal.createdAt,
-            plannedMonths: _months(goal.duration),
+            plannedMonths: plannedMonths(goal.duration),
           ),
       ],
       completedGoals: store.completedGoals.length,
@@ -63,8 +63,8 @@ class SmartFactsLoader {
     );
   }
 
-  // A goal preset as months (a week is a quarter month).
-  static double _months(GoalDurationPreset preset) => switch (preset) {
+  /// A goal preset as months (a week is a quarter month).
+  static double plannedMonths(GoalDurationPreset preset) => switch (preset) {
     GoalDurationPreset.week => 0.25,
     GoalDurationPreset.month => 1,
     GoalDurationPreset.threeMonths => 3,

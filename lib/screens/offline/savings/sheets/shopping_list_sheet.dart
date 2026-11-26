@@ -4,6 +4,8 @@
 
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
+import 'package:waffr/widgets/tutorial/tutorial_layer.dart';
 import 'package:waffr/widgets/containers/app_empty_state.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
@@ -21,11 +23,14 @@ import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
 
 /// Opens the full shopping list sheet.
-Future<void> showShoppingListSheet(BuildContext context) {
-  return showGlassSheet<void>(
+Future<void> showShoppingListSheet(BuildContext context) async {
+  final tutorial = TutorialController.instance;
+  tutorial.emit('sheet-open:shopping');
+  await showGlassSheet<void>(
     context: context,
     builder: (context) => const _ShoppingListSheet(),
   );
+  tutorial.emit('sheet-closed:shopping');
 }
 
 /// Compact teaser on the savings screen; opens the full shopping list sheet.
@@ -306,6 +311,7 @@ class _ShoppingListSheetState extends State<_ShoppingListSheet> {
               subtitle: 'احتفظ باحتياجاتك وسجّل المشتريات كمصروفات.',
             ),
             const SizedBox(height: 18),
+            const TutorialSheetHint(steps: {'shopping-read'}),
             // Add row: name field and add button (spinner while saving).
             Row(
               children: [

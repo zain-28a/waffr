@@ -235,12 +235,12 @@ class ReminderDigest {
     );
   }
 
-  // Days without spending this month (from the 7th, three or more).
+  // Finished days without spending this month (from the 7th, three or
+  // more), with the month's total so far.
   ReminderText? _noSpendDays() {
     if (facts.dayOfMonth < 7) return null;
     final days = facts.noSpendDaysThisMonth;
-    if (days < 3 || facts.dailyAverageThisMonth <= 0) return null;
-    final saved = _p.money(days * facts.dailyAverageThisMonth);
+    if (days < 3 || facts.monthSpent <= 0) return null;
     return (
       kind: 'no-spend',
       title: _p.pick([
@@ -248,8 +248,8 @@ class ReminderDigest {
         'مرّت ${Ar.days.of(days)} هذا الشهر دون أي مصروف',
       ]),
       body: _p.pick([
-        'وهذا يعادل نحو $saved بحسب متوسطك اليومي.',
-        'أي ما يعادل نحو $saved بمتوسط صرفك اليومي.',
+        'وصرفك منذ بداية الشهر ${_p.money(facts.monthSpent)}.',
+        'إجمالي صرف الشهر حتى الآن ${_p.money(facts.monthSpent)}.',
       ]),
     );
   }

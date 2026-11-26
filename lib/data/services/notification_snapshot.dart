@@ -12,6 +12,16 @@ class _NotificationSnapshot {
   final Set<String> knownTransactionIds;
   final Set<String> knownProcessedTokens;
 
+  /// The balance period last seen (its key and start), so the end of a
+  /// period can be summed up once. Null in snapshots saved before this was
+  /// kept, and before the first income.
+  final String? cycleKey;
+  final DateTime? cycleStart;
+
+  /// The currency the period above belongs to; a switch of the active
+  /// currency is not the end of a period.
+  final String? cycleCurrency;
+
   const _NotificationSnapshot({
     required this.initialized,
     required this.remainingRatio,
@@ -19,6 +29,9 @@ class _NotificationSnapshot {
     required this.goalRatios,
     required this.knownTransactionIds,
     required this.knownProcessedTokens,
+    this.cycleKey,
+    this.cycleStart,
+    this.cycleCurrency,
   });
 
   bool sameAs(_NotificationSnapshot other) {
@@ -26,6 +39,8 @@ class _NotificationSnapshot {
     if (initialized != other.initialized) return false;
     if (remainingRatio != other.remainingRatio) return false;
     if (spentRatio != other.spentRatio) return false;
+    if (cycleKey != other.cycleKey) return false;
+    if (cycleCurrency != other.cycleCurrency) return false;
     if (goalRatios.length != other.goalRatios.length) return false;
     if (knownTransactionIds.length != other.knownTransactionIds.length) {
       return false;
@@ -65,6 +80,11 @@ class _NotificationSnapshot {
       },
       knownTransactionIds: {for (final item in store.transactions) item.id},
       knownProcessedTokens: Set<String>.of(store.processedPeriodTokens),
+      cycleKey: store.cycleStartFor(CurrencyStore.instance.activeCode) == null
+          ? null
+          : store.cycleKey,
+      cycleStart: store.cycleStartFor(CurrencyStore.instance.activeCode),
+      cycleCurrency: CurrencyStore.instance.activeCode,
     );
   }
 
@@ -75,6 +95,9 @@ class _NotificationSnapshot {
     'goalRatios': goalRatios,
     'knownTransactionIds': knownTransactionIds.toList(),
     'knownProcessedTokens': knownProcessedTokens.toList(),
+    'cycleKey': cycleKey,
+    'cycleStart': cycleStart?.toIso8601String(),
+    'cycleCurrency': cycleCurrency,
   });
 
   /// Restores a snapshot from prefs JSON; empty on missing or corrupt input.
@@ -112,6 +135,9 @@ class _NotificationSnapshot {
               in decoded['knownProcessedTokens'] as List? ?? const [])
             item.toString(),
         },
+        cycleKey: decoded['cycleKey']?.toString(),
+        cycleStart: DateTime.tryParse(decoded['cycleStart']?.toString() ?? ''),
+        cycleCurrency: decoded['cycleCurrency']?.toString(),
       );
     } catch (_) {
       return _NotificationSnapshot.empty();

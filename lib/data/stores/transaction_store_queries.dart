@@ -138,26 +138,32 @@ extension TransactionQueries on TransactionStore {
     return amount > 0 && amount <= balanceFor(code);
   }
 
-  /// Expense totals by category, largest first.
+  /// Expense totals by category, largest first. With [since], only
+  /// expenses from that moment on count.
   List<({String category, double amount})> expensesByCategory({
     String? currencyCode,
+    DateTime? since,
   }) {
+    return [
+      for (final item in spendingBreakdown(
+        currencyCode: currencyCode,
+        since: since,
+      ).items)
+        (category: item.category, amount: item.amount),
+    ];
+  }
+
+  /// Category shares of the expenses in [currencyCode] (the active one by
+  /// default) from [since] on, or of every expense when [since] is null.
+  SpendingBreakdown spendingBreakdown({String? currencyCode, DateTime? since}) {
     final code = Currencies.normalize(currencyCode ?? _activeCode);
     final totals = <String, double>{};
-
     for (final expense in expensesFor(code)) {
-      final category = expense.category ?? 'أخرى';
-
+      if (since != null && expense.dateTime.isBefore(since)) continue;
+      final category = expense.category ?? fallbackCategory.label;
       totals[category] = (totals[category] ?? 0) + expense.amount;
     }
-
-    final entries = totals.entries
-        .map((entry) => (category: entry.key, amount: entry.value))
-        .toList();
-
-    entries.sort((a, b) => b.amount.compareTo(a.amount));
-
-    return entries;
+    return SpendingBreakdown.fromTotals(totals);
   }
 
   /// Net savings inside [start, end): in minus out, floored at 0. Cached per

@@ -1,6 +1,12 @@
 // Device notifications for real Waffr events. In-app history stays in
-// NotificationService; this mirrors new alerts, the daily streak nudge and
-// short comeback reminders.
+// NotificationService; this mirrors new alerts, and schedules the daily
+// streak nudge, the logging nudge, short comeback reminders and the weekly
+// digest.
+//
+// NotificationPolicy decides what may show: nothing between 22:00 and
+// 08:00, one non-urgent banner a day, and one scheduled reminder a day.
+// Every reminder request goes through one plan, so two kinds can never
+// land on the same evening.
 
 import 'dart:async';
 
@@ -8,7 +14,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:waffr/core/insights/smart/arabic_text.dart';
 import 'package:waffr/core/insights/smart/reminder_digest.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
+import 'package:waffr/data/services/notification_policy.dart';
 
 /// Shows and schedules device (OS) notifications.
 class SystemNotifications {
@@ -23,6 +32,32 @@ class SystemNotifications {
   static const int _comebackSoonId = 41022;
   static const int _comebackLaterId = 41023;
   static const int _weeklyId = 41024;
+  static const int _loggingNudgeId = 41025;
+
+  /// Every scheduled reminder id, cancelled and re-planned together.
+  static const List<int> _reminderIds = [
+    _streakId,
+    _comebackSoonId,
+    _comebackLaterId,
+    _weeklyId,
+    _loggingNudgeId,
+  ];
+
+  // Which reminder keeps its evening when two fall on the same day.
+  static const int _rankComebackSoon = 0;
+  static const int _rankLoggingNudge = 1;
+  static const int _rankWeekly = 2;
+  static const int _rankComebackLater = 3;
+  static const int _rankStreak = 4;
+
+  /// Prefs key: day of the last non-urgent banner (the daily limit).
+  static const String _lastNonUrgentKey = 'notif_last_nonurgent_day';
+
+  /// The reminders each sync asked for, by id; null cancels one.
+  final Map<int, PlannedReminder?> _requests = {};
+
+  /// Serializes plan rebuilds.
+  Future<void> _planning = Future.value();
 
   /// Payload of reminders that open the smart analysis when tapped.
   static const String smartPayload = 'smart';
@@ -44,14 +79,27 @@ class SystemNotifications {
     return _starting ??= _start();
   }
 
-  /// Shows an alert now; [eventKey] gives it a stable id.
+  /// Shows an alert now; [eventKey] gives it a stable id. Nothing shows in
+  /// the quiet hours, and a non-[urgent] alert only when no other
+  /// non-urgent banner showed today.
   Future<void> present({
     required String eventKey,
     required String title,
     required String body,
+    bool urgent = false,
   }) async {
     await initialize();
     if (!_ready) return;
+    final now = DateTime.now();
+    final prefs = await AppPrefs.instance;
+    final lastDay = prefs.getString(_lastNonUrgentKey);
+    if (!NotificationPolicy.mayPresent(
+      now: now,
+      urgent: urgent,
+      lastNonUrgentDay: lastDay,
+    )) {
+      return;
+    }
     try {
       await _plugin.show(
         id: _id(eventKey),
@@ -59,66 +107,145 @@ class SystemNotifications {
         body: body,
         notificationDetails: _details(),
       );
-    } catch (_) {}
+    } catch (_) {
+      return;
+    }
+    if (!urgent) {
+      await prefs.setString(_lastNonUrgentKey, NotificationPolicy.dayKey(now));
+      // A reminder planned for today would be a second banner.
+      await _replan();
+    }
   }
 
-  /// One reminder for tomorrow evening. Cancelled whenever the app is opened.
+  /// Schedules (or cancels) the evening streak reminder for tomorrow.
   Future<void> syncStreakReminder({
     required bool enabled,
     int streakCount = 0,
   }) async {
-    await initialize();
-    if (!_ready) return;
-    try {
-      await _plugin.cancel(id: _streakId);
-      if (!enabled || !_timeZoneReady) return;
+    if (!enabled) {
+      _requests[_streakId] = null;
+    } else {
       final text = ReminderDigest.streakText(streakCount);
-      await _schedule(_streakId, (text.title, text.body), _tomorrowEvening());
-    } catch (_) {}
+      _requests[_streakId] = PlannedReminder(
+        id: _streakId,
+        title: text.title,
+        body: text.body,
+        at: _localAt(daysFromNow: 1, hour: 19, minute: 30),
+        rank: _rankStreak,
+      );
+    }
+    await _replan();
   }
 
-  /// Factual reminders for a user who stays away. Rescheduled on every
-  /// open, so they only fire after days without the app: [soon] after two
-  /// days, [later] after five, and [weekly] on Friday evening. Each is a
-  /// title and body; null skips that slot.
+  /// Schedules the comeback reminders (two and five days ahead) and the
+  /// weekly digest; every app open pushes them forward. With [enabled]
+  /// false they are all cancelled.
   Future<void> syncComebackReminders({
     required bool enabled,
     (String, String)? soon,
     (String, String)? later,
     (String, String)? weekly,
   }) async {
-    await initialize();
-    if (!_ready) return;
-    try {
-      for (final id in const [_comebackSoonId, _comebackLaterId, _weeklyId]) {
-        await _plugin.cancel(id: id);
-      }
-      if (!enabled || !_timeZoneReady) return;
-      if (soon != null) {
-        await _schedule(
-          _comebackSoonId,
-          soon,
-          _localAt(daysFromNow: 2, hour: 20, minute: 30),
-          payload: smartPayload,
+    final now = DateTime.now();
+    PlannedReminder? request(
+      int id,
+      (String, String)? text,
+      DateTime at,
+      int rank,
+    ) => !enabled || text == null
+        ? null
+        : PlannedReminder(
+            id: id,
+            title: text.$1,
+            body: text.$2,
+            at: at,
+            rank: rank,
+            payload: smartPayload,
+          );
+    _requests[_comebackSoonId] = request(
+      _comebackSoonId,
+      soon,
+      soonAt(now),
+      _rankComebackSoon,
+    );
+    _requests[_comebackLaterId] = request(
+      _comebackLaterId,
+      later,
+      laterAt(now),
+      _rankComebackLater,
+    );
+    _requests[_weeklyId] = request(
+      _weeklyId,
+      weekly,
+      nextFridayEvening(now),
+      _rankWeekly,
+    );
+    await _replan();
+  }
+
+  /// One reminder, three days after [lastExpenseAt] at 20:00, when nothing
+  /// else has been logged by then. Re-synced whenever the ledger changes, so
+  /// a new expense moves it; once its evening has passed it is not repeated.
+  Future<void> syncLoggingNudge({
+    required bool enabled,
+    DateTime? lastExpenseAt,
+  }) async {
+    final last = lastExpenseAt?.toLocal();
+    if (!enabled || last == null) {
+      _requests[_loggingNudgeId] = null;
+    } else {
+      final at = loggingNudgeAt(last);
+      _requests[_loggingNudgeId] = PlannedReminder(
+        id: _loggingNudgeId,
+        title: 'لم تسجّل أي مصروف منذ ${Ar.days.of(3)}',
+        body:
+            'سجّل ما صرفته في الأيام الماضية ولو تقريبياً، ليبقى رصيدك دقيقاً.',
+        at: at,
+        rank: _rankLoggingNudge,
+      );
+    }
+    await _replan();
+  }
+
+  /// When the logging nudge for an expense at [lastExpenseAt] fires.
+  @visibleForTesting
+  static DateTime loggingNudgeAt(DateTime lastExpenseAt) => DateTime(
+    lastExpenseAt.year,
+    lastExpenseAt.month,
+    lastExpenseAt.day + 3,
+    20,
+  );
+
+  // Cancels every reminder and schedules the current plan.
+  Future<void> _replan() {
+    return _planning = _planning.then((_) async {
+      await initialize();
+      if (!_ready) return;
+      try {
+        for (final id in _reminderIds) {
+          await _plugin.cancel(id: id);
+        }
+        if (!_timeZoneReady) return;
+        final prefs = await AppPrefs.instance;
+        final busy = prefs.getString(_lastNonUrgentKey);
+        final plan = NotificationPolicy.plan(
+          _requests.values.whereType<PlannedReminder>(),
+          now: DateTime.now(),
+          busyDays: {?busy},
         );
-      }
-      if (later != null) {
-        await _schedule(
-          _comebackLaterId,
-          later,
-          _localAt(daysFromNow: 5, hour: 20, minute: 30),
-          payload: smartPayload,
-        );
-      }
-      if (weekly != null) {
-        await _schedule(
-          _weeklyId,
-          weekly,
-          _nextFridayEvening(),
-          payload: smartPayload,
-        );
-      }
-    } catch (_) {}
+        for (final item in plan) {
+          await _plugin.zonedSchedule(
+            id: item.id,
+            title: item.title,
+            body: item.body,
+            scheduledDate: _utc(item.at),
+            notificationDetails: _details(),
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            payload: item.payload,
+          );
+        }
+      } catch (_) {}
+    });
   }
 
   /// When the first comeback reminder fires (two days later, 20:30), for
@@ -129,23 +256,6 @@ class SystemNotifications {
   /// When the second comeback reminder fires (five days later, 20:30).
   static DateTime laterAt(DateTime now) =>
       DateTime(now.year, now.month, now.day + 5, 20, 30);
-
-  Future<void> _schedule(
-    int id,
-    (String, String) text,
-    tz.TZDateTime when, {
-    String? payload,
-  }) {
-    return _plugin.zonedSchedule(
-      id: id,
-      title: text.$1,
-      body: text.$2,
-      scheduledDate: when,
-      notificationDetails: _details(),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      payload: payload,
-    );
-  }
 
   /// Payload of the notification that launched the app, if one did.
   Future<String?> launchPayload() async {
@@ -253,30 +363,6 @@ class SystemNotifications {
 
   int _id(String eventKey) => eventKey.hashCode & 0x7fffffff;
 
-  /// Local 19:30 tomorrow, stored as a UTC instant so no timezone database
-  /// lookup is required.
-  tz.TZDateTime _tomorrowEvening() =>
-      _localAt(daysFromNow: 1, hour: 19, minute: 30);
-
-  /// A local wall-clock time [daysFromNow] days ahead, as a UTC instant.
-  tz.TZDateTime _localAt({
-    required int daysFromNow,
-    required int hour,
-    required int minute,
-  }) {
-    final now = DateTime.now();
-    final local = DateTime(
-      now.year,
-      now.month,
-      now.day + daysFromNow,
-      hour,
-      minute,
-    );
-    return _utc(local);
-  }
-
-  tz.TZDateTime _nextFridayEvening() => _utc(nextFridayEvening(DateTime.now()));
-
   /// Friday 18:00 local after [now], at least half a day away.
   @visibleForTesting
   static DateTime nextFridayEvening(DateTime now) {
@@ -289,6 +375,17 @@ class SystemNotifications {
     return local;
   }
 
+  /// A local wall-clock time [daysFromNow] days ahead.
+  DateTime _localAt({
+    required int daysFromNow,
+    required int hour,
+    required int minute,
+  }) {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day + daysFromNow, hour, minute);
+  }
+
+  /// [local] as a UTC instant, so no timezone database lookup is needed.
   tz.TZDateTime _utc(DateTime local) {
     final utc = local.toUtc();
     return tz.TZDateTime.utc(

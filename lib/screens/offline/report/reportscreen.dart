@@ -45,6 +45,7 @@ import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
 import 'package:waffr/widgets/smart/smart_analysis_button.dart';
 import 'package:waffr/core/utils/calendar_days.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
 
 part 'report_chart.dart';
 part 'report_data.dart';

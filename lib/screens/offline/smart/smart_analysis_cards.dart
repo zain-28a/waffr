@@ -78,15 +78,24 @@ class _InsightCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          insight.title,
-                          style: TextStyle(
-                            fontFamily: 'Outfit',
-                            fontFamilyFallback: const ['Tajawal'],
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: palette.textPrimary,
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                insight.title,
+                                style: TextStyle(
+                                  fontFamily: 'Outfit',
+                                  fontFamilyFallback: const ['Tajawal'],
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: palette.textPrimary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            _KindChip(kind: insight.kind),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         _TypedText(
@@ -347,4 +356,36 @@ class _GaugePainter extends CustomPainter {
       old.value != value ||
       old.track != track ||
       !listEquals(old.colors, colors);
+}
+
+/// The small chip beside a card title that says whether the card states a
+/// recorded fact, an estimate or a suggestion.
+class _KindChip extends StatelessWidget {
+  final InsightKind kind;
+
+  const _KindChip({required this.kind});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final color = palette.textSecondary;
+    return Container(
+      margin: const EdgeInsets.only(top: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        kind.label,
+        style: TextStyle(
+          fontFamily: 'Tajawal',
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          color: color,
+          height: 1.4,
+        ),
+      ),
+    );
+  }
 }

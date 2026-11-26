@@ -13,6 +13,7 @@ widgets; `expense_categories.dart` uses `IconData`/`Color`, and
 | `calendar_period.dart` | `CalendarPeriod` (start/end windows, `w:`/`m:` period keys, Saturday weeks, Levantine month names) and `SavingsRange`. |
 | `currency.dart` | `CurrencyInfo`, the `Currencies` catalog, `defaultCurrencyCode` (`SYP`, always enabled). |
 | `expense_categories.dart` | Built-in `expenseCategories`, custom icon/color palettes, `paymentMethods`, `categoryFor(label)` and the `customCategoryLookup` hook. |
+| `spending_breakdown.dart` | `SpendingPeriod` (week / month / balance period / all, for the home spending card) and `SpendingBreakdown`: ranked category shares with a fixed tie order (amount, built-in grid order, label, «أخرى» last). |
 | `custom_category_entry.dart` | `CustomCategoryEntry`: a user category with a stable id, label, icon and color slot; prefs and `/sync` forms, `legacyId()` for old label-only rows. |
 | `expense_preset.dart` | `ExpensePreset`: a saved expense reused from the star on the expense sheet (amount, ×multiplier, optional recurrence). |
 | `recurring_expense.dart` | `RecurringExpense` (`nextDueAt`, `requiresConfirmation`, `monthlyEquivalent`) and `RecurringUnit`. A charge is owed from the start of its due day (`RecurringExpense.isDue`), not from the time of day it was scheduled. |

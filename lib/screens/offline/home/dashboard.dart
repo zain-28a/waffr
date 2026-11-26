@@ -14,20 +14,25 @@ import 'package:flutter/foundation.dart' show listEquals, mapEquals;
 import 'package:flutter/material.dart';
 import 'package:waffr/widgets/motion/origin_route.dart';
 import 'package:waffr/core/insights/smart/insight_engine.dart';
+import 'package:waffr/core/insights/smart/insight_phrasing.dart';
+import 'package:waffr/core/insights/smart/insight_summary.dart';
 import 'package:waffr/core/insights/smart/smart_facts.dart';
 import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
 import 'package:waffr/core/insights/smart/smart_insight.dart';
+import 'package:waffr/core/prefs/app_prefs.dart';
 import 'package:waffr/core/sync/sync_clock.dart';
 import 'package:waffr/core/theme/app_color.dart';
 import 'package:waffr/core/theme/app_icons.dart';
 import 'package:waffr/core/theme/app_motion.dart';
 import 'package:waffr/core/theme/app_palette.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
 import 'package:waffr/core/utils/calendar_days.dart';
 import 'package:waffr/core/utils/money.dart';
 import 'package:waffr/data/models/calendar_period.dart';
 import 'package:waffr/data/models/expense_categories.dart';
 import 'package:waffr/data/models/recurring_expense.dart';
 import 'package:waffr/data/models/savings_goal.dart';
+import 'package:waffr/data/models/spending_breakdown.dart';
 import 'package:waffr/data/models/transaction.dart';
 import 'package:waffr/data/stores/category_store.dart';
 import 'package:waffr/data/stores/currency_store.dart';
@@ -99,6 +104,11 @@ class _HomeScreenState extends State<HomeScreen>
   /// The savings goal on the goal card; wraps around the active goals.
   int _goalIndex = 0;
 
+  /// The span the spending card shows; remembered on this device.
+  SpendingPeriod _spendingPeriod = SpendingPeriod.cycle;
+
+  static const String _spendingPeriodKey = 'home_spending_period';
+
   @override
   bool get wantKeepAlive => true;
 
@@ -111,7 +121,34 @@ class _HomeScreenState extends State<HomeScreen>
     RecurringExpenseStore.instance.ensureLoaded();
     _listenables.addListener(_queueInsight);
     _queueInsight();
+    _loadSpendingPeriod();
   }
+
+  Future<void> _loadSpendingPeriod() async {
+    final prefs = await AppPrefs.instance;
+    final saved = SpendingPeriod.parse(prefs.getString(_spendingPeriodKey));
+    if (mounted && saved != _spendingPeriod) {
+      setState(() => _spendingPeriod = saved);
+    }
+  }
+
+  Future<void> _setSpendingPeriod(SpendingPeriod period) async {
+    setState(() => _spendingPeriod = period);
+    final prefs = await AppPrefs.instance;
+    await prefs.setString(_spendingPeriodKey, period.name);
+  }
+
+  /// First moment of [period] for the active currency, or null for all
+  /// time (and for a balance period that has not started yet).
+  DateTime? _spendingStart(SpendingPeriod period, DateTime now) =>
+      switch (period) {
+        SpendingPeriod.week => CalendarPeriod.weekStart(now),
+        SpendingPeriod.month => CalendarPeriod.monthStart(now),
+        SpendingPeriod.cycle => _store.cycleStartFor(
+          CurrencyStore.instance.activeCode,
+        ),
+        SpendingPeriod.all => null,
+      };
 
   @override
   void dispose() {
@@ -127,19 +164,27 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   /// What the analysis bar turns through: the headline of the reports
-  /// analysis in several wordings (each seed words the same reading
-  /// differently), with the titles of its findings in between. The seeds
-  /// start from [day], so the set stays the same until tomorrow or until
-  /// the data changes.
+  /// analysis in several wordings, with the titles of its findings in
+  /// between. The analysis runs once; only the headline is reworded per
+  /// seed (it depends on the findings alone), so a ledger change costs one
+  /// run instead of twelve. Seeds start from [day], so the set stays the
+  /// same until tomorrow or until the data changes.
   static List<String> _insightLines(SmartFacts facts, int day) {
-    final reports = [
-      for (var seed = day; seed < day + 12; seed++)
-        InsightEngine(facts, seed: seed).analyze(InsightScope.reports),
-    ];
-    final headlines = {for (final report in reports) report.headline}.toList();
+    final report = InsightEngine(
+      facts,
+      seed: day,
+    ).analyze(InsightScope.reports);
+    final headlines = {
+      report.headline,
+      for (var seed = day + 1; seed < day + 12; seed++)
+        InsightSummary(
+          facts,
+          InsightPhrasing(facts.currencySymbol, math.Random(seed)),
+        ).headline(InsightScope.reports, report.insights, null),
+    }.toList();
     // The closing tip is general advice, not a finding.
     final findings = [
-      for (final insight in reports.first.insights)
+      for (final insight in report.insights)
         if (insight.id != 'tip') insight.title,
     ];
     final lines = <String>{};
@@ -219,6 +264,7 @@ class _HomeScreenState extends State<HomeScreen>
             children: staggered([
               // The balance on its dimensional glass card.
               _BalanceHero(
+                key: TutorialTargets.of(TutorialTarget.balance),
                 balance: _store.balance,
                 spent: _store.cycleSpent,
                 maxBalance: _store.maxBalance,
@@ -239,8 +285,13 @@ class _HomeScreenState extends State<HomeScreen>
               _InsightBar(lines: _insights),
               const SizedBox(height: 14),
               _SpendingCard(
-                totals: _store.expensesByCategory(),
-                totalExpense: _store.totalExpense,
+                key: TutorialTargets.of(TutorialTarget.spendingCard),
+                breakdown: _store.spendingBreakdown(
+                  since: _spendingStart(_spendingPeriod, now),
+                ),
+                period: _spendingPeriod,
+                onPeriod: _setSpendingPeriod,
+                hasHistory: _store.expenses.isNotEmpty,
                 onTap: () =>
                     AppShellScope.selectTabOf(context, AppShellTabs.report),
               ),

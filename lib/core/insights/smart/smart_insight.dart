@@ -28,7 +28,7 @@ extension InsightScopeLabel on InsightScope {
   /// Icon shown beside [label].
   IconData get icon => switch (this) {
     InsightScope.reports => AppIcons.reports,
-    InsightScope.savings => AppIcons.piggyBank,
+    InsightScope.savings => AppIcons.savings,
     InsightScope.profile => AppIcons.user,
   };
 }
@@ -46,6 +46,26 @@ enum InsightTone {
 
   /// A neutral fact.
   info,
+}
+
+/// What kind of statement a card makes, shown as a small chip so a reader
+/// can tell a recorded fact from a projection or a piece of advice.
+enum InsightKind {
+  /// Read straight from the recorded numbers.
+  fact,
+
+  /// A projection or estimate from the recent pace (may turn out otherwise).
+  estimate,
+
+  /// Advice: something the user could do.
+  suggestion;
+
+  /// Arabic chip label.
+  String get label => switch (this) {
+    InsightKind.fact => 'حقيقة',
+    InsightKind.estimate => 'تقدير',
+    InsightKind.suggestion => 'اقتراح',
+  };
 }
 
 /// The four bands of the 0-100 health score. The analysis names them and
@@ -136,7 +156,15 @@ class SmartInsight {
   /// Optional button that acts on the insight.
   final InsightAction? action;
 
-  /// An insight card.
+  /// Cards about the same thing share a topic; a report keeps only the
+  /// highest-priority card of each topic, so one finding is never told
+  /// twice in different words. Null means the card stands alone.
+  final String? topic;
+
+  final InsightKind? _kind;
+
+  /// An insight card. Without [kind], tips read as suggestions and every
+  /// other tone as a fact.
   const SmartInsight({
     required this.id,
     required this.tone,
@@ -146,7 +174,14 @@ class SmartInsight {
     this.detail,
     this.priority = 50,
     this.action,
+    this.topic,
+    this._kind,
   });
+
+  /// What kind of statement the card makes.
+  InsightKind get kind =>
+      _kind ??
+      (tone == InsightTone.tip ? InsightKind.suggestion : InsightKind.fact);
 }
 
 /// The result of one analysis run for one scope.

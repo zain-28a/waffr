@@ -588,7 +588,7 @@ class _NotificationTile extends StatelessWidget {
       NotificationType.largeExpense => AppIcons.error,
       NotificationType.goalReached => AppIcons.trophy,
       NotificationType.goalProgress => AppIcons.flag,
-      NotificationType.savingsTransferred => AppIcons.piggyBank,
+      NotificationType.savingsTransferred => AppIcons.savings,
       NotificationType.recurringPeriodCompleted => AppIcons.calendarCheck,
       NotificationType.recurringExpenseBlocked => AppIcons.block,
       NotificationType.recurringExpenseApplied => AppIcons.calendarRepeat,

@@ -44,7 +44,7 @@ class _SavingsLogSheet extends StatelessWidget {
           if (moves.isEmpty) {
             return const Center(
               child: AppEmptyState(
-                icon: AppIcons.piggyBank,
+                icon: AppIcons.savings,
                 title: 'لا توجد عمليات توفير بعد',
               ),
             );

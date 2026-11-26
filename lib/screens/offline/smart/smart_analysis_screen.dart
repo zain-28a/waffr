@@ -10,6 +10,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
+import 'package:waffr/core/tutorial/tutorial_controller.dart';
 import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:waffr/core/insights/smart/insight_engine.dart';
 import 'package:waffr/core/insights/smart/smart_facts_loader.dart';
@@ -44,10 +45,13 @@ String smartSparkHeroTag(InsightScope scope) => 'smart-spark-${scope.name}';
 /// Opens the analysis out of the widget [context] belongs to (the button
 /// that was tapped). A caller that is a whole page gets the plain page
 /// transition instead.
-Future<void> openSmartAnalysis(BuildContext context, InsightScope scope) {
-  return Navigator.of(context).push(
+Future<void> openSmartAnalysis(BuildContext context, InsightScope scope) async {
+  final tutorial = TutorialController.instance;
+  tutorial.emit('smart-opened');
+  await Navigator.of(context).push(
     originPageRoute<void>(context, (_) => SmartAnalysisScreen(scope: scope)),
   );
+  tutorial.emit('smart-closed');
 }
 
 /// Screen phase: thinking (loading), writing (typing out), done.
