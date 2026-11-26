@@ -113,6 +113,7 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 | 2026-11-26 | Samsung Galaxy S23 Ultra (SM-S918B) | Snapdragon 8 Gen 2 (SM8550) | 17 (SDK 37) | 1 of 3 | passed | 15/15 match | 85 / 86 ms | 275 / 275 ms | 472 ms | 1,261 ms | 13,623 ms (others 3,387 and 3,620) |
 | 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 1 of 3 | passed | 15/15 match | 81 / 82 ms | 325 / 326 ms | 586 ms | 1,577 ms | 4,505 ms (others 4,201 and 4,296) |
 | 2026-11-26 | Samsung Galaxy A56 5G (SM-A566B), run 2, reported by Tala | Exynos 1580 (s5e8855) | 16 (SDK 36) | 2 of 3 | passed | 15/15 match | 82 / 85 ms | 279 / 322 ms | 585 ms | 1,535 ms | 4,606 ms (others 4,479 and 3,904) |
+| 2026-11-26 | Xiaomi 2404ARN45A (Redmi-class, Helio G99 class), run 1 | MediaTek MT6769 (Helio G85/G95-class, low-end) | 14 (SDK 34) | 1 of 3 | passed | 15/15 match | 234 / 240 ms | 664 / 673 ms | 1,250 ms | 3,261 ms | 9,389 ms (others 9,317 and 9,322) |
 | 2026-11-26 | Infinix X6871 (GT 20 Pro), reported by مغناطيسية | MediaTek Dimensity 8350 class (MT6896) | 16 (SDK 36) | 1 of 3 | passed | 15/15 match | 94 / 94 ms | 268 / 280 ms | 481 ms | 1,188 ms | 3,423 ms (others 3,322 and 3,371) |
 | 2026-11-26 | Infinix X6871 (GT 20 Pro), run 2, reported by مغناطيسية | MediaTek MT6896 | 16 (SDK 36) | 2 of 3 | passed | 15/15 match | 97 / 106 ms | 279 / 284 ms | 494 ms | 1,163 ms | 3,365 ms (others 3,321 and 3,359) |
 
@@ -177,3 +178,18 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 - **Pure Dart 600,000: 3.9–4.6 s**, slightly wider spread than run 1 (4.2–4.5 s). Still the slowest path by about 14×.
 - **Gate status:** this device now has 2 of 3 runs. Still missing: one more run on this device, and
   a low-end Android phone with 3 runs.
+
+### Reading of run 1 (Xiaomi 2404ARN45A, MediaTek MT6769, low-end)
+
+- **This is the low-end device the gate asked for.** Correctness holds: all 15 vectors match,
+  self-test passed, on Android 14 with AndroidOpenSSL.
+- **Native 600,000: 661–673 ms (worst 673)**, about 3× under the 2 s target. At 210,000
+  (Release A): 234 ms.
+- **Pure Dart 600,000: 9.3–9.4 s.** Steady, but about 14× slower than native, and well over the
+  target. That is the write path D-4 keeps for rewrap (90-second budget) and the reason Release A
+  stays on native writes for sign-up, password change and backup files.
+- **Platform comparison:** Android's SecretKeyFactory at 600,000 takes 1.25 s here, so the
+  chosen HMAC loop is still about 1.9× faster on this device.
+- **Gate status:** the low-end device now has 1 of 3 runs; the target 2 s is met with room to spare
+  on this phone. Still missing: two more runs on this device, and a third Android phone at the
+  low end for the gate's "at least 3 devices" rule, plus two more runs on each other device.
