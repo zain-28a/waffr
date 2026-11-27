@@ -257,7 +257,7 @@ const List<TutorialStep> tutorialSteps = [
     backOn: 'sheet-closed:goal',
     demo: TutorialDemo.goal,
     title: 'جرّب إنشاء هدف',
-    body: 'اكتب اسماً ومبلغاً واختر المدة ثم احفظ. هذه تجربة لن تُحفظ.',
+    body: 'اكتب اسماً ومبلغاً، واختر «مبلغ مخصص»، ثم اضغط حفظ. هذه تجربة لن تُحفظ.',
   ),
   TutorialStep(
     id: 'shopping-open',
@@ -274,7 +274,7 @@ const List<TutorialStep> tutorialSteps = [
     topic: 7,
     until: 'sheet-closed:shopping',
     title: 'قائمتك',
-    body: 'أضف عنصراً إن شئت، ثم أغلق القائمة لنتابع.',
+    body: 'تصفّح القائمة ثم أغلقها لنتابع. أي عنصر تضيفه هنا سيُحفظ في قائمتك.',
   ),
   TutorialStep(
     id: 'settings-open',

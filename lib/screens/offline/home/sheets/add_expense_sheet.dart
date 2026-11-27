@@ -38,17 +38,20 @@ part 'expense_category_grid.dart';
 /// [RecurringExpenseStore].
 Future<void> showAddExpenseSheet(BuildContext context) async {
   final tutorial = TutorialController.instance;
+  final demo = tutorial.isDemo(TutorialDemo.expense);
   tutorial.emit('sheet-open:expense');
   await showGlassSheet<void>(
     context: context,
-    builder: (context) => const _AddExpenseSheet(),
+    builder: (context) => _AddExpenseSheet(demo: demo),
   );
   tutorial.emit('sheet-closed:expense');
 }
 
 /// Form for a new expense; see [showAddExpenseSheet].
 class _AddExpenseSheet extends StatefulWidget {
-  const _AddExpenseSheet();
+  final bool demo;
+
+  const _AddExpenseSheet({required this.demo});
 
   @override
   State<_AddExpenseSheet> createState() => _AddExpenseSheetState();
@@ -119,14 +122,16 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     return value;
   }
 
-  /// Reads the balance once and checks the typed values against it.
+  /// Checks the typed values and reads the balance for real expenses only.
   _ExpenseInputCheck _check() {
     return _ExpenseInputCheck(
       amount: _amount,
       multiplier: _multiplier,
       recurring: _recurring,
       intervalCount: _intervalCount,
-      available: TransactionStore.instance.balanceFor(_currencyCode),
+      available: widget.demo
+          ? null
+          : TransactionStore.instance.balanceFor(_currencyCode),
       currencySymbol: currencyLabelFor(_currencyCode),
     );
   }
@@ -138,7 +143,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     TransactionStore.instance.ensureLoaded().then((_) {
       if (mounted) setState(() {});
     });
-    ExpensePresetStore.instance.ensureLoaded();
+    if (!widget.demo) ExpensePresetStore.instance.ensureLoaded();
     CategoryStore.instance.ensureLoaded().then((_) {
       if (!mounted) return;
       final store = CategoryStore.instance;
@@ -242,17 +247,15 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   /// One-off goes to TransactionStore; recurring becomes an obligation.
   Future<void> _save() async {
     if (!_check().isValid || _saving) return;
+    setState(() => _saving = true);
 
     // During the tutorial the sheet is a demo: nothing is recorded.
-    final tutorial = TutorialController.instance;
-    if (tutorial.isDemo(TutorialDemo.expense)) {
+    if (widget.demo) {
       AppHaptics.success();
-      tutorial.emit('demo-saved:expense');
+      TutorialController.instance.emit('demo-saved:expense');
       Navigator.of(context).maybePop();
       return;
     }
-
-    setState(() => _saving = true);
 
     final note = _noteController.text.trim();
 
@@ -319,6 +322,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
     final categoryGrid = ExpenseCategoryGrid(
       selected: _category,
       onSelected: _pickCategory,
+      allowManagement: !widget.demo,
     );
 
     return ListenableBuilder(
@@ -336,7 +340,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
         GlassSheetHeader(
           title: 'إضافة مصروف',
           subtitle: 'أدخل المبلغ واختر التصنيف.',
-          onNext: check.isValid ? _save : null,
+          onNext: check.isValid && !_saving ? _save : null,
         ),
         const SizedBox(height: 10),
         const TutorialSheetHint(steps: {'expense-demo'}),
@@ -349,10 +353,9 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
           onCurrencyChanged: (code) => setState(() => _currencyCode = code),
           multiplier: _multiplier,
           onMultiplierChanged: (value) => setState(() => _multiplier = value),
-          multiplierAccessory: _PresetStarButton(
-            filled: _saveAsPreset,
-            onTap: _openPresets,
-          ),
+          multiplierAccessory: widget.demo
+              ? null
+              : _PresetStarButton(filled: _saveAsPreset, onTap: _openPresets),
         ),
         const SizedBox(height: 10),
         // One-off vs recurring, with the recurring options expanding below.
@@ -461,7 +464,7 @@ class _ExpenseInputCheck {
   final int multiplier;
   final bool recurring;
   final int intervalCount;
-  final double available;
+  final double? available;
   final String currencySymbol;
 
   const _ExpenseInputCheck({
@@ -473,23 +476,30 @@ class _ExpenseInputCheck {
     required this.currencySymbol,
   });
 
-  /// One-off expenses cannot exceed the balance in that currency. Recurring
-  /// bills are saved for later, so they are not blocked here.
-  bool get exceedsBalance => !recurring && amount > 0 && amount > available;
-
-  /// Whether the form can be saved: amount in range and, for recurring
-  /// expenses, an interval of 1-99.
+  /// Validates the amount, and the interval or balance when applicable.
   bool get isValid {
-    if (amount <= 0 || amount > maxAmount || exceedsBalance) return false;
+    if (amount <= 0 || amount > maxAmount || exceededBalance != null) {
+      return false;
+    }
     if (!recurring) return true;
     return intervalCount > 0 && intervalCount <= 99;
+  }
+
+  /// The balance when a real one-off expense would exceed it.
+  double? get exceededBalance {
+    final balance = available;
+    if (!recurring && balance != null && amount > 0 && amount > balance) {
+      return balance;
+    }
+    return null;
   }
 
   /// Under the amount: the balance when it is exceeded, else the total
   /// after the multiplier.
   String? get helper {
-    if (exceedsBalance) {
-      return 'أكبر من الرصيد المتاح ${formatMoney(available)} $currencySymbol';
+    final balance = exceededBalance;
+    if (balance != null) {
+      return 'أكبر من الرصيد المتاح ${formatMoney(balance)} $currencySymbol';
     }
     if (multiplier == 1) return null;
     return 'الإجمالي ${formatMoney(amount)} $currencySymbol';

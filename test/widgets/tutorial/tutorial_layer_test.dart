@@ -1,6 +1,6 @@
 // The tutorial on the real app shell: it starts once, dims everything but
 // the control it points at (touches elsewhere are held back), moves on
-// when the user acts, runs the income sheet as a demo that saves nothing,
+// when the user acts, runs income and expense demos that save nothing,
 // and can be skipped after a confirmation.
 
 import 'package:flutter/material.dart';
@@ -51,7 +51,9 @@ void main() {
     await pumpFor(tester);
   }
 
-  testWidgets('the income step is a demo that records nothing', (tester) async {
+  testWidgets('income and expense demos work with an empty ledger', (
+    tester,
+  ) async {
     await start(tester);
     expect(tutorial.step?.id, 'balance');
     expect(find.text('هذا رصيدك'), findsOneWidget);
@@ -87,6 +89,34 @@ void main() {
     expect(tutorial.step?.id, 'expense-open');
     expect(TransactionStore.instance.incomes, isEmpty);
     expect(TransactionStore.instance.balance, 0);
+
+    await tester.tap(find.byKey(TutorialTargets.of(TutorialTarget.addExpense)));
+    await pumpFor(tester, const Duration(seconds: 2));
+    expect(tutorial.step?.id, 'expense-demo');
+    expect(find.bySemanticsLabel('المصروفات المحفوظة'), findsNothing);
+    expect(find.byKey(const ValueKey('__custom_action__')), findsNothing);
+
+    await tester.tap(find.text('2').last);
+    await tester.pump();
+    await tester.tap(find.bySemanticsLabel('تم'));
+    await pumpFor(tester, const Duration(seconds: 1));
+    expect(find.textContaining('أكبر من الرصيد المتاح'), findsNothing);
+    await tester.tap(find.byIcon(AppIcons.chevronForward).last);
+    await pumpFor(tester, const Duration(seconds: 2));
+
+    expect(tutorial.step?.id, 'spending');
+    expect(find.text('إضافة مصروف'), findsNothing);
+    expect(TransactionStore.instance.transactions, isEmpty);
+    expect(TransactionStore.instance.balance, 0);
+
+    await tester.runAsync(tutorial.finish);
+    await pumpFor(tester);
+    await tester.tap(find.byKey(TutorialTargets.of(TutorialTarget.addExpense)));
+    await pumpFor(tester, const Duration(seconds: 2));
+    await tester.tap(find.text('2').last);
+    await tester.pump();
+    expect(find.textContaining('أكبر من الرصيد المتاح'), findsOneWidget);
+
     await unmountApp(tester);
   });
 
