@@ -67,11 +67,17 @@ object Pbkdf2 {
     }
 
     /**
-     * The platform's PBKDF2WithHmacSHA256 SecretKeyFactory. Benchmark only, to
-     * compare speed: the app never uses it, because it takes characters, not
-     * bytes (see above). Its output is checked against the vectors anyway.
+     * The platform's PBKDF2WithHmacSHA256 SecretKeyFactory. It takes
+     * characters, not bytes, so the app uses it only after the Dart side has
+     * checked it against every known answer on the device itself (Arabic,
+     * emoji, long and unnormalised passwords), and only where a timing run
+     * shows it clearly faster than [hmacSha256] (for example a 32-bit Exynos
+     * 850). The password bytes Dart sends are always valid UTF-8, so decoding
+     * them to characters loses nothing. An empty password is refused here:
+     * the factory cannot take one, and the caller uses [hmacSha256] for it.
      */
     fun secretKeyFactory(password: ByteArray, salt: ByteArray, iterations: Int, length: Int = HASH_BYTES): ByteArray {
+        require(password.isNotEmpty()) { "empty password" }
         val chars = String(password, Charsets.UTF_8).toCharArray()
         val spec = PBEKeySpec(chars, salt, iterations, length * 8)
         try {

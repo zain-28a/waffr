@@ -14,7 +14,7 @@ final Map<String, dynamic> _body = {
   'snapshot': {
     'transactions': {
       'upserts': [
-        {'client_id': 't1', 'amount': '12500', 'note': 'إيجار الشقة'},
+        {'client_id': 'row-marker-7f3a91', 'amount': '12500', 'note': 'إيجار الشقة'},
       ],
     },
   },
@@ -48,7 +48,7 @@ void main() {
     final text = utf8.decode(await _seal());
     expect(text, isNot(contains('12500')));
     expect(text, isNot(contains('owner@example.com')));
-    expect(text, isNot(contains('t1')));
+    expect(text, isNot(contains('row-marker-7f3a91')));
     final json = jsonDecode(text) as Map;
     expect(json['format'], 'waffr-backup');
     expect(json['version'], 1);

@@ -74,6 +74,87 @@ class Pbkdf2Engine {
 
   Future<bool>? _nativeUsable;
   String? _disabledReason;
+  Future<String>? _method;
+  Map<String, Object?> _calibration = const {};
+
+  /// The native method that does the work: [methodLoop] (our HMAC loop) or
+  /// [methodFactory] (Android's own PBKDF2). Chosen once per process.
+  static const String methodLoop = 'derive';
+
+  /// See [methodLoop].
+  static const String methodFactory = 'deriveWithFactory';
+
+  /// Iterations of the short timing run that picks the faster method.
+  static const int calibrationIterations = 10000;
+
+  /// The factory must be at least this many times faster than the loop to be
+  /// chosen, so noise never flips the choice on phones where they tie.
+  static const double factorySpeedup = 1.25;
+
+  /// What the calibration measured, for the benchmark report.
+  Map<String, Object?> get calibration => _calibration;
+
+  /// The native method used for non-empty passwords, chosen on first use.
+  ///
+  /// Android's own PBKDF2 (the `SecretKeyFactory`) is faster than our loop on
+  /// some phones (a 32-bit Exynos 850: 1.5 s against 2.4 s at 210,000) and
+  /// slower on others (every 64-bit phone tested). It takes characters, not
+  /// bytes, so it is trusted only after it reproduces every known answer
+  /// (Arabic, emoji, long and unnormalised passwords) on **this** device, and
+  /// only if a short timing run shows it clearly faster. Anything else keeps
+  /// the loop, which is the behaviour before this choice existed.
+  Future<String> nativeMethod() => _method ??= _chooseMethod();
+
+  Future<String> _chooseMethod() async {
+    if (!await nativeUsable()) return methodLoop;
+    try {
+      // An empty password cannot go through the factory, so it is skipped.
+      for (final vector in selfTestVectors.where(
+        (v) => v.password.isNotEmpty,
+      )) {
+        final got = await deriveNative(
+          password: vector.password,
+          salt: vector.salt,
+          iterations: vector.iterations,
+          method: methodFactory,
+        );
+        if (!listEquals(got, vector.derived)) {
+          _calibration = {'factory': 'mismatch:${vector.name}'};
+          return methodLoop;
+        }
+      }
+      final password = List<int>.generate(12, (i) => 97 + i);
+      final salt = List<int>.generate(16, (i) => i);
+      Future<int> time(String method, int iterations) async {
+        final watch = Stopwatch()..start();
+        await deriveNative(
+          password: password,
+          salt: salt,
+          iterations: iterations,
+          method: method,
+        );
+        return watch.elapsedMicroseconds;
+      }
+
+      await time(methodLoop, 1000); // warm-up, not counted
+      await time(methodFactory, 1000);
+      final loop = await time(methodLoop, calibrationIterations);
+      final factory = await time(methodFactory, calibrationIterations);
+      final chosen = loop > factorySpeedup * factory
+          ? methodFactory
+          : methodLoop;
+      _calibration = {
+        'loop_us': loop,
+        'factory_us': factory,
+        'iterations': calibrationIterations,
+        'chosen': chosen,
+      };
+      return chosen;
+    } catch (error) {
+      _calibration = {'factory': 'unavailable:${error.runtimeType}'};
+      return methodLoop;
+    }
+  }
 
   /// Why native is off in this process, or null (for logs and the benchmark).
   String? get disabledReason => _disabledReason;
@@ -95,6 +176,7 @@ class Pbkdf2Engine {
           password: password,
           salt: salt,
           iterations: iterations,
+          method: password.isEmpty ? methodLoop : await nativeMethod(),
         );
         return Pbkdf2Result(key, Pbkdf2Backend.native);
       } catch (error) {
@@ -136,6 +218,7 @@ class Pbkdf2Engine {
         password: password,
         salt: salt,
         iterations: iterations,
+        method: password.isEmpty ? methodLoop : await nativeMethod(),
       ).then<Uint8List?>((key) => key, onError: (_) => null);
     }
     final key = await dart;

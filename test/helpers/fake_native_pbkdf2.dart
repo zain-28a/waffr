@@ -34,10 +34,28 @@ enum FakeNativeFault {
 
 var _channels = 0;
 
+/// How the fake's `deriveWithFactory` method (Android's own PBKDF2) behaves.
+enum FakeFactory {
+  /// Not offered: the call returns nothing, like a platform without it.
+  absent,
+
+  /// Offered and correct.
+  correct,
+
+  /// Wrong output.
+  wrong,
+
+  /// Throws a PlatformException.
+  error,
+}
+
 /// The fake's calls, for assertions.
 class FakeNative {
   /// Every `derive` call's iteration count, in order.
   final List<int> calls = [];
+
+  /// Every `deriveWithFactory` call's iteration count, in order.
+  final List<int> factoryCalls = [];
 }
 
 /// An engine whose native side is the fake, on its own channel.
@@ -45,13 +63,45 @@ class FakeNative {
   FakeNativeFault fault = FakeNativeFault.none,
   Duration timeout = const Duration(seconds: 30),
   bool Function(int call)? failCall,
+  FakeFactory factory = FakeFactory.absent,
+  Duration loopDelay = Duration.zero,
+  Duration factoryDelay = Duration.zero,
 }) {
   final channel = MethodChannel('test/pbkdf2/${_channels++}');
   final native = FakeNative();
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(channel, (call) async {
         if (call.method == 'info') return {'platform': 'fake'};
+        if (call.method == 'deriveWithFactory') {
+          final args = Map<String, Object?>.from(call.arguments as Map);
+          final iterations = args['iterations'] as int;
+          native.factoryCalls.add(iterations);
+          switch (factory) {
+            case FakeFactory.absent:
+              return null;
+            case FakeFactory.error:
+              throw PlatformException(code: 'pbkdf2_failed');
+            case FakeFactory.correct:
+            case FakeFactory.wrong:
+              break;
+          }
+          await Future<void>.delayed(factoryDelay);
+          final bytes = Uint8List.fromList(
+            await (await Pbkdf2(
+                  macAlgorithm: Hmac.sha256(),
+                  iterations: iterations,
+                  bits: 256,
+                ).deriveKey(
+                  secretKey: SecretKey(args['password'] as Uint8List),
+                  nonce: args['salt'] as Uint8List,
+                ))
+                .extractBytes(),
+          );
+          if (factory == FakeFactory.wrong) bytes[0] ^= 0xff;
+          return bytes;
+        }
         if (call.method != 'derive') return null;
+        await Future<void>.delayed(loopDelay);
         final args = Map<String, Object?>.from(call.arguments as Map);
         final iterations = args['iterations'] as int;
         native.calls.add(iterations);

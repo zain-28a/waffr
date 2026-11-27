@@ -31,10 +31,13 @@ void main() {
       final timings = (report['timings'] as List).cast<Map>();
       expect(timings.map((t) => '${t['implementation']}@${t['iterations']}'), [
         'native@1000',
+        'native_selected@1000',
         'dart@1000',
         'native@2000',
+        'native_selected@2000',
         'dart@2000',
       ]);
+      expect(report['native_method'], isA<String>());
       expect((timings.first['runs_ms'] as List).length, 2);
       expect(timings.first['worst_ms'], isA<int>());
       expect(report['native_worst_ms_within_target'], {

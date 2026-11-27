@@ -272,3 +272,16 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
   (a) the 32-bit build is not a supported target for the key-upgrade path, (b) the native loop is optimised or replaced
   with the platform factory on 32-bit devices (needs a change and a re-run), or (c) a lower count for this device class,
   which the server cannot tell apart from the app's count without a new signal.
+
+### Improvement for slower phones: choose the faster native method (after the SM-E135F run)
+
+On the 32-bit Exynos 850 phone, Android's own PBKDF2 (`SecretKeyFactory`) was faster than our HMAC loop
+(1.5 s against 2.4 s at 210,000). Every 64-bit phone showed the opposite. The app now **chooses per phone**:
+
+- The factory is trusted only after it reproduces every known answer (Arabic, emoji, long, unnormalised
+  passwords) on that device, **and** a short timing run (10,000 iterations) shows it at least 1.25× faster.
+  Otherwise the loop is used, exactly as before. An empty password always uses the loop.
+- New data is still written with the Dart key, with native only checking (decision D-4).
+- Expected effect: the SM-E135F at 210,000 should drop from about 2.4 s to about 1.5 s (under the 2 s target);
+  at 600,000 it would still be about 4.4 s (over). **Not yet measured on the phone**: the new benchmark build reports
+  `native_method` and a `native_selected` timing. Run it on the SM-E135F (3 runs) and send the JSON.
