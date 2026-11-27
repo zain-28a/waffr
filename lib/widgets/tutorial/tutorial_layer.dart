@@ -13,6 +13,8 @@
 // scrolling and animations keep it in place. Dimming is a plain
 // translucent fill, not a blur, to stay cheap on every frame.
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -178,55 +180,30 @@ class _TutorialLayerState extends State<TutorialLayer>
   }
 
   Widget _positionedCard(BuildContext context, TutorialStep step, Rect? hole) {
-    final media = MediaQuery.of(context);
-    final size = media.size;
-    final width = (size.width - 32).clamp(0.0, 420.0);
-    final left = (size.width - width) / 2;
-    final card = AnimatedSwitcher(
-      duration: AppMotion.of(context, AppMotion.medium),
-      switchInCurve: AppMotion.enter,
-      switchOutCurve: AppMotion.exit,
-      child: _MessageCard(
-        key: ValueKey(step.id),
-        step: step,
-        showNext: _controller.waitsForNext,
-        onNext: _controller.next,
-        onSkip: _controller.requestSkip,
+    return Positioned.fill(
+      child: CustomSingleChildLayout(
+        delegate: _TutorialCardLayout(
+          hole: hole,
+          padding: MediaQuery.paddingOf(context),
+          requiresTargetTap: step.until != null && !_controller.waitsForNext,
+          isHint: step.isHint,
+        ),
+        child: SingleChildScrollView(
+          primary: false,
+          child: AnimatedSwitcher(
+            duration: AppMotion.of(context, AppMotion.medium),
+            switchInCurve: AppMotion.enter,
+            switchOutCurve: AppMotion.exit,
+            child: _MessageCard(
+              key: ValueKey(step.id),
+              step: step,
+              showNext: _controller.waitsForNext,
+              onNext: _controller.next,
+              onSkip: _controller.requestSkip,
+            ),
+          ),
+        ),
       ),
-    );
-
-    // Below the window when there is room, else above it. A hint over a
-    // screen sits at the bottom, clear of its header and back button.
-    if (hole == null) {
-      if (step.isHint) {
-        return Positioned(
-          left: left,
-          width: width,
-          bottom: media.padding.bottom + 16,
-          child: card,
-        );
-      }
-      return Positioned(
-        left: left,
-        width: width,
-        top: size.height * 0.3,
-        child: card,
-      );
-    }
-    final spaceBelow = size.height - hole.bottom - media.padding.bottom;
-    if (spaceBelow > 230) {
-      return Positioned(
-        left: left,
-        width: width,
-        top: hole.bottom + 14,
-        child: card,
-      );
-    }
-    return Positioned(
-      left: left,
-      width: width,
-      bottom: size.height - hole.top + 14,
-      child: card,
     );
   }
 
@@ -301,6 +278,69 @@ class _TutorialLayerState extends State<TutorialLayer>
       ),
     ];
   }
+}
+
+/// Places the measured card next to its target while keeping it on screen.
+class _TutorialCardLayout extends SingleChildLayoutDelegate {
+  final Rect? hole;
+  final EdgeInsets padding;
+  final bool requiresTargetTap;
+  final bool isHint;
+
+  const _TutorialCardLayout({
+    required this.hole,
+    required this.padding,
+    required this.requiresTargetTap,
+    required this.isHint,
+  });
+
+  static const double _margin = 16;
+  static const double _gap = 14;
+
+  double get _top => padding.top + _margin;
+  double _bottom(double height) => height - padding.bottom - _margin;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final width = (constraints.maxWidth - 2 * _margin).clamp(0.0, 420.0);
+    final bottom = _bottom(constraints.maxHeight);
+    final target = hole;
+    final maxHeight = requiresTargetTap && target != null
+        ? math.max(target.top - _gap - _top, bottom - target.bottom - _gap)
+        : bottom - _top;
+    return BoxConstraints.tightFor(width: width)
+        .copyWith(maxHeight: math.max(0.0, maxHeight));
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final left = (size.width - childSize.width) / 2;
+    final bottom = _bottom(size.height);
+    final lowestTop = math.max(_top, bottom - childSize.height);
+    final target = hole;
+    if (target == null) {
+      final top = isHint
+          ? lowestTop
+          : (size.height * 0.3).clamp(_top, lowestTop);
+      return Offset(left, top);
+    }
+
+    final below = target.bottom + _gap;
+    final above = target.top - _gap - childSize.height;
+    if (below <= lowestTop) return Offset(left, math.max(_top, below));
+    if (above >= _top) return Offset(left, math.min(lowestTop, above));
+    // A large explanation target can fill the viewport. The card's own
+    // button completes this step, so it can overlap the highlighted area.
+    final top = target.top - _top > bottom - target.bottom ? _top : lowestTop;
+    return Offset(left, top);
+  }
+
+  @override
+  bool shouldRelayout(_TutorialCardLayout oldDelegate) =>
+      hole != oldDelegate.hole ||
+      padding != oldDelegate.padding ||
+      requiresTargetTap != oldDelegate.requiresTargetTap ||
+      isHint != oldDelegate.isHint;
 }
 
 TextStyle _style(double size, FontWeight weight, Color color) => TextStyle(

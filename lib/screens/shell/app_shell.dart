@@ -860,21 +860,24 @@ class _BottomNavBar extends StatelessWidget {
                   child: Icon(_icons[index], size: 24, color: color),
                 ),
                 // The name takes its room only as the tab is selected.
-                ClipRect(
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    widthFactor: eased,
-                    child: Opacity(
-                      opacity: (t * 1.6 - 0.6).clamp(0.0, 1.0),
-                      child: Padding(
-                        padding: const EdgeInsetsDirectional.only(start: 7),
-                        child: Text(
-                          _titles[index],
-                          maxLines: 1,
-                          softWrap: false,
-                          textScaler: MediaQuery.textScalerOf(context)
-                              .clamp(maxScaleFactor: 1.15),
-                          style: _titleStyle.copyWith(color: accent),
+                Flexible(
+                  child: ClipRect(
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      widthFactor: eased,
+                      child: Opacity(
+                        opacity: (t * 1.6 - 0.6).clamp(0.0, 1.0),
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.only(start: 7),
+                          child: Text(
+                            _titles[index],
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            textScaler: MediaQuery.textScalerOf(context)
+                                .clamp(maxScaleFactor: 1.15),
+                            style: _titleStyle.copyWith(color: accent),
+                          ),
                         ),
                       ),
                     ),
