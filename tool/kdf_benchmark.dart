@@ -178,6 +178,8 @@ Future<Map<String, Object?>> runBenchmark(
   );
 
   final selfTest = await kdf.nativeUsable();
+  final nativeMethod = await kdf.nativeMethod();
+  say('Native method chosen: $nativeMethod ${kdf.calibration}');
   say('Self-test: ${selfTest ? 'passed' : 'FAILED (${kdf.disabledReason})'}');
 
   // Every shared vector through native, including the expensive ones.
@@ -255,6 +257,17 @@ Future<Map<String, Object?>> runBenchmark(
         iterations: iterations,
       ),
     );
+    await time(
+      'native_selected',
+      iterations,
+      nativeRuns,
+      () => kdf.deriveNative(
+        password: password,
+        salt: salt,
+        iterations: iterations,
+        method: nativeMethod,
+      ),
+    );
     if (info?['platform'] == 'android') {
       await time(
         'android_secret_key_factory',
@@ -298,6 +311,8 @@ Future<Map<String, Object?>> runBenchmark(
         : (kProfileMode ? 'profile' : 'debug'),
     'device': info,
     'self_test_passed': selfTest,
+    'native_method': nativeMethod,
+    'native_method_calibration': kdf.calibration,
     'self_test_disabled_reason': kdf.disabledReason,
     'vectors_all_match': allMatch,
     'vectors': vectorResults,

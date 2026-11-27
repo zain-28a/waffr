@@ -122,6 +122,7 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 | 2026-11-26 | Xiaomi 2404ARN45A (Redmi-class, Helio G99 class), run 1 | MediaTek MT6769 (Helio G85/G95-class, low-end) | 14 (SDK 34) | 1 of 3 | passed | 15/15 match | 234 / 240 ms | 664 / 673 ms | 1,250 ms | 3,261 ms | 9,389 ms (others 9,317 and 9,322) |
 | 2026-11-26 | Infinix X6871 (GT 20 Pro), reported by مغناطيسية | MediaTek Dimensity 8350 class (MT6896) | 16 (SDK 36) | 1 of 3 | passed | 15/15 match | 94 / 94 ms | 268 / 280 ms | 481 ms | 1,188 ms | 3,423 ms (others 3,322 and 3,371) |
 | 2026-11-26 | Infinix X6871 (GT 20 Pro), run 2, reported by مغناطيسية | MediaTek MT6896 | 16 (SDK 36) | 2 of 3 | passed | 15/15 match | 97 / 106 ms | 279 / 284 ms | 494 ms | 1,163 ms | 3,365 ms (others 3,321 and 3,359) |
+| 2026-11-27 | Samsung Galaxy A03/E-series (SM-E135F), 32-bit only | Exynos 850 (budget, Cortex-A55) | 14 (SDK 34) | 1 of 3 | passed | 15/15 match | 2,404 / 2,684 ms (**fails 2 s**) | 7,061 / 9,254 ms (**fails**) | 4,361 ms | 10,027 ms | 28,871 ms |
 
 ### Reading of run 1 (S23 Ultra)
 
@@ -255,3 +256,32 @@ Raw reports are in `benchmarks/kdf/`, one file per run, exactly as the app print
 - **Pure Dart 600,000: 3.3 s**, the steadiest Dart run so far on this phone.
 - **This is a fourth run, beyond the three the gate needs.** It is recorded for the record and does not
   change the gate count. The gate is still short by: one GT 20 Pro run, and a third Android phone at the low end.
+
+### Reading of run 1 (Samsung SM-E135F, Exynos 850, 32-bit ARM only, budget)
+
+- **Correctness holds:** all 15 vectors match and the self-test passed on this 32-bit device.
+- **This is the first device that FAILS the 2 s target.** Native takes 2,404 ms median at 210,000 and 7,061 ms at 600,000.
+  Native at 210,000 is therefore not fast enough on this phone, even at today's count.
+- **Android's own key factory is faster here:** 1,516 ms at 210,000 and 4,350 ms at 600,000. On this chip our HMAC loop is
+  about 1.6× slower than the platform's implementation, which is the reverse of every 64-bit phone so far.
+- **Pure Dart is 10–29 s**, so the write path (D-4) is unusable on this phone.
+- **This phone is also 32-bit only (`armeabi-v7a`).** The benchmark APK built for 64-bit ARM does not run on it, so this run used the universal build.
+- **Implication for the gate:** a low-end phone like this blocks Release B at 600,000 under the current implementation, and the
+  2 s target is not met at 210,000. The gate's rule (worst native run ≤ 2 s) means this device must be
+  reported to you as the decision point, not averaged away. Options for you to decide, no change made:
+  (a) the 32-bit build is not a supported target for the key-upgrade path, (b) the native loop is optimised or replaced
+  with the platform factory on 32-bit devices (needs a change and a re-run), or (c) a lower count for this device class,
+  which the server cannot tell apart from the app's count without a new signal.
+
+### Improvement for slower phones: choose the faster native method (after the SM-E135F run)
+
+On the 32-bit Exynos 850 phone, Android's own PBKDF2 (`SecretKeyFactory`) was faster than our HMAC loop
+(1.5 s against 2.4 s at 210,000). Every 64-bit phone showed the opposite. The app now **chooses per phone**:
+
+- The factory is trusted only after it reproduces every known answer (Arabic, emoji, long, unnormalised
+  passwords) on that device, **and** a short timing run (10,000 iterations) shows it at least 1.25× faster.
+  Otherwise the loop is used, exactly as before. An empty password always uses the loop.
+- New data is still written with the Dart key, with native only checking (decision D-4).
+- Expected effect: the SM-E135F at 210,000 should drop from about 2.4 s to about 1.5 s (under the 2 s target);
+  at 600,000 it would still be about 4.4 s (over). **Not yet measured on the phone**: the new benchmark build reports
+  `native_method` and a `native_selected` timing. Run it on the SM-E135F (3 runs) and send the JSON.

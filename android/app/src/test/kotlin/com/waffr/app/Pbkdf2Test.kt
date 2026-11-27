@@ -54,9 +54,10 @@ class Pbkdf2Test {
     }
 
     @Test
-    fun theSecretKeyFactoryAgreesOnAsciiPasswords() {
-        // Benchmark-only path; checked so its timings compare like with like.
-        for (vector in vectors().filter { v -> v.password.all { it in 0x21..0x7e } && v.iterations <= 4096 }) {
+    fun theSecretKeyFactoryAgreesOnEveryNonEmptyVector() {
+        // The factory path the app may choose; the app also checks it on the device.
+        // Every non-empty vector, Arabic, emoji and unnormalised text included.
+        for (vector in vectors().filter { v -> v.password.isNotEmpty() && v.iterations <= 4096 }) {
             assertArrayEquals(vector.name, vector.derived, Pbkdf2.secretKeyFactory(vector.password, vector.salt, vector.iterations))
         }
     }

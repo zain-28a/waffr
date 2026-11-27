@@ -64,3 +64,13 @@ Benchmarks so far: Samsung S23 Ultra (3 runs), Galaxy A56 (4), Xiaomi 2404ARN45A
 ## Security status (latest)
 
 See `SECURITY_STATUS_REPORT.md`. Summary: P-1 (X-Forwarded-For) is fixed only if the production edge sets `True-Client-IP`; P-2 (concurrent logins) is fixed and retested; P-9 is an open design trade-off; C-1 and N-3 are launch blockers.
+
+## Release signing key (new, replaces the compromised one)
+
+Created 2026-11-27 on the owner's laptop, never shared. The file and its
+password are not in the repository or in any chat.
+
+- Alias: `upload`, RSA 2048, valid until 2054-04-14
+- SHA-256: `E7:77:E2:70:B8:D9:AD:A5:F0:E5:B8:9D:10:BC:38:EA:4F:FE:68:D7:99:48:9E:9B:DE:79:20:85:4D:6E:1B:43`
+- To do before launch: store it as CI secrets, build a release APK with it and
+  check the APK's signer matches this SHA-256 (N-3). Keep two offline copies.
