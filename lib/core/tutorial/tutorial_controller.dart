@@ -117,14 +117,14 @@ class TutorialStep {
   /// The event that completes the step; null means a "next" button.
   final String? until;
 
-  /// An event that steps back (the user closed a sheet without saving).
+  /// An event that steps back when the user leaves a screen or sheet early.
   final String? backOn;
 
   /// The sheet that runs in demo mode during this step.
   final TutorialDemo? demo;
 
-  /// Label of the button on steps without [until].
-  final String nextLabel;
+  /// Whether a missing target may be bypassed with the next button.
+  final bool allowFallback;
 
   /// True for hints shown inside the sheet the user is filling in
   /// (TutorialSheetHint), so nothing covers the sheet's fields.
@@ -141,7 +141,7 @@ class TutorialStep {
     this.until,
     this.backOn,
     this.demo,
-    this.nextLabel = 'التالي',
+    this.allowFallback = true,
     this.inline = false,
   });
 
@@ -281,17 +281,19 @@ const List<TutorialStep> tutorialSteps = [
     topic: 8,
     target: TutorialTarget.settingsButton,
     until: 'settings-opened',
+    allowFallback: false,
     title: 'الإعدادات',
-    body: 'من هنا تضبط دخلك الشهري والعملات والالتزامات وقفل التطبيق.',
+    body: 'افتح الإعدادات من هنا لننتقل إلى شاشة المساعدة.',
   ),
   TutorialStep(
     id: 'help',
     topic: 8,
     target: TutorialTarget.helpTile,
     until: 'help-opened',
-    nextLabel: 'إنهاء',
+    backOn: 'settings-closed',
+    allowFallback: false,
     title: 'المساعدة',
-    body: 'هنا إجابات أسئلتك، ومن هنا يمكنك إعادة هذا الدليل في أي وقت.',
+    body: 'اضغط «المساعدة» لفتح الأسئلة الشائعة وإنهاء الدليل. في تلك الشاشة يمكنك إعادة الدليل في أي وقت.',
   ),
 ];
 
@@ -380,7 +382,7 @@ class TutorialController extends ChangeNotifier {
   }
 
   /// Reports something the user did. Moves the tutorial on when it is what
-  /// the current step waits for, or back when the user left a demo sheet.
+  /// the current step waits for, or back when the user leaves its screen early.
   void emit(String event) {
     final current = step;
     if (current == null) return;
@@ -404,7 +406,9 @@ class TutorialController extends ChangeNotifier {
   /// control is not on screen (the layer calls this after waiting for it).
   void useFallback() {
     final current = step;
-    if (current == null || current.until == null) return;
+    if (current == null || current.until == null || !current.allowFallback) {
+      return;
+    }
     if (_fallback.add(current.id)) notifyListeners();
   }
 

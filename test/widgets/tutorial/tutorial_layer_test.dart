@@ -12,6 +12,7 @@ import 'package:waffr/core/theme/app_icons.dart';
 import 'package:waffr/core/theme/app_theme.dart';
 import 'package:waffr/core/tutorial/tutorial_controller.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
+import 'package:waffr/screens/offline/settings/help_screen.dart';
 import 'package:waffr/screens/shell/app_shell.dart';
 import 'package:waffr/widgets/tutorial/tutorial_layer.dart';
 
@@ -43,10 +44,18 @@ Widget _app() => MaterialApp(
 void main() {
   final tutorial = TutorialController.instance;
 
-  Future<void> start(WidgetTester tester) async {
+  Future<void> start(WidgetTester tester, {String? savedStep}) async {
     usePhoneView(tester);
     mockPlatformPlugins();
-    await tester.runAsync(setUpStores);
+    await tester.runAsync(() async {
+      await setUpStores();
+      if (savedStep != null) {
+        await (await AppPrefs.instance).setString(
+          TutorialController.progressKey,
+          savedStep,
+        );
+      }
+    });
     await tester.pumpWidget(_app());
     await pumpFor(tester);
   }
@@ -117,6 +126,39 @@ void main() {
     await tester.pump();
     expect(find.textContaining('أكبر من الرصيد المتاح'), findsOneWidget);
 
+    await unmountApp(tester);
+  });
+
+  testWidgets('the tutorial opens Help even when its row starts offscreen', (
+    tester,
+  ) async {
+    await start(tester, savedStep: 'help');
+    tester.view.physicalSize = Size(kPhoneSize.width, 640) * 3;
+    await pumpFor(tester);
+    final settings = find.byKey(
+      TutorialTargets.of(TutorialTarget.settingsButton),
+    );
+    final helpRow = find.byKey(TutorialTargets.of(TutorialTarget.helpTile));
+
+    expect(tutorial.step?.id, 'settings-open');
+    await tester.tap(settings);
+    await pumpFor(tester);
+
+    expect(tutorial.step?.id, 'help');
+    expect(tutorial.waitsForNext, isFalse);
+    expect(helpRow.hitTestable(), findsOneWidget);
+
+    tester.state<NavigatorState>(find.byType(Navigator)).pop();
+    await pumpFor(tester);
+    expect(tutorial.step?.id, 'settings-open');
+    await tester.tap(settings);
+    await pumpFor(tester);
+    await tester.tap(helpRow.hitTestable());
+    await pumpFor(tester);
+
+    expect(find.byType(HelpScreen), findsOneWidget);
+    expect(find.text('ابدأ الدليل'), findsOneWidget);
+    expect(tutorial.active, isFalse);
     await unmountApp(tester);
   });
 

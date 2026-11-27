@@ -361,7 +361,8 @@ class _AppShellState extends State<AppShell>
   /// Pushes settings, then reloads [ProfileIdentity] in case the account
   /// changed there.
   Future<void> _openSettings() async {
-    TutorialController.instance.emit('settings-opened');
+    final tutorial = TutorialController.instance;
+    tutorial.emit('settings-opened');
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SettingsScreen(
@@ -372,6 +373,7 @@ class _AppShellState extends State<AppShell>
       ),
     );
     if (!mounted) return;
+    tutorial.emit('settings-closed');
     await ProfileIdentity.instance.reload();
   }
 
