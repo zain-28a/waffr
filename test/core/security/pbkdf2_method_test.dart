@@ -55,7 +55,14 @@ void main() {
   });
 
   test('a factory that merely ties is not chosen (no flapping)', () async {
-    final fake = fakeNativeEngine(factory: FakeFactory.correct);
+    // Equal, clearly measurable delays: with none, scheduler noise on a busy
+    // CI machine could make one side look 1.25x faster.
+    const same = Duration(milliseconds: 100);
+    final fake = fakeNativeEngine(
+      factory: FakeFactory.correct,
+      loopDelay: same,
+      factoryDelay: same,
+    );
     expect(await fake.engine.nativeMethod(), Pbkdf2Engine.methodLoop);
   });
 
