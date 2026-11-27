@@ -80,6 +80,16 @@ jobs:
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-release.apk \
             "dist/waffr-kdf-benchmark-${GITHUB_SHA::7}.apk"
+
+      - name: Build the 32-bit benchmark APK
+        run: |
+          # For 32-bit-only phones (armeabi-v7a), such as the Galaxy E-series.
+          flutter build apk --release -t tool/kdf_benchmark.dart \
+            --target-platform android-arm \
+            -P waffrBenchmark=true \
+            --dart-define=WAFFR_COMMIT=${{ github.sha }}
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "dist/waffr-kdf-benchmark-32bit-${GITHUB_SHA::7}.apk"
           (cd dist && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
 
       - name: Kotlin PBKDF2 unit tests (JVM)
