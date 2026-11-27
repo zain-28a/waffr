@@ -14,6 +14,7 @@ import 'package:waffr/core/tutorial/tutorial_controller.dart';
 import 'package:waffr/data/stores/transaction_store.dart';
 import 'package:waffr/screens/offline/settings/help_screen.dart';
 import 'package:waffr/screens/shell/app_shell.dart';
+import 'package:waffr/widgets/containers/glass_sheet.dart';
 import 'package:waffr/widgets/tutorial/tutorial_layer.dart';
 
 import '../../helpers/store_harness.dart';
@@ -44,8 +45,15 @@ Widget _app() => MaterialApp(
 void main() {
   final tutorial = TutorialController.instance;
 
-  Future<void> start(WidgetTester tester, {String? savedStep}) async {
+  Future<void> start(
+    WidgetTester tester, {
+    String? savedStep,
+    double? height,
+  }) async {
     usePhoneView(tester);
+    if (height != null) {
+      tester.view.physicalSize = Size(kPhoneSize.width, height) * 3;
+    }
     mockPlatformPlugins();
     await tester.runAsync(() async {
       await setUpStores();
@@ -126,6 +134,107 @@ void main() {
     await tester.pump();
     expect(find.textContaining('أكبر من الرصيد المتاح'), findsOneWidget);
 
+    await unmountApp(tester);
+  });
+
+  testWidgets('the fourth step keeps Next visible beside a tall chart', (
+    tester,
+  ) async {
+    usePhoneView(tester);
+    tester.view.physicalSize = Size(kPhoneSize.width, 600) * 3;
+    await tester.runAsync(() async {
+      await setUpStores();
+      await (await AppPrefs.instance).setString(
+        TutorialController.progressKey,
+        'spending',
+      );
+      await tutorial.maybeStart();
+    });
+    await tester.pumpWidget(
+      wrapInApp(
+        TutorialLayer(
+          child: Stack(
+            children: [
+              Positioned(
+                top: 40,
+                bottom: 40,
+                left: 20,
+                right: 20,
+                child: SizedBox(
+                  key: TutorialTargets.of(TutorialTarget.spendingCard),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await pumpFor(tester);
+
+    final next = find.text('التالي').hitTestable();
+    expect(next, findsOneWidget);
+    await tester.tap(next);
+    await tester.pump();
+    expect(tutorial.step?.id, 'reports-tab');
+    await unmountApp(tester);
+  });
+
+  testWidgets('the tutorial advances from spending through the Help screen', (
+    tester,
+  ) async {
+    await start(tester, savedStep: 'spending', height: 640);
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+
+    Future<void> tapTarget(TutorialTarget target) async {
+      final control = find.byKey(TutorialTargets.of(target)).hitTestable();
+      expect(control, findsOneWidget, reason: tutorial.step?.id);
+      await tester.tap(control);
+      await pumpFor(tester);
+    }
+
+    expect(tutorial.step?.id, 'spending');
+    expect(find.text('التالي').hitTestable(), findsOneWidget);
+    await tester.tap(find.text('التالي').hitTestable());
+    await pumpFor(tester);
+    expect(tutorial.step?.id, 'reports-tab');
+    await tapTarget(TutorialTarget.reportsTab);
+    expect(tutorial.step?.id, 'smart-open');
+    await tapTarget(TutorialTarget.smartButton);
+    expect(tutorial.step?.id, 'smart-read');
+    navigator.pop();
+    await pumpFor(tester);
+    expect(tutorial.step?.id, 'savings-tab');
+    await tapTarget(TutorialTarget.savingsTab);
+    expect(tutorial.step?.id, 'goal-open');
+    await tapTarget(TutorialTarget.createGoal);
+    expect(tutorial.step?.id, 'goal-demo');
+    await tester.enterText(find.byType(TextField).first, 'صندوق الطوارئ');
+    final amount = find.descendant(
+      of: find.byType(SheetAmountField),
+      matching: find.byType(TextField),
+    );
+    await tester.ensureVisible(amount);
+    await tester.tap(amount);
+    await pumpFor(tester, const Duration(seconds: 1));
+    await tester.tap(find.text('5').last);
+    await tester.tap(find.bySemanticsLabel('تم'));
+    await pumpFor(tester, const Duration(seconds: 1));
+    final saveGoal = find.text('حفظ الهدف');
+    await tester.ensureVisible(saveGoal);
+    await tester.tap(saveGoal.hitTestable());
+    await pumpFor(tester);
+    expect(tutorial.step?.id, 'shopping-open');
+    expect(TransactionStore.instance.activeGoals, isEmpty);
+    await tapTarget(TutorialTarget.shoppingList);
+    expect(tutorial.step?.id, 'shopping-read');
+    navigator.pop();
+    await pumpFor(tester);
+    expect(tutorial.step?.id, 'settings-open');
+    await tapTarget(TutorialTarget.settingsButton);
+    expect(tutorial.step?.id, 'help');
+    await tapTarget(TutorialTarget.helpTile);
+    expect(find.byType(HelpScreen), findsOneWidget);
+    expect(tutorial.active, isFalse);
     await unmountApp(tester);
   });
 
