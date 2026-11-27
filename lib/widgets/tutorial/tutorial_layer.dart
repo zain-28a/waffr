@@ -404,7 +404,7 @@ class _MessageCard extends StatelessWidget {
                       ),
                       onPressed: onNext,
                       child: Text(
-                        step.nextLabel,
+                        'التالي',
                         style: _style(14, FontWeight.w700, palette.background),
                       ),
                     ),

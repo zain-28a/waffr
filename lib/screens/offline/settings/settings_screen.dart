@@ -436,9 +436,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// Opens the help screen.
   void _openHelp() {
-    TutorialController.instance.emit('help-opened');
     Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const HelpScreen()));
+        .push(MaterialPageRoute<void>(builder: (_) => const HelpScreen()));
+    TutorialController.instance.emit('help-opened');
   }
 
   @override
@@ -458,47 +458,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Expanded(
                 child: NotificationListener<ScrollNotification>(
                   onNotification: _onScroll,
-                  child: ListView(
+                  // Lay out the Help row even below the viewport so the
+                  // tutorial can scroll to its spotlight target.
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.all(20),
-                    children: [
-                      ..._accountSection(palette),
-                      const SizedBox(height: 25),
-                      ..._appearanceSection(isDark),
-                      const SizedBox(height: 25),
-                      ..._privacySection(),
-                      const SizedBox(height: 25),
-                      ..._supportSection(),
-                      const SizedBox(height: 25),
-                      ..._dataSection(),
-                      // Version label.
-                      Center(
-                        child: Text(
-                          'waffr 2.15.12',
-                          style: TextStyle(
-                            color: palette.textSecondary.withValues(alpha: 0.6),
-                            fontSize: 12,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ..._accountSection(palette),
+                        const SizedBox(height: 25),
+                        ..._appearanceSection(isDark),
+                        const SizedBox(height: 25),
+                        ..._privacySection(),
+                        const SizedBox(height: 25),
+                        ..._supportSection(),
+                        const SizedBox(height: 25),
+                        ..._dataSection(),
+                        // Version label.
+                        Center(
+                          child: Text(
+                            'waffr 2.15.13',
+                            style: TextStyle(
+                              color: palette.textSecondary.withValues(
+                                alpha: 0.6,
+                              ),
+                              fontSize: 12,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Partner logos (دليل الشباب and GUIDE+): white artwork on
-                      // a transparent background, tinted to the theme.
-                      Center(
-                        child: Semantics(
-                          label: 'دليل الشباب و GUIDE+',
-                          image: true,
-                          child: Image.asset(
-                            'assets/brand/partner_logos.png',
-                            width: 200,
-                            color: palette.textSecondary.withValues(alpha: 0.7),
-                            colorBlendMode: BlendMode.srcIn,
-                            filterQuality: FilterQuality.medium,
-                            excludeFromSemantics: true,
+                        const SizedBox(height: 16),
+                        // Partner logos (دليل الشباب and GUIDE+): white artwork on
+                        // a transparent background, tinted to the theme.
+                        Center(
+                          child: Semantics(
+                            label: 'دليل الشباب و GUIDE+',
+                            image: true,
+                            child: Image.asset(
+                              'assets/brand/partner_logos.png',
+                              width: 140,
+                              color: palette.textSecondary.withValues(
+                                alpha: 0.7,
+                              ),
+                              colorBlendMode: BlendMode.srcIn,
+                              filterQuality: FilterQuality.medium,
+                              excludeFromSemantics: true,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
               ),
