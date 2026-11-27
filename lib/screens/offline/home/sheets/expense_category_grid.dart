@@ -13,11 +13,15 @@ class ExpenseCategoryGrid extends StatefulWidget {
   /// created, or the selected one is renamed or removed.
   final ValueChanged<String> onSelected;
 
+  /// Whether this grid can change the user's saved categories.
+  final bool allowManagement;
+
   /// Creates a [ExpenseCategoryGrid].
   const ExpenseCategoryGrid({
     super.key,
     required this.selected,
     required this.onSelected,
+    this.allowManagement = true,
   });
 
   @override
@@ -143,7 +147,7 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
         listenable: CategoryStore.instance,
         builder: (context, _) {
           final categories = CategoryStore.instance.selectableCategories;
-          // Five per row, with the "add custom" tile last.
+          // Five per row, with the optional "add custom" tile last.
           return GridView.count(
             crossAxisCount: 5,
             shrinkWrap: true,
@@ -162,17 +166,20 @@ class _ExpenseCategoryGridState extends State<ExpenseCategoryGrid> {
                       category: category,
                       isSelected: category.label == widget.selected,
                       onTap: () => widget.onSelected(category.label),
-                      onLongPress: () => _showActions(tileContext, category),
+                      onLongPress: widget.allowManagement
+                          ? () => _showActions(tileContext, category)
+                          : null,
                     );
                   },
                 ),
-              _CategoryTile(
-                key: const ValueKey('__custom_action__'),
-                category: customCategoryAction,
-                isSelected: false,
-                isAction: true,
-                onTap: _createCustom,
-              ),
+              if (widget.allowManagement)
+                _CategoryTile(
+                  key: const ValueKey('__custom_action__'),
+                  category: customCategoryAction,
+                  isSelected: false,
+                  isAction: true,
+                  onTap: _createCustom,
+                ),
             ],
           );
         },
