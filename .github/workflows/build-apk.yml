@@ -77,6 +77,16 @@ jobs:
           flutter build apk --release
           mv build/app/outputs/flutter-apk/Waffr-*.apk dist/
 
+      # Prints the certificate the APKs are signed with, so it can be compared
+      # with the fingerprint in PRELAUNCH_CHECKLIST.md (no secret is shown).
+      - name: Show the signing certificate
+        run: |
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          for apk in dist/Waffr-*.apk; do
+            echo "== $apk"
+            "$APKSIGNER" verify --print-certs "$apk" | grep -i "SHA-256"
+          done
+
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: waffr-apk-arm64-${{ github.run_number }}
